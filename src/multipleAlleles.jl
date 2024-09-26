@@ -287,10 +287,10 @@ function mergeLeaves!(net::HybridNetwork)
             end
             removeEdge!(par,n.edge[1])
             removeEdge!(par,other.edge[1])
-            deleteNode!(net,n)
-            deleteNode!(net,other)
-            deleteEdge!(net,n.edge[1])
-            deleteEdge!(net,other.edge[1])
+            PhyloNetworks.deleteNode!(net,n)
+            PhyloNetworks.deleteNode!(net,other)
+            PhyloNetworks.deleteEdge!(net,n.edge[1])
+            PhyloNetworks.deleteEdge!(net,other.edge[1])
             par.name = other.name
             par.leaf = true
             push!(net.leaf,par)

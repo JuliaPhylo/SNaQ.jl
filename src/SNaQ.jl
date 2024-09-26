@@ -41,14 +41,19 @@ module SNaQ
 import PhyloNetworks: tipLabels,getTipSubmatrix,
 resetNodeNumbers!,resetEdgeNumbers!,
 inheritanceWeight, isEqual,approxEq,
-assignhybridnames!,
-getOtherNode,getIndex,getIndexEdge,
+assignhybridnames!, 
+getOtherNode,getIndex,getIndexEdge,getIndexNode,
 pushEdge!,pushNode!,
 setNode!,setEdge!,
 removeEdge!,removeNode!,
-getconnectingedge, deleteIntNode!, ##. Possible PN jetsam. only used in SNaQ functions
-hybridEdges, ##Almost used only in SNaQ functions
+searchHybridNode,searchHybridEdge,
+sampleBootstrapTrees, sampleBootstrapTrees!, tree2Matrix,
+addBL, deleteEdge!, deleteNode!,
+getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
+hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
 Edge, Node, Network, Partition
+
+
 export
         ## Network Definition
         DataCF,

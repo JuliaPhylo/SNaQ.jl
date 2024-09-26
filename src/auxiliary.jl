@@ -10,6 +10,22 @@ function setCHECKNET(b::Bool)
     b || @info "PhyloNetworks.CHECKNET set to false"
 end
 
+# ----- aux general functions ---------------
+
+#based in coupon's collector: E+sqrt(V)
+function coupon(n::Number)
+    return n*log(n) + n
+end
+
+function binom(n::Number,k::Number)
+    n >= k || return 0
+    n == 1 && return 1
+    k == 0 && return 1
+    binom(n-1,k-1) + binom(n-1,k) #recursive call
+end
+
+
+
 """
     deleteNode!(net::QuartetNetwork, n::Node)
 

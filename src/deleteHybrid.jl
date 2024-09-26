@@ -171,7 +171,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setNode!(treeedge1,other1);
             setEdge!(other1,treeedge1);
             removeEdge!(other1, hybedge1);
-            deleteEdge!(net,hybedge1);
+            PhyloNetworks.deleteEdge!(net,hybedge1);
             #treeedge1.containRoot = (!treeedge1.containRoot || !hybedge1.containRoot) ? false : true #causes problems if hybrid.CR=false
             if(blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
@@ -185,7 +185,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setNode!(hybedge1,other3);
             setEdge!(other3,hybedge1);
             removeEdge!(other3,treeedge1);
-            deleteEdge!(net,treeedge1);
+            PhyloNetworks.deleteEdge!(net,treeedge1);
             hybedge1.containRoot = (!treeedge1.containRoot || !hybedge1.containRoot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(hybedge1.number)")
@@ -214,7 +214,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setNode!(treeedge2,treenode1);
             setEdge!(treenode1,treeedge2);
             removeEdge!(treenode1,treeedge1);
-            deleteEdge!(net,treeedge1);
+            PhyloNetworks.deleteEdge!(net,treeedge1);
             treeedge2.containRoot = (!treeedge1.containRoot || !treeedge2.containRoot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(treeedge2.number)")
@@ -226,7 +226,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setNode!(treeedge1,treenode2);
             setEdge!(treenode2,treeedge1);
             removeEdge!(treenode2,treeedge2);
-            deleteEdge!(net,treeedge2);
+            PhyloNetworks.deleteEdge!(net,treeedge2);
             treeedge1.containRoot = (!treeedge1.containRoot || !treeedge2.containRoot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
@@ -234,9 +234,9 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             end
         end
         #removeHybrid!(net,node);
-        deleteNode!(net,node);
-        deleteNode!(net,other2);
-        deleteEdge!(net,hybedge2);
+        PhyloNetworks.deleteNode!(net,node);
+        PhyloNetworks.deleteNode!(net,other2);
+        PhyloNetworks.deleteEdge!(net,hybedge2);
     else
         hybedge1,hybedge2,treeedge1 = hybridEdges(node);
         other1 = getOtherNode(hybedge1,node);
@@ -247,9 +247,9 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
         setEdge!(other2,treeedge1)
         setNode!(treeedge1,other2)
         #removeHybrid!(net,node)
-        deleteNode!(net,node)
-        deleteEdge!(net,hybedge1)
-        deleteEdge!(net,hybedge2)
+        PhyloNetworks.deleteNode!(net,node)
+        PhyloNetworks.deleteEdge!(net,hybedge1)
+        PhyloNetworks.deleteEdge!(net,hybedge2)
         removeEdge!(other1,hybedge1)
         size(other1.edge,1) == 2 || error("strange node $(other1.number) had 4 edges")
         if(abs(other1.edge[1].number) < abs(other1.edge[2].number))
@@ -265,8 +265,8 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
         removeEdge!(other3,otheredge)
         setEdge!(other3,edge)
         setNode!(edge,other3)
-        deleteNode!(net,other1)
-        deleteEdge!(net,otheredge)
+        PhyloNetworks.deleteNode!(net,other1)
+        PhyloNetworks.deleteEdge!(net,otheredge)
     end
 end
 
