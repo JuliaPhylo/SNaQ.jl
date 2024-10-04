@@ -37,7 +37,7 @@ module SNaQ
     global CHECKNET = false # for debugging only
 
 
-    import PhyloNetworks: tipLabels,getTipSubmatrix,
+    import PhyloNetworks: HybridNetwork, tipLabels,getTipSubmatrix,
         resetNodeNumbers!,resetEdgeNumbers!,
         inheritanceWeight, isEqual,approxEq,
         assignhybridnames!, 
