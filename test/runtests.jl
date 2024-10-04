@@ -7,18 +7,21 @@ using Test
 using CSV
 using Aqua
 
-##Import internal functions that are directly used in tests. There has got to be a better way
-import SNaQ: checkNet,
-extractQuartet!, identifyQuartet!,
-eliminateHybridization!,
-updateSplit!,updateFormula!,
-calculateExpCF!, calculateExpCFAll!, logPseudoLik,
-updateInCycle!,updateContainRoot!,updateGammaz!,
-parameters!,update!, optTopRun1!,
-writeExpCF,writeTopologyLevel1,descData,
-addHybridizationUpdate!,deleteHybridizationUpdate!,
-cleanBL!,cleanAfterRead!,identifyInCycle,
-updatePartition!,optBL!,nchoose1234,QuartetT
+## Import internal functions that are directly used in tests. There has got to be a better way
+# import SNaQ: checkNet,
+# extractQuartet!, identifyQuartet!,
+# eliminateHybridization!,
+# updateSplit!,updateFormula!,
+# calculateExpCF!, calculateExpCFAll!, logPseudoLik,
+# updateInCycle!,updateContainRoot!,updateGammaz!,
+# parameters!,update!, optTopRun1!,
+# writeExpCF,writeTopologyLevel1,descData,
+# addHybridizationUpdate!,deleteHybridizationUpdate!,
+# cleanBL!,cleanAfterRead!,identifyInCycle,
+# updatePartition!,optBL!,nchoose1234,QuartetT
+
+import SNaQ: *
+import PhyloNetworks: *
 
 
 import PhyloNetworks:
@@ -26,13 +29,15 @@ import PhyloNetworks:
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,searchHybridEdge,
-    ladderpartition
+    ladderpartition, readTopologyLevel1,
+    getConnectingEdge
 
 @testset "SNaQ.jl" begin
     @testset "Code quality (Aqua.jl)" begin
         Aqua.test_all(SNaQ;
-        ambiguities = (broken=false),
-        persistent_tasks=false)
+        ambiguities = (broken = false),
+        persistent_tasks = false,
+        deps_compat = false)
     end
     
     SNaQ.setCHECKNET(true)
