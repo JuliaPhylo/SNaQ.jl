@@ -37,24 +37,23 @@ module SNaQ
     global CHECKNET = false # for debugging only
 
 
+    import PhyloNetworks: tipLabels,getTipSubmatrix,
+        resetNodeNumbers!,resetEdgeNumbers!,
+        inheritanceWeight, isEqual,approxEq,
+        assignhybridnames!, 
+        getOtherNode,getIndex,getIndexEdge,getIndexNode,
+        pushEdge!,pushNode!,
+        setNode!,setEdge!,
+        removeEdge!,removeNode!,
+        searchHybridNode,searchHybridEdge,
+        sampleBootstrapTrees, sampleBootstrapTrees!, tree2Matrix,
+        addBL, deleteEdge!, deleteNode!,
+        getConnectingEdge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
+        hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
+        Edge, Node, Network, Partition
 
-import PhyloNetworks: tipLabels,getTipSubmatrix,
-resetNodeNumbers!,resetEdgeNumbers!,
-inheritanceWeight, isEqual,approxEq,
-assignhybridnames!, 
-getOtherNode,getIndex,getIndexEdge,getIndexNode,
-pushEdge!,pushNode!,
-setNode!,setEdge!,
-removeEdge!,removeNode!,
-searchHybridNode,searchHybridEdge,
-sampleBootstrapTrees, sampleBootstrapTrees!, tree2Matrix,
-addBL, deleteEdge!, deleteNode!,
-getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
-hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
-Edge, Node, Network, Partition
 
-
-export
+    export
         ## Network Definition
         DataCF,
         Quartet,
@@ -83,20 +82,20 @@ export
     
 
 
-include("types.jl")
-include("addHybrid_snaq.jl")
-include("auxiliary.jl")
-include("bootstrap.jl")
-include("deleteHybrid.jl")
-include("descriptive.jl")
-include("moves_snaq.jl")
-include("manipulateNet.jl")
-include("multipleAlleles.jl")
-include("pseudolik.jl")
-include("readData.jl")
-include("readwrite.jl")
-include("snaq_optimization.jl")
-include("undo.jl")
-include("update.jl")
+    include("types.jl")
+    include("addHybrid_snaq.jl")
+    include("auxiliary.jl")
+    include("bootstrap.jl")
+    include("deleteHybrid.jl")
+    include("descriptive.jl")
+    include("moves_snaq.jl")
+    include("manipulateNet.jl")
+    include("multipleAlleles.jl")
+    include("pseudolik.jl")
+    include("readData.jl")
+    include("readwrite.jl")
+    include("snaq_optimization.jl")
+    include("undo.jl")
+    include("update.jl")
 
 end
