@@ -201,22 +201,6 @@ function check2HybEdges(net::HybridNetwork)
 end
 
 
-"""
-    readTopologyLevel1(filename)
-    readTopologyLevel1(parenthetical format)
-
-same as readTopology, reads a tree or network from parenthetical
-format, but this function enforces the necessary conditions for any
-starting topology in SNaQ: non-intersecting cycles, no polytomies,
-unrooted. It sets any missing branch length to 1.0.
-
-If the network has a bad diamond II (in which edge lengths are γ's are not identifiable)
-and if the edge below this diamond has a length `t` different from 0, then this length is
-set back to 0 and the major parent hybrid edge is lengthened by `t`.
-"""
-readTopologyLevel1(file::AbstractString) = readTopologyUpdate(file, false, true)
-
-
 # aux function to check if the root is placed correctly, and re root if not
 # warning: it needs updateContainRoot set
 function checkRootPlace!(net::HybridNetwork; verbose=false::Bool, outgroup="none"::AbstractString)
