@@ -169,9 +169,25 @@ function readTopologyUpdate(file::AbstractString, leaveRoot::Bool,verbose::Bool)
     cleanAfterReadAll!(net,leaveRoot)
     return net
 end
-
 readTopologyUpdate(file::AbstractString) = readTopologyUpdate(file, false, true)
 readTopologyUpdate(file::AbstractString,verbose::Bool) = readTopologyUpdate(file, false, verbose)
+
+
+"""
+    readTopologyLevel1(filename)
+    readTopologyLevel1(parenthetical format)
+
+same as readTopology, reads a tree or network from parenthetical
+format, but this function enforces the necessary conditions for any
+starting topology in SNaQ: non-intersecting cycles, no polytomies,
+unrooted. It sets any missing branch length to 1.0.
+
+If the network has a bad diamond II (in which edge lengths are γ's are not identifiable)
+and if the edge below this diamond has a length `t` different from 0, then this length is
+set back to 0 and the major parent hybrid edge is lengthened by `t`.
+"""
+readTopologyLevel1(file::AbstractString) = readTopologyUpdate(file, false, true)
+
 
 # aux function to send an error if the number of hybrid attached to every
 # hybrid node is >2
