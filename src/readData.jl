@@ -1265,6 +1265,7 @@ function makeTable(net::HybridNetwork, parts::Vector{EdgeParts},d::DataCF)
     return df
 end
 
+
 # function to determine the resolution of taxa picked from part1,2,3,4 and DataCF
 # names: taxa from part1,2,3,4
 # rownames: taxa from table of obsCF
@@ -1337,6 +1338,7 @@ function whichQuartet(n::Int, q::Int)
     quartet = quartet[[4,3,2,1]] #sort
     return quartet
 end
+
 
 # function to write a quartet on integer to taxon names
 # it creates a Quartet type
