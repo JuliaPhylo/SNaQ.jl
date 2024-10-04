@@ -9,8 +9,8 @@ include("../examples/case_g_example.jl")
 error1 = false
 ind = 0
 
-q1 = Quartet(1,["6","7","4","8"],[0.5,0.4,0.1]);
-qnet = extractQuartet!(net,q1);
+q1 = SNaQ.Quartet(1,["6","7","4","8"],[0.5,0.4,0.1]);
+qnet = SNaQ.extractQuartet!(net,q1);
 try
     identifyQuartet!(qnet)
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
