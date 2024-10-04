@@ -11,7 +11,6 @@ function writeExpCF(quartets::Array{Quartet,1})
     end
     return df
 end
-
 writeExpCF(d::DataCF) = writeExpCF(d.quartet)
 
 """
@@ -39,7 +38,6 @@ function writeTableCF(quartets::Array{Quartet,1})
     end
     return df
 end
-
 writeTableCF(d::DataCF) = writeTableCF(d.quartet)
 
 
@@ -92,6 +90,7 @@ function writeTableCF(quartets::Vector{QuartetT{T}},
     end
     return df
 end
+
 
 """
     quartetdata_columnnames(T) where T <: StaticArray
@@ -201,6 +200,7 @@ function readTableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
     return d
 end
 
+
 # see docstring below, for readTableCF!
 # takes in df and 7 or 8 column numbers (4 labels + 3 CFs + ngenes possibly)
 function readTableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false)
@@ -226,6 +226,7 @@ function readTableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false
     end
     return d  # return d, df ## to save memory & gc with readTableCF! for bootstrapping?
 end
+
 
 """
     readTableCF!(data frame, columns; mergerows=false)
@@ -310,6 +311,7 @@ function readInputTrees(file::AbstractString)
     return vnet # consistent output type: HybridNetwork vector. might be of length 0.
 end
 
+
 # function to list all quartets for a set of taxa names
 # return a vector of quartet objects, and if writeFile=true, writes a file
 function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFile::Bool)
@@ -333,8 +335,8 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
     end
     return vquartet
 end
-
 allQuartets(numTaxa::Integer, writeFile::Bool) = allQuartets(1:numTaxa, writeFile)
+
 
 # function to list num randomly selected quartets for a vector of all quartets
 # return a vector of Quartet randomly chosen (and a file if writeFile=true)
@@ -367,6 +369,7 @@ function randQuartets(allquartets::Vector{Quartet},num::Integer, writeFile::Bool
     return randquartets
 end
 
+
 # function that will not use randQuartets(list of quartets,...)
 # this function uses whichQuartet to avoid making the list of all quartets
 # fixit: writeFile is not used. remove the option?
@@ -393,8 +396,8 @@ function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::In
     close(out)
     return randquartets
 end
-
 randQuartets(numTaxa::Integer,num::Integer, writeFile::Bool) = randQuartets(1:numTaxa,num, writeFile)
+
 
 # function to read list of quartets from a file
 # and create Quartet type objects
@@ -416,6 +419,7 @@ function readListQuartets(file::AbstractString)
     return quartets
 end
 
+
 """
     sameTaxa(Quartet, HybridNetwork)
 
@@ -431,6 +435,7 @@ function sameTaxa(q::Quartet, t::HybridNetwork)
     end
     return true
 end
+
 
 """
     taxadiff(Vector{Quartet}, network; multiplealleles=true)
@@ -471,6 +476,7 @@ function unionTaxa(trees::Vector{HybridNetwork})
     return sort_stringasinteger!(taxa)
 end
 
+
 """
     sort_stringasinteger!(taxa)
 
@@ -488,15 +494,15 @@ function sort_stringasinteger!(taxa)
     return taxa
 end
 
+
 # extract & sort the union of taxa of list of quartets
 function unionTaxa(quartets::Vector{Quartet})
     taxa = reduce(union, q.taxon for q in quartets)
     return sort_stringasinteger!(taxa)
 end
-
 unionTaxaTree(file::AbstractString) = unionTaxa(readInputTrees(file))
 
-tipLabels(t::Vector{HybridNetwork}) = unionTaxa(t)
+
 tipLabels(q::Vector{Quartet}) = unionTaxa(q)
 tipLabels(d::DataCF) = unionTaxa(d.quartet)
 
@@ -526,11 +532,13 @@ function calculateObsCFAll!(dat::DataCF, taxa::Union{Vector{<:AbstractString}, V
     calculateObsCFAll_noDataCF!(dat.quartet, dat.tree, taxa)
 end
 
+
 function calculateObsCFAll!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
     calculateObsCFAll_noDataCF!(quartets, trees, taxa)
     d = DataCF(quartets,trees)
     return d
 end
+
 
 function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
     println("calculating obsCF from $(length(trees)) gene trees and for $(length(quartets)) quartets")
@@ -578,6 +586,7 @@ function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{Hy
     println("  ")
     return nothing
 end
+
 
 """
     countquartetsintrees(trees [, taxonmap]; which=:all, weight_byallele=true)
@@ -820,6 +829,7 @@ function countquartetsintrees!(quartet::Vector{QuartetT{MVector{4,Float64}}},
     end
 end
 
+
 function quartetRankResolution(t1::Int, t2::Int, t3::Int, t4::Int, nCk::Matrix)
     # quartet: t1 t2 | t3 t4, but indices have not yet been ordered: t1<t2, t3<t4, t1<min(t3,t4)
     if t3 > t4 # make t3 smallest of t3, t4
@@ -846,6 +856,7 @@ function quartetRankResolution(t1::Int, t2::Int, t3::Int, t4::Int, nCk::Matrix)
     end
     return rank, resolution
 end
+
 
 """
     readInputData(trees, quartetfile, whichQuartets, numQuartets, writetable, tablename, writeQfile, writesummary)
@@ -899,10 +910,10 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
     trees = readInputTrees(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
-
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer) = readInputData(treefile, quartetfile, whichQ, numQ, true, "none", false, true)
 readInputData(treefile::AbstractString, quartetfile::AbstractString, writetab::Bool, filename::AbstractString) = readInputData(treefile, quartetfile, :all, 0, writetab, filename, false, true)
+
 
 function readInputData(trees::Vector{HybridNetwork}, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
     if(whichQ == :all)
@@ -958,12 +969,12 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
     trees = readInputTrees(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
-
 readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, unionTaxaTree(treefile), writetab, "none",false, true)
 readInputData(treefile::AbstractString, taxa::Union{Vector{<:AbstractString}, Vector{Int}}) = readInputData(treefile, :all, 0, taxa, true, "none",false, true)
 # above: the use of unionTaxaTree to set the taxon set
 #        is not good: need to read the tree file twice: get the taxa, then get the trees
 #        this inefficiency was fixed in readTrees2CF
+
 
 function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integer, taxa::Union{Vector{<:AbstractString}, Vector{Int}}, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
     if(whichQ == :all)
@@ -1033,6 +1044,7 @@ function readTrees2CF(treefile::AbstractString; quartetfile="none"::AbstractStri
                  CFfile=CFfile, taxa=taxa, writeQ=writeQ, writeSummary=writeSummary)
 end
 
+
 # same as before, but with input vector of HybridNetworks
 function readTrees2CF(trees::Vector{HybridNetwork};
         quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,
@@ -1064,8 +1076,8 @@ function taxaTreesQuartets(trees::Vector{HybridNetwork}, quartets::Vector{Quarte
         write(s,"Taxon $(taxon) appears in $(numT) input trees ($(round(100*numT/length(trees), digits=2)) %)\n")  #and $(numQ) quartets ($(round(100*numQ/length(quartets), digits=2)) %)\n")
     end
 end
-
 taxaTreesQuartets(trees::Vector{HybridNetwork}, quartets::Vector{Quartet}) = taxaTreesQuartets(trees, quartets, stdout)
+
 
 # function that counts the number of trees in which taxon appears
 function taxonTrees(taxon::AbstractString, trees::Vector{HybridNetwork})
@@ -1075,6 +1087,7 @@ function taxonTrees(taxon::AbstractString, trees::Vector{HybridNetwork})
     end
     return suma
 end
+
 
 # function that counts the number of quartets in which taxon appears
 function taxonQuartets(taxon::AbstractString, quartets::Vector{Quartet})
@@ -1122,10 +1135,10 @@ function descData(d::DataCF, filename::AbstractString,pc::Float64)
     descData(d,s,pc)
     close(s)
 end
-
 descData(d::DataCF, sout::IO=stdout) = descData(d, sout,0.7)
 descData(d::DataCF,pc::Float64) = descData(d, stdout,pc)
 descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
+
 
 """
 `summarizeDataCF(d::DataCF)`
@@ -1142,6 +1155,7 @@ function summarizeDataCF(d::DataCF; filename="none"::AbstractString, pc=0.7::Flo
         descData(d,filename,pc)
     end
 end
+
 
 # -------- branch length estimate in coalescent units on species tree ------
 
@@ -1220,6 +1234,7 @@ function getDescendants!(node::Node, edge::Edge, descendants::Array{Node,1})
         end
     end
 end
+
 
 # based on getDescendants on readData.jl but with vector of edges, instead of nodes
 # finds the partition corresponding to the node and edge in the cycle
