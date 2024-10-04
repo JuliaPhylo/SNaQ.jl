@@ -55,7 +55,7 @@ function identifyInCycle(net::Network,node::Node)
     while(!isEqual(curr, start))
         if(curr.inCycle == start.number)
             push!(net.nodes_changed, curr);
-            edge = getconnectingedge(curr, curr.prev);
+            edge = getConnectingEdge(curr, curr.prev);
             if(edge.inCycle == start.number)
                 push!(net.edges_changed, edge);
             end
