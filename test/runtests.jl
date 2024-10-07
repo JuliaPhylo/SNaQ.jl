@@ -29,8 +29,7 @@ import PhyloNetworks:
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,searchHybridEdge,
-    ladderpartition, readTopologyLevel1,
-    getConnectingEdge
+    ladderpartition
 
 @testset "SNaQ.jl" begin
     @testset "Code quality (Aqua.jl)" begin
