@@ -48,7 +48,7 @@ module SNaQ
         searchHybridNode,searchHybridEdge,
         sampleBootstrapTrees, sampleBootstrapTrees!, tree2Matrix,
         addBL, deleteEdge!, deleteNode!,
-        getConnectingEdge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
+        getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
         hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
         Edge, Node, Network, Partition
 
@@ -74,6 +74,8 @@ module SNaQ
         readSnaqNetwork,
         topologyMaxQPseudolik!,
         topologyQPseudolik!,
+        ## Quartets
+        Quartet,
         ## Network Manipulation
         fittedQuartetCF,
         ## Network Bootstrap
