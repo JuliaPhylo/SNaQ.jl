@@ -8,20 +8,17 @@ using CSV
 using Aqua
 
 ## Import internal functions that are directly used in tests. There has got to be a better way
-# import SNaQ: checkNet,
-# extractQuartet!, identifyQuartet!,
-# eliminateHybridization!,
-# updateSplit!,updateFormula!,
-# calculateExpCF!, calculateExpCFAll!, logPseudoLik,
-# updateInCycle!,updateContainRoot!,updateGammaz!,
-# parameters!,update!, optTopRun1!,
-# writeExpCF,writeTopologyLevel1,descData,
-# addHybridizationUpdate!,deleteHybridizationUpdate!,
-# cleanBL!,cleanAfterRead!,identifyInCycle,
-# updatePartition!,optBL!,nchoose1234,QuartetT
-
-import SNaQ: *
-import PhyloNetworks: *
+import SNaQ: checkNet,
+    extractQuartet!, identifyQuartet!,
+    eliminateHybridization!,
+    updateSplit!, updateFormula!,
+    calculateExpCF!, calculateExpCFAll!, logPseudoLik,
+    updateInCycle!, updateContainRoot!, updateGammaz!,
+    parameters!, update!, optTopRun1!,
+    writeExpCF, writeTopologyLevel1, descData,
+    addHybridizationUpdate!, deleteHybridizationUpdate!,
+    cleanBL!, cleanAfterRead!, identifyInCycle,
+    updatePartition!, optBL!, nchoose1234, QuartetT
 
 
 import PhyloNetworks:

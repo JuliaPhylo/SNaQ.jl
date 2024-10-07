@@ -1,8 +1,6 @@
 # test of calculateExpCF function
 # Claudia December 2014
 
-import SNaQ: extractQuartet!, calculateExpCF!, eliminateHybridization!, identifyQuartet!, updateSplit!, updateFormula!
-
 # Case G -----------------
 
 #println("------ Case G ----------")
