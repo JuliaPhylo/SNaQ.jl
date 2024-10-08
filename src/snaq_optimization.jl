@@ -1521,7 +1521,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
       writelog = false
       logfile = stdout # used in call to optTopRun1!
     end
-    str = """optimization of topology, BL and inheritance probabilities using:
+    str = """optimization of topology, BL and inheritance probabilities in SNaQ.jl using:
               hmax = $(hmax),
               tolerance parameters: ftolRel=$(ftolRel), ftolAbs=$(ftolAbs),
                                     xtolAbs=$(xtolAbs), xtolRel=$(xtolRel).
