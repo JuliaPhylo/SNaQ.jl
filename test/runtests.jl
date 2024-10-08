@@ -28,36 +28,33 @@ import PhyloNetworks:
     searchHybridNode,searchHybridEdge,
     ladderpartition
 
-@testset "SNaQ.jl" begin
-    @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(SNaQ;
-        ambiguities = (broken = false),
-        persistent_tasks = false,
-        deps_compat = false)
-    end
-    
-    SNaQ.setCHECKNET(true)
-
-    @testset "SNaQ.jl" begin
-        include("test_5taxon_readTopology.jl")
-        include("test_add2hyb.jl")
-        include("test_badDiamII.jl")
-        include("test_bootstrap.jl") #fails. come back to this after testing snaq!
-        include("test_calculateExpCF.jl")
-        include("test_calculateExpCF2.jl")
-        include("test_correctLik.jl")
-        include("test_deleteHybridizationUpdate.jl")
-        include("test_multipleAlleles.jl")
-        include("test_optBLparts.jl")
-        include("test_parameters.jl")
-        include("test_partition.jl")
-        include("test_partition2.jl")
-        include("test_perfectData.jl")
-        include("test_readInputData.jl")
-        
 
 
-    end
 
-
+@testset "Code quality (Aqua.jl)" begin
+    Aqua.test_all(SNaQ;
+    ambiguities = (broken = false),
+    persistent_tasks = false,
+    deps_compat = false)
 end
+
+
+SNaQ.setCHECKNET(true)
+@testset "SNaQ.jl" begin
+    include("test_5taxon_readTopology.jl")
+    include("test_add2hyb.jl")
+    include("test_badDiamII.jl")
+    include("test_bootstrap.jl") #fails. come back to this after testing snaq!
+    include("test_calculateExpCF.jl")
+    include("test_calculateExpCF2.jl")
+    include("test_correctLik.jl")
+    include("test_deleteHybridizationUpdate.jl")
+    include("test_multipleAlleles.jl")
+    include("test_optBLparts.jl")
+    include("test_parameters.jl")
+    include("test_partition.jl")
+    include("test_partition2.jl")
+    include("test_perfectData.jl")
+    include("test_readInputData.jl")
+end
+
