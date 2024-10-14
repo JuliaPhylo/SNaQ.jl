@@ -496,17 +496,34 @@ function extractQuartet!(net::HybridNetwork, quartet::Quartet)
     #return qnet
 end
 
+# function to calculate deltaCF, which is the sum 
+# of | obsCF(i) - expCF(i) |, where i is one of 
+# the possible quartet topologies 12|34, 13|24, 14|23
+function calculateDeltaCF(obs::Array{Float64}, exp::Array{Float64})
+    sum=0.0
+    for i in 1:3
+        diff = abs(obs[i]-exp[i])
+        sum += abs(obs[i]-exp[i])
+    end
+    return sum
+end
 
 # function to extract all quartets from net according
 # to the array of quartets of a Data object
 # it updates expCF, hasEdge, indexht
 function extractQuartet!(net::HybridNetwork, quartet::Vector{Quartet})
     @debug "EXTRACT: begins extract quartets for network"
-    for q in quartet
+    Threads.@threads for q in quartet
         extractQuartet!(net,q)
-        qnet = deepcopy(q.qnet); #there is a reason not to mess up with the original q.qnet, i believe to keep ht consistent
-        calculateExpCFAll!(qnet);
-        q.qnet.expCF[:] = qnet.expCF
+        if (q.sampled)
+            qnet = deepcopy(q.qnet); #there is a reason not to mess up with the original q.qnet, i believe to keep ht consistent
+            calculateExpCFAll!(qnet);
+            q.qnet.expCF[:] = qnet.expCF
+            q.deltaCF = calculateDeltaCF(q.obsCF, q.qnet.expCF)
+        else
+            #if quartet unsampled, set weight to 0
+            q.deltaCF = 0.0
+        end
     end
 end
 
@@ -1263,11 +1280,13 @@ end
 function calculateExpCFAll!(data::DataCF)
     !all((q->(q.qnet.numTaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
     #@warn "assume the numbers for the taxon read from the observed CF table match the numbers given to the taxon when creating the object network"
-    for q in data.quartet
-        if(q.qnet.changed)
-            qnet = deepcopy(q.qnet);
-            calculateExpCFAll!(qnet);
-            q.qnet.expCF[:] = qnet.expCF
+    Threads.@threads for q in data.quartet
+        if (q.sampled)
+            if(q.qnet.changed)
+                qnet = deepcopy(q.qnet);
+                calculateExpCFAll!(qnet);
+                q.qnet.expCF[:] = qnet.expCF
+            end
         end
     end
 end
@@ -1281,13 +1300,15 @@ end
 function calculateExpCFAll!(data::DataCF, x::Vector{Float64},net::HybridNetwork)
     !all((q->(q.qnet.numTaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
     #println("calculateExpCFAll in x: $(x) with net.ht $(net.ht)")
-    for q in data.quartet
-        update!(q.qnet,x,net)
-        if(q.qnet.changed)
-            #println("enters to recalculate expCF for some quartet")
-            qnet = deepcopy(q.qnet);
-            calculateExpCFAll!(qnet);
-            q.qnet.expCF[:] = qnet.expCF
+    Threads.@threads for q in data.quartet
+        if (q.sampled)
+            update!(q.qnet,x,net)
+            if(q.qnet.changed)
+                #println("enters to recalculate expCF for some quartet")
+                qnet = deepcopy(q.qnet);
+                calculateExpCFAll!(qnet);
+                q.qnet.expCF[:] = qnet.expCF
+            end
         end
     end
 end
@@ -1327,14 +1348,16 @@ function topologyQPseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
     end
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
     all((q->(q.qnet.numTaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
-    for q in d.quartet
-        if verbose println("computing expCF for quartet $(q.taxon)") # to stdout
-        else @debug        "computing expCF for quartet $(q.taxon)"; end # to logger if debug turned on by user
-        qnet = deepcopy(q.qnet);
-        calculateExpCFAll!(qnet);
-        q.qnet.expCF[:] = qnet.expCF
-        if verbose println("$(qnet.expCF)") # to stdout
-        else @debug        "$(qnet.expCF)"; end # to logger
+    Threads.@threads for q in d.quartet
+        if (q.sampled)
+            if verbose println("computing expCF for quartet $(q.taxon)") # to stdout
+            else @debug        "computing expCF for quartet $(q.taxon)"; end # to logger if debug turned on by user
+            qnet = deepcopy(q.qnet);
+            calculateExpCFAll!(qnet);
+            q.qnet.expCF[:] = qnet.expCF
+            if verbose println("$(qnet.expCF)") # to stdout
+            else @debug        "$(qnet.expCF)"; end # to logger
+        end
     end
     val = logPseudoLik(d)
     if verbose println("$the value of pseudolikelihood is $(val)") # to stdout
@@ -1352,24 +1375,26 @@ end
 # warning: assumes that quartet.qnet is already updated with extractQuartet and
 #          calculateExpCF
 function logPseudoLik(quartet::Quartet)
-    sum(quartet.qnet.expCF) != 0.0 || error("expCF not updated for quartet $(quartet.number)")
-    #@debug "quartet= $(quartet.taxon), obsCF = $(quartet.obsCF), expCF = $(quartet.qnet.expCF)"
-    suma = 0
-    for i in 1:3
-        if(quartet.qnet.expCF[i] < 0)
-            @debug "found expCF negative $(quartet.qnet.expCF[i]), will set loglik=-1.e15"
-            suma += -1.e15
-        else
-            suma += quartet.obsCF[i] == 0 ? 0.0 : 100*quartet.obsCF[i]*log(quartet.qnet.expCF[i]/quartet.obsCF[i])
-            # WARNING: 100 should be replaced by -2*ngenes to get the deviance.
-            # below: negative sign used below in logPseudoLik() when summing up across 4-taxon sets
+    suma = 0.0
+    if quartet.sampled
+        sum(quartet.qnet.expCF) != 0.0 || error("expCF not updated for quartet $(quartet.number)")
+        #@debug "quartet= $(quartet.taxon), obsCF = $(quartet.obsCF), expCF = $(quartet.qnet.expCF)"
+        for i in 1:3
+            if(quartet.qnet.expCF[i] < 0)
+                @debug "found expCF negative $(quartet.qnet.expCF[i]), will set loglik=-1.e15"
+                suma += -1.e15
+            else
+                suma += quartet.obsCF[i] == 0 ? 0.0 : 100*quartet.obsCF[i]*log(quartet.qnet.expCF[i]/quartet.obsCF[i])
+                # WARNING: 100 should be replaced by -2*ngenes to get the deviance.
+                # below: negative sign used below in logPseudoLik() when summing up across 4-taxon sets
+            end
         end
+        ## to account for missing data:
+        ## if(quartet.ngenes > 0)
+        ##     suma = quartet.ngenes*suma
+        ## end
+        quartet.logPseudoLik = suma
     end
-    ## to account for missing data:
-    ## if(quartet.ngenes > 0)
-    ##     suma = quartet.ngenes*suma
-    ## end
-    quartet.logPseudoLik = suma
     return suma
 end
 
@@ -1379,10 +1404,14 @@ end
 # warning: assumes that quartet.qnet is already updated with extractQuartet and
 #          calculateExpCF for all quartets
 function logPseudoLik(quartet::Array{Quartet,1})
-    suma = 0
+    suma=0.0
+    #println("logPseudoLik")
     for q in quartet
         suma += logPseudoLik(q)
+        #println(suma)
     end
+    #println("ending loop. Value= ",-suma, " - ", typeof(suma))
+    #println("returning")
     return -suma
 end
 

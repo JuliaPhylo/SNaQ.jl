@@ -11,6 +11,8 @@ module SNaQ
     using Random
     using Statistics: mean, quantile, median
 
+    using Base.Threads
+
     # other libraries, indicate compatible version in Project.toml
     using BioSequences
     using BioSymbols
@@ -50,7 +52,7 @@ module SNaQ
         addBL, deleteEdge!, deleteNode!,
         getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
         hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
-        Edge, Node, Network, Partition
+        EdgeT, Node, Network, Partition
 
 
     export
@@ -66,6 +68,7 @@ module SNaQ
         readTableCF,
         readTableCF!,
         writeTableCF,
+        readPhylip2CF,
         mapAllelesCFtable,
         readInputTrees,
         readnexus_treeblock,
@@ -80,7 +83,12 @@ module SNaQ
         fittedQuartetCF,
         ## Network Bootstrap
         bootsnaq,
-        readMultiTopologyLevel1
+        readMultiTopologyLevel1,
+        ## parsimony
+        parsimonySoftwired,
+        parsimonyGF,
+        maxParsimonyNet,
+        readfastatodna
     
 
 
@@ -93,6 +101,7 @@ module SNaQ
     include("moves_snaq.jl")
     include("manipulateNet.jl")
     include("multipleAlleles.jl")
+    include("parsimony.jl")
     include("pseudolik.jl")
     include("readData.jl")
     include("readwrite.jl")

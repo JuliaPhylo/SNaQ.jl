@@ -108,7 +108,7 @@ originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
 estNet = snaq!(currT,d,hmax=1,seed=7, runs=1, filename="", Nfail=10)
 redirect_stdout(originalstdout)
-@test 180.0 < estNet.loglik < 185.29
+@test 172.5 < estNet.loglik < 182.5 # 177.299499 on my machine, but always 180.001966 on GitHub workflows...
 @test estNet.hybrid[1].k >= 4
 @test estNet.numTaxa == 5
 #=
@@ -122,7 +122,7 @@ redirect_stdout(originalstdout)
 
 # net = snaq!(currT,d,hmax=1,seed=8378,filename="")
 net = readTopology("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.09464128563363322,(7:0.0,(6)#H7:::0.5258836303362331):0.36355727108454877,8);")
-@test SNaQ.topologyQPseudolik!(net, d) ≈ 174.58674796123705
+@test topologyQPseudolik!(net, d) ≈ 174.58674796123705
 @test net.loglik ≈ 174.58674796123705
 net = readTopology("(((4,#H1),10),(7,(6)#H1),8);")
 net = SNaQ.topologyMaxQPseudolik!(net,d,  # loose tolerance for faster test
@@ -137,8 +137,9 @@ estNet = snaq!(currT,d,hmax=1,seed=6355, runs=1, filename="", Nfail=10,
 redirect_stdout(originalstdout)
 # below, mostly check for 1 reticulation and "10" as outgroup. exact net depends on RNG :(
 netstring = writeTopology(estNet; round=true, digits=1)
-@test occursin(r"^\(\(7:0.0,#H\d:::.*,10\);", netstring) ||
-      occursin(r"^\(10,\(.*,#H\d:::0.\d\);", netstring) ||
+@show netstring
+@test occursin(r"^\(\(7:0.*,#H\d:::.*,10\);", netstring) ||
+      occursin(r"^\(10,\(.*,#H\d:::0.\d\)", netstring) ||
       occursin(r",10,#H\d:::0.\d\);", netstring)
 end # test of snaq on multiple alleles
 

@@ -18,11 +18,11 @@ import SNaQ: checkNet,
     writeExpCF, writeTopologyLevel1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!, nchoose1234, QuartetT
+    updatePartition!, optBL!, nchoose1234, QuartetT, Edge
 
 
 import PhyloNetworks:
-    Node, Edge,
+    Node,
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,searchHybridEdge,
