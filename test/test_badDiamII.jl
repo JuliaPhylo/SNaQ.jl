@@ -8,7 +8,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     net3 = readTopologyLevel1(net3c_newick)
     # net3.node[6].isBadTriangle : not isVeryBadTriangle nor isExtBadTriangle
     hn = net3.hybrid[1] # more robust than net3.node[6]
-    tmp = PhyloNetworks.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
+    tmp = SNaQ.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
     @test !any(tmp)
     end
 

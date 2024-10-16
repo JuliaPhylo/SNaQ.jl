@@ -30,7 +30,7 @@ net = readTopologyLevel1("(E,((B)#H1:::.5,((D,C),(#H1:::.5,A))));");
 @test writeTopology(net) == "(D:1.0,C:1.0,((#H1:1.0::0.5,A:1.0):1.0,((B:1.0)#H1:1.0::0.5,E:1.0):1.0):1.0);"
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
-@test_logs PhyloNetworks.printEverything(net)
+@test_logs SNaQ.printEverything(net)
 redirect_stdout(originalstdout)
 
 @testset "test: reading nexus file" begin

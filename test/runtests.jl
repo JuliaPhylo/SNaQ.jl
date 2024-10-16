@@ -44,7 +44,7 @@ SNaQ.setCHECKNET(true)
     include("test_5taxon_readTopology.jl")
     include("test_add2hyb.jl")
     include("test_badDiamII.jl")
-    include("test_bootstrap.jl") #fails. come back to this after testing snaq!
+    include("test_bootstrap.jl") 
     include("test_calculateExpCF.jl")
     include("test_calculateExpCF2.jl")
     include("test_correctLik.jl")
