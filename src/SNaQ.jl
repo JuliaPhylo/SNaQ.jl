@@ -54,13 +54,14 @@ module SNaQ
 
 
     export
-        ## Network Definition
+        ## types & network definition
         DataCF,
         Quartet,
         readTopologyLevel1,
+        readMultiTopologyLevel1
         tipLabels,
         sorttaxa!,
-        ## SNAQ
+        # quartet CF
         readTrees2CF,
         countquartetsintrees,
         readTableCF,
@@ -70,19 +71,13 @@ module SNaQ
         readInputTrees,
         readnexus_treeblock,
         summarizeDataCF,
+        fittedQuartetCF,
+        # fitting: SNaQ and network bootstrap
         snaq!,
         readSnaqNetwork,
         topologyMaxQPseudolik!,
         topologyQPseudolik!,
-        ## Quartets
-        Quartet,
-        ## Network Manipulation
-        fittedQuartetCF,
-        ## Network Bootstrap
-        bootsnaq,
-        readMultiTopologyLevel1
-    
-
+        bootsnaq
 
     include("types.jl")
     include("addHybrid_snaq.jl")

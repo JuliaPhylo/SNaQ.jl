@@ -10,7 +10,7 @@ T=readTopology(joinpath(exdir,"startTree.txt"))
 datf=DataFrame(CSV.File(joinpath(exdir,"tableCFCI.csv")); copycols=false)
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
-bootnet = SNaQ.bootsnaq(T,datf,nrep=2,runs=1,seed=1234,filename="",Nfail=2,
+bootnet = bootsnaq(T,datf,nrep=2,runs=1,seed=1234,filename="",Nfail=2,
                    ftolAbs=1e-3,ftolRel=1e-3,xtolAbs=1e-4,xtolRel=1e-3,liktolAbs=0.01)
 redirect_stdout(originalstdout)
 @test size(bootnet)==(2,)
@@ -32,7 +32,7 @@ addprocs(1)
 # using Distributed; @everywhere begin; using Pkg; Pkg.activate("."); using PhyloNetworks; end
 originalstdout = stdout
 redirect_stdout(devnull)
-bootnet = SNaQ.bootsnaq(T,boottrees,nrep=2,runs=2,otherNet=net1,seed=1234,
+bootnet = bootsnaq(T,boottrees,nrep=2,runs=2,otherNet=net1,seed=1234,
                    prcnet=0.5,filename="",Nfail=2,ftolAbs=1e-3,ftolRel=1e-3)
 redirect_stdout(originalstdout)
 rmprocs(workers())

@@ -4,10 +4,11 @@
 
 
 """
-`fittedQuartetCF(d::DataCF, format::Symbol)`
+    fittedQuartetCF(d::DataCF, format::Symbol)
 
-return a data frame with the observed and expected quartet concordance factors
-after estimation of a network with snaq(T,d).
+Data frame with the observed and expected quartet concordance factors after
+estimation of a network with `snaq!`, or fitting of quartet CF data on
+a fixed network.
 The format can be :wide (default) or :long.
 
 - if wide, the output has one row per 4-taxon set, and each row has 10 columns: 4 columns
@@ -16,7 +17,8 @@ The format can be :wide (default) or :long.
   4 columns for the taxon names, one column to give the quartet resolution, one column for
   the observed CF and the last column for the expected CF.
 
-see also: `topologyQPseudolik!` and `topologyMaxQPseudolik!` to update the fitted CF expected
+see also: [`topologyQPseudolik!`](@ref) and [`topologyMaxQPseudolik!`](@ref)
+to update the fitted quartet CF expected
 under a specific network, inside the DataCF object `d`.
 """
 function fittedQuartetCF(d::DataCF, format=:wide::Symbol)
