@@ -18,7 +18,7 @@ import SNaQ: checkNet,
     writeExpCF, writeTopologyLevel1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!, nchoose1234, QuartetT
+    updatePartition!, optBL!, nchoose1234, QuartetT,undirectedOtherNetworks,hybridatnode!
 
 
 import PhyloNetworks:
@@ -26,7 +26,7 @@ import PhyloNetworks:
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,searchHybridEdge,
-    ladderpartition
+    ladderpartition,pushHybrid!
 
 
 
@@ -56,5 +56,8 @@ SNaQ.setCHECKNET(true)
     include("test_partition2.jl")
     include("test_perfectData.jl")
     include("test_readInputData.jl")
+    include("test_hasEdge.jl")
+    include("test_undirectedOtherNetworks.jl")
+
 end
 

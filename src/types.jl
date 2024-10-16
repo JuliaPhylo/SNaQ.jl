@@ -316,8 +316,3 @@ mutable struct EdgeParts
     part4::Vector{Node}
 end
 
-struct RootMismatch <: Exception
-    msg::String
-end
-RootMismatch() = RootMismatch("")
-Base.showerror(io::IO, e::RootMismatch) = print(io, "RootMismatch: ", e.msg);
