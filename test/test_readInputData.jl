@@ -100,9 +100,9 @@ oneQ = QuartetT(1,3,4,6, [.92,.04,.04, 100], nCk)
 end
 
 @testset "convert QuartetT vector to dataframe" begin
-SVector = PhyloNetworks.StaticArrays.SVector
-MVector = PhyloNetworks.StaticArrays.MVector
-MMatrix = PhyloNetworks.StaticArrays.MMatrix
+SVector = SNaQ.StaticArrays.SVector
+MVector = SNaQ.StaticArrays.MVector
+MMatrix = SNaQ.StaticArrays.MMatrix
 # without taxon names, length-3 vector of boolean data
 qlist = [
   QuartetT(1, SVector{4}(1,2,3,4), MVector{3,Bool}(0,1,0)),
