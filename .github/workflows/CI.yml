@@ -75,5 +75,5 @@ jobs:
         run: |
           using Documenter: DocMeta, doctest
           using SNaQ, PhyloNetworks
-          DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ); recursive=true)
+          DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ, PhyloNetworks); recursive=true)
           doctest(SNaQ)
