@@ -184,7 +184,7 @@ rank-1 = (t1-1) choose 1 + (t2-1) choose 2 + (t3-1) choose 3 + (t4-1) choose 4
 # examples
 
 ```jldoctest
-julia> nCk = PhyloNetworks.nchoose1234(5)
+julia> nCk = SNaQ.nchoose1234(5)
 6×4 Matrix{Int64}:
  0   0   0  0
  1   0   0  0
@@ -193,7 +193,7 @@ julia> nCk = PhyloNetworks.nchoose1234(5)
  4   6   4  1
  5  10  10  5
 
-julia> PhyloNetworks.QuartetT(1,3,4,6, [.92,.04,.04, 100], nCk)
+julia> SNaQ.QuartetT(1,3,4,6, [.92,.04,.04, 100], nCk)
 4-taxon set number 8; taxon numbers: 1,3,4,6
 data: [0.92, 0.04, 0.04, 100.0]
 ```
@@ -230,7 +230,7 @@ see [`nchoose1234`](@ref).
 # examples
 
 ```jldoctest
-julia> nCk = PhyloNetworks.nchoose1234(5)
+julia> nCk = SNaQ.nchoose1234(5)
 6×4 Matrix{Int64}:
  0   0   0  0
  1   0   0  0
@@ -239,10 +239,10 @@ julia> nCk = PhyloNetworks.nchoose1234(5)
  4   6   4  1
  5  10  10  5
 
-julia> PhyloNetworks.quartetrank([1,2,3,4], nCk)
+julia> SNaQ.quartetrank([1,2,3,4], nCk)
 1
 
-julia> PhyloNetworks.quartetrank([3,4,5,6], nCk)
+julia> SNaQ.quartetrank([3,4,5,6], nCk)
 15
 ```
 """
