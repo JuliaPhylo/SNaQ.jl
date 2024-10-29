@@ -1,7 +1,7 @@
-using SNaQ
+using SNaQ, PhyloNetworks
 using Documenter
 
-DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ); recursive=true)
+DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ, PhyloNetworks); recursive=true)
 
 makedocs(;
     modules=[SNaQ],

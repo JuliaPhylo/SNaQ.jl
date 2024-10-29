@@ -71,7 +71,7 @@ except for edges in
 
 will break if `inCycle` attributes are not initialized (at -1) or giving a correct node number.
 
-see [`Node`](@ref) for the meaning of boolean attributes
+see [`PhyloNetworks.Node`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/internals/#PhyloNetworks.Node) for the meaning of boolean attributes
 `isBadTriangle` (which corresponds to a "good" triangle above),
 `isBadDiamondI` and `isBadDiamondII`.
 """

@@ -277,7 +277,7 @@ end
 Read a text file with a list of trees/networks in parenthetical format
 (one tree per line) and transform them like [`readTopologyLevel1`](@ref)
 does: to be unrooted, with resolved polytomies, missing branch lengths
-set to 1.0, etc. See [`readMultiTopology`](@ref) to read multiple
+set to 1.0, etc. See [`PhyloNetworks.readMultiTopology`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readMultiTopology) to read multiple
 trees or networks with no modification.
 
 Output: array of HybridNetwork objects.
