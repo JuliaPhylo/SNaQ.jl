@@ -9,7 +9,7 @@ makedocs(;
     sitename="SNaQ.jl",
     format=Documenter.HTML(;
         canonical="https://JuliaPhylo.github.io/SNaQ.jl",
-        edit_link="master",
+        edit_link="dev",
         assets=String[],
     ),
     pages=[
@@ -19,5 +19,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/JuliaPhylo/SNaQ.jl",
-    devbranch="master",
+    devbranch="dev",
 )
