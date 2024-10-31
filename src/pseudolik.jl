@@ -475,27 +475,6 @@ function extractQuartet(net::HybridNetwork,quartet::Array{Node,1})
     return qnet
 end
 
-# function to extract a quartet from a Quartet object
-# it calls the previous extractQuartet
-# returns qnet (check: maybe not needed later) and assigns
-# quartet.qnet = qnet
-function extractQuartet!(net::HybridNetwork, quartet::Quartet)
-    list = Node[]
-    for q in quartet.taxon
-        tax_in_net = findfirst(n -> n.name == q, net.node)
-        tax_in_net != nothing || error("taxon $(q) not in network")
-        push!(list, net.node[tax_in_net])
-    end
-    qnet = extractQuartet(net,list)
-    @debug "EXTRACT: extracted quartet $(quartet.taxon)"
-    redundantCycle!(qnet) #removes no leaves, cleans external edges
-    updateHasEdge!(qnet,net)
-    parameters!(qnet,net)
-    qnet.quartetTaxon = quartet.taxon
-    quartet.qnet = qnet
-    #return qnet
-end
-
 # function to calculate deltaCF, which is the sum 
 # of | obsCF(i) - expCF(i) |, where i is one of 
 # the possible quartet topologies 12|34, 13|24, 14|23
