@@ -1822,6 +1822,12 @@ Output:
 There are many optional arguments, including
 
 - `hmax` (default 1): maximum number of hybridizations allowed
+- `propQuartets` (default 1): the proportion of observed quartet concordance factors in `d`
+  to use when calculating network pseudo-likelihoods. Smaller values will lead to faster
+  method runtime but may come at the expense of accuracy if lowered too far.
+- `probQR` (default 0): the probability at any given step to use weighted random sampling
+  of quartets when deciding where to make topological moves when proposing the next
+  candidate network.
 - `verbose` (default false): if true, print information about the numerical optimization
 - `runs` (default 10): number of independent starting points for the search
 - `outgroup` (default none): outgroup taxon to root the estimated topology at the very end
