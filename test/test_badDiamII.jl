@@ -3,6 +3,16 @@
 using SNaQ
 SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correctLik.jl")
 
+@testset "moveTargetUpdate! reject 2-cycle proposal" begin
+    net3c_newick = "(1,2,(((3,4))#H1:::0.6,(#H1:::0.4,(5,6))));" # 3-cycle adjacent to 3 cherries
+    net3 = readTopologyLevel1(net3c_newick)
+    # net3.node[6].isBadTriangle : not isVeryBadTriangle nor isExtBadTriangle
+    hn = net3.hybrid[1] # more robust than net3.node[6]
+    tmp = SNaQ.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
+    @test !any(tmp)
+    end
+
+
 @testset "test: bad diamond, max pseudo lik" begin
     global tree, net, df, d
 
@@ -27,10 +37,10 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
                 CF1234=[0.565,0.0005,0.0005,0.565,0.00003,0.99986,0.0410167,1,0.99987,1,0.040167,0.998667,1,0.073167,0.00003],
                 CF1324=[0.0903,0.8599,0.8599,0.0903,0.8885,0.00006,0.263,0,0.00006,0,0.2630,0.00006,0,0.0424667,0.8885])
     df[!,:CF1423] = 1.0 .- df[!,:CF1234] .- df[!,:CF1324]
-    d = SNaQ.readTableCF(df)
+    d = readTableCF(df)
 
     Random.seed!(345);
-    net2 = SNaQ.topologyMaxQPseudolik!(net,d, ftolRel=1e-5,ftolAbs=1e-6,xtolRel=1e-3,xtolAbs=1e-4)
+    net2 = topologyMaxQPseudolik!(net,d, ftolRel=1e-5,ftolAbs=1e-6,xtolRel=1e-3,xtolAbs=1e-4)
     @test net2.loglik < 340.5 # loglik ~ 339.95
     @test net2.edge[3].istIdentifiable # or: wrong hybrid is t identifiable
     # @test 9.95 < net2.edge[3].length < 9.99

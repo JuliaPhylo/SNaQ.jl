@@ -52,17 +52,17 @@ module SNaQ
         addBL, deleteEdge!, deleteNode!,
         getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
         hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
-        EdgeT, Node, Network, Partition
+        Edge, Node, Network, Partition,pushHybrid!,removeHybrid!,printEdges,printPartitions
 
 
     export
-        ## Network Definition
+        ## types & network definition
         DataCF,
         Quartet,
         readTopologyLevel1,
-        tipLabels,
+        readMultiTopologyLevel1,
         sorttaxa!,
-        ## SNAQ
+        # quartet CF
         readTrees2CF,
         countquartetsintrees,
         readTableCF,
@@ -73,24 +73,14 @@ module SNaQ
         readInputTrees,
         readnexus_treeblock,
         summarizeDataCF,
+        fittedQuartetCF,
+        # fitting: SNaQ and network bootstrap
         snaq!,
         readSnaqNetwork,
         topologyMaxQPseudolik!,
         topologyQPseudolik!,
-        ## Quartets
-        Quartet,
-        ## Network Manipulation
-        fittedQuartetCF,
-        ## Network Bootstrap
-        bootsnaq,
-        readMultiTopologyLevel1,
-        ## parsimony
-        parsimonySoftwired,
-        parsimonyGF,
-        maxParsimonyNet,
-        readfastatodna
-    
-
+        bootsnaq
+        
 
     include("types.jl")
     include("addHybrid_snaq.jl")

@@ -63,7 +63,7 @@ d3 = DataFrame(t1=repeat([letters[1]],outer=[24]),t2=repeat([letters[2]],outer=[
 dat = readTableCF(d);
 net = (@test_logs readTopologyLevel1("(a,((b)#H1,((#H1,c),d)));"));
 # earlier warning: "net does not have identifiable branch lengths"
-@test_logs SNaQ.topologyQPseudolik!(net, dat);
+@test_logs topologyQPseudolik!(net, dat);
 sorttaxa!(dat)
 
 @test [q.obsCF for q in dat.quartet] == [[0.6,0.39,0.01] for i in 1:24]
@@ -125,7 +125,7 @@ net = readTopology("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.094
 @test topologyQPseudolik!(net, d) ≈ 174.58674796123705
 @test net.loglik ≈ 174.58674796123705
 net = readTopology("(((4,#H1),10),(7,(6)#H1),8);")
-net = SNaQ.topologyMaxQPseudolik!(net,d,  # loose tolerance for faster test
+net = topologyMaxQPseudolik!(net,d,  # loose tolerance for faster test
         ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
 @test net.loglik > 174.5
 

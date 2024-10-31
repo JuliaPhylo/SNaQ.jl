@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - dev
     tags: ['*']
   pull_request:
   workflow_dispatch:
@@ -23,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.5'
+          - '1.11'
         os:
           - ubuntu-latest
           - macOS-latest
@@ -73,6 +74,6 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Documenter: DocMeta, doctest
-          using SNaQ
-          DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ); recursive=true)
+          using SNaQ, PhyloNetworks
+          DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ, PhyloNetworks); recursive=true)
           doctest(SNaQ)

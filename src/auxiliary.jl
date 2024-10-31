@@ -76,19 +76,7 @@ function deleteEdge!(net::QuartetNetwork, e::Edge)
 end
 
 
-"""
-    removeHybrid!(net::Network, n::Node)
 
-Delete a hybrid node `n` from `net.hybrid`, and update `net.numHybrid`.
-The actual node `n` is not deleted. It is kept in the full list `net.node`.
-"""
-function removeHybrid!(net::Network, n::Node)
-    n.hybrid || error("cannot delete node $(n.number) from net.hybrid because it is not hybrid")
-    i = findfirst(x -> x===n, net.hybrid)
-    i !== nothing || error("hybrid node $(n.number) not in the network's list of hybrids");
-    deleteat!(net.hybrid, i);
-    net.numHybrids -= 1;
-end
 
 
 """
@@ -138,8 +126,8 @@ end
     setLength!(edge, newlength)`
 
 Set the length of `edge`, and set `edge.y` and `edge.z` accordingly.
-Warning: specific to SNaQ. Use [`setlengths!`](@ref) or [`setBranchLength!`](@ref)
-for more general tools.
+Warning: specific to `SNaQ.jl`.
+Consider `PhyloNetworks.setlengths!` for a more generic tool.
 
 - The new length is censored to 10: if the new length is above 10,
   the edge's length will be set to 10. Lengths are interpreted in coalescent
