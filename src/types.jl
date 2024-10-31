@@ -1,7 +1,5 @@
 # circularity: a node has a vector of edges, and an edge has a vector of nodes
 
-const Edge = EdgeT{Node}
-
 # type created from a HybridNetwork only to extract a given quartet
 """
     QuartetNetwork(net::HybridNetwork)
