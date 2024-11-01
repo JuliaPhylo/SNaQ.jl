@@ -17,6 +17,7 @@ See them in
 
 ```@contents
 Pages = [
+    "man/installation.md",
     "man/inputdata.md",
     "man/ticr_howtogetQuartetCFs.md",
     "man/snaq_plot.md",
