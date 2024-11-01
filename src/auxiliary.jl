@@ -6,8 +6,8 @@
 function setCHECKNET(b::Bool)
     global CHECKNET
     CHECKNET = b
-    CHECKNET && @warn "PhyloNetworks.CHECKNET is true: will slow snaq! down."
-    b || @info "PhyloNetworks.CHECKNET set to false"
+    CHECKNET && @warn "SNaQ.CHECKNET is true: will slow snaq! down."
+    b || @info "SNaQ.CHECKNET set to false"
 end
 
 # ----- aux general functions ---------------
@@ -127,7 +127,7 @@ end
 
 Set the length of `edge`, and set `edge.y` and `edge.z` accordingly.
 Warning: specific to `SNaQ.jl`.
-Consider `PhyloNetworks.setlengths!` for a more generic tool.
+Consider [`setlengths!`](@ref) from `PhyloNetworks` for a more generic tool.
 
 - The new length is censored to 10: if the new length is above 10,
   the edge's length will be set to 10. Lengths are interpreted in coalescent
