@@ -1,10 +1,15 @@
 # Input for SNaQ
 
-SNaQ is a method implemented in the package to estimate a phylogenetic network
+SNaQ is a method to estimate a phylogenetic network
 from multiple molecular sequence alignments. There are two alternatives for the input data:
 
-1. A list of estimated gene trees for each locus, which can be obtained using [MrBayes](http://mrbayes.sourceforge.net) or [RAxML](http://sco.h-its.org/exelixis/software.html). Or:
-2. A table of concordance factors (CF), i.e. gene tree frequencies, for each 4-taxon subset. This table can be obtained from [BUCKy](http://www.stat.wisc.edu/~ane/bucky/), to account for gene tree uncertainty
+1. A list of estimated gene trees for each locus, which can be obtained using
+   [MrBayes](http://mrbayes.sourceforge.net) or
+   [RAxML](http://sco.h-its.org/exelixis/software.html) for example. Or:
+2. A table of concordance factors (CF), i.e. gene tree frequencies, for each
+   4-taxon subset. This table can be obtained from
+   [BUCKy](http://www.stat.wisc.edu/~ane/bucky/)
+   to account for gene tree uncertainty.
 
 This [pipeline](https://github.com/nstenz/TICR) can be used to obtain the table of
 quartet CF needed as input for SNaQ
@@ -136,7 +141,7 @@ first to read the file and convert it to a 'DataFrame' object,
 and then to convert this DataFrame into a DataCF object.
 ```@repl qcf
 using CSV, DataFrames
-dat = DataFrame(CSV.File(buckyCFfile); copycols=false);
+dat = CSV.read(buckyCFfile, DataFrame);
 first(dat, 6) # to see the first 6 rows
 buckyCF = readTableCF(dat)
 writeTableCF(buckyCF)

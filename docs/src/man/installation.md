@@ -1,6 +1,6 @@
 # Installation
 
-## Installation of Julia
+## Install Julia
 
 To install Julia, follow instructions [here](http://julialang.org/downloads/).
 
@@ -9,7 +9,7 @@ function, it will be compiled at that moment. So, please be patient!
 Future calls to the function will be much faster.
 Trying out toy examples for the first calls is a good idea.
 
-## Installation of the package SNaQ
+## Install SNaQ
 
 To install the package, type inside Julia:
 ```julia
@@ -30,7 +30,7 @@ undergoing constant development. Join the google group for updates
 could be other improvements in the `main` branch of the
 repository. If you want to update to the latest unregistered version
 of the package, you can do
-`Pkg.add(PackageSpec(name="PhyloNetworks", rev="main"))`
+`Pkg.add(PackageSpec(name="SNaQ", rev="main"))`
 just beware that the latest changes could be not as robust.
 If you want to go back to the registered package, you can do
 `Pkg.free("SNaQ")`.
@@ -52,6 +52,7 @@ To install:
 
 ```julia
 using Pkg
+Pkg.add("PhyloNetworks")
 Pkg.add("PhyloPlots")
 ```
 
