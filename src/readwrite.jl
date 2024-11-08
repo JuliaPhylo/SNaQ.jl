@@ -189,7 +189,7 @@ set back to 0 and the major parent hybrid edge is lengthened by `t`.
 """
 readnewick_level1(file::AbstractString) = readTopologyUpdate(file, false, true)
 
-# to read multiple topologies: readmultinewick_level1 is defined in readData.jl
+# to read multiple topologies: readmultinewick_level1 is defined in readquartetdata.jl
 # It calls readTopologyUpdate defined here, for level 1 networks.
 
 # aux function to send an error if the number of hybrid attached to every

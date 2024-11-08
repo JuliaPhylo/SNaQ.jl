@@ -87,7 +87,7 @@ module SNaQ
     include("manipulateNet.jl")
     include("multipleAlleles.jl")
     include("pseudolik.jl")
-    include("readData.jl")
+    include("readquartetdata.jl")
     include("readwrite.jl")
     include("snaq_optimization.jl")
     include("undo.jl")
