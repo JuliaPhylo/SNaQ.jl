@@ -5,12 +5,12 @@ exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
 raxmlCF = readTrees2CF(raxmltrees, writeTab=false, writeSummary=false)
 astralfile = joinpath(exampledir,"astral.tre")
-astraltree = readMultiTopology(astralfile)[102] # 102th tree = last tree here
-net0 = readTopology(joinpath(exampledir,"net0.out"))
-net1 = readTopology(joinpath(exampledir,"net1.out"))
+astraltree = readmultinewick(astralfile)[102] # 102th tree = last tree here
+net0 = readnewick(joinpath(exampledir,"net0.out"))
+net1 = readnewick(joinpath(exampledir,"net1.out"))
 rotate!(net1, -6)
-net2 = readTopology(joinpath(exampledir,"net2.out"))
-net3 = readTopology(joinpath(exampledir,"net3.out"))
+net2 = readnewick(joinpath(exampledir,"net2.out"))
+net3 = readnewick(joinpath(exampledir,"net3.out"))
 net0.loglik = 53.53150526187732
 net1.loglik = 28.31506721890958
 net2.loglik = 28.31506721890957
@@ -222,7 +222,7 @@ seed = 1234 + h # change as desired! Best to have it different for different h
 using Distributed
 addprocs(nruns)
 @everywhere using SNaQ
-net0 = readTopology("astraltree.tre");
+net0 = readnewick("astraltree.tre");
 using DataFrames, CSV
 df_sp = CSV.read("tableCF_speciesNames.csv", DataFrame; pool=false);
 d_sp = readTableCF!(df_sp);

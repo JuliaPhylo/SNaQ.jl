@@ -29,7 +29,7 @@ and calculate the quartet CFs at the species level:
 
 ```@repl multialleles
 genetreefile = joinpath(dirname(pathof(SNaQ)), "..","examples","genetrees_alleletips.tre");
-genetrees = readMultiTopology(genetreefile);
+genetrees = readmultinewick(genetreefile);
 sort(tipLabels(genetrees[1])) # multiple tips in species S1
 df_sp = writeTableCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...)
 ```

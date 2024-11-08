@@ -164,8 +164,8 @@ cleanAfterReadAll!(net::HybridNetwork) = cleanAfterReadAll!(net,false)
 # used for plotting (default=false)
 # warning: if leaveRoot=true, net should not be used outside plotting, things will crash
 function readTopologyUpdate(file::AbstractString, leaveRoot::Bool,verbose::Bool)
-    @debug "readTopology -----"
-    net = readTopology(file,verbose)
+    @debug "readnewick -----"
+    net = readnewick(file,verbose)
     cleanAfterReadAll!(net,leaveRoot)
     return net
 end
@@ -177,7 +177,7 @@ readTopologyUpdate(file::AbstractString,verbose::Bool) = readTopologyUpdate(file
     readTopologyLevel1(filename)
     readTopologyLevel1(parenthetical format)
 
-same as readTopology, reads a tree or network from parenthetical
+same as readnewick, reads a tree or network from parenthetical
 format, but this function enforces the necessary conditions for any
 starting topology in SNaQ: non-intersecting cycles, no polytomies,
 unrooted. It sets any missing branch length to 1.0.
@@ -435,7 +435,7 @@ function readSnaqNetwork(file::AbstractString)
         line[1] == '(' ||
           error("output file $(file) does not contain a tree in the first line, instead it has $(line); or we had trouble finding ploglik.")
         # println("Estimated network from file $(file): $(line)")
-        net = readTopology(line)
+        net = readnewick(line)
         # readTopologyUpdate is inadequate: would replace missing branch lengths, which are unidentifiable, by 1.0 values
         try
             vec = split(line,"-Ploglik = ")

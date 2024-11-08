@@ -616,7 +616,7 @@ more alleles will be given more weight.
 
 # examples
 ```jldoctest
-julia> tree1 = readTopology("(E,(A,B),(C,D),O);"); tree2 = readTopology("(((A,B),(C,D)),E);");
+julia> tree1 = readnewick("(E,(A,B),(C,D),O);"); tree2 = readnewick("(((A,B),(C,D)),E);");
 
 julia> q,t = countquartetsintrees([tree1, tree2]);
 Reading in trees, looking at 15 quartets in each...
@@ -647,7 +647,7 @@ julia> q[11] # tree 1 has ACEO unresolved, and tree 2 is missing O: no data for 
 4-taxon set number 11; taxon numbers: 1,3,5,6
 data: [0.0, 0.0, 0.0, 0.0]
 
-julia> tree1 = readTopology("(E,(a1,B),(a2,D),O);"); tree2 = readTopology("(((a1,a2),(B,D)),E);");
+julia> tree1 = readnewick("(E,(a1,B),(a2,D),O);"); tree2 = readnewick("(((a1,a2),(B,D)),E);");
 
 julia> q,t = countquartetsintrees([tree1, tree2], Dict("a1"=>"A", "a2"=>"A"); showprogressbar=false);
 
@@ -682,7 +682,7 @@ julia> show(df, allcols=true)
 
 julia> # using CSV; CSV.write(df, "filename.csv");
 
-julia> tree2 = readTopology("((A,(B,D)),E);");
+julia> tree2 = readnewick("((A,(B,D)),E);");
 
 julia> q,t = countquartetsintrees([tree1, tree2], Dict("a1"=>"A", "a2"=>"A"); weight_byallele=true);
 Reading in trees, looking at 5 quartets in each...

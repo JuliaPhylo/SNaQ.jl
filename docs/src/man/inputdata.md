@@ -60,7 +60,7 @@ raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 nothing # hide
 ```
 ```@repl qcf
-genetrees = readMultiTopology(raxmltrees);
+genetrees = readmultinewick(raxmltrees);
 genetrees[3]
 ```
 To visualize any of these input trees, use the
@@ -168,7 +168,7 @@ It's this last tree that we are most interested in.
 We can read it with
 ```@example qcf
 astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
-astraltree = readMultiTopology(astralfile)[102] # 102th tree: last tree here
+astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
 R"svg(name('inputdata_astraltree.svg'), width=4, height=3)" # hide
 R"par"(mar=[0,0,0,0]) # hide
 plot(astraltree, showedgelength=true);

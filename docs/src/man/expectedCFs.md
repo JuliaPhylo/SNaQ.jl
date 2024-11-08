@@ -3,8 +3,8 @@ using PhyloNetworks, SNaQ
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readMultiTopology(raxmltrees), showprogressbar=false)...))
-truenet = readTopology("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
+raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
+truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 ```
 
 # Extract Expected CFs

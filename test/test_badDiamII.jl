@@ -67,11 +67,11 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
 
 end
 
-## testing readTopology----------------------------------------------------------------
-## will remove this from the test because readTopology should not have to worry about istIdentifiable
+## testing readnewick----------------------------------------------------------------
+## will remove this from the test because readnewick should not have to worry about istIdentifiable
 ## we move into updateGammaz
 ## tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-## net2 = readTopology(tree)
+## net2 = readnewick(tree)
 ## printEdges(net2)
 
 ## for e in net2.edge
@@ -86,7 +86,7 @@ end
 ## tree = "((((8,10))#H1,7),6,(4,#H1));" # Case I Bad diamond I
 ## net = readTopologyLevel1(tree)
 ## checkNet(net)
-## net2 = readTopology(tree)
+## net2 = readnewick(tree)
 ## printEdges(net2)
 
 ## for e in net2.edge

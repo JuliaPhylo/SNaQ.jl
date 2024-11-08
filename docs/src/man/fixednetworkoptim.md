@@ -23,11 +23,11 @@ baselogger = global_logger()
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readMultiTopology(raxmltrees), showprogressbar=false)...))
+raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
 ```
 
 ```@repl fixednetworkoptim
-truenet = readTopology("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
+truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 net1alt = topologyMaxQPseudolik!(truenet, raxmlCF);
 writeTopology(net1alt, round=true)
 net1alt.loglik # pseudo deviance actually: the lower the better
@@ -106,7 +106,7 @@ We can read this file and look at its list of networks like this:
 file = "net1.networks";
 # or use the example file available with the package:
 file = joinpath(dirname(pathof(SNaQ)), "..","examples","net1.networks");
-netlist = readMultiTopology(file) # read the full list of networks in that file
+netlist = readmultinewick(file) # read the full list of networks in that file
 ```
 Next, we would like to extract the network scores from the file.
 Below is a one-liner to do this

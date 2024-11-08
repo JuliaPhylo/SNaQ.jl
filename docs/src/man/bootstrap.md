@@ -42,7 +42,7 @@ bootnet = bootsnaq(net0, bootTrees, hmax=1, nrep=10, runs=3,
 
 The bootstrap networks are saved in the `boostrap.out` file, so they
 can be read in a new session with
-`bootnet = readMultiTopology("bootsnaq.out")`. To save the bootstrap networks to
+`bootnet = readmultinewick("bootsnaq.out")`. To save the bootstrap networks to
 a different file (perhaps after having re-rooted them with an
 outgroup), we could do this: `writeMultiTopology(bootnet, "bootstrapNets.tre")`.
 
@@ -54,7 +54,7 @@ default 10 runs per replicate, and 100 bootstrap replicates,
 and the 100 bootstrap networks come with the package:
 
 ```@example bootstrap
-bootnet = readMultiTopology(joinpath(dirname(pathof(SNaQ)), "..","examples","bootsnaq.out"));
+bootnet = readmultinewick(joinpath(dirname(pathof(SNaQ)), "..","examples","bootsnaq.out"));
 length(bootnet)
 ```
 
@@ -72,7 +72,7 @@ Before summarizing these bootstrap networks on the best network,
 it is best to re-read this network to get a reproducible internal numbering
 of its nodes and edges, used later for mapping bootstrap support to edges.
 ```@example bootstrap
-net1 = readTopology(joinpath(dirname(pathof(SNaQ)), "..","examples","net1.out"))
+net1 = readnewick(joinpath(dirname(pathof(SNaQ)), "..","examples","net1.out"))
 ```
 
 It turns out that the direction of gene flow is quite uncertain

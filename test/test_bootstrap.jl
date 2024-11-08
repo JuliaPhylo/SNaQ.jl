@@ -6,7 +6,7 @@ exdir = joinpath(@__DIR__,"..","examples")
 
 
 @testset "bootsnaq from quartet CF intervals" begin
-T=readTopology(joinpath(exdir,"startTree.txt"))
+T=readnewick(joinpath(exdir,"startTree.txt"))
 datf=DataFrame(CSV.File(joinpath(exdir,"tableCFCI.csv")); copycols=false)
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
@@ -23,9 +23,9 @@ end
 @testset "bootsnaq from bootstrap gene trees, multiple procs" begin
 treefile = joinpath(exdir,"treefile.txt") # pretending these are bootstrap trees, for all genes
 boottrees = Vector{HybridNetwork}[]
-T=readTopology(joinpath(exdir,"startTree.txt"))
-net1 = readTopology("(5,(((2,(1)#H7:::0.7143969494428192):1.5121337017411736,4):0.4894187322508883,3):0.519160762355313,(6,#H7:::0.2856030505571808):10.0);")
-for i=1:13 push!(boottrees, readMultiTopology(treefile)) end
+T=readnewick(joinpath(exdir,"startTree.txt"))
+net1 = readnewick("(5,(((2,(1)#H7:::0.7143969494428192):1.5121337017411736,4):0.4894187322508883,3):0.519160762355313,(6,#H7:::0.2856030505571808):10.0);")
+for i=1:13 push!(boottrees, readmultinewick(treefile)) end
 for i=1:13 @test size(boottrees[i])==(10,) end # 10 bootstrap trees for each of 13 "genes"
 addprocs(1)
 @everywhere using SNaQ

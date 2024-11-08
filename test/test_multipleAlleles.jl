@@ -2,7 +2,7 @@
 global tree, df, d, net, currT
 
 @testset "test: map alleles to species" begin
-    tree = readTopology("(6,(5,(7,(3,4))));");
+    tree = readnewick("(6,(5,(7,(3,4))));");
     SNaQ.expandLeaves!(["7"],tree)
     @test writeTopology(tree) == "(6,(5,((7:0.0,7__2:0.0):1.0,(3,4))));"
     SNaQ.mergeLeaves!(tree)
@@ -102,7 +102,7 @@ d = readTableCF(df)
 @test d.repSpecies == ["7"]
 
 tree = "((6,4),(7,8),10);"
-currT = readTopology(tree);
+currT = readnewick(tree);
 
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
@@ -121,10 +121,10 @@ redirect_stdout(originalstdout)
 =#
 
 # net = snaq!(currT,d,hmax=1,seed=8378,filename="")
-net = readTopology("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.09464128563363322,(7:0.0,(6)#H7:::0.5258836303362331):0.36355727108454877,8);")
+net = readnewick("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.09464128563363322,(7:0.0,(6)#H7:::0.5258836303362331):0.36355727108454877,8);")
 @test topologyQPseudolik!(net, d) ≈ 174.58674796123705
 @test net.loglik ≈ 174.58674796123705
-net = readTopology("(((4,#H1),10),(7,(6)#H1),8);")
+net = readnewick("(((4,#H1),10),(7,(6)#H1),8);")
 net = topologyMaxQPseudolik!(net,d,  # loose tolerance for faster test
         ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
 @test net.loglik > 174.5
