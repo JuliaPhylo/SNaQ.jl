@@ -28,14 +28,15 @@ The names of all our bootstrap files are listed in "BSlistfiles".
 (ASTRAL can use the same file to do its own bootstrap, see the
 [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki/Gene-Trees:-RAxML)
 for more details).
-The function `readBootstrapTrees` can read this list of file names, then
+The function `readmultinewick_files` (from PhyloNetworks)
+can read this list of file names, then
 read each bootstrap file to get the bootstrap sample for each gene.
 We can use them to sample input gene trees at random, one per gene,
 and estimate a network from them. We ask the `bootsnaq` function
 to repeat this resampling of bootstrap gene trees several times.
 
 ```julia
-bootTrees = readBootstrapTrees("BSlistfiles");
+bootTrees = readmultinewick_files("BSlistfiles");
 bootnet = bootsnaq(net0, bootTrees, hmax=1, nrep=10, runs=3,
                    filename="bootsnaq", seed=4321)
 ```

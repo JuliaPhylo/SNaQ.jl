@@ -40,7 +40,7 @@ rmprocs(workers())
 @test all(n -> n.numHybrids==1, bootnet)
 @test writenewick(bootnet[1], round=true, digits=1) != writenewick(bootnet[2], round=true, digits=1)
 filelist = joinpath(exdir, "treefilelist.txt")
-boottrees = readBootstrapTrees(filelist)
+boottrees = readmultinewick_files(filelist)
 @test length(boottrees) == 2
 @test [length(b) for b in boottrees] == [10, 10]
 end

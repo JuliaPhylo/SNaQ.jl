@@ -225,7 +225,7 @@ drawn from sampling uniformly in their credibility intervals,
 as given in the data frame `df`.
 Alternatively, bootstrap data can be gene trees sampled from
 a vector of tree lists: one list of bootstrap trees per locus
-(see `readBootstrapTrees` to generate this,
+(see `readmultinewick_files` to generate this,
 from a file containing a list of bootstrap files: one per locus).
 
 From each bootstrap replicate, a network
