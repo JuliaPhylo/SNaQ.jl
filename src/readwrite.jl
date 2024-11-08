@@ -1,4 +1,4 @@
-# functions to read/write networks topologies
+# functions to read/write level-1 networks
 
 # function to clean topology after readTopology
 # looks for:
@@ -174,20 +174,23 @@ readTopologyUpdate(file::AbstractString,verbose::Bool) = readTopologyUpdate(file
 
 
 """
-    readTopologyLevel1(filename)
-    readTopologyLevel1(parenthetical format)
+    readnewick_level1(filename)
+    readnewick_level1(parenthetical format)
 
-same as readnewick, reads a tree or network from parenthetical
+Similarly to `PhyloNetworks.readnewick`: read a tree or network in parenthetical
 format, but this function enforces the necessary conditions for any
 starting topology in SNaQ: non-intersecting cycles, no polytomies,
-unrooted. It sets any missing branch length to 1.0.
+unrooted. It sets any missing branch length to 1.0,
+and reduces any branch length above 10 to 10.
 
 If the network has a bad diamond II (in which edge lengths are γ's are not identifiable)
 and if the edge below this diamond has a length `t` different from 0, then this length is
 set back to 0 and the major parent hybrid edge is lengthened by `t`.
 """
-readTopologyLevel1(file::AbstractString) = readTopologyUpdate(file, false, true)
+readnewick_level1(file::AbstractString) = readTopologyUpdate(file, false, true)
 
+# to read multiple topologies: readmultinewick_level1 is defined in readData.jl
+# It calls readTopologyUpdate defined here, for level 1 networks.
 
 # aux function to send an error if the number of hybrid attached to every
 # hybrid node is >2
@@ -307,7 +310,7 @@ writeTopologyLevel1(net::HybridNetwork,outgroup::AbstractString) = writeTopology
 writeTopologyLevel1(net::HybridNetwork,di::Bool,outgroup::AbstractString) = writeTopologyLevel1(net,di, true,true,outgroup,true, false, 3, false)
 
 """
-`writeTopologyLevel1(net::HybridNetwork)`
+    writeTopologyLevel1(net::HybridNetwork)
 
 Write the extended Newick parenthetical format of a
 level-1 network object with many optional arguments (see below).
@@ -407,7 +410,7 @@ end
 # this extra node is needed to be able to compare networks with the distance function
 # but if left in the network, everything crashes (as everything assumes three edges per node)
 # fromUpdateRoot=true if called after updateRoot (in which case leaf has to be a leaf), ow it is used in readTopUpdate
-function undoRoot!(net::HybridNetwork, fromUpdateRoot::Bool)
+function undoRoot!(net::HybridNetwork, fromUpdateRoot::Bool=true)
     if(length(net.node[net.root].edge) == 2)
         root = net.node[net.root]
         leaf = getOtherNode(root.edge[1],root).leaf ? getOtherNode(root.edge[1],root) : getOtherNode(root.edge[2],root)
@@ -415,8 +418,6 @@ function undoRoot!(net::HybridNetwork, fromUpdateRoot::Bool)
         deleteIntLeafWhile!(net,root,leaf);
     end
 end
-
-undoRoot!(net::HybridNetwork) = undoRoot!(net, true)
 
 # .out file from snaq written by optTopRuns
 """
@@ -463,16 +464,3 @@ function cleanBL!(net::HybridNetwork)
         end
     end
 end
-
-
-# function to read multiple topologies
-# - calls readInputTrees in readData.jl, which
-#   calls readTopologyUpdate here, for level 1 networks.
-# - read a file and create one object per line read
-# (each line starting with "(" will be considered a topology)
-# the file can have extra lines that are ignored
-# returns an array of HybridNetwork objects (that can be trees)
-function readMultiTopologyLevel1(file::AbstractString)
-    readInputTrees(file)
-end
-

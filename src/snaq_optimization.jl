@@ -445,7 +445,7 @@ function topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF; verbose=false::Bo
     end
     if(!isempty(d.repSpecies))
       expandLeaves!(d.repSpecies, net)
-      net = readTopologyLevel1(writeTopologyLevel1(net)) # dirty fix to multiple alleles problem with expandLeaves
+      net = readnewick_level1(writeTopologyLevel1(net)) # dirty fix to multiple alleles problem with expandLeaves
     end
     optBL!(net, d, verbose, ftolRel, ftolAbs, xtolRel,xtolAbs)
     if(net.numBad > 0) # to keep gammaz info in parenthetical description of bad diamond I
@@ -1906,7 +1906,7 @@ function snaq!(currT0::HybridNetwork, d::DataCF;
     # for the case of multiple alleles: expand into two leaves quartets like sp1 sp1 sp2 sp3.
     if !isempty(d.repSpecies)
         expandLeaves!(d.repSpecies,startnet)
-        startnet = readTopologyLevel1(writeTopologyLevel1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
+        startnet = readnewick_level1(writeTopologyLevel1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
     end
     net = optTopRuns!(startnet, liktolAbs, Nfail, d, hmax, ftolRel,ftolAbs, xtolRel,xtolAbs,
                       verbose, closeN, Nmov0, runs, outgroup, filename,seed,probST)

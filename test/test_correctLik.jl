@@ -30,7 +30,7 @@ newdf = writeTableCF(d)
 
 # starting tree:
 tree = "((6,4),(7,8),10);"
-currT = readTopologyLevel1(tree);
+currT = readnewick_level1(tree);
 #printEdges(currT)
 
 @testset "correct pseudo likelihood and snaq" begin
@@ -50,7 +50,7 @@ end
 # ------------------5taxon network 1 hybridization: Case H-----------------
 # starting topology: Case G
 global tree = "((((6:0.1,4:1.5)1:0.2,(7)11#H1)5:0.1,(11#H1,8)),10:0.1);" # Case G
-global currT = readTopologyLevel1(tree);
+global currT = readnewick_level1(tree);
 # real network: Case H
 global df=DataFrame(t1=["6","6","10","6","6"],t2=["7","7","7","10","7"],t3=["4","10","4","4","4"],t4=["8","8","8","8","10"],CF1234=[0.13002257237728915, 0.36936019721747243, 0.34692592933269173, 0.12051951084152591, 0.11095702789935982], CF1324=[0.7399548552454217, 0.28371387344983595, 0.28371387344983595, 0.7589609783169482, 0.7780859442012804],CF1423=[0.13002257237728915, 0.34692592933269173, 0.36936019721747243, 0.12051951084152591, 0.11095702789935982])
 global d = readTableCF(df)

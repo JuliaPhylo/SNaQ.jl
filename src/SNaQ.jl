@@ -57,8 +57,8 @@ module SNaQ
         ## types & network definition
         DataCF,
         Quartet,
-        readTopologyLevel1,
-        readMultiTopologyLevel1,
+        readnewick_level1,
+        readmultinewick_level1,
         sorttaxa!,
         # quartet CF
         readTrees2CF,
@@ -67,7 +67,6 @@ module SNaQ
         readTableCF!,
         writeTableCF,
         mapAllelesCFtable,
-        readInputTrees,
         readnexus_treeblock,
         summarizeDataCF,
         fittedQuartetCF,

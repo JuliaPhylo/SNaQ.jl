@@ -5,7 +5,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
 
 @testset "moveTargetUpdate! reject 2-cycle proposal" begin
     net3c_newick = "(1,2,(((3,4))#H1:::0.6,(#H1:::0.4,(5,6))));" # 3-cycle adjacent to 3 cherries
-    net3 = readTopologyLevel1(net3c_newick)
+    net3 = readnewick_level1(net3c_newick)
     # net3.node[6].isBadTriangle : not isVeryBadTriangle nor isExtBadTriangle
     hn = net3.hybrid[1] # more robust than net3.node[6]
     tmp = SNaQ.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
@@ -17,7 +17,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     global tree, net, df, d
 
     tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-    net = readTopologyLevel1(tree);
+    net = readnewick_level1(tree);
     SNaQ.checkNet(net)
     #printNodes(net)
     #printEdges(net)
@@ -84,7 +84,7 @@ end
 
 ## ## this case works fine
 ## tree = "((((8,10))#H1,7),6,(4,#H1));" # Case I Bad diamond I
-## net = readTopologyLevel1(tree)
+## net = readnewick_level1(tree)
 ## checkNet(net)
 ## net2 = readnewick(tree)
 ## printEdges(net2)

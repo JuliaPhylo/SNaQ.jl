@@ -70,7 +70,7 @@ end
 
 for t in tests
     #println("running $(t)")
-    global net = readTopologyLevel1(whichtree(t));
+    global net = readnewick_level1(whichtree(t));
     try
         whichtest(t,net)
     catch

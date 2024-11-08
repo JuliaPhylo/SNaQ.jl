@@ -6,7 +6,7 @@ tree = "(((((((1,2),3),4),5),(6,7)),(8,9)),10);"
 # earlier seeds: 2738, 56326 up to v0.14.2
 seed = 41
 
-currT0 = readTopologyLevel1(tree);
+currT0 = readnewick_level1(tree);
 Random.seed!(seed);
 besttree = deepcopy(currT0);
 successful,_ = addHybridizationUpdate!(besttree);

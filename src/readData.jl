@@ -272,20 +272,27 @@ end
 # ---------------- read input gene trees and calculate obsCF ----------------------
 
 """
-    readInputTrees(file)
+    readmultinewick_level1(file)
 
-Read a text file with a list of trees/networks in parenthetical format
-(one tree per line) and transform them like [`readTopologyLevel1`](@ref)
-does: to be unrooted, with resolved polytomies, missing branch lengths
-set to 1.0, etc. See [`PhyloNetworks.readMultiTopology`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readMultiTopology) to read multiple
-trees or networks with no modification.
+Read a text file with a list of trees/networks in extended newick format
+(one tree per line) and transform them like [`readnewick_level1`](@ref).
+Namely, in each tree/network
+- the root is suppresse (becomes of degree 3 if it was of degree 2)
+- any polytomy is resolved arbitrarily
+- any missing branch length is set to 1
+- any branch length above 10 is set to 10
+- any missing γ's are set to (0.1, 0.9)
+and more.
+
+See [`PhyloNetworks.readmultinewick`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readmultinewick)
+to read multiple trees or networks with no modification.
 
 Output: array of HybridNetwork objects.
 
 Each line starting with "(" will be considered as describing one topology.
 The file can have extra lines that are ignored.
 """
-function readInputTrees(file::AbstractString)
+function readmultinewick_level1(file::AbstractString)
     try
         s = open(file)
     catch
@@ -500,7 +507,7 @@ function unionTaxa(quartets::Vector{Quartet})
     taxa = reduce(union, q.taxon for q in quartets)
     return sort_stringasinteger!(taxa)
 end
-unionTaxaTree(file::AbstractString) = unionTaxa(readInputTrees(file))
+unionTaxaTree(file::AbstractString) = unionTaxa(readmultinewick_level1(file))
 
 
 tipLabels(q::Vector{Quartet}) = unionTaxa(q)
@@ -907,7 +914,7 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
         end
     end
     println("read input trees from file $(treefile)\nand quartetfile $(quartetfile)")
-    trees = readInputTrees(treefile)
+    trees = readmultinewick_level1(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
@@ -966,7 +973,7 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
         end
     end
     println("read input trees from file $(treefile). no quartet file given.")
-    trees = readInputTrees(treefile)
+    trees = readmultinewick_level1(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, unionTaxaTree(treefile), writetab, "none",false, true)
@@ -1036,7 +1043,7 @@ function readTrees2CF(treefile::AbstractString; quartetfile="none"::AbstractStri
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
     trees = (nexus ?
              readnexus_treeblock(treefile, readTopologyUpdate, false, false; reticulate=false) :
-             readInputTrees(treefile))
+             readmultinewick_level1(treefile))
     if length(taxa)==0        # unionTaxa(trees) NOT default argument:
       taxa = unionTaxa(trees) # otherwise: tree file is read twice
     end
@@ -1180,7 +1187,7 @@ function updateBL!(net::HybridNetwork,d::DataCF)
     for i in 1:length(edges)
         ind = getIndexEdge(edges[i],net) # helpful error if not found
         if net.edge[ind].length < 0.0 || net.edge[ind].length==1.0
-            # readTopologyLevel1 changes missing branch length to 1.0
+            # readnewick_level1 changes missing branch length to 1.0
             setLength!(net.edge[ind], (lengths[i] > 0 ? lengths[i] : 0.0))
         end
     end

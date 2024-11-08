@@ -281,7 +281,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
     runs1 = runs - runs2                       # runs starting from startnet
 
     if runs1>0
-        startnet=readTopologyLevel1(writeTopologyLevel1(startnet)) # does not modify startnet outside
+        startnet=readnewick_level1(writeTopologyLevel1(startnet)) # does not modify startnet outside
         flag = checkNet(startnet,true) # light checking only
         flag && error("starting topology suspected not level-1")
         try
@@ -296,7 +296,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
                 from the same network always, or else provide an other network "otherNet"
                 to start the optimization from this other network in pcrnet % of runs.""")
     if runs2 > 0
-        otherNet=readTopologyLevel1(writeTopologyLevel1(otherNet))
+        otherNet=readnewick_level1(writeTopologyLevel1(otherNet))
         flag = checkNet(otherNet,true) # light checking only
         flag && error("starting topology 'otherNet' suspected not level-1")
         try

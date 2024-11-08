@@ -61,7 +61,7 @@ d3 = DataFrame(t1=repeat([letters[1]],outer=[24]),t2=repeat([letters[2]],outer=[
 @test d2==d3
 
 dat = readTableCF(d);
-net = (@test_logs readTopologyLevel1("(a,((b)#H1,((#H1,c),d)));"));
+net = (@test_logs readnewick_level1("(a,((b)#H1,((#H1,c),d)));"));
 # earlier warning: "net does not have identifiable branch lengths"
 @test_logs topologyQPseudolik!(net, dat);
 sorttaxa!(dat)
@@ -146,7 +146,7 @@ end # test of snaq on multiple alleles
 #   testing writeTopologyLevel1 with multiple alleles      #
 #----------------------------------------------------------#
 @testset "writeTopologyLevel1 multiall=true" begin
-net = readTopologyLevel1("(A,(((B,B__2),E),(C,D)));")
+net = readnewick_level1("(A,(((B,B__2),E),(C,D)));")
 @test writeTopologyLevel1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
 end # test of writeTopologyLevel1
 

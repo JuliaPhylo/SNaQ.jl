@@ -181,10 +181,10 @@ To start its search, SNaQ will need a network of "level 1".
 All trees and all networks with 1 hybridization are of level 1.
 To make sure that a network with 2 or more hybridizations is of level 1,
 we can read it in with
-`readTopologyLevel1` (which also unroots the tree, resolves polytomies,
+`readnewick_level1` (which also unroots the tree, resolves polytomies,
 replaces missing branch lengths by 1 for starting values etc.):
 ```julia
-T=readTopologyLevel1("startNetwork.txt")
+T=readnewick_level1("startNetwork.txt")
 ```
 (here `startNetwork.txt` is a hypothetical file: replace this by
 the name of a file that contains your network of interest.)
