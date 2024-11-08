@@ -1225,16 +1225,18 @@ function edgesParts(net::HybridNetwork)
     return parts
 end
 
-# aux function to traverse the network from a node and an edge
-# based on traverseContainRoot
-# warning: it does not go accross hybrid node, minor hybrid edge
-# there is another getDescendants below for updatePartition
-function getDescendants!(node::Node, edge::Edge, descendants::Array{Node,1})
-    if(node.leaf)
+# Traverse the network from a node towards an edge, following major edges only.
+# The other `getDescendants` updates the nodes `.inCycle`, to update partitions later.
+function getDescendants!(
+    node::Node,
+    edge::Edge,
+    descendants::Array{Node,1}
+)
+    if node.leaf
         push!(descendants, node)
     else
         for e in node.edge
-            if(!isEqual(edge,e) && e.isMajor)
+            if !isEqual(edge,e) && e.isMajor
                 other = getOtherNode(e,node);
                 getDescendants!(other,e, descendants);
             end
@@ -1243,15 +1245,20 @@ function getDescendants!(node::Node, edge::Edge, descendants::Array{Node,1})
 end
 
 
-# based on getDescendants on readData.jl but with vector of edges, instead of nodes
+# similar to `getDescendants!` above, but uses a vector of edges instead of nodes
 # finds the partition corresponding to the node and edge in the cycle
 # used in chooseEdgesGamma and to set net.partition
 # cycleNum is a variable that will save another hybrid node number if found
-function getDescendants!(node::Node, edge::Edge, descendants::Vector{Edge}, cycleNum::Vector{Int})
+function getDescendants!(
+    node::Node,
+    edge::Edge,
+    descendants::Vector{Edge},
+    cycleNum::Vector{Int}
+)
     @debug "getDescendants of node $(node.number) and edge $(edge.number)"
-    if(node.inCycle != -1)
+    if node.inCycle != -1
         push!(cycleNum,node.inCycle)
-    elseif(!node.leaf && node.inCycle == -1)
+    elseif !node.leaf && node.inCycle == -1
         for e in node.edge
             if(!isEqual(edge,e) && e.isMajor)
                 push!(descendants,e)
