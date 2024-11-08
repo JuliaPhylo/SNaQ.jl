@@ -39,3 +39,7 @@ For the SNaQ method in particular, please cite
   [PLoS Genet](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
   12(3):e1005896.
   [doi:10.1371/journal.pgen.1005896](https://doi.org/10.1371/journal.pgen.1005896)
+
+> [!NOTE]
+> Much of this package was formerly part of PhyloNetworks v0.16.4 (and prior).
+> PhyloNetworks v0.17 will be stripped of functions implementing the SNaQ method.
