@@ -13,6 +13,12 @@ and for how to get help.
 See them in
 [bibtex format](https://github.com/juliaphylo/SNaQ.jl/blob/master/CITATION.bib).
 
+for the SNaQ network inference method itself:
+- Claudia Solís-Lemus and Cécile Ané (2016).
+  Inferring Phylogenetic Networks with Maximum Pseudolikelihood under Incomplete Lineage Sorting.
+  [PLoS Genet](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
+  12(3):e1005896. [doi:10.1371/journal.pgen.1005896](https://doi.org/10.1371/journal.pgen.1005896)
+
 ## Manual
 
 ```@contents
