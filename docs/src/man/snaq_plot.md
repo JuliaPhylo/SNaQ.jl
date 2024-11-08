@@ -103,14 +103,10 @@ network in parenthetical format, but we can also print it directly to the screen
 net1
 writenewick(net1)  # writes to screen, full precision for branch lengths and γ
 writenewick(net1, round=true, digits=2)
-writenewick(net1,di=true) # γ omitted: for dendroscope
+writenewick(net1, di=true) # γ omitted: for dendroscope
 writenewick(net1, "bestnet_h1.tre") # writes to file: creates or overwrites file
 rm("bestnet_h1.tre") # hide
 ```
-The option `di=true` is for the parenthetical format used by
-[Dendroscope](http://dendroscope.org/) (without reticulation heritabilities).
-Copy this parenthetical description and paste it into Dendroscope,
-or use the plotting function described below.
 
 We can go on and let the network have up to 2 or 3 hybrid nodes:
 ```julia
