@@ -311,12 +311,12 @@ checkNet(net::HybridNetwork) = checkNet(net, false)
 
 # function to print everything for a given net
 # this is used a lot inside snaq to debug, so need to use level1 attributes
-# and not change the network: with writeTopologyLevel1
+# and not change the network: with writenewick_level1
 function printEverything(net::HybridNetwork)
     printEdges(net)
     printNodes(net)
     printPartitions(net)
-    println("$(writeTopologyLevel1(net))")
+    println("$(writenewick_level1(net))")
 end
 
 # function to check if a node is very or ext bad triangle

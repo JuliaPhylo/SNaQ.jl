@@ -15,7 +15,7 @@ import SNaQ: checkNet,
     calculateExpCF!, calculateExpCFAll!, logPseudoLik,
     updateInCycle!, updateContainRoot!, updateGammaz!,
     parameters!, update!, optTopRun1!,
-    writeExpCF, writeTopologyLevel1, descData,
+    writeExpCF, writenewick_level1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
     updatePartition!, optBL!, nchoose1234, QuartetT,undirectedOtherNetworks,hybridatnode!

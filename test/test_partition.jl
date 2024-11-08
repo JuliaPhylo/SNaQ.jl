@@ -11,7 +11,7 @@ Random.seed!(seed);
 besttree = deepcopy(currT0);
 successful,_ = addHybridizationUpdate!(besttree);
 @test successful
-@test_logs writeTopologyLevel1(besttree,true)
+@test_logs writenewick_level1(besttree,true)
 net = deepcopy(besttree);
 length(net.partition)
 @test Set([e.number for e in p.edges] for p in net.partition) ==
@@ -20,7 +20,7 @@ length(net.partition)
 successful = false
 successful,_ = addHybridizationUpdate!(besttree);
 @test successful
-@test_logs writeTopologyLevel1(besttree,true)
+@test_logs writenewick_level1(besttree,true)
 net = deepcopy(besttree);
 @test length(net.partition) == 9
 @test Set([e.number for e in p.edges] for p in net.partition) ==

@@ -412,7 +412,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
         setLength!(treej,(tj/(ti+tj))*t)
     end
     @debug begin printEdges(net); "printed edges" end
-    @debug writeTopologyLevel1(net)
+    @debug writenewick_level1(net)
     if !undo
         if from_otheri
             # -- update partition

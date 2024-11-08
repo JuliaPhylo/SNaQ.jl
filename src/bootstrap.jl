@@ -103,9 +103,9 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
 
     if runs1>0 && runs2>0
         str = """Will use this network as starting topology for $runs1 run(s) for each bootstrap replicate:
-                 $(writeTopologyLevel1(currT0))
+                 $(writenewick_level1(currT0))
                  and this other network for $runs2 run(s):
-                 $(writeTopologyLevel1(bestNet))
+                 $(writenewick_level1(bestNet))
                  """
         writelog && write(logfile, str)
         print(str)
@@ -188,7 +188,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         writelog && flush(logfile)
 
         push!(bootNet, net)
-        str = (outgroup=="none" ? writeTopologyLevel1(net) : writeTopologyLevel1(net,outgroup))
+        str = (outgroup=="none" ? writenewick_level1(net) : writenewick_level1(net,outgroup))
         if writelog
             write(logfile, str)
             write(logfile,"\n")
@@ -202,9 +202,9 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
       s = open(string(filename,".out"),"w")
       for n in bootNet
         if outgroup == "none"
-            write(s,"$(writeTopologyLevel1(n))\n")
+            write(s,"$(writenewick_level1(n))\n")
         else
-            write(s,"$(writeTopologyLevel1(n,outgroup))\n")
+            write(s,"$(writenewick_level1(n,outgroup))\n")
         end
         # "with -loglik $(n.loglik)" not printed: not comparable across bootstrap networks
       end
@@ -281,7 +281,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
     runs1 = runs - runs2                       # runs starting from startnet
 
     if runs1>0
-        startnet=readnewick_level1(writeTopologyLevel1(startnet)) # does not modify startnet outside
+        startnet=readnewick_level1(writenewick_level1(startnet)) # does not modify startnet outside
         flag = checkNet(startnet,true) # light checking only
         flag && error("starting topology suspected not level-1")
         try
@@ -296,7 +296,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
                 from the same network always, or else provide an other network "otherNet"
                 to start the optimization from this other network in pcrnet % of runs.""")
     if runs2 > 0
-        otherNet=readnewick_level1(writeTopologyLevel1(otherNet))
+        otherNet=readnewick_level1(writenewick_level1(otherNet))
         flag = checkNet(otherNet,true) # light checking only
         flag && error("starting topology 'otherNet' suspected not level-1")
         try

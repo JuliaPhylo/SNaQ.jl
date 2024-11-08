@@ -249,7 +249,7 @@ function updateAllNewHybrid!(hybrid::Node,net::HybridNetwork, updatemajor::Bool,
                 if(updatePart)
                     updatePartition!(net,nodesInCycle)
                 end
-                flag3, edgesRoot = updateContainRoot!(net,hybrid); #update contain root even if it is bad triangle to writeTopologyLevel1 correctly
+                flag3, edgesRoot = updateContainRoot!(net,hybrid); #update contain root even if it is bad triangle to writenewick_level1 correctly
                 #undoistIdentifiable!(edgesGammaz);
                 #undoGammaz!(hybrid,net);
                 #undoInCycle!(edgesInCycle, nodesInCycle);

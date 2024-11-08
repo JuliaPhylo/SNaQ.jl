@@ -143,11 +143,11 @@ netstring = writenewick(estNet; round=true, digits=1)
 end # test of snaq on multiple alleles
 
 #----------------------------------------------------------#
-#   testing writeTopologyLevel1 with multiple alleles      #
+#   testing writenewick_level1 with multiple alleles       #
 #----------------------------------------------------------#
-@testset "writeTopologyLevel1 multiall=true" begin
+@testset "writenewick_level1 multiall=true" begin
 net = readnewick_level1("(A,(((B,B__2),E),(C,D)));")
-@test writeTopologyLevel1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
-end # test of writeTopologyLevel1
+@test writenewick_level1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
+end # test of writenewick_level1
 
 end # overall multiple allele sets of testests

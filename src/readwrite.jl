@@ -241,9 +241,9 @@ end
 
 # see full docstring below
 # Need HybridNetwork input, since QuartetNetwork does not have root.
-function writeTopologyLevel1(net0::HybridNetwork, di::Bool, str::Bool, namelabel::Bool,outgroup::AbstractString, printID::Bool, roundBL::Bool, digits::Integer, multall::Bool)
+function writenewick_level1(net0::HybridNetwork, di::Bool, str::Bool, namelabel::Bool,outgroup::AbstractString, printID::Bool, roundBL::Bool, digits::Integer, multall::Bool)
     s = IOBuffer()
-    writeTopologyLevel1(net0,s,di,namelabel,outgroup,printID,roundBL,digits, multall)
+    writenewick_level1(net0,s,di,namelabel,outgroup,printID,roundBL,digits, multall)
     if str
         return String(take!(s))
     else
@@ -251,12 +251,12 @@ function writeTopologyLevel1(net0::HybridNetwork, di::Bool, str::Bool, namelabel
     end
 end
 
-# warning: I do not want writeTopologyLevel1 to modify the network if outgroup is given! thus, we have updateRoot, and undoRoot
+# warning: I do not want writenewick_level1 to modify the network if outgroup is given! thus, we have updateRoot, and undoRoot
 # note that if printID is true, the function is modifying the network
-function writeTopologyLevel1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Bool,
+function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Bool,
            outgroup::AbstractString, printID::Bool, roundBL::Bool, digits::Integer, multall::Bool)
     global CHECKNET
-    net = deepcopy(net0) #writeTopologyLevel1 needs containRoot, but should not alter net0
+    net = deepcopy(net0) #writenewick_level1 needs containRoot, but should not alter net0
     # net.numBad == 0 || println("network with $(net.numBad) bad diamond I. Some γ and edge lengths t are not identifiable, although their γ * (1-exp(-t)) are.")
     if printID
         setNonIdBL!(net) # changes non identifiable BL to -1.0, except those in/below bad diamonds/triangles.
@@ -266,7 +266,7 @@ function writeTopologyLevel1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Bo
         print(s,string(net.node[net.root].number,";")) # error if 'string' is an argument name.
     else
         if(!isTree(net) && !net.cleaned)
-            @debug "net not cleaned inside writeTopologyLevel1, need to run updateContainRoot"
+            @debug "net not cleaned inside writenewick_level1, need to run updateContainRoot"
             for n in net.hybrid
                 flag,edges = updateContainRoot!(net,n)
                 flag || error("hybrid node $(n.hybrid) has conflicting containRoot")
@@ -303,14 +303,14 @@ function writeTopologyLevel1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Bo
     # to delete 2-degree node, for snaq.
 end
 
-writeTopologyLevel1(net::HybridNetwork,di::Bool,str::Bool,namelabel::Bool,outgroup::AbstractString,printID::Bool) = writeTopologyLevel1(net,di,str,namelabel,outgroup,printID, false,3, false)
+writenewick_level1(net::HybridNetwork,di::Bool,str::Bool,namelabel::Bool,outgroup::AbstractString,printID::Bool) = writenewick_level1(net,di,str,namelabel,outgroup,printID, false,3, false)
 # above: default roundBL=false (at unused digits=3 decimal places)
-writeTopologyLevel1(net::HybridNetwork,printID::Bool) = writeTopologyLevel1(net,false, true,true,"none",printID, false, 3, false)
-writeTopologyLevel1(net::HybridNetwork,outgroup::AbstractString) = writeTopologyLevel1(net,false, true,true,outgroup,true, false, 3, false)
-writeTopologyLevel1(net::HybridNetwork,di::Bool,outgroup::AbstractString) = writeTopologyLevel1(net,di, true,true,outgroup,true, false, 3, false)
+writenewick_level1(net::HybridNetwork,printID::Bool) = writenewick_level1(net,false, true,true,"none",printID, false, 3, false)
+writenewick_level1(net::HybridNetwork,outgroup::AbstractString) = writenewick_level1(net,false, true,true,outgroup,true, false, 3, false)
+writenewick_level1(net::HybridNetwork,di::Bool,outgroup::AbstractString) = writenewick_level1(net,di, true,true,outgroup,true, false, 3, false)
 
 """
-    writeTopologyLevel1(net::HybridNetwork)
+    writenewick_level1(net::HybridNetwork)
 
 Write the extended Newick parenthetical format of a
 level-1 network object with many optional arguments (see below).
@@ -335,16 +335,16 @@ The topology may be written using a root different than net.root,
 if net.root is incompatible with one of more hybrid node.
 Missing hybrid names are written as "#Hi" where "i" is the hybrid node number if possible.
 """ #"
-writeTopologyLevel1(net::HybridNetwork; di=false::Bool, string=true::Bool, namelabel=true::Bool,
+writenewick_level1(net::HybridNetwork; di=false::Bool, string=true::Bool, namelabel=true::Bool,
     outgroup="none"::AbstractString, printID=false::Bool, round=false::Bool, digits=3::Integer,
     multall=false::Bool) =
-writeTopologyLevel1(net, di, string, namelabel, outgroup, printID, round, digits, multall)
+writenewick_level1(net, di, string, namelabel, outgroup, printID, round, digits, multall)
 
 # function to check if root is well-placed
 # and look for a better place if not
 # searches on net.node because net.root is the index in net.node
 # if we search in net.edge, we then need to search in net.node
-# this function is only used inside writeTopologyLevel1
+# this function is only used inside writenewick_level1
 function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
     checkroot = false
     if(outgroup == "none")

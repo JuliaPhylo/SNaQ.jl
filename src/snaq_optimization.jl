@@ -483,7 +483,7 @@ function topologyMaxQPseudolik!(
             deleteleaf!(net, tax)
         end
     end
-    net = readTopologyUpdate(writeTopologyLevel1(net)) # update everything for level 1
+    net = readTopologyUpdate(writenewick_level1(net)) # update everything for level 1
     try
         checkNet(net)
     catch err
@@ -492,7 +492,7 @@ function topologyMaxQPseudolik!(
     end
     if(!isempty(d.repSpecies))
       expandLeaves!(d.repSpecies, net)
-      net = readnewick_level1(writeTopologyLevel1(net)) # dirty fix to multiple alleles problem with expandLeaves
+      net = readnewick_level1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
     end
     optBL!(net, d, verbose, ftolRel, ftolAbs, xtolRel,xtolAbs)
     if(net.numBad > 0) # to keep gammaz info in parenthetical description of bad diamond I
@@ -903,7 +903,7 @@ function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Boo
     end
     if tries >= N
         @debug "afterOptBLAll ended because it tried $(tries) times with startover $(startover)"
-        @debug writeTopologyLevel1(currT,true)
+        @debug writenewick_level1(currT,true)
         flagh,flagt,flaghz = isValid(currT)
         if(!flagh || !flaghz)
             @debug "gammaz zero situation still in currT, need to move down one level to h-1"
@@ -912,7 +912,7 @@ function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Boo
                 printEdges(currT)
                 printPartitions(currT)
                 #printNodes(currT)
-                writeTopologyLevel1(currT,true)
+                writenewick_level1(currT,true)
             end
             optBL!(currT,d,verbose,ftolRel, ftolAbs, xtolRel, xtolAbs)
         end
@@ -1285,7 +1285,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         printEdges(newT)
         printPartitions(newT)
         println("++++")
-        writeTopologyLevel1(newT,true)
+        writenewick_level1(newT,true)
     end
     writelog && write(logfile, "\nBegins heuristic optimization of network------\n")
     loopcount = 0
@@ -1345,7 +1345,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                     printPartitions(newT)
                     #printNodes(newT)
                     println("++++")
-                    println(writeTopologyLevel1(newT,true))
+                    println(writenewick_level1(newT,true))
                     "ends step $(count) with absDiff $(accepted ? absDiff : 0.0) and failures $(failures)"
                 end
             else
@@ -1387,7 +1387,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         printEdges(newT)
         printPartitions(newT)
         printNodes(newT)
-        writeTopologyLevel1(newT,true) ## this changes non-identifiable BLs in newT to -1
+        writenewick_level1(newT,true) ## this changes non-identifiable BLs in newT to -1
     end
     if CHECKNET && !isempty(d.repSpecies)
         checkTop4multAllele(newT) || error("newT not suitable for multiple alleles at the very end")
@@ -1578,7 +1578,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         str *= "Outgroup: $(outgroup) (for rooting at the final step)\n"
     end
     str *= (writelog ? "rootname for files: $(rootname)\n" : "no output files\n")
-    str *= "BEGIN: $(runs) runs on starting tree $(writeTopologyLevel1(currT0,true))\n"
+    str *= "BEGIN: $(runs) runs on starting tree $(writenewick_level1(currT0,true))\n"
     if Distributed.nprocs()>1
         str *= "       using $(Distributed.nprocs()) processors\n"
     end
@@ -1625,7 +1625,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
             logstr *= "\nFINISHED SNaQ for run $(i), -loglik of best $(best.loglik)\n"
             verbose && print(stdout, logstr)
             if writelog_1proc
-              logstr = writeTopologyLevel1(best,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)) ## printID=true calls setNonIdBL
+              logstr = writenewick_level1(best,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)) ## printID=true calls setNonIdBL
               logstr *= "\n---------------------\n"
               write(logfile, logstr)
               flush(logfile)
@@ -1676,7 +1676,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                        with the subject BUG IN NETWORKS FILE. You can get this network from the .out file.
                        You can also post this problem to the google group, or github issues. Thank you!\n""")
         end
-        write(s,"$(writeTopologyLevel1(maxNet,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(maxNet.loglik) (best network found, remaining sorted by log-pseudolik; the smaller, the better)\n")
+        write(s,"$(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(maxNet.loglik) (best network found, remaining sorted by log-pseudolik; the smaller, the better)\n")
         # best network is included first: for score comparison with other networks
         foundBad = false
         for n in otherNet
@@ -1697,7 +1697,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         ind = sortperm([n.loglik for n in otherNet])
         otherNet = otherNet[ind]
         for n in otherNet
-            write(s,"$(writeTopologyLevel1(n,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(n.loglik)\n")
+            write(s,"$(writenewick_level1(n,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(n.loglik)\n")
         end
         foundBad && write(s,"Problem found when optimizing branch lengths for some networks, left loglik as -1. Please report this issue on github. Thank you!")
         close(s)
@@ -1724,21 +1724,21 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     end
 
     writelog &&
-    write(logfile,"\nMaxNet is $(writeTopologyLevel1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
-    print(stdout,"\nMaxNet is $(writeTopologyLevel1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
+    write(logfile,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
+    print(stdout,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
 
     s = writelog ? open(juliaout,"w") : stdout
-    str = writeTopologyLevel1(maxNet, printID=true,multall=!isempty(d.repSpecies)) * """
+    str = writenewick_level1(maxNet, printID=true,multall=!isempty(d.repSpecies)) * """
      -Ploglik = $(maxNet.loglik)
-     Dendroscope: $(writeTopologyLevel1(maxNet,di=true, multall=!isempty(d.repSpecies)))
+     Dendroscope: $(writenewick_level1(maxNet,di=true, multall=!isempty(d.repSpecies)))
      Elapsed time: $(telapsed) seconds, $(runs) attempted runs
     -------
     List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
     """
     for n in bestnet
       str *= " "
-      str *= (outgroup == "none" ? writeTopologyLevel1(n,printID=true, multall=!isempty(d.repSpecies)) :
-                                   writeTopologyLevel1(n,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)))
+      str *= (outgroup == "none" ? writenewick_level1(n,printID=true, multall=!isempty(d.repSpecies)) :
+                                   writenewick_level1(n,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)))
       str *= ", with -loglik $(n.loglik)\n"
     end
     str *= "-------\n"
@@ -1953,7 +1953,7 @@ function snaq!(
             deleteleaf!(currT0, tax)
         end
     end
-    startnet = readTopologyUpdate(writeTopologyLevel1(currT0)) # update all level-1 things
+    startnet = readTopologyUpdate(writenewick_level1(currT0)) # update all level-1 things
     flag = checkNet(startnet,true) # light checking only
     flag && error("starting topology suspected not level-1")
     try
@@ -1968,7 +1968,7 @@ function snaq!(
     # for the case of multiple alleles: expand into two leaves quartets like sp1 sp1 sp2 sp3.
     if !isempty(d.repSpecies)
         expandLeaves!(d.repSpecies,startnet)
-        startnet = readnewick_level1(writeTopologyLevel1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
+        startnet = readnewick_level1(writenewick_level1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
     end
     net = optTopRuns!(startnet, liktolAbs, Nfail, d, hmax, ftolRel,ftolAbs, xtolRel,xtolAbs,
                       verbose, closeN, Nmov0, runs, outgroup, filename,seed,probST)
