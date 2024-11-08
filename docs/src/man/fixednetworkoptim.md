@@ -29,7 +29,7 @@ raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readmultinewick(raxmltre
 ```@repl fixednetworkoptim
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 net1alt = topologyMaxQPseudolik!(truenet, raxmlCF);
-writeTopology(net1alt, round=true)
+writenewick(net1alt, round=true)
 net1alt.loglik # pseudo deviance actually: the lower the better
 ```
 ```@example fixednetworkoptim

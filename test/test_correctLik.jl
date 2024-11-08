@@ -87,10 +87,10 @@ end
              ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
   redirect_stdout(originalstdout)
   rmprocs(workers())
-  @test writeTopology(n1, round=true)==writeTopology(n2, round=true)
+  @test writenewick(n1, round=true)==writenewick(n2, round=true)
   @test n1.loglik == n2.loglik
   n3 = readSnaqNetwork("snaq.out")
-  @test writeTopology(n3, round=true)==writeTopology(n2, round=true)
+  @test writenewick(n3, round=true)==writenewick(n2, round=true)
   @test n3.loglik > 0.0
   rm("snaq.out")
   rm("snaq.networks")

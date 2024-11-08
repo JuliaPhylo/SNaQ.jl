@@ -4,9 +4,9 @@ global tree, df, d, net, currT
 @testset "test: map alleles to species" begin
     tree = readnewick("(6,(5,(7,(3,4))));");
     SNaQ.expandLeaves!(["7"],tree)
-    @test writeTopology(tree) == "(6,(5,((7:0.0,7__2:0.0):1.0,(3,4))));"
+    @test writenewick(tree) == "(6,(5,((7:0.0,7__2:0.0):1.0,(3,4))));"
     SNaQ.mergeLeaves!(tree)
-    @test writeTopology(tree) == "(6,(5,(7:1.0,(3,4))));"
+    @test writenewick(tree) == "(6,(5,(7:1.0,(3,4))));"
     alleleDF=DataFrame(allele=["1","2"], species=["7","7"])
     CSV.write("tmp.csv", alleleDF);
     df = (@test_logs (:warn, r"^not all alleles were mapped") mapAllelesCFtable("tmp.csv",
@@ -136,7 +136,7 @@ estNet = snaq!(currT,d,hmax=1,seed=6355, runs=1, filename="", Nfail=10,
                outgroup="10")
 redirect_stdout(originalstdout)
 # below, mostly check for 1 reticulation and "10" as outgroup. exact net depends on RNG :(
-netstring = writeTopology(estNet; round=true, digits=1)
+netstring = writenewick(estNet; round=true, digits=1)
 @test occursin(r"^\(\(7:0.0,#H\d:::.*,10\);", netstring) ||
       occursin(r"^\(10,\(.*,#H\d:::0.\d\);", netstring) ||
       occursin(r",10,#H\d:::0.\d\);", netstring)

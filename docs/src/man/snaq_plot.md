@@ -101,10 +101,10 @@ The main output file, here `net1.out` (or `snaq.out` by default) has the estimat
 network in parenthetical format, but we can also print it directly to the screen:
 ```@repl snaqplot
 net1
-writeTopology(net1)  # writes to screen, full precision for branch lengths and γ
-writeTopology(net1, round=true, digits=2)
-writeTopology(net1,di=true) # γ omitted: for dendroscope
-writeTopology(net1, "bestnet_h1.tre") # writes to file: creates or overwrites file
+writenewick(net1)  # writes to screen, full precision for branch lengths and γ
+writenewick(net1, round=true, digits=2)
+writenewick(net1,di=true) # γ omitted: for dendroscope
+writenewick(net1, "bestnet_h1.tre") # writes to file: creates or overwrites file
 rm("bestnet_h1.tre") # hide
 ```
 The option `di=true` is for the parenthetical format used by

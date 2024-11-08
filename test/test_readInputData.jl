@@ -27,7 +27,7 @@
 
 #Test consistency of writing/reading. Moved from test_relaxed_reading. Now only in PN. 
 net = readTopologyLevel1("(E,((B)#H1:::.5,((D,C),(#H1:::.5,A))));");
-@test writeTopology(net) == "(D:1.0,C:1.0,((#H1:1.0::0.5,A:1.0):1.0,((B:1.0)#H1:1.0::0.5,E:1.0):1.0):1.0);"
+@test writenewick(net) == "(D:1.0,C:1.0,((#H1:1.0::0.5,A:1.0):1.0,((B:1.0)#H1:1.0::0.5,E:1.0):1.0):1.0);"
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
 @test_logs SNaQ.printEverything(net)
@@ -39,8 +39,8 @@ nexusfile = joinpath(@__DIR__, "..", "examples", "test_reticulatetreeblock.nex")
 # nexusfile = joinpath(dirname(pathof(PhyloNetworks)), "..","examples","test_reticulatetreeblock.nex")
 vnet = (@test_logs (:warn, r"^hybrid edge") (:warn,r"^skipped") readnexus_treeblock(nexusfile));
 @test length(vnet) == 3
-@test writeTopology(vnet[1]) == "((tax4,(tax3,#H7:0.001::0.08):0.3):0.6,(tax2,(tax1:0.1)#H7:0.9::0.92):10.0);"
-@test writeTopology(vnet[3]) == "((tax1:1.13,((tax2:0.21)#H1:0.89::0.72,(tax3:1.03,(#H1:0.3::0.28,tax4:0.51)S3:0.51)S4:0.08)S5:0.2):0.6,tax5:1.14);"
+@test writenewick(vnet[1]) == "((tax4,(tax3,#H7:0.001::0.08):0.3):0.6,(tax2,(tax1:0.1)#H7:0.9::0.92):10.0);"
+@test writenewick(vnet[3]) == "((tax1:1.13,((tax2:0.21)#H1:0.89::0.72,(tax3:1.03,(#H1:0.3::0.28,tax4:0.51)S3:0.51)S4:0.08)S5:0.2):0.6,tax5:1.14);"
 # example without translate table and without reticulations
 nexusfile = joinpath(@__DIR__, "..", "examples", "test.nex")
 # nexusfile = joinpath(dirname(pathof(PhyloNetworks)), "..","examples","test.nex")

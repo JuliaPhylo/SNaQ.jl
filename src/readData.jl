@@ -564,7 +564,7 @@ function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{Hy
         sum13 = 0
         sum14 = 0
         for t in trees
-            isTree(t) || error("gene tree found in file that is a network $(writeTopology(t))")
+            isTree(t) || error("gene tree found in file that is a network $(writenewick(t))")
             if sameTaxa(q,t)
                 M = tree2Matrix(t,taxa) #fixit: way to reuse M? length(t.edge) will be different across trees
                 res = extractQuartetTree(q,M,taxa)

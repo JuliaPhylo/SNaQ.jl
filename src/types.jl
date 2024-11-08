@@ -57,7 +57,7 @@ do not appear in `hasEdge` nor `index`. Need to study this.
 ```jldoctest
 julia> net0 = readnewick("(s17:13.76,(((s3:10.98,(s4:8.99,s5:8.99)I1:1.99)I2:0.47,(((s6:2.31,s7:2.31)I3:4.02,(s8:4.97,#H24:0.0::0.279)I4:1.36)I5:3.64,((s9:8.29,((s10:2.37,s11:2.37)I6:3.02,(s12:2.67,s13:2.67)I7:2.72)I8:2.89)I9:0.21,((s14:2.83,(s15:1.06,s16:1.06)I10:1.78)I11:2.14)#H24:3.52::0.72)I12:1.47)I13:1.48)I14:1.26,(((s18:5.46,s19:5.46)I15:0.59,(s20:4.72,(s21:2.40,s22:2.40)I16:2.32)I17:1.32)I18:2.68,(s23:8.56,(s1:4.64,s2:4.64)I19:3.92)I20:0.16)I21:3.98)I22:1.05);");
 
-julia> net = readTopologyLevel1(writeTopology(net0)) ## need level1 attributes for functions below
+julia> net = readTopologyLevel1(writenewick(net0)) ## need level1 attributes for functions below
 HybridNetwork, Un-rooted Network
 46 edges
 46 nodes: 23 tips, 1 hybrid nodes, 22 internal tree nodes.
