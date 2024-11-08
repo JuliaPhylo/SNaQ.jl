@@ -50,7 +50,7 @@ This begs the question: is the true network within the "range" of uncertainty?
 We can run a [Bootstrap](@ref) analysis to measure uncertainty
 in our network inference.
 
-For a more thorough optimization, we may increase the requirements before
+For a more thorough optimization, we should increase the requirements before
 the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia

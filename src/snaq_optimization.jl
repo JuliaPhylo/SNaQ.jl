@@ -6,43 +6,45 @@
 const move2int = Dict{Symbol,Int}(:add=>1,:MVorigin=>2,:MVtarget=>3,:CHdir=>4,:delete=>5, :nni=>6)
 const int2move = Dict{Int,Symbol}(move2int[k]=>k for k in keys(move2int))
 """
-default values for tolerance parameters,
-used in the optimization of branch lengths (fAbs, fRel, xAbs, xRel)
-and in the acceptance of topologies (likAbs, numFails).
+Default values for tolerance parameters used in the
+optimization of branch lengths and γ's (`fAbs`, `fRel`, `xAbs`, `xRel`) and
+acceptance of topologies (`likAbs`, `numFails`).
 
-if changes are made here, **make the same** in the docstring for snaq! below
+Below, PN refers to PhyloNetworks.jl, which contained `snaq!` up until PN v0.16.
+Starting with PN v0.17, `snaq!` is part of this package SNaQ.jl.
 
-version | fAbs | fRel | xAbs | xRel | numFails | likAbs | multiplier
---------|------|------|------|------|----------|--------|-----------
-v0.5.1  | 1e-6 | 1e-6 | 1e-3 | 1e-2 |     75   |  1e-6  |
-v0.3.0  | 1e-6 | 1e-5 | 1e-4 | 1e-3 |    100   |  0.01  |
-v0.0.1  | 1e-6 | 1e-5 | 1e-4 | 1e-3 |    100   |        | 10000
-older   | 1e-10| 1e-12| 1e-10| 1e-10|
+pkg version | fRel | fAbs | xRel | xAbs | numFails | likAbs | multiplier
+------------|------|------|------|------|----------|--------|-----------
+SNaQ v0.1   | 1e-6 | 1e-6 | 1e-2 | 1e-3 |     75   |  1e-6  |
+PN v0.5.1   | 1e-6 | 1e-6 | 1e-2 | 1e-3 |     75   |  1e-6  |
+PN v0.3.0   | 1e-5 | 1e-6 | 1e-3 | 1e-4 |    100   |  0.01  |
+PN v0.0.1   | 1e-5 | 1e-6 | 1e-3 | 1e-4 |    100   |        | 10000
+PN older    | 1e-12| 1e-10| 1e-10| 1e-10|
 
 v0.5.1: based on Nan Ji's work. same xAbs and xRel as in phylonet (as of 2015).
-earlier: multiplier was used; later: likAbs = multiplier*fAbs)
+earlier: a `multiplier` was used; later: `likAbs` corresponds to `multiplier*fAbs`.
 "older": values from GLM.jl, Prof Bates
 
-default values used on a single topology, to optimize branch lengths
-and gammas, at the very end of snaq!, and by
-topologyMaxQPseudolik! since v0.5.1.
+Default values used on a *single* topology to optimize branch lengths and gammas,
+at the very end of snaq!.
 
-version | fAbsBL | fRelBL | xAbsBL | xRelBL
---------|--------|--------|--------|-------
-v0.0.1  | 1e-10  | 1e-12  | 1e-10  | 1e-10
+pkg version | fRelBL | fAbsBL | xRelBL | xAbsBL
+------------|--------|--------|--------|-------
+SNaQ v0.1   | 1e-12  | 1e-10  | 1e-10  | 1e-10
+PN v0.0.1   | 1e-12  | 1e-10  | 1e-10  | 1e-10
 """
-const fAbs = 1e-6
 const fRel = 1e-6
-const xAbs = 1e-3
+const fAbs = 1e-6
 const xRel = 1e-2
+const xAbs = 1e-3
 const numFails = 75 # number of failed proposals allowed before stopping the procedure (like phylonet)
 const numMoves = Int[] #empty to be calculated inside based on coupon's collector
 const likAbs = 1e-6 # loglik absolute tolerance to accept new topology
 
-const fAbsBL = 1e-10
 const fRelBL = 1e-12
-const xAbsBL = 1e-10
+const fAbsBL = 1e-10
 const xRelBL = 1e-10
+const xAbsBL = 1e-10
 # ---------------------- branch length optimization ---------------------------------
 
 # function to get the branch lengths/gammas to optimize for a given network
@@ -288,21 +290,25 @@ function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Intege
     hz[ind*2] + hz[ind*2-1] - 1
 end
 
-# numerical optimization of branch lengths given a network (or tree)
-# and data (set of quartets with obsCF)
-# using BOBYQA from NLopt package
-# warning: this function assumes that the network has all the good attributes set. It will not be efficient to re-read the network inside
-# to guarantee all the correct attributes, because this is done over and over inside snaq
-# also, net is modified inside to set its attribute net.loglik equal to the min
 """
-`optBL` road map
+    optBL!(
+        net::HybridNetwork,
+        d::DataCF,
+        verbose::Bool,
+        ftolRel::Float64,
+        ftolAbs::Float64,
+        xtolRel::Float64,
+        xtolAbs::Float64
+    )
 
-Function that optimizes the numerical parameters (branch lengths and inheritance probabilities) for a given network. This function is called multiple times inside `optTopLevel!`.
+Optimize the edge parameters (lengths and inheritance probabilities γ) of a
+given level-1 network, using the BOBYQA algorithm from the NLopt package.
+The optimum found is used to modify `net` with new edge lengths, hybrid edge γs,
+and minimum `net.loglik`.
 
-- Input: network `net`, data `d`
-- Numerical tolerances: `ftolAbs, ftolRel, xtolAbs, xtolRel`
-- Function based on `MixedModels` `fit` function
-- The function assumes `net` has all the right attributes, and cannot check this inside because it would be inefficient
+*Warning*: `net` is assumed to have up-to-date and correct level-1 attributes.
+This is not checked for efficiency, because this function is called repeatedly
+inside `optTopLevel!` and [`snaq!`](@ref).
 
 Procedure:
 
@@ -339,10 +345,20 @@ The objective function `obj(x,g)` calls
    - If the `q.qnet.changed=true` (that is, any of `qnet` branches changed value), we need to call `calculateExpCFAll!(qnet)` on a copy of `q.qnet` (again because we want to leave `q.qnet` with the edge correspondence to `net`)
 - `update!(net,x)` simply saves the new x in `net.ht`
 
-Finally, we call `NLopt.optimize`, and we update the `net.loglik` and `net.ht` at the end.
-After `optBL`, we want to call `afterOptBLAll` (or `afterOptBLAllMultipleAlleles`) to check if there are `h==0,1`; `t==0`; `hz==0,1`.
+Finally, after calling `NLopt.optimize`, `net.loglik` and `net.ht` are updated
+with the optimum score and parameter values that were found.
+After `optBL`, we want to call `afterOptBLAll` (or `afterOptBLAllMultipleAlleles`)
+to check if there are `h==0,1`; `t==0`; `hz==0,1`.
 """
-function optBL!(net::HybridNetwork, d::DataCF, verbose::Bool, ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64)
+function optBL!(
+    net::HybridNetwork,
+    d::DataCF,
+    verbose::Bool,
+    ftolRel::Float64,
+    ftolAbs::Float64,
+    xtolRel::Float64,
+    xtolAbs::Float64
+)
     (ftolRel > 0 && ftolAbs > 0 && xtolAbs > 0 && xtolRel > 0) || error("tolerances have to be positive, ftol (rel,abs), xtol (rel,abs): $([ftolRel, ftolAbs, xtolRel, xtolAbs])")
     if verbose println("OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)");
     else @debug        "OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)"; end
@@ -407,24 +423,55 @@ optBL!(net::HybridNetwork, d::DataCF, ftolRel::Float64, ftolAbs::Float64, xtolRe
 
 # rename optBL for a more user-friendly name
 """
-`topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF)`
+    topologyMaxQPseudolik!(
+        net::HybridNetwork,
+        d::DataCF;
+        verbose = true,
+        ftolRel = 1e-6,
+        ftolAbs = 1e-6,
+        xtolRel = 1e-2,
+        xtolAbs = 1e-3
+    )
 
-Estimate the branch lengths and inheritance probabilities (γ's) for a given network topology.
-The network is *not* modified, only the object `d` is, with updated expected concordance factors.
+Estimate the branch lengths and inheritance probabilities (γ's) for a given
+network topology. The network is *not* modified, only the object `d` is,
+with updated expected concordance factors.
 
 Ouput: new network, with optimized parameters (branch lengths and gammas).
 The maximized quartet pseudo-deviance is the negative log pseudo-likelihood,
 up to an additive constant, such that a perfect fit corresponds to a deviance of 0.0.
 This is also an attribute of the network, which can be accessed with `net.loglik`.
 
-Optional arguments (default value):
+Optional arguments:
 
-- verbose (false): if true, information on the numerical optimization is printed to screen
-- ftolRel (1e-5), ftolAbs (1e-6), xtolRel (1e-3), xtolAbs (1e-4):
-  absolute and relative tolerance values for the pseudo-deviance function
-  and the parameters
+- `verbose`: if `true`, information on the numerical optimization is printed to screen
+- `ftolRel`, `ftolAbs`, `xtolRel`, `xtolAbs`: absolute and relative tolerance
+  values for the pseudo-deviance function (`f`) and the parameters (`x`).
+
+The default tolerance values are quite lenient, for faster running time.
+They are more lenient than those used in `snaq!`, so we can expect that `snaq!`
+returns a better (lower) score for the same network topology.
+It is *highly* recommended to use more stringent value than the default,
+for example 1e-12 for `ftolRel`, and 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`
+to match those in `snaq!`.
+
+To further optimize branch lengths and γs, another strategy is the run the
+`topologyMaxQPseudolik!` multiple times, because each time the edge parameters
+in the network are improved, and re-starting a search from a good place leads
+to finding even better edge parameter values. If `snaq!` finds a better score
+for the given network topology, then using this strategy (effectively used by
+`snaq!` when optimizing edge parameters at each trial) and using stringent
+tolerances should eliminate the difference.
 """
-function topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF; verbose=false::Bool, ftolRel=fRel::Float64, ftolAbs=fAbs::Float64, xtolRel=xRel::Float64, xtolAbs=xAbs::Float64)
+function topologyMaxQPseudolik!(
+    net::HybridNetwork,
+    d::DataCF;
+    verbose::Bool=false,
+    ftolRel::Float64=fRel,
+    ftolAbs::Float64=fAbs,
+    xtolRel::Float64=xRel,
+    xtolAbs::Float64=xAbs,
+)
     tmp1, tmp2 = taxadiff(d,net)
     length(tmp1)==0 || error("these taxa appear in one or more quartets, but not in the starting topology: $tmp1")
     if length(tmp2)>0
@@ -1808,15 +1855,15 @@ up to an additive constant, such that a perfect fit corresponds to a deviance of
 
 Output:
 
-- estimated network in file `.out` (also in `.log`): best network overall and list of
-  networks from each individual run.
+- estimated network in file `.out` (also in `.log`): best network overall and
+  list of networks from each individual run.
 - the best network and modifications of it, in file `.networks`.
   All networks in this file have the same undirected topology as the best network,
-  but have different hybrid/gene flow directions. These other networks are reported with
-  their pseudo-likelihood scores, because
-   non-identifiability issues can cause them to have very similar scores, and because
-   SNaQ was shown to estimate the undirected topology accurately but not the direction of
-   hybridization in cases of near non-identifiability.
+  but have different hybrid/gene flow directions.
+  These other networks are reported with their pseudo-likelihood scores, because
+  non-identifiability issues can cause them to have very similar scores, and
+  because SNaQ was shown to estimate the undirected topology accurately but
+  not the direction of hybridization in cases of near non-identifiability.
 - if any error occurred, file `.err` provides information (seed) to reproduce the error.
 
 There are many optional arguments, including
@@ -1836,27 +1883,28 @@ There are many optional arguments, including
   are first optimized roughly with [`updateBL!`](@ref) by using the average CF of
   all quartets defining each branch and back-calculating the coalescent units.
 
-The following optional arguments control when to stop the optimization of branch lengths
-and γ's on each individual candidate network. Defaults are in parentheses:
+The following optional arguments control when to stop the optimization of branch
+lengths and γ's on each individual candidate network. Defaults are in parentheses:
 
-- `ftolRel` (1e-6) and `ftolAbs` (1e-6): relative and absolute differences of the network score
-  between the current and proposed parameters,
-- `xtolRel` (1e-2) and `xtolAbs` (1e-3): relative and absolute differences between the current
-  and proposed parameters.
+- `ftolRel` (1e-6) and `ftolAbs` (1e-6): relative and absolute differences of
+  the network score between the current and proposed parameters,
+- `xtolRel` (1e-2) and `xtolAbs` (1e-3): relative and absolute differences
+  between the current and proposed parameters.
 
-Greater values will result in a less thorough but faster search. These parameters are used
-when evaluating candidate networks only.
+Greater values will result in a less thorough but faster search.
+These parameters are used when evaluating candidate networks only.
 The following optional arguments control when to stop proposing new network topologies:
 
 - `Nfail` (75): maximum number of times that new topologies are proposed and rejected (in a row).
-- `liktolAbs` (1e-6): the proposed network is accepted if its score is better than the current score by
-  at least liktolAbs.
+- `liktolAbs` (1e-6): the proposed network is accepted if its score is better
+  than the current score by at least liktolAbs.
 
-Lower values of `Nfail` and greater values of `liktolAbs` and `ftolAbs` would result in a less thorough but faster search.
+Lower values of `Nfail` and greater values of `liktolAbs` and `ftolAbs` would
+result in a less thorough but faster search.
 
 At the end, branch lengths and γ's are optimized on the last "best" network
 with different and very thorough tolerance parameters:
-1e-12 for ftolRel, 1e-10 for ftolAbs, xtolRel, xtolAbs.
+1e-12 for `ftolRel`, 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`.
 
 See also: [`topologyMaxQPseudolik!`](@ref) to optimize parameters on a fixed topology,
 and [`topologyQPseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
@@ -1868,12 +1916,26 @@ Inferring phylogenetic networks with maximum pseudolikelihood under incomplete l
 [PLoS Genetics](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
 12(3):e1005896
 """
-function snaq!(currT0::HybridNetwork, d::DataCF;
-      hmax=1::Integer, liktolAbs=likAbs::Float64, Nfail=numFails::Integer,
-      ftolRel=fRel::Float64, ftolAbs=fAbs::Float64, xtolRel=xRel::Float64, xtolAbs=xAbs::Float64,
-      verbose=false::Bool, closeN=true::Bool, Nmov0=numMoves::Vector{Int},
-      runs=10::Integer, outgroup="none"::AbstractString, filename="snaq"::AbstractString,
-      seed=0::Integer, probST=0.3::Float64, updateBL=true::Bool)
+function snaq!(
+    currT0::HybridNetwork,
+    d::DataCF;
+    hmax::Integer=1,
+    liktolAbs::Float64=likAbs,
+    Nfail::Integer=numFails,
+    ftolRel::Float64=fRel,
+    ftolAbs::Float64=fAbs,
+    xtolRel::Float64=xRel,
+    xtolAbs::Float64=xAbs,
+    verbose::Bool=false,
+    closeN::Bool=true,
+    Nmov0::Vector{Int}=numMoves,
+    runs::Integer=10,
+    outgroup::AbstractString="none",
+    filename::AbstractString="snaq",
+    seed::Integer=0,
+    probST::Float64=0.3,
+    updateBL::Bool=true,
+)
     0.0<=probST<=1.0 || error("probability to keep the same starting topology should be between 0 and 1: $(probST)")
     currT0.numTaxa >= 5 || error("cannot estimate hybridizations in topologies with fewer than 5 taxa, this topology has $(currT0.numTaxa) taxa")
     typemax(Int) > length(d.quartet) ||
