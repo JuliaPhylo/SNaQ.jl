@@ -88,6 +88,8 @@ function writeTableCF(quartets::Vector{QuartetT{T}},
     for q in quartets
       push!(df, (q.number, taxstring.(q.taxonnumber)..., q.data...) )
     end
+    # return only the quartet sets that were observed in at least one tree 
+    df = df[df.ngenes .!= 0.0, :]
     return df
 end
 
