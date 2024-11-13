@@ -1,8 +1,10 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 PhyloNetworks = "33ad39ac-ed31-50eb-9b15-43d0656eaa72"
+PhyloPlots = "c0d5b6db-e3fc-52bc-a87d-1d050989ed3b"
+PhyloTraits = "bce24f4f-6725-4ba4-a77f-2b043c8e33c5"
+RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
 SNaQ = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
 
-[sources.PhyloNetworks]
-rev = "dev"
-url = "https://github.com/JuliaPhylo/PhyloNetworks.jl"
+[sources]
+PhyloNetworks = {rev = "dev", url = "https://github.com/JuliaPhylo/PhyloNetworks.jl"}
