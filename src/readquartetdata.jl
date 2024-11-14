@@ -139,8 +139,8 @@ Output: [`DataCF`](@ref) object
 
 Optional arguments:
 
-- summaryfile: if specified, a summary file will be created with that name.
-- delim (for the first form only): to specify how columns are delimited,
+- `summaryfile`: if specified, a summary file will be created with that name.
+- `delim` (for the first form only): to specify how columns are delimited,
   with single quotes: delim=';'. Default is a `csv` file, i.e. `delim=','`.
 - `mergerows`: false by default. When true, will attempt to merge multiple rows
   corresponding to the same four-taxon set (by averaging their quartet CFs) even
@@ -277,14 +277,14 @@ end
 Read a text file with a list of trees/networks in extended newick format
 (one tree per line) and transform them like [`readnewick_level1`](@ref).
 Namely, in each tree/network
-- the root is suppresse (becomes of degree 3 if it was of degree 2)
+- the root is suppressed (becomes of degree 3 if it was of degree 2)
 - any polytomy is resolved arbitrarily
 - any missing branch length is set to 1
-- any branch length above 10 is set to 10
+- any branch length above 10 is set to 10 (this assumes branch lengths in coalescent units)
 - any missing γ's are set to (0.1, 0.9)
-and more.
+and more (see [`readnewick_level1`](@ref)).
 
-See [`PhyloNetworks.readmultinewick`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readmultinewick)
+See [`PhyloNetworks.readmultinewick`]()
 to read multiple trees or networks with no modification.
 
 Output: array of HybridNetwork objects.
@@ -1024,14 +1024,14 @@ and calculate the proportion of these trees having a given quartet (concordance 
 for all quartets or for a sample of quartets.
 Optional arguments include:
 
-- quartetfile: name of text file with list of 4-taxon subsets to be analyzed. If none is specified, the function will list all possible 4-taxon subsets.
-- whichQ="rand": to choose a random sample of 4-taxon subsets
-- numQ: size of random sample (ignored if whichQ is not set to "rand")
-- writeTab=false: does not write the observedCF to a table (default true)
-- CFfile: name of file to save the observedCF (default tableCF.txt)
-- writeQ=true: save intermediate files with the list of all 4-taxon subsets and chosen random sample (default false).
-- writeSummary: write descriptive stats of input data (default: true)
-- nexus: if true, it assumes the gene trees are written in nexus file (default: false)
+- `quartetfile`: name of text file with list of 4-taxon subsets to be analyzed. If none is specified, the function will list all possible 4-taxon subsets.
+- `whichQ="rand"`: to choose a random sample of 4-taxon subsets
+- `numQ`: size of random sample (ignored if whichQ is not set to "rand")
+- `writeTab=false`: does not write the observedCF to a table (default true)
+- `CFfile`: name of file to save the observedCF (default tableCF.txt)
+- `writeQ=true`: save intermediate files with the list of all 4-taxon subsets and chosen random sample (default false).
+- `writeSummary`: write descriptive stats of input data (default: true)
+- `nexus`: if true, it assumes the gene trees are written in nexus file (default: false)
 
 See also:
 [`countquartetsintrees`](@ref), which uses a much faster algorithm;
@@ -1151,8 +1151,8 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 `summarizeDataCF(d::DataCF)`
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
-- filename: if provided, the summary will be saved in the filename, not to screen
-- pc (number between (0,1)): threshold of percentage of missing genes to identify 4-taxon subsets with fewer genes than the threshold
+- `filename`: if provided, the summary will be saved in the filename, not to screen
+- `pc` (number between (0,1)): threshold of percentage of missing genes to identify 4-taxon subsets with fewer genes than the threshold
 """
 function summarizeDataCF(d::DataCF; filename="none"::AbstractString, pc=0.7::Float64)
     0<=pc<=1 || error("percentage of missing genes should be between 0,1, not: $(pc)")

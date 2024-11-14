@@ -8,7 +8,7 @@ See the [PhyloNetworks](https://github.com/JuliaPhylo/PhyloNetworks.jl)
 package, which SNaQ depends on, for background on phylogenetic networks
 and for how to get help.
 
-## references
+## References
 
 See them in
 [bibtex format](https://github.com/juliaphylo/SNaQ.jl/blob/master/CITATION.bib).
@@ -16,8 +16,7 @@ See them in
 for the SNaQ network inference method itself:
 - Claudia Solís-Lemus and Cécile Ané (2016).
   Inferring Phylogenetic Networks with Maximum Pseudolikelihood under Incomplete Lineage Sorting.
-  [PLoS Genet](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
-  12(3):e1005896. [doi:10.1371/journal.pgen.1005896](https://doi.org/10.1371/journal.pgen.1005896)
+  PLoS Genetics 12(3):e1005896. [doi:10.1371/journal.pgen.1005896](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## Manual
 
@@ -31,7 +30,7 @@ Pages = [
     "man/fixednetworkoptim.md",
     "man/expectedCFs.md",
     "man/bootstrap.md",
-    "man/multiplealleles.md",
+    "man/multiplealleles.md"
 ]
 Depth = 3
 ```

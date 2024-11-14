@@ -127,7 +127,7 @@ end
 
 Set the length of `edge`, and set `edge.y` and `edge.z` accordingly.
 Warning: specific to `SNaQ.jl`.
-Consider [`setlengths!`](@ref) from `PhyloNetworks` for a more generic tool.
+Consider `PhyloNetworks.setlengths!` from `PhyloNetworks` for a more generic tool.
 
 - The new length is censored to 10: if the new length is above 10,
   the edge's length will be set to 10. Lengths are interpreted in coalescent

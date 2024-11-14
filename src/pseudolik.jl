@@ -1302,9 +1302,9 @@ up to an additive constant, such that a perfect fit corresponds to a deviance of
 
 Be careful if the net object does
 not have all internal branch lengths specified because then the
-pseudolikelihood will be meaningless.
+pseudolikelihood will be meaningless. See [`topologyMaxQPseudolik!`](@ref) if you want branch lengths and numerical parameters optimized on the given network.
 
-The loglik attribute of the network is undated, and `d` is updated with the expected
+The loglik attribute of the network is updated, and `d` is updated with the expected
 concordance factors under the input network.
 """
 function topologyQPseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)

@@ -13,7 +13,7 @@ from multiple molecular sequence alignments. There are two alternatives for the 
 
 This [pipeline](https://github.com/nstenz/TICR) can be used to obtain the table of
 quartet CF needed as input for SNaQ
-(see also the [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki/TICR:-from-alignments-to-quartet-concordance-factors).)
+(see also the [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki/TICR:-from-alignments-to-quartet-concordance-factors) and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
 It starts from the sequence alignments,
 runs MrBayes and then BUCKy (both parallelized), producing the
 table of estimated CFs and their credibility intervals.
@@ -188,5 +188,3 @@ T=readnewick_level1("startNetwork.txt")
 ```
 (here `startNetwork.txt` is a hypothetical file: replace this by
 the name of a file that contains your network of interest.)
-
-Next: [Getting a Network](@ref)

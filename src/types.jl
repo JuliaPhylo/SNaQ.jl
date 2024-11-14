@@ -132,12 +132,12 @@ abstract type AQuartet end
 
 type that saves the information on a given 4-taxon subset. It contains the following attributes:
 
-- number: integer
-- taxon: vector of taxon names, like t1 t2 t3 t4
-- obsCF: vector of observed CF, in order 12|34, 13|24, 14|23
-- logPseudoLik
-- ngenes: number of gene trees used to compute the observed CF; -1.0 if unknown
-- qnet: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
+- `number`: integer
+- `taxon`: vector of taxon names, like t1 t2 t3 t4
+- `obsCF`: vector of observed CF, in order 12|34, 13|24, 14|23
+- `logPseudoLik`
+- `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
+- `qnet`: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
   emphasize that the expCF depend on a specific network, not the data
 
 see also: [`QuartetT`](@ref) for quartet with data of user-defined type `T`,
@@ -285,16 +285,16 @@ end
 
 type that contains the following attributes:
 
-- quartet (vector of Quartets)
-- numQuartets
-- tree (vector of trees: empty if a table of CF was input instead of list of trees)
-- numTrees (-1 if a table CF was input instead of list of trees)
-- repSpecies (taxon names that were repeated in table of CF or input gene trees: used inside snaq for multiple alleles case)
+- `quartet` (vector of Quartets)
+- `numQuartets`
+- `tree` (vector of trees: empty if a table of CF was input instead of list of trees)
+- `numTrees` (-1 if a table CF was input instead of list of trees)
+- `repSpecies` (taxon names that were repeated in table of CF or input gene trees: used inside snaq for multiple alleles case)
 
-The list of Quartet may be accessed with the attribute .quartet.
-If the input was a list of trees, the HybridNetwork's can be accessed with the attribute .tree.
-For example, if the DataCF object is named d, d.quartet[1] will show the first quartet
-and d.tree[1] will print the first input tree.
+The list of `Quartet` may be accessed with the attribute `.quartet`.
+If the input was a list of trees, the `HybridNetwork`'s can be accessed with the attribute `.tree`.
+For example, if the `DataCF` object is named `d`, `d.quartet[1]` will show the first quartet
+and `d.tree[1]` will print the first input tree.
 """
 mutable struct DataCF # fixit
     quartet::Array{Quartet,1} # array of quartets read from CF output table or list of quartets in file

@@ -8,7 +8,9 @@ through BUCKy (to integrate out gene tree uncertainty) or through RAxML.
 To get the `raxml.pl` perl script to run RAxML on each gene,
 download the content of that wiki with
 
-`git clone https://github.com/juliaphylo/PhyloNetworks.jl.wiki.git`
+```bash
+git clone https://github.com/juliaphylo/PhyloNetworks.jl.wiki.git
+```
 
 then go to the `script/` folder.  
 Full information and code is [here](https://github.com/nstenz/TICR).

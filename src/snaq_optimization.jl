@@ -453,7 +453,7 @@ They are more lenient than those used in `snaq!`, so we can expect that `snaq!`
 returns a better (lower) score for the same network topology.
 It is *highly* recommended to use more stringent value than the default,
 for example 1e-12 for `ftolRel`, and 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`
-to match those in `snaq!`.
+to match those in [`snaq!`](@ref).
 
 To further optimize branch lengths and γs, another strategy is the run the
 `topologyMaxQPseudolik!` multiple times, because each time the edge parameters
@@ -1913,8 +1913,7 @@ of a fixed topology with fixed parameters.
 Reference:  
 Claudia Solís-Lemus and Cécile Ané (2016).
 Inferring phylogenetic networks with maximum pseudolikelihood under incomplete lineage sorting.
-[PLoS Genetics](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
-12(3):e1005896
+[PLoS Genetics 12(3):e1005896](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
 """
 function snaq!(
     currT0::HybridNetwork,

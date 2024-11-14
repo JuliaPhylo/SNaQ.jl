@@ -116,7 +116,7 @@ nothing # hide
 ![net1_rotate2](../assets/figures/net1_rotate2.svg)
 
 We can now summarize our bootstrap networks.
-The functions [`treeedges_support`](@ref) and [`hybridclades_support`](@ref)
+The functions [`treeedges_support`]() and [`hybridclades_support`]()
 (from PhyloNetworks)
 can read all bootstrap networks and map the edges / nodes
 onto a reference network: here net1.

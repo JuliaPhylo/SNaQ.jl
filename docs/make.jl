@@ -1,7 +1,14 @@
 using SNaQ, PhyloNetworks
 using Documenter
 
-DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using SNaQ, PhyloNetworks); recursive=true)
+# Interlink with PhyloNetworks
+using DocumenterInterLinks
+links = InterLinks(
+    "PhyloNetworks" => "https://juliaphylo.github.io/PhyloNetworks.jl/stable/objects.inv"
+)
+
+# NOTE: default loading of PhyloNetworks in all docstring examples
+DocMeta.setdocmeta!(SNaQ, :DocTestSetup, :(using PhyloNetworks, SNaQ); recursive=true)
 
 makedocs(;
     modules=[SNaQ],
