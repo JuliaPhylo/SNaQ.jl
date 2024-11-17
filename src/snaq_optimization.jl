@@ -216,7 +216,7 @@ function update!(qnet::QuartetNetwork,x::Vector{Float64}, net::HybridNetwork)
                 if qnet.indexht[i] <= net.numhybrids - net.numBad
                     0 <= x[qnet.indexht[i]] <= 1 || error("new gamma value should be between 0,1: $(x[qnet.indexht[i]]).")
                     qnet.edge[qnet.index[i]].hybrid || error("something odd here, optimizing gamma for tree edge $(qnet.edge[qnet.index[i]].number)")
-                    setGamma!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]], true)
+                    setgamma!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]], true)
                 elseif qnet.indexht[i] <= net.numhybrids - net.numBad + k
                     setLength!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]])
                 else
@@ -256,7 +256,7 @@ function updateParameters!(net::HybridNetwork, xmin::Vector{Float64})
         if i <= net.numhybrids - net.numBad
             0 <= net.ht[i] <= 1 || error("new gamma value should be between 0,1: $(net.ht[i]).")
             net.edge[net.index[i]].hybrid || error("something odd here, optimizing gamma for tree edge $(net.edge[net.index[i]].number)")
-            setGamma!(net.edge[net.index[i]],net.ht[i], true)
+            setgamma!(net.edge[net.index[i]],net.ht[i], true)
         elseif i <= net.numhybrids - net.numBad + k
             setLength!(net.edge[net.index[i]],net.ht[i])
         else

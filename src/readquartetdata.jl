@@ -459,7 +459,7 @@ networks that users give as input, or get as output.
 """
 function taxadiff(quartets::Vector{Quartet}, t::HybridNetwork;
                   multiplealleles=true::Bool)
-    tq = tipLabels(quartets)
+    tq = tiplabels(quartets)
     secondallele = occursin.(Ref(r"__2$"), tq)
     for i in length(secondallele):-1:1
         secondallele[i] || continue
@@ -469,7 +469,7 @@ function taxadiff(quartets::Vector{Quartet}, t::HybridNetwork;
             deleteat!(tq, i) # delete "mouse__2" from tq IF "mouse" is present
         end
     end
-    tn = tipLabels(t)
+    tn = tiplabels(t)
     return (setdiff(tq,tn), setdiff(tn,tq))
 end
 
@@ -479,7 +479,7 @@ taxadiff(d::DataCF, t::HybridNetwork; multiplealleles=true::Bool) =
 
 # extract & sort the union of taxa of list of gene trees
 function unionTaxa(trees::Vector{HybridNetwork})
-    taxa = reduce(union, tipLabels(t) for t in trees)
+    taxa = reduce(union, tiplabels(t) for t in trees)
     return sort_stringasinteger!(taxa)
 end
 
@@ -510,8 +510,8 @@ end
 unionTaxaTree(file::AbstractString) = unionTaxa(readmultinewick_level1(file))
 
 
-tipLabels(q::Vector{Quartet}) = unionTaxa(q)
-tipLabels(d::DataCF) = unionTaxa(d.quartet)
+tiplabels(q::Vector{Quartet}) = unionTaxa(q)
+tiplabels(d::DataCF) = unionTaxa(d.quartet)
 
 """
     calculateObsCFAll!(DataCF, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
@@ -775,8 +775,8 @@ function countquartetsintrees!(quartet::Vector{QuartetT{MVector{4,Float64}}},
             taxonnumber::Dict{<:AbstractString,Int}, taxonmap::Dict{<:AbstractString,<:AbstractString})
     tree.numhybrids == 0 || error("input phylogenies must be trees")
     # next: reset node & edge numbers so that they can be used as indices: 1,2,3,...
-    resetNodeNumbers!(tree; checkPreorder=true, type=:postorder) # leaves first & post-order
-    resetEdgeNumbers!(tree)
+    resetnodenumbers!(tree; checkPreorder=true, type=:postorder) # leaves first & post-order
+    resetedgenumbers!(tree)
     # next: build list leaf number -> species ID, using the node name then taxon map
     nleaves = length(tree.leaf)
     nnodes  = length(tree.node)

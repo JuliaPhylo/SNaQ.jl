@@ -32,7 +32,7 @@ function makeEdgeHybrid!(edge::Edge,node::Node,gamma::Float64; switchHyb=false::
         edge.gamma = gamma;
         edge.ismajor = (gamma>=0.5) ? true : false
     else
-        setGamma!(edge,gamma,false)
+        setgamma!(edge,gamma,false)
     end
     edge.istIdentifiable = isEdgeIdentifiable(edge)
     edge.containroot = false

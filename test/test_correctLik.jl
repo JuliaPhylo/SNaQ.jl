@@ -16,7 +16,7 @@ df=DataFrame(t1=["6","6","10","6","6"],
 d = readTableCF(df)
 @test_throws ErrorException writeExpCF(d)
 @test writeTableCF(d) == rename(df, [:obsCF12 => :CF12_34, :obsCF13 => :CF13_24, :obsCF14 => :CF14_23])
-@test tipLabels(d) ==  ["4","6","7","8","10"]
+@test tiplabels(d) ==  ["4","6","7","8","10"]
 @test_logs descData(d, devnull)
 
 df[!,:ngenes] = [10,10,10,10,20]

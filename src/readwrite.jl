@@ -36,7 +36,7 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
             if !n.hybrid
                 if size(n.edge,1) > 3
                     @debug "warning: polytomy found in node $(n.number), random resolution chosen"
-                    solvePolytomy!(net,n);
+                    resolvetreepolytomy!(net,n);
                 end
                 hyb = count([e.hybrid for e in n.edge])
                 if hyb == 1
@@ -68,7 +68,7 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
                         expandChild!(net,n);
                     end
                     suma = sum([e.hybrid ? e.gamma : 0.0 for e in n.edge]);
-                    # synchronizePartnersData! already made suma ≈ 1.0, when non-missing,
+                    # synchronizepartnersdata! already made suma ≈ 1.0, when non-missing,
                     # and already synchronized ismajor, even when γ's ≈ 0.5
                     if suma == -2.0 # hybrid edges have no gammas in newick description
                         println("hybrid edges for hybrid node $(n.number) have missing gamma's, set default: 0.9,0.1")
@@ -153,7 +153,7 @@ function cleanAfterReadAll!(net::HybridNetwork, leaveRoot::Bool)
     checkRootPlace!(net)
     getroot(net).leaf && @warn "root node $(getroot(net).number) is a leaf, so when plotting net, it can look weird"
     net.cleaned = true #fixit: set to false inside updateAllReadTopology if problem encountered
-    net.isRooted = false
+    net.isrooted = false
 end
 
 cleanAfterReadAll!(net::HybridNetwork) = cleanAfterReadAll!(net,false)
@@ -297,7 +297,7 @@ function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Boo
                 checkRootPlace!(net,verbose=false) #leave root in good place after snaq
             end
         end
-        writeSubTree!(s, net, di,namelabel, roundBL,digits,true)
+        writesubtree!(s, net, di,namelabel, roundBL,digits,true)
     end
     # outgroup != "none" && undoRoot!(net) # not needed because net is deepcopy of net0
     # to delete 2-degree node, for snaq.

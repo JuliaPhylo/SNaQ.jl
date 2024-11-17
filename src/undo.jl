@@ -60,11 +60,11 @@ function undoGammaz!(node::Node, net::HybridNetwork)
         other_maj.gammaz != -1 || error("bad diamond I in node $(node.number) but no gammaz updated correctly")
         setLength!(tree_edge_incycle2,-log(1-other_maj.gammaz))
         if approxEq(other_maj.gammaz,0.0) && approxEq(other_min.gammaz,0.0)
-            setGamma!(edge_maj,0.0, true) # gamma could be anything if both gammaz are 0.0, but will set to 0.0
+            setgamma!(edge_maj,0.0, true) # gamma could be anything if both gammaz are 0.0, but will set to 0.0
             setLength!(edge_maj,0.0)
             setLength!(edge_min,0.0)
         else
-            setGamma!(edge_maj,other_maj.gammaz / (other_maj.gammaz+other_min.gammaz), true)
+            setgamma!(edge_maj,other_maj.gammaz / (other_maj.gammaz+other_min.gammaz), true)
         end
         other_min.gammaz = -1.0
         other_maj.gammaz = -1.0

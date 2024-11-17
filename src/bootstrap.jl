@@ -112,7 +112,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
     end
 
     if inputastrees # allocate memory, to be re-used later
-        newtrees = sampleBootstrapTrees(data, row=1)
+        newtrees = samplebootstrap_multiloci(data, row=1)
         newd = readTrees2CF(newtrees, quartetfile=quartetfile, writeTab=false, writeSummary=false)
         taxa = unionTaxa(newtrees)
     else
@@ -153,7 +153,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             sampleCFfromCI!(newdf, seedsData[i])
             readTableCF!(newd, newdf, [5,6,7])
         else
-            sampleBootstrapTrees!(newtrees, data, seed=seedsData[i])
+            samplebootstrap_multiloci!(newtrees, data, seed=seedsData[i])
             calculateObsCFAll!(newd,taxa) # do not use readTrees2CF: to save memory and gc time
         end
         if runs1>0

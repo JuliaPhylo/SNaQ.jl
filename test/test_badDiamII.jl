@@ -59,7 +59,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     @test_logs show(devnull, d)
     @test_logs show(devnull, d.quartet[1])
     @test_logs show(devnull, d.quartet[1].qnet)
-    @test tipLabels(d.quartet) == ["1","2","3","4","5","6"]
+    @test tiplabels(d.quartet) == ["1","2","3","4","5","6"]
     a = (@test_logs fittedQuartetCF(d, :wide));
     @test size(a) == (15,10)
     a = (@test_logs fittedQuartetCF(d, :long));

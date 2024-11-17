@@ -37,16 +37,16 @@ module SNaQ
     global CHECKNET = false # for debugging only
 
 
-    import PhyloNetworks: HybridNetwork, tipLabels,getTipSubmatrix,
-        resetNodeNumbers!,resetEdgeNumbers!,
-        inheritanceWeight, isEqual,approxEq,
+    import PhyloNetworks: HybridNetwork, tiplabels,getTipSubmatrix,
+        resetnodenumbers!,resetedgenumbers!,
+        isEqual,approxEq,
         assignhybridnames!, 
         getOtherNode,getIndex,getIndexEdge,getIndexNode,
         pushEdge!,pushNode!,
         setNode!,setEdge!,
         removeEdge!,removeNode!,
         searchHybridNode,searchHybridEdge,
-        sampleBootstrapTrees, sampleBootstrapTrees!, tree2Matrix,
+        samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
         addBL, deleteEdge!, deleteNode!,
         getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
         hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
