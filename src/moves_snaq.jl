@@ -30,7 +30,7 @@ function makeEdgeHybrid!(edge::Edge,node::Node,gamma::Float64; switchHyb=false::
     getOtherNode(edge,node).hasHybEdge = true
     if switchHyb
         edge.gamma = gamma;
-        edge.isMajor = (gamma>=0.5) ? true : false
+        edge.ismajor = (gamma>=0.5) ? true : false
     else
         setGamma!(edge,gamma,false)
     end

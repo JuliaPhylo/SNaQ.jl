@@ -94,10 +94,10 @@ Print information on the edges of a `QuartetNetwork` object `quartetnet`:
 - if its length is identifiable from quartet concordance factors.
 """
 function printedges(io::IO, net::QuartetNetwork)
-    println(io, "edge parent child  length  hybrid isMajor gamma   containroot inCycle istIdentitiable")
+    println(io, "edge parent child  length  hybrid ismajor gamma   containroot inCycle istIdentitiable")
     for e in net.edge
         @printf(io, "%-4d %-6d %-6d ", e.number, getparent(e).number, getchild(e).number)
-        @printf(io, "%-7.3f %-6s %-7s ", e.length, e.hybrid, e.isMajor)
+        @printf(io, "%-7.3f %-6s %-7s ", e.length, e.hybrid, e.ismajor)
         @printf(io, "%-7.4g %-11s %-7d %-5s\n", e.gamma, e.containroot, e.inCycle, e.istIdentifiable)
     end
 end
@@ -222,7 +222,7 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
     net.numedges == length(net.edge) || error("discrepant number on net.numedges (net.numedges) and net.edge length $(length(net.edge))")
     if(isTree(net))
         all(x->x.containroot,net.edge) || error("net is a tree, but not all edges can contain root")
-        all(x->x.isMajor,net.edge) || error("net is a tree, but not all edges are major")
+        all(x->x.ismajor,net.edge) || error("net is a tree, but not all edges are major")
         all(x->!(x.hybrid),net.edge) || error("net is a tree, but not all edges are tree")
         all(x->!(x.hybrid),net.node) || error("net is a tree, but not all nodes are tree")
         all(x->!(x.hasHybEdge),net.node) || error("net is a tree, but not all nodes hasHybEdge=false")

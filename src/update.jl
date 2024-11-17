@@ -50,7 +50,7 @@ function updateInCycle!(net::HybridNetwork,node::Node)
             net.visited[getIndex(curr,net)] = true
             atstart = isEqual(curr,start)
             for e in curr.edge
-                e.isMajor || continue
+                e.ismajor || continue
                 other = getOtherNode(e,curr)
                 if atstart || (!other.leaf && !net.visited[getIndex(other,net)])
                     other.prev = curr
@@ -102,7 +102,7 @@ have incompatible directions (vector of length 1, to be modified).
 Warning:
 
 - does *not* update `containroot` of minor hybrid edges.
-- assumes correct `isMajor` attributes: to stop the recursion at minor hybrid edges.
+- assumes correct `ismajor` attributes: to stop the recursion at minor hybrid edges.
 - assumes correct hybrid attributes of both nodes & edges: to check if various
   hybridizations have compatible directions.
   For each hybrid node that is encountered, checks if it was reached
@@ -113,7 +113,7 @@ Warning:
 function traverseContainRoot!(node::Node, edge::Edge, edges_changed::Array{Edge,1}, rightDir::Vector{Bool})
     if node.hybrid
         if edge.hybrid
-            edge.isMajor || error("hybrid edge $(edge.number) is minor and we should not traverse the graph through minor edges")
+            edge.ismajor || error("hybrid edge $(edge.number) is minor and we should not traverse the graph through minor edges")
             DEBUGC && @debug "traverseContainRoot reaches hybrid node $(node.number) through major hybrid edge $(edge.number)"
             rightDir[1] &= true  # This line has no effect: x && true = x
         else #approach hybrid node through tree edge => wrong direction
@@ -122,7 +122,7 @@ function traverseContainRoot!(node::Node, edge::Edge, edges_changed::Array{Edge,
         end
     elseif !node.leaf
         for e in node.edge
-            if !isEqual(edge,e) && e.isMajor # minor edges avoided-> their containroot not updated
+            if !isEqual(edge,e) && e.ismajor # minor edges avoided-> their containroot not updated
                 other = getOtherNode(e,node);
                 if e.containroot # only considered changed those that were true and not hybrid
                     DEBUGC && @debug "traverseContainRoot changing edge $(e.number) to false, at this moment, rightDir is $(rightDir[1])"

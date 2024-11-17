@@ -1236,7 +1236,7 @@ function getDescendants!(
         push!(descendants, node)
     else
         for e in node.edge
-            if !isEqual(edge,e) && e.isMajor
+            if !isEqual(edge,e) && e.ismajor
                 other = getOtherNode(e,node);
                 getDescendants!(other,e, descendants);
             end
@@ -1260,7 +1260,7 @@ function getDescendants!(
         push!(cycleNum,node.inCycle)
     elseif !node.leaf && node.inCycle == -1
         for e in node.edge
-            if(!isEqual(edge,e) && e.isMajor)
+            if(!isEqual(edge,e) && e.ismajor)
                 push!(descendants,e)
                 getDescendants!(getOtherNode(e,node),e,descendants,cycleNum)
             end

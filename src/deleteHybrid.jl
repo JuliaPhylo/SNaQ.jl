@@ -40,7 +40,7 @@ function identifyInCycle(net::Network,node::Node)
                 net.visited[getIndex(curr,net)] = true
                 atstart = isEqual(curr,start)
                 for e in curr.edge
-                    e.isMajor || continue
+                    e.ismajor || continue
                     other = getOtherNode(e,curr)
                     if atstart || (!other.leaf && !net.visited[getIndex(other,net)])
                         other.prev = curr
@@ -76,14 +76,14 @@ end
 function traverseIdentifyRoot(node::Node, edge::Edge, edges_changed::Array{Edge,1})
     if(!node.leaf && !node.hybrid)
         for e in node.edge
-            if(!isEqual(edge,e) && e.isMajor && !e.hybrid)
+            if !isEqual(edge,e) && e.ismajor && !e.hybrid
                 other = getOtherNode(e,node);
                 push!(edges_changed, e);
                 if(!other.hybrid)
                     #if(!other.hasHybEdge)
                         traverseIdentifyRoot(other,e, edges_changed);
                     #else
-                    #    if(hybridEdges(other)[1].isMajor)
+                    #    if hybridEdges(other)[1].ismajor
                     #        traverseIdentifyRoot(other,e, edges_changed);
                     #    end
                     #end

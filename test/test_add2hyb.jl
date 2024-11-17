@@ -21,7 +21,7 @@ successful,hybrid,flag,nocycle,flag2,flag3 = SNaQ.addHybridizationUpdate!(besttr
 @test hybrid.k == 3
 @test hybrid.isVeryBadTriangle
 ed = PhyloNetworks.hybridEdges(hybrid)
-@test ed[1].isMajor
+@test ed[1].ismajor
 @test ed[1].gamma > 0.5
 @test ed[1].hybrid
 

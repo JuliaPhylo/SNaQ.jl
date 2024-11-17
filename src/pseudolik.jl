@@ -31,7 +31,7 @@ function makeEdgeTree!(edge::Edge, node::Node)
     node.hybrid || error("need the hybrid node at which edge $(edge.number) is pointing to, node $(node.number) is tree node")
     @debug "we make edge $(edge.number) a tree edge, but it will still point to hybrid node $(node.number)"
     edge.hybrid = false
-    edge.isMajor = true
+    edge.ismajor = true
     edge.gamma = 1.0
     edge.inCycle = -1 #warn:changed recently because I believe it does not affect the parameters function for bad diamond I
     other = getOtherNode(edge,node)
@@ -394,7 +394,7 @@ function updateHasEdge!(qnet::QuartetNetwork, net::HybridNetwork)
                 push!(edges,false)
             end
         end
-        if e.hybrid && !e.isMajor
+        if e.hybrid && !e.ismajor
             node = e.node[e.isChild1 ? 1 : 2]
             node.hybrid || error("strange thing, hybrid edge $(e.number) pointing at tree node $(node.number)")
             if(!node.isBadDiamondI)

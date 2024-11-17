@@ -66,7 +66,7 @@ function parameters(net::Network)
             push!(n,e.number)
             push!(indxt, getIndex(e,net))
         end
-        if(e.hybrid && !e.isMajor)
+        if e.hybrid && !e.ismajor
             node = e.node[e.isChild1 ? 1 : 2]
             node.hybrid || error("strange thing, hybrid edge $(e.number) pointing at tree node $(node.number)")
             if(!node.isBadDiamondI)
@@ -159,7 +159,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     push!(qnhz, enum_in_nhz + net.numhybrids - net.numBad + k)
                     push!(qindxhz, getIndex(e,qnet))
                 end
-                if(e.hybrid && !e.isMajor)
+                if e.hybrid && !e.ismajor
                     node = e.node[e.isChild1 ? 1 : 2]
                     node.hybrid || error("strange hybrid edge $(e.number) poiting to tree node $(node.number)")
                     enum_in_nh = findfirst(isequal(e.number), nh)

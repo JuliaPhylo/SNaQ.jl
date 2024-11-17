@@ -69,12 +69,12 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
                     end
                     suma = sum([e.hybrid ? e.gamma : 0.0 for e in n.edge]);
                     # synchronizePartnersData! already made suma ≈ 1.0, when non-missing,
-                    # and already synchronized isMajor, even when γ's ≈ 0.5
+                    # and already synchronized ismajor, even when γ's ≈ 0.5
                     if suma == -2.0 # hybrid edges have no gammas in newick description
                         println("hybrid edges for hybrid node $(n.number) have missing gamma's, set default: 0.9,0.1")
                         for e in n.edge
                             if e.hybrid
-                                e.gamma = (e.isMajor ? 0.9 : 0.1)
+                                e.gamma = (e.ismajor ? 0.9 : 0.1)
                             end
                         end
                     end
