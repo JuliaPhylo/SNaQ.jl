@@ -80,19 +80,20 @@ end
 
 
 """
-    printEdges(io::IO, net)
+    printedges([io::IO,] quartetnet)
 
-Print information on the edges of a `QuartetNetwork` object
-`net`: edge number, numbers of nodes attached to it, edge length, whether it's
-a hybrid edge, its γ inheritance value, whether it's a major edge,
-if it could contain the root (this field is not always updated, though)
-and attributes pertaining to level-1 networks used in SNaQ:
-in which cycle it is contained (-1 if no cycle), and if the edge length
-is identifiable (based on quartet concordance factors).
+Print information on the edges of a `QuartetNetwork` object `quartetnet`:
+- edge number
+- numbers of nodes attached to it
+- edge length
+- whether it's a hybrid edge
+- whether it's a major edge
+- its γ inheritance value
+- if it could contain the root (this field is not always updated, though)
+- in which cycle it is contained (-1 if no cycle)
+- if its length is identifiable from quartet concordance factors.
 """
-
-
-function printEdges(io::IO, net::QuartetNetwork)
+function printedges(io::IO, net::QuartetNetwork)
     println(io, "edge parent child  length  hybrid isMajor gamma   containRoot inCycle istIdentitiable")
     for e in net.edge
         @printf(io, "%-4d %-6d %-6d ", e.number, getparent(e).number, getchild(e).number)
@@ -313,8 +314,8 @@ checkNet(net::HybridNetwork) = checkNet(net, false)
 # this is used a lot inside snaq to debug, so need to use level1 attributes
 # and not change the network: with writenewick_level1
 function printEverything(net::HybridNetwork)
-    printEdges(net)
-    printNodes(net)
+    printedges(net)
+    printnodes(net)
     printPartitions(net)
     println("$(writenewick_level1(net))")
 end

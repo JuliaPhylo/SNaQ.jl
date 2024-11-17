@@ -411,7 +411,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
         setLength!(treei,(ti/(ti+tj))*t)
         setLength!(treej,(tj/(ti+tj))*t)
     end
-    @debug begin printEdges(net); "printed edges" end
+    @debug begin printedges(net); "printed edges" end
     @debug writenewick_level1(net)
     if !undo
         if from_otheri

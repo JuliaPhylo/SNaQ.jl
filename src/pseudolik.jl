@@ -226,7 +226,7 @@ function deleteLeaf!(net::Network, leaf::Node)
                     deleteNode!(net,other3)
                     deleteEdge!(net,edge5)
                     other1.hasHybEdge = false
-                    @debug begin printEdges(net); "printed edged" end
+                    @debug begin printedges(net); "printed edged" end
                 else
                     removeEdge!(other,leaf.edge[1])
                     edgebla,edgebla,treeedge = hybridEdges(other1)
@@ -468,7 +468,7 @@ function extractQuartet(net::HybridNetwork,quartet::Array{Node,1})
         if(!isNodeNumIn(n,quartet))
             DEBUGC && @debug "delete leaf $(n.number)"
             deleteLeaf!(qnet,n)
-            DEBUGC && printEdges(qnet)
+            DEBUGC && printedges(qnet)
         end
     end
     DEBUGC && @debug "deletion of leaves successful"
@@ -537,8 +537,8 @@ function redundantCycle!(net::Network)
             !isa(node,Nothing) || error("redundant cycle found, but the hybrid node is set to nothing")
             redundantCycle!(net,node)
             DEBUGC && @debug "after redundante cycle for hybrid node $(n.number)"
-            DEBUGC && printEdges(net)
-            DEBUGC && printNodes(net)
+            DEBUGC && printedges(net)
+            DEBUGC && printnodes(net)
             redCycle, node = hasRedundantCycle(net)
         end
     end
@@ -722,8 +722,8 @@ function identifyQuartet!(qnet::QuartetNetwork, node::Node)
     node.k = k
     if k < 2
         @debug begin
-            printEdges(qnet)
-            printNodes(qnet)
+            printedges(qnet)
+            printnodes(qnet)
             "printed edges and nodes"
         end
         error("strange quartet network with a hybrid node $(node.number) but no cycle")
@@ -774,8 +774,8 @@ function identifyQuartet!(qnet::QuartetNetwork, node::Node)
         node.prev = nothing
     else
         @debug begin
-            printEdges(qnet)
-            printNodes(qnet)
+            printedges(qnet)
+            printnodes(qnet)
             "printed edges and nodes"
         end
         error("strange quartet network with $(k) nodes in cycle, maximum should be 4")
@@ -809,8 +809,8 @@ function identifyQuartet!(qnet::QuartetNetwork)
                     qnet.which = 2
                 else
                     @debug begin
-                        printEdges(qnet)
-                        printNodes(qnet)
+                        printedges(qnet)
+                        printnodes(qnet)
                         "warning: found in the same quartet, two hybridizations with overlapping cycles: types of hybridizations are $([n.typeHyb for n in qnet.hybrid]), maybe this will cause problems if the hyb do not become all but one type 1"
                     end
                     qnet.which = 2
@@ -884,8 +884,8 @@ function eliminateTriangle!(qnet::QuartetNetwork, node::Node, other::Node, case:
     node.hybrid || error("cannot eliminate triangle around node $(node.number) since it is not hybrid")
     #println("hybrid node is $(node.number), with edges $([e.number for e in node.edge]), with gammas $([e.gamma for e in node.edge])")
     edgemaj, edgemin, treeedge = hybridEdges(node)
-    isa(edgemaj,Nothing) ? error("edge maj is nothing for node $(node.number), other $(other.number) and taxon $(qnet.quartetTaxon), $(printEdges(qnet))") : nothing
-    isa(edgemin,Nothing) ? error("edge min is nothing for node $(node.number), other $(other.number) and taxon $(qnet.quartetTaxon), $(printEdges(qnet))") : nothing
+    isa(edgemaj,Nothing) ? error("edge maj is nothing for node $(node.number), other $(other.number) and taxon $(qnet.quartetTaxon), $(printedges(qnet))") : nothing
+    isa(edgemin,Nothing) ? error("edge min is nothing for node $(node.number), other $(other.number) and taxon $(qnet.quartetTaxon), $(printedges(qnet))") : nothing
     deleteIntLeafWhile!(qnet, edgemaj, node)
     deleteIntLeafWhile!(qnet, edgemin, node)
     if(isEqual(getOtherNode(edgemaj,node),other))
@@ -968,8 +968,8 @@ function quartetType5!(qnet::QuartetNetwork, node::Node)
     if(isa(edgetree1,Nothing))
         println("node $(node.number), edge3 $(edge3.number), other1 $(other1.number), leaf1 $(leaf1.number), other2 $(other2.number)")
         println("edge1 $(edge1.number), edge2 $(edge2.number), edge5 $(edge5.number), edge6 $(edge6.number)")
-        printEdges(qnet)
-        printNodes(qnet)
+        printedges(qnet)
+        printnodes(qnet)
     end
     leaf2 = getOtherNode(edgetree1,other1)
     leaf3 = getOtherNode(edgetree2, other2)
@@ -1050,16 +1050,16 @@ function internalLength!(qnet::QuartetNetwork)
     if qnet.which == 1
         ind_3e = findfirst(n -> length(n.edge) == 3, qnet.node)
         if isnothing(ind_3e)
-            printEdges(qnet)
-            printNodes(qnet)
+            printedges(qnet)
+            printnodes(qnet)
             error("not found internal node in qnet with 3 edges")
         end
         node = qnet.node[ind_3e]
         ind_3eo = findfirst(n -> (size(n.edge,1) == 3 && n !== node), qnet.node)
         if isnothing(ind_3eo)
             println("first node found with 3 edges $(node.number)")
-            printEdges(qnet)
-            printNodes(qnet)
+            printedges(qnet)
+            printnodes(qnet)
             error("not found another internal node in qnet with 3 edges")
         end
         node2 = qnet.node[ind_3eo]

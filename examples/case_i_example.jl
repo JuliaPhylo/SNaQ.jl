@@ -7,5 +7,5 @@ tree = "((((8,10))#H1,7),6,(4,#H1));" # Case I Bad diamond II
 #close(f)
 net = readnewick_level1(tree)
 
-#printEdges(net)
-#printNodes(net)
+#printedges(net)
+#printnodes(net)

@@ -50,7 +50,7 @@ module SNaQ
         addBL, deleteEdge!, deleteNode!,
         getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
         hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
-        Edge, Node, Network, Partition,pushHybrid!,removeHybrid!,printEdges,printPartitions
+        Edge, Node, Network, Partition,pushHybrid!,removeHybrid!,printedges,printPartitions
 
 
     export

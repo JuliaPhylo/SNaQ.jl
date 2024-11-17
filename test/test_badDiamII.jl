@@ -19,8 +19,8 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
     net = readnewick_level1(tree);
     SNaQ.checkNet(net)
-    #printNodes(net)
-    #printEdges(net)
+    #printnodes(net)
+    #printedges(net)
     @test net.node[10].number == 3 # or: wrong hybrid
     @test net.node[10].hybrid # or: does not know it is hybrid
     @test net.node[10].isBadDiamondII # or: does not know it is bad diamond II
@@ -51,7 +51,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     @test net2.edge[11].istIdentifiable # or: wrong hybrid is t identifiable
     @test net2.edge[11].length < 0.01 # or: wrong bl estimated
     @test net2.edge[10].length == 0.0 # or: tree edge in bad diamond II not 0
-    #printEdges(net2)
+    #printedges(net2)
 
     @test_logs show(devnull, net2)
     @test_logs [show(devnull, net2.node[i]) for i in [1,3,10]];
@@ -72,7 +72,7 @@ end
 ## we move into updateGammaz
 ## tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
 ## net2 = readnewick(tree)
-## printEdges(net2)
+## printedges(net2)
 
 ## for e in net2.edge
 ##     if(e.node[1].leaf || e.node[2].leaf)
@@ -87,7 +87,7 @@ end
 ## net = readnewick_level1(tree)
 ## checkNet(net)
 ## net2 = readnewick(tree)
-## printEdges(net2)
+## printedges(net2)
 
 ## for e in net2.edge
 ##     if(e.node[1].leaf || e.node[2].leaf)

@@ -909,9 +909,9 @@ function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Boo
             @debug "gammaz zero situation still in currT, need to move down one level to h-1"
             moveDownLevel!(currT)
             @debug begin
-                printEdges(currT)
+                printedges(currT)
                 printPartitions(currT)
-                #printNodes(currT)
+                #printnodes(currT)
                 writenewick_level1(currT,true)
             end
             optBL!(currT,d,verbose,ftolRel, ftolAbs, xtolRel, xtolAbs)
@@ -1282,7 +1282,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     absDiff = liktolAbs + 1
     newT = deepcopy(currT)
     @debug begin
-        printEdges(newT)
+        printedges(newT)
         printPartitions(newT)
         println("++++")
         writenewick_level1(newT,true)
@@ -1341,9 +1341,9 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                     newT = deepcopy(currT)
                 end
                 @debug begin
-                    printEdges(newT)
+                    printedges(newT)
                     printPartitions(newT)
-                    #printNodes(newT)
+                    #printnodes(newT)
                     println("++++")
                     println(writenewick_level1(newT,true))
                     "ends step $(count) with absDiff $(accepted ? absDiff : 0.0) and failures $(failures)"
@@ -1384,9 +1384,9 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     writelog && write(logfile,"\nEND optTopLevel: found minimizer topology at step $(count) (failures: $(failures)) with -loglik=$(round(newT.loglik, digits=5)) and ht_min=$(round.(newT.ht, digits=5))")
     writelog && printCounts(movescount,movesgamma,logfile)
     @debug begin
-        printEdges(newT)
+        printedges(newT)
         printPartitions(newT)
-        printNodes(newT)
+        printnodes(newT)
         writenewick_level1(newT,true) ## this changes non-identifiable BLs in newT to -1
     end
     if CHECKNET && !isempty(d.repSpecies)

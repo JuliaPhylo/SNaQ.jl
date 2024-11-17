@@ -11,7 +11,7 @@ text = "(Xmayae,((Xhellerii,(((Xclemenciae_F2,Xmonticolus):1.458,(((((Xmontezuma
 #net = readnewick("cui3.out")
 net = readnewick(text)
 #printPartitions(net)
-#printEdges(net)
+#printedges(net)
 cleanBL!(net)
 cleanAfterRead!(net,false)
 length(net.hybrid)

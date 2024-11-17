@@ -31,7 +31,7 @@ newdf = writeTableCF(d)
 # starting tree:
 tree = "((6,4),(7,8),10);"
 currT = readnewick_level1(tree);
-#printEdges(currT)
+#printedges(currT)
 
 @testset "correct pseudo likelihood and snaq" begin
 @testset "lik on tree" begin

@@ -65,7 +65,7 @@ net = deepcopy(besttree);
 ## [e.containRoot for e in edgesRoot] == [true,true,true] || error("edges root should be false contain root")
 ## deleteHybrid!(hybrid,net,true, false)
 ## [e.containRoot for e in edgesRoot] == [true,true,true] || error("edges root should be false contain root")
-## printEdges(net)
+## printedges(net)
 
 # ================= delete second hybridization =============================
 deleteHybridizationUpdate!(net,net.node[21], false,false);
@@ -80,5 +80,5 @@ deleteHybridizationUpdate!(net,net.node[21], false,false);
 deleteHybridizationUpdate!(net,net.node[19]);
 checkNet(net)
 @test length(net.partition) == 0
-#printEdges(net)
+#printedges(net)
 end

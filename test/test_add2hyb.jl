@@ -3,7 +3,7 @@
 
 tree = "(((((((1,2),3),4),5),(6,7)),(8,9)),10);"
 currT0 = readnewick_level1(tree);
-#printEdges(currT0)
+#printedges(currT0)
 besttree = deepcopy(currT0);
 
 Random.seed!(16);

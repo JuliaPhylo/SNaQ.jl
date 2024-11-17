@@ -51,11 +51,11 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
                 ind = getIndexNode(newn.number,newnet) # find the newn node in the new network
                 @debug "moving hybrid to node $(newnet.node[ind].number)"
                 hybridatnode!(newnet, newnet.hybrid[i], newnet.node[ind])
-                @debug begin printEdges(newnet); "printed edges" end
-                @debug begin printNodes(newnet); "printed nodes" end
+                @debug begin printedges(newnet); "printed edges" end
+                @debug begin printnodes(newnet); "printed nodes" end
                 undoInCycle!(newedgesInCycle, newnodesInCycle);
-                @debug begin printEdges(newnet); "printed edges" end
-                @debug begin printNodes(newnet); "printed nodes" end
+                @debug begin printedges(newnet); "printed edges" end
+                @debug begin printnodes(newnet); "printed nodes" end
                 ##undoPartition!(net,hybrid, edgesInCycle)
                 success, hybrid0, flag, nocycle, flag2, flag3 = updateAllNewHybrid!(newnet.node[ind], newnet, false,false,false)
                 if success
