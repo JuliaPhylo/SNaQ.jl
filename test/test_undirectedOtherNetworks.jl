@@ -9,7 +9,7 @@ net = readnewick("(((B)#H2,((C,#H2)S1,(A)S2)S3)S4);")
 @test_logs hybridatnode!(net, 7)
 @test_throws ErrorException hybridatnode!(net, 8)
 
-## very important semicolon at the end because show changes containRoot
+## very important semicolon at the end because show changes containroot
 net = readnewick_level1("(6,(((1,2):1.8702617089780738,(3,(4)#H7:0.042493238243074646::0.9015570666393798):10.0):10.0,(5,#H7:1.1830905092006163::0.09844293336062017):10.0):0.5);");
 out = "6"
 checkNet(net)

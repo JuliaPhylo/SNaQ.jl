@@ -21,8 +21,8 @@
 #   default values of 0.1,0.9 if not present
 # leaveRoot=true: leaves the root even if it has only 2 edges (for plotting), default=false
 function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
-    # set e.containRoot to !e.hybrid: updated later by updateAllReadTopology as required by snaq!
-    for e in net.edge e.containRoot = !e.hybrid; end
+    # set e.containroot to !e.hybrid: updated later by updateAllReadTopology as required by snaq!
+    for e in net.edge e.containroot = !e.hybrid; end
     nodes = copy(net.node)
     for n in nodes
         if isNodeNumIn(n,net.node) # very important to check
@@ -110,7 +110,7 @@ cleanAfterRead!(net::HybridNetwork) = cleanAfterRead!(net,false)
 function updateAllReadTopology!(net::HybridNetwork)
     if(isTree(net))
         #@warn "not a network read, but a tree as it does not have hybrid nodes"
-        all((e->e.containRoot), net.edge) ? nothing : error("some tree edge has contain root as false")
+        all((e->e.containroot), net.edge) ? nothing : error("some tree edge has contain root as false")
         all((e->!e.hybrid), net.edge) ? nothing : error("some edge is hybrid and should be all tree edges in a tree")
         all((n->!n.hasHybEdge), net.node) ? nothing : error("some tree node has hybrid edge true, but it is a tree, there are no hybrid edges")
     else
@@ -256,20 +256,20 @@ end
 function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Bool,
            outgroup::AbstractString, printID::Bool, roundBL::Bool, digits::Integer, multall::Bool)
     global CHECKNET
-    net = deepcopy(net0) #writenewick_level1 needs containRoot, but should not alter net0
+    net = deepcopy(net0) #writenewick_level1 needs containroot, but should not alter net0
     # net.numBad == 0 || println("network with $(net.numBad) bad diamond I. Some γ and edge lengths t are not identifiable, although their γ * (1-exp(-t)) are.")
     if printID
         setNonIdBL!(net) # changes non identifiable BL to -1.0, except those in/below bad diamonds/triangles.
     end
     assignhybridnames!(net)
-    if(net.numNodes == 1)
+    if net.numnodes == 1
         print(s,string(net.node[net.root].number,";")) # error if 'string' is an argument name.
     else
         if(!isTree(net) && !net.cleaned)
             @debug "net not cleaned inside writenewick_level1, need to run updateContainRoot"
             for n in net.hybrid
                 flag,edges = updateContainRoot!(net,n)
-                flag || error("hybrid node $(n.hybrid) has conflicting containRoot")
+                flag || error("hybrid node $(n.hybrid) has conflicting containroot")
             end
         end
         updateRoot!(net,outgroup)
@@ -359,7 +359,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
         node.leaf || error("outgroup $(outgroup) is not a leaf in net")
         length(net.node[index].edge) == 1 || error("strange leaf $(outgroup), node number $(net.node[index].number) with $(length(net.node[index].edge)) edges instead of 1")
         edge = net.node[index].edge[1]
-        if(edge.containRoot)
+        if edge.containroot
             DEBUGC && @debug "creating new node in the middle of the external edge $(edge.number) leading to outgroup $(node.number)"
             othernode = getOtherNode(edge,node)
             removeEdge!(othernode,edge)
@@ -398,12 +398,12 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
  end
 
 # function to check if a node could be root
-# by the containRoot attribute of edges around it
+# by the containroot attribute of edges around it
 function canBeRoot(n::Node)
     !n.hybrid || return false
     #!n.hasHybEdge || return false #need to allow for some reason, check ipad notes
     !n.leaf || return false
-    return any([e.containRoot for e in n.edge])
+    return any([e.containroot for e in n.edge])
 end
 
 # function to delete the extra node created in updateRoot

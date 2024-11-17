@@ -31,7 +31,7 @@ end
 
 Delete node `n` from a network, i.e. removes it from
 net.node, and from net.hybrid or net.leaf as appropriate.
-Update attributes `numNodes`, `numTaxa`, `numHybrids`.
+Update attributes `numnodes`, `numtaxa`, `numhybrids`.
 Warning: `net.names` is *not* updated, and this is a feature (not a bug)
 for networks of type QuartetNetwork.
 
@@ -45,7 +45,7 @@ function deleteNode!(net::QuartetNetwork, n::Node)
     # isEqual (from above) checks for more than node number
     index !== nothing || error("Node $(n.number) not in quartet network");
     deleteat!(net.node,index);
-    net.numNodes -= 1
+    net.numnodes -= 1
     if n.hybrid
        removeHybrid!(net,n)
     end
@@ -53,26 +53,26 @@ function deleteNode!(net::QuartetNetwork, n::Node)
         index = findfirst(no -> no === n, net.leaf)
         index !== nothing || error("node $(n.number) not net.leaf")
         deleteat!(net.leaf,index)
-        net.numTaxa -= 1
+        net.numtaxa -= 1
     end
 end
 
 """
     deleteEdge!(net::QuartetNetwork, e::Edge)
 
-Delete edge `e` from `net.edge` and update `net.numEdges`.
+Delete edge `e` from `net.edge` and update `net.numedges`.
 If `part` is true, update the network's partition field.
 """
 
 
 # function to delete an Edge in net.edge and
-# update numEdges from a QuartetNetwork
+# update numedges from a QuartetNetwork
 function deleteEdge!(net::QuartetNetwork, e::Edge)
     index = findfirst(x -> x.number == e.number, net.edge)
     # isEqual (from above) checks for more than edge number
     index !== nothing || error("edge not in quartet network");
     deleteat!(net.edge,index);
-    net.numEdges -= 1;
+    net.numedges -= 1;
 end
 
 
@@ -94,11 +94,11 @@ Print information on the edges of a `QuartetNetwork` object `quartetnet`:
 - if its length is identifiable from quartet concordance factors.
 """
 function printedges(io::IO, net::QuartetNetwork)
-    println(io, "edge parent child  length  hybrid isMajor gamma   containRoot inCycle istIdentitiable")
+    println(io, "edge parent child  length  hybrid isMajor gamma   containroot inCycle istIdentitiable")
     for e in net.edge
         @printf(io, "%-4d %-6d %-6d ", e.number, getparent(e).number, getchild(e).number)
         @printf(io, "%-7.3f %-6s %-7s ", e.length, e.hybrid, e.isMajor)
-        @printf(io, "%-7.4g %-11s %-7d %-5s\n", e.gamma, e.containRoot, e.inCycle, e.istIdentifiable)
+        @printf(io, "%-7.4g %-11s %-7d %-5s\n", e.gamma, e.containroot, e.inCycle, e.istIdentifiable)
     end
 end
 
@@ -208,7 +208,7 @@ function isPartitionInNet(net::HybridNetwork,partition::Partition)
 end
 
 # function to check that everything matches in a network
-# in particular, cycles, partitions and containRoot
+# in particular, cycles, partitions and containroot
 # fixit: need to add check on identification of bad diamonds, triangles
 # and correct computation of gammaz
 # light=true: it will not collapse with nodes with 2 edges, will return a flag of true
@@ -216,12 +216,12 @@ end
 # added checkPartition for undirectedOtherNetworks that do not need correct hybrid node number
 function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
     @debug "checking net"
-    net.numHybrids == length(net.hybrid) || error("discrepant number on net.numHybrids (net.numHybrids) and net.hybrid length $(length(net.hybrid))")
-    net.numTaxa == length(net.leaf) || error("discrepant number on net.numTaxa (net.numTaxa) and net.leaf length $(length(net.leaf))")
-    net.numNodes == length(net.node) || error("discrepant number on net.numNodes (net.numNodes) and net.node length $(length(net.node))")
-    net.numEdges == length(net.edge) || error("discrepant number on net.numEdges (net.numEdges) and net.edge length $(length(net.edge))")
+    net.numhybrids == length(net.hybrid) || error("discrepant number on net.numhybrids (net.numhybrids) and net.hybrid length $(length(net.hybrid))")
+    net.numtaxa == length(net.leaf) || error("discrepant number on net.numtaxa (net.numtaxa) and net.leaf length $(length(net.leaf))")
+    net.numnodes == length(net.node) || error("discrepant number on net.numnodes (net.numnodes) and net.node length $(length(net.node))")
+    net.numedges == length(net.edge) || error("discrepant number on net.numedges (net.numedges) and net.edge length $(length(net.edge))")
     if(isTree(net))
-        all(x->x.containRoot,net.edge) || error("net is a tree, but not all edges can contain root")
+        all(x->x.containroot,net.edge) || error("net is a tree, but not all edges can contain root")
         all(x->x.isMajor,net.edge) || error("net is a tree, but not all edges are major")
         all(x->!(x.hybrid),net.edge) || error("net is a tree, but not all edges are tree")
         all(x->!(x.hybrid),net.node) || error("net is a tree, but not all nodes are tree")
@@ -245,7 +245,7 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
                 end
             end
             if(e.hybrid)
-                !e.containRoot || error("hybrid edge $(e.number) should not contain root") # fixit: disagree
+                !e.containroot || error("hybrid edge $(e.number) should not contain root") # fixit: disagree
                 o = getOtherNode(e,h)
                 o.hasHybEdge || error("found node $(o.number) attached to hybrid edge but hasHybEdge=$(o.hasHybEdge)")
             end
@@ -273,7 +273,7 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
             i == 1 || error("strange node $(n.number) incycle $(h.number) but with $(i) edges not in cycle, should be only one")
             edgesRoot = identifyContainRoot(net,h)
             for edge in edgesRoot
-                if edge.containRoot
+                if edge.containroot
                     @debug begin printEverything(net); "printed everything" end
                     error("edge $(edge.number) should not contain root")
                 end

@@ -27,7 +27,7 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
         net0 = readnewick_level1(writenewick_level1(net0))
     end
     otherNet = HybridNetwork[]
-    for i in 1:net0.numHybrids #need to do for by number, not node
+    for i in 1:net0.numhybrids #need to do for by number, not node
         net = deepcopy(net0) # to avoid redoing attributes after each cycle is finished
         ## undo attributes at current hybrid node:
         hybrid = net.hybrid[i]
@@ -39,7 +39,7 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
         undoGammaz!(hybrid,net);
         othermaj = getOtherNode(edges[1],hybrid)
         edgesmaj = hybridEdges(othermaj)
-        if edgesmaj[3].containRoot #if containRoot=true, then we need to undo
+        if edgesmaj[3].containroot #if containroot=true, then we need to undo
             undoContainRoot!(edgesRoot);
         end
         ## changes to new hybrid node:
@@ -62,7 +62,7 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
                     @debug "successfully added new network: $(writenewick_level1(newnet))"
                     push!(otherNet,newnet)
                 else
-                    println("the network obtained by putting the new hybrid in node $(newnet.node[ind].number) is not good, inCycle,gammaz,containRoot: $([flag,flag2,flag3]), we will skip it")
+                    println("the network obtained by putting the new hybrid in node $(newnet.node[ind].number) is not good, inCycle,gammaz,containroot: $([flag,flag2,flag3]), we will skip it")
                 end
             end
         end
@@ -166,11 +166,11 @@ function hybridatnode!(net::HybridNetwork, hybrid::Node, newNode::Node)
                 found = true
                 makeEdgeHybrid!(e,newNode, 0.51, switchHyb=true) #first found, major edge, need to optimize gamma anyway
                 ##e.gamma = -1
-                ##e.containRoot = true ## need attributes like in snaq
+                ##e.containroot = true ## need attributes like in snaq
             else
                 makeEdgeHybrid!(e,newNode, 0.49, switchHyb=true) #second found, minor edge
                 ##e.gamma = -1
-                ##e.containRoot = true
+                ##e.containroot = true
             end
         end
     end
@@ -217,11 +217,11 @@ function hybridatnode(net0::HybridNetwork, nodeNumber::Integer)
                 found = true
                 makeEdgeHybrid!(e,net.node[ind], 0.51, switchHyb=true) #first found, major edge, need to optimize gamma anyway
                 e.gamma = -1
-                e.containRoot = true
+                e.containroot = true
             else
                 makeEdgeHybrid!(e,net.node[ind], 0.49, switchHyb=true) #second found, minor edge
                 e.gamma = -1
-                e.containRoot = true
+                e.containroot = true
             end
         end
     end

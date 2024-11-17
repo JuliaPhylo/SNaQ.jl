@@ -37,7 +37,7 @@ bootnet = bootsnaq(T,boottrees,nrep=2,runs=2,otherNet=net1,seed=1234,
 redirect_stdout(originalstdout)
 rmprocs(workers())
 @test size(bootnet)==(2,)
-@test all(n -> n.numHybrids==1, bootnet)
+@test all(n -> n.numhybrids==1, bootnet)
 @test writenewick(bootnet[1], round=true, digits=1) != writenewick(bootnet[2], round=true, digits=1)
 filelist = joinpath(exdir, "treefilelist.txt")
 boottrees = readmultinewick_files(filelist)

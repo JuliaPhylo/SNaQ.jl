@@ -97,14 +97,14 @@ julia> qnet.edge[qnet.index[1]].number ## 11 = minor hybrid edge
 ```
 """
 mutable struct QuartetNetwork <: Network
-    numTaxa::Int
-    numNodes::Int
-    numEdges::Int
+    numtaxa::Int
+    numnodes::Int
+    numedges::Int
     node::Array{Node,1}
     edge::Array{Edge,1}
     hybrid::Array{Node,1} # array of hybrid nodes in network
     leaf::Array{Node,1} # array of leaves
-    numHybrids::Int # number of hybrid nodes
+    numhybrids::Int # number of hybrid nodes
     hasEdge::Array{Bool,1} # array of boolean with all the original identifiable edges of HybridNetwork and gammas (net.ht)
     quartetTaxon::Array{String,1} # the quartet taxa in the order it represents. Points to same array as its Quartet.taxon
     which::Int8 # 0 it tree quartet, 1 is equivalent to tree quartet and 2 if two minor CF different, default -1
@@ -120,7 +120,7 @@ mutable struct QuartetNetwork <: Network
     # inner constructor
     function QuartetNetwork(net::HybridNetwork)
         net2 = deepcopy(net); #fixit: maybe we dont need deepcopy of all, maybe only arrays
-        new(net2.numTaxa,net2.numNodes,net2.numEdges,net2.node,net2.edge,net2.hybrid,net2.leaf,net2.numHybrids, [true for e in net2.edge],[],-1,[], -1.,net2.names,Int8[-1,-1,-1,-1],Int8[-1,-1,-1],[0,0,0],[],true,[])
+        new(net2.numtaxa,net2.numnodes,net2.numedges,net2.node,net2.edge,net2.hybrid,net2.leaf,net2.numhybrids, [true for e in net2.edge],[],-1,[], -1.,net2.names,Int8[-1,-1,-1,-1],Int8[-1,-1,-1],[0,0,0],[],true,[])
     end
     QuartetNetwork() = new(0,0,0,[],[],[],[],0,[],[],-1,[],-1.0,[],[],[],[],[],true,[])
 end

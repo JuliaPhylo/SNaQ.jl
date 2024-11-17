@@ -342,7 +342,7 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
     end
     return vquartet
 end
-allQuartets(numTaxa::Integer, writeFile::Bool) = allQuartets(1:numTaxa, writeFile)
+allQuartets(numtaxa::Integer, writeFile::Bool) = allQuartets(1:numtaxa, writeFile)
 
 
 # function to list num randomly selected quartets for a vector of all quartets
@@ -403,7 +403,7 @@ function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::In
     close(out)
     return randquartets
 end
-randQuartets(numTaxa::Integer,num::Integer, writeFile::Bool) = randQuartets(1:numTaxa,num, writeFile)
+randQuartets(numtaxa::Integer,num::Integer, writeFile::Bool) = randQuartets(1:numtaxa,num, writeFile)
 
 
 # function to read list of quartets from a file
@@ -773,7 +773,7 @@ end
 function countquartetsintrees!(quartet::Vector{QuartetT{MVector{4,Float64}}},
             tree::HybridNetwork, whichQ::Symbol, weight_byallele::Bool, nCk::Matrix,
             taxonnumber::Dict{<:AbstractString,Int}, taxonmap::Dict{<:AbstractString,<:AbstractString})
-    tree.numHybrids == 0 || error("input phylogenies must be trees")
+    tree.numhybrids == 0 || error("input phylogenies must be trees")
     # next: reset node & edge numbers so that they can be used as indices: 1,2,3,...
     resetNodeNumbers!(tree; checkPreorder=true, type=:postorder) # leaves first & post-order
     resetEdgeNumbers!(tree)

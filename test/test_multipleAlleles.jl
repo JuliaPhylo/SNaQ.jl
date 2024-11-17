@@ -110,14 +110,14 @@ estNet = snaq!(currT,d,hmax=1,seed=7, runs=1, filename="", Nfail=10)
 redirect_stdout(originalstdout)
 @test 180.0 < estNet.loglik < 185.29
 @test estNet.hybrid[1].k >= 4
-@test estNet.numTaxa == 5
+@test estNet.numtaxa == 5
 #=
 redirect_stdout(devnull) # requires julia v1.6
 estNet = snaq!(currT,d,hmax=1,seed=8306, runs=1, filename="", Nfail=10,
                ftolAbs=1e-6,ftolRel=1e-5,xtolAbs=1e-4,xtolRel=1e-3)
 redirect_stdout(originalstdout)
 @test estNet.hybrid[1].k == 5 # or: wrong k in hybrid
-@test estNet.numTaxa == 5 # or: wrong # taxa
+@test estNet.numtaxa == 5 # or: wrong # taxa
 =#
 
 # net = snaq!(currT,d,hmax=1,seed=8378,filename="")

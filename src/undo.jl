@@ -1,4 +1,4 @@
-# functions to undo incycle, containRoot, gammaz
+# functions to undo incycle, containroot, gammaz
 # originally in functions.jl
 # Claudia March 2015
 
@@ -21,7 +21,7 @@ end
 # of edges changed) and gives value bool, by default true
 function undoContainRoot!(edges::Array{Edge,1}, bool::Bool)
     for e in edges
-        e.containRoot = bool
+        e.containroot = bool
     end
 end
 

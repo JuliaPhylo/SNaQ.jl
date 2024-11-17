@@ -103,24 +103,24 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
     size(net.numht,1) > 0 || error("net.numht not correctly updated, need to run parameters first")
     @debug (size(qnet.indexht,1) == 0 ? "" :
         "deleting qnet.indexht to replace with info in net")
-    nh = net.numht[1 : net.numHybrids - net.numBad]
+    nh = net.numht[1 : net.numhybrids - net.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    nt = net.numht[net.numHybrids - net.numBad + 1 : net.numHybrids - net.numBad + k]
-    nhz = net.numht[net.numHybrids - net.numBad + k + 1 : length(net.numht)]
+    nt = net.numht[net.numhybrids - net.numBad + 1 : net.numhybrids - net.numBad + k]
+    nhz = net.numht[net.numhybrids - net.numBad + k + 1 : length(net.numht)]
     qnh = Int[]
     qnt = Int[]
     qnhz = Int[]
     qindxh = Int[]
     qindxt = Int[]
     qindxhz = Int[]
-    if(qnet.numHybrids == 1 && qnet.hybrid[1].isBadDiamondI)
+    if qnet.numhybrids == 1 && qnet.hybrid[1].isBadDiamondI
         ind1 = parse(Int,string(string(qnet.hybrid[1].number),"1"))
         ind2 = parse(Int,string(string(qnet.hybrid[1].number),"2"))
         i = findfirst(isequal(ind1), nhz)
         i != nothing || error("ind1 not found in nhz")
         edges = hybridEdges(qnet.hybrid[1])
-        push!(qnhz,i+net.numHybrids-net.numBad+k)
-        push!(qnhz,i+1+net.numHybrids-net.numBad+k)
+        push!(qnhz,i+net.numhybrids-net.numBad+k)
+        push!(qnhz,i+1+net.numhybrids-net.numBad+k)
         push!(qindxhz,getIndex(getOtherNode(edges[1],qnet.hybrid[1]),qnet))
         push!(qindxhz,getIndex(getOtherNode(edges[2],qnet.hybrid[1]),qnet))
     else
@@ -132,8 +132,8 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                 i = findfirst(isequal(ind1), nhz)
                 i != nothing || error("ind1 not found in nhz")
                 edges = hybridEdges(n)
-                push!(qnhz,i+net.numHybrids-net.numBad+k)
-                push!(qnhz,i+1+net.numHybrids-net.numBad+k)
+                push!(qnhz,i+net.numhybrids-net.numBad+k)
+                push!(qnhz,i+1+net.numhybrids-net.numBad+k)
                 push!(qindxhz,getIndex(getOtherNode(edges[1],n),qnet))
                 push!(qindxhz,getIndex(getOtherNode(edges[2],n),qnet))
                 found = true
@@ -148,7 +148,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     if isnothing(enum_in_nt)
                         error("identifiable edge $(e.number) in qnet not found in net")
                     end
-                    push!(qnt, enum_in_nt + net.numHybrids - net.numBad)
+                    push!(qnt, enum_in_nt + net.numhybrids - net.numBad)
                     push!(qindxt, getIndex(e,qnet))
                 end
                 if(!e.istIdentifiable && all((n->!n.leaf),e.node) && !e.hybrid && e.fromBadDiamondI) # tree edge not identifiable but internal with length!=0 (not bad diamII nor bad triangle)
@@ -156,7 +156,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     if isnothing(enum_in_nhz)
                         error("internal edge $(e.number) corresponding to gammaz in qnet not found in net.ht")
                     end
-                    push!(qnhz, enum_in_nhz + net.numHybrids - net.numBad + k)
+                    push!(qnhz, enum_in_nhz + net.numhybrids - net.numBad + k)
                     push!(qindxhz, getIndex(e,qnet))
                 end
                 if(e.hybrid && !e.isMajor)
@@ -200,7 +200,7 @@ function update!(qnet::QuartetNetwork,x::Vector{Float64}, net::HybridNetwork)
     for i in 1:length(ch)
         qnet.changed |= (ch[i] & qnet.hasEdge[i])
     end
-    #DEBUGC && @debug "inside update!, qnet.changed is $(qnet.changed), ch $(ch) and qnet.hasEdge $(qnet.hasEdge), $(qnet.quartetTaxon), numHyb $(qnet.numHybrids)"
+    #DEBUGC && @debug "inside update!, qnet.changed is $(qnet.changed), ch $(ch) and qnet.hasEdge $(qnet.hasEdge), $(qnet.quartetTaxon), numHyb $(qnet.numhybrids)"
     if(qnet.changed)
         if(any([n.isBadDiamondI for n in qnet.hybrid])) # qnet.indexht is only two values: gammaz1,gammaz2 #FIXIT: this could crash if hybrid for bad diamond should disappear after cleaning qnet
             @debug "it is inside update! and identifies that ht changed and it is inside the bad diamond I case"
@@ -213,11 +213,11 @@ function update!(qnet::QuartetNetwork,x::Vector{Float64}, net::HybridNetwork)
             end
         else
             for i in 1:length(qnet.indexht)
-                if(qnet.indexht[i] <= net.numHybrids - net.numBad)
+                if qnet.indexht[i] <= net.numhybrids - net.numBad
                     0 <= x[qnet.indexht[i]] <= 1 || error("new gamma value should be between 0,1: $(x[qnet.indexht[i]]).")
                     qnet.edge[qnet.index[i]].hybrid || error("something odd here, optimizing gamma for tree edge $(qnet.edge[qnet.index[i]].number)")
                     setGamma!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]], true)
-                elseif(qnet.indexht[i] <= net.numHybrids - net.numBad + k)
+                elseif qnet.indexht[i] <= net.numhybrids - net.numBad + k
                     setLength!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]])
                 else
                     DEBUGC && @debug "updating qnet parameters, found gammaz case when hybridization has been removed"
@@ -253,11 +253,11 @@ function updateParameters!(net::HybridNetwork, xmin::Vector{Float64})
     net.ht = xmin
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
     for i in 1:length(net.ht)
-        if(i <= net.numHybrids - net.numBad)
+        if i <= net.numhybrids - net.numBad
             0 <= net.ht[i] <= 1 || error("new gamma value should be between 0,1: $(net.ht[i]).")
             net.edge[net.index[i]].hybrid || error("something odd here, optimizing gamma for tree edge $(net.edge[net.index[i]].number)")
             setGamma!(net.edge[net.index[i]],net.ht[i], true)
-        elseif(i <= net.numHybrids - net.numBad + k)
+        elseif i <= net.numhybrids - net.numBad + k
             setLength!(net.edge[net.index[i]],net.ht[i])
         else
             0 <= net.ht[i] <= 1 || error("new gammaz value should be between 0,1: $(net.ht[i]).")
@@ -274,14 +274,14 @@ end
 # function for the upper bound of ht
 function upper(net::HybridNetwork)
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    return vcat(ones(net.numHybrids-net.numBad), repeat([10],inner=[k]),
-                ones(length(net.ht)-k-net.numHybrids+net.numBad))
+    return vcat(ones(net.numhybrids-net.numBad), repeat([10],inner=[k]),
+                ones(length(net.ht)-k-net.numhybrids+net.numBad))
 end
 
 # function to calculate the inequality gammaz1+gammaz2 <= 1
 function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Integer, verbose::Bool)
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    hz = x[net.numHybrids - net.numBad + k + 1 : length(x)]
+    hz = x[net.numhybrids - net.numBad + k + 1 : length(x)]
     if verbose # goes to stdout
         println("enters calculateIneqGammaz with hz $(hz), and hz[ind*2] + hz[ind*2-1] - 1 = $(hz[ind*2] + hz[ind*2-1] - 1)")
     else # goes to logger (if debug messages are turned on by user)
@@ -644,13 +644,13 @@ Procedure:
 function afterOptBL!(currT::HybridNetwork, d::DataCF,closeN ::Bool, origin::Bool,verbose::Bool, N::Integer, movesgamma::Vector{Int})
     global CHECKNET
     !isTree(currT) || return false,true,true,true
-    nh = currT.ht[1 : currT.numHybrids - currT.numBad]
+    nh = currT.ht[1 : currT.numhybrids - currT.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in currT.edge])
-    nt = currT.ht[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    nhz = currT.ht[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
-    indh = currT.index[1 : currT.numHybrids - currT.numBad]
-    indt = currT.index[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    indhz = currT.index[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
+    nt = currT.ht[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    nhz = currT.ht[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
+    indh = currT.index[1 : currT.numhybrids - currT.numBad]
+    indt = currT.index[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    indhz = currT.index[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     !reduce(&,[flagh,flagt,flaghz]) || return false,true,true,true
     @debug "begins afterOptBL because of conflicts: flagh,flagt,flaghz=$([flagh,flagt,flaghz])"
@@ -772,13 +772,13 @@ function afterOptBLAllMultipleAlleles!(currT::HybridNetwork, d::DataCF, N::Integ
     global CHECKNET
     !isempty(d.repSpecies) || error("calling afterOptBLAllMultipleAlleles but this is not a case with multple alleles")
     !isTree(currT) || return false,true,true,true
-    nh = currT.ht[1 : currT.numHybrids - currT.numBad]
+    nh = currT.ht[1 : currT.numhybrids - currT.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in currT.edge])
-    nt = currT.ht[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    nhz = currT.ht[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
-    indh = currT.index[1 : currT.numHybrids - currT.numBad]
-    indt = currT.index[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    indhz = currT.index[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
+    nt = currT.ht[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    nhz = currT.ht[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
+    indh = currT.index[1 : currT.numhybrids - currT.numBad]
+    indt = currT.index[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    indhz = currT.index[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     !reduce(&,[flagh,flagt,flaghz]) || return false,true,true,true
     @debug "begins afterOptBL because of conflicts: flagh,flagt,flaghz=$([flagh,flagt,flaghz])"
@@ -925,23 +925,23 @@ end
 # -------------- heuristic search for topology -----------------------
 
 function isTree(net::HybridNetwork)
-    net.numHybrids == length(net.hybrid) || error("numHybrids does not match to length of net.hybrid")
-    net.numHybrids != 0 || return true
+    net.numhybrids == length(net.hybrid) || error("numhybrids does not match to length of net.hybrid")
+    net.numhybrids != 0 || return true
     return false
 end
 
 # function to adjust the weight of addHybrid if net is in a much lower layer
-# net.numHybrids<<hmax
+# net.numhybrids<<hmax
 # takes as input the vector of weights for each move (add,mvorigin,mvtarget,chdir,delete,nni)
 function adjustWeight(net::HybridNetwork,hmax::Integer,w::Vector{Float64})
-    if(hmax - net.numHybrids > 0)
+    if hmax - net.numhybrids > 0
         hmax >= 0 || error("hmax must be non negative: $(hmax)")
         length(w) == 6 || error("length of w should be 6 as there are only 6 moves: $(w)")
         approxEq(sum(w),1.0) || error("vector of move weights should add up to 1: $(w),$(sum(w))")
         all((i->(0<=i<=1)), w) || error("weights must be nonnegative and less than one $(w)")
         suma = w[5]+w[2]+w[3]+w[4]+w[6]
         v = zeros(6)
-        k = hmax - net.numHybrids
+        k = hmax - net.numhybrids
         for i in 1:6
             if(i == 1)
                 v[i] = w[1]*k/(suma + w[1]*k)
@@ -968,11 +968,11 @@ function adjustWeightMovesfail!(v::Vector{Float64}, movesfail::Vector{Int}, Nmov
         isTree(net) || error("hmax is $(hmax) but net is not a tree")
         v[6] == 0 && return false #nni
     else
-        if(0 < net.numHybrids < hmax)
+        if 0 < net.numhybrids < hmax
             sum(v) != 0 || return false #all moves
-        elseif(net.numHybrids == 0)
+        elseif net.numhybrids == 0
             v[1] == 0 && v[6] == 0 && return false #nni or add
-        elseif(net.numHybrids == hmax)
+        elseif net.numhybrids == hmax
             sum(v[2:4]) + v[6] != 0 || return false #all moves except add/delete
         end
     end
@@ -987,9 +987,9 @@ end
 # for topology that maximizes the P-loglik within the space of
 # topologies with the same number of hybridizations
 # possible moves: move origin/target, change direction hybrid edge, tree nni
-# needs the network to know the current numHybrids
+# needs the network to know the current numhybrids
 # takes as input the vector of weights for each move (add,mvorigin, mvtarget, chdir, delete,nni)
-# and dynamic=true, adjusts the weight for addHybrid if net is in a lower layer (net.numHybrids<<hmax)
+# and dynamic=true, adjusts the weight for addHybrid if net is in a lower layer (net.numhybrids<<hmax)
 # movesfail and Nmov are to count number of fails in each move
 function whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64}, dynamic::Bool, movesfail::Vector{Int}, Nmov::Vector{Int})
     hmax >= 0 || error("hmax must be non negative: $(hmax)")
@@ -1012,7 +1012,7 @@ function whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64}, dynamic:
         flag = adjustWeightMovesfail!(v,movesfail,Nmov,net,hmax)
         @debug "weights after adjusting by movesfail $(v)"
         flag || return :none
-        if(0 < net.numHybrids < hmax)
+        if 0 < net.numhybrids < hmax
             if(r < v[1])
                 return :add
             elseif(r < v[1]+v[2])
@@ -1026,14 +1026,14 @@ function whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64}, dynamic:
             else
                 return :nni
             end
-        elseif(net.numHybrids == 0)
+        elseif net.numhybrids == 0
             suma = v[1]+v[6]
             if(r < (v[1])/suma)
                 return :add
             else
                 return :nni
             end
-        else # net.numHybrids == hmax
+        else # net.numhybrids == hmax
             suma = v[5]+v[2]+v[3]+v[4]+v[6]
             if(r < v[2]/suma)
                 return :MVorigin
@@ -1056,7 +1056,7 @@ whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64},movesfail::Vector{
 #function to choose a hybrid node for the given moves
 function chooseHybrid(net::HybridNetwork)
     !isTree(net) || error("net is a tree, cannot choose hybrid node")
-    net.numHybrids > 1 || return net.hybrid[1]
+    net.numhybrids > 1 || return net.hybrid[1]
     index1 = 0
     while(index1 == 0 || index1 > size(net.hybrid,1))
         index1 = round(Integer,rand()*size(net.hybrid,1));
@@ -1176,9 +1176,9 @@ function calculateNmov!(net::HybridNetwork, N::Vector{Int})
         N[6] = ceil(coupon(4*numIntTreeEdges(net))) #nni
     else
         N[1] = ceil(coupon(binom(numTreeEdges(net),2))) #add
-        N[2] = ceil(coupon(2*4*net.numHybrids)) #mvorigin
-        N[3] = ceil(coupon(2*4*net.numHybrids)) #mtarget
-        N[4] = ceil(coupon(2*net.numHybrids)) #chdir
+        N[2] = ceil(coupon(2*4*net.numhybrids)) #mvorigin
+        N[3] = ceil(coupon(2*4*net.numhybrids)) #mtarget
+        N[4] = ceil(coupon(2*net.numhybrids)) #chdir
         N[5] = 10000 #delete
         N[6] = ceil(coupon(4*numIntTreeEdges(net))) #nni
     end
@@ -1218,14 +1218,14 @@ or `failures<Nfail`, or `stillmoves=true`:
 
 - `Nmov` is updated based on `newT`. The type of move proposed will depend on `newT` (which is the same as `currT` at this point). For example, if `currT` is a tree, we cannot propose move origin/target.
 
-- `move = whichMove` selects randomly a type of move, depending on `Nmov,movesfail,hmax,newT` with weights 1/5 by default for all, and 0 for delete. These weights are adjusted depending on `newT.numHybrids` and `hmax`. If `newT.numHybrids` is far from `hmax`, we give higher probability to adding a new hybrid (we want to reach the `hmax` sooner, maybe not the best strategy, easy to change).
+- `move = whichMove` selects randomly a type of move, depending on `Nmov,movesfail,hmax,newT` with weights 1/5 by default for all, and 0 for delete. These weights are adjusted depending on `newT.numhybrids` and `hmax`. If `newT.numhybrids` is far from `hmax`, we give higher probability to adding a new hybrid (we want to reach the `hmax` sooner, maybe not the best strategy, easy to change).
    Later, we adjust the weights by `movesfail` (first, give weight of 0 if `movesfail[i]>Nmov[i]`, that is, if we reached the maximum possible number of moves allowed for a certain type) and then increase the probability of the other moves.
    So, unless one move has `w=0`, nothing changes. This could be improved by using the outlier quartets to guide the proposal of moves.
 
 - `whichMove` will choose a move randomly from the weights, it will return `none` if no more moves allowed, in which case, the optimization ends
 
 - `flag=proposedTop!(move, newT)` will modify `newT` based on `move`.
-  The function `proposedTop` will return `flag=true` if the move was successful (the move succeeded by `inCycle`, `containRoot`, available edge to make the move (more details in `proposedTop`)).
+  The function `proposedTop` will return `flag=true` if the move was successful (the move succeeded by `inCycle`, `containroot`, available edge to make the move (more details in `proposedTop`)).
   If `flag=false`, then `newT` is cleaned, except for the case of multiple alleles.
   The function `proposedTop` keeps count of `movescount` (successful move), `movesfail` (unsuccessful move),
 
@@ -1441,15 +1441,15 @@ end
 function moveDownLevel!(net::HybridNetwork)
     global CHECKNET
     !isTree(net) ||error("cannot delete hybridization in a tree")
-    @debug "MOVE: need to go down one level to h-1=$(net.numHybrids-1) hybrids because of conflicts with gamma=0,1"
+    @debug "MOVE: need to go down one level to h-1=$(net.numhybrids-1) hybrids because of conflicts with gamma=0,1"
     @debug begin printEverything(net); "printed everything" end
     CHECKNET && checkNet(net)
-    nh = net.ht[1 : net.numHybrids - net.numBad]
+    nh = net.ht[1 : net.numhybrids - net.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    nt = net.ht[net.numHybrids - net.numBad + 1 : net.numHybrids - net.numBad + k]
-    nhz = net.ht[net.numHybrids - net.numBad + k + 1 : length(net.ht)]
-    indh = net.index[1 : net.numHybrids - net.numBad]
-    indhz = net.index[net.numHybrids - net.numBad + k + 1 : length(net.ht)]
+    nt = net.ht[net.numhybrids - net.numBad + 1 : net.numhybrids - net.numBad + k]
+    nhz = net.ht[net.numhybrids - net.numBad + k + 1 : length(net.ht)]
+    indh = net.index[1 : net.numhybrids - net.numBad]
+    indhz = net.index[net.numhybrids - net.numBad + k + 1 : length(net.ht)]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     if(!flagh)
         for i in 1:length(nh)
@@ -1508,10 +1508,10 @@ end
 # checks if there are problems in estimated net.ht:
 # returns flag for h, flag for t, flag for hz
 function isValid(net::HybridNetwork)
-    nh = net.ht[1 : net.numHybrids - net.numBad]
+    nh = net.ht[1 : net.numhybrids - net.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    nt = net.ht[net.numHybrids - net.numBad + 1 : net.numHybrids - net.numBad + k]
-    nhz = net.ht[net.numHybrids - net.numBad + k + 1 : length(net.ht)]
+    nt = net.ht[net.numhybrids - net.numBad + 1 : net.numhybrids - net.numBad + k]
+    nhz = net.ht[net.numhybrids - net.numBad + k + 1 : length(net.ht)]
     #println("isValid on nh $(nh), nt $(nt), nhz $(nhz)")
     return all((n->(0<n<1 && !approxEq(n,0.0) && !approxEq(n,1.0))), nh), all((n->(n>0 && !approxEq(n,0.0))), nt), all((n->(0<n<1 && !approxEq(n,0.0) && !approxEq(n,1.0))), nhz)
 end
@@ -1796,7 +1796,7 @@ function optTopRun1!(currT0::HybridNetwork, liktolAbs, Nfail::Integer, d::DataCF
         if(!isTree(currT))
             if(rand() < 1-probST) # modify starting network by mvorigin, mvtarget with equal prob
                 currT0 = deepcopy(currT) # to go back if new topology does not work for mult alleles
-                if(currT.numHybrids == 1)
+                if currT.numhybrids == 1
                     ind = 1
                 else
                     ind = 0
@@ -1936,7 +1936,7 @@ function snaq!(
     updateBL::Bool=true,
 )
     0.0<=probST<=1.0 || error("probability to keep the same starting topology should be between 0 and 1: $(probST)")
-    currT0.numTaxa >= 5 || error("cannot estimate hybridizations in topologies with fewer than 5 taxa, this topology has $(currT0.numTaxa) taxa")
+    currT0.numtaxa >= 5 || error("cannot estimate hybridizations in topologies with fewer than 5 taxa, this topology has $(currT0.numtaxa) taxa")
     typemax(Int) > length(d.quartet) ||
     @warn "the number of rows / 4-taxon sets exceeds the max integer of type $Int ($(typemax(Int))). High risk of overflow errors..."
     # need a clean starting net. fixit: maybe we need to be more thorough here
@@ -2017,7 +2017,7 @@ function findStartingTopology!(currT0::HybridNetwork, probST::Float64, multAll::
         if !isTree(currT)
             if rand() < 1-probST # modify starting network by mvorigin, mvtarget with equal prob
                 currT0 = deepcopy(currT) # to go back if new topology does not work for mult alleles
-                ind = rand(1:currT.numHybrids)
+                ind = rand(1:currT.numhybrids)
                 mymove = ( rand()<0.5 ? "origin" : "target" )
                 mymove_fun! = (mymove=="origin" ? moveOriginUpdateRepeat! : moveTargetUpdateRepeat!)
                 suc = mymove_fun!(currT,currT.hybrid[ind],true)

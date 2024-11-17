@@ -26,7 +26,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     @test net.node[10].isBadDiamondII # or: does not know it is bad diamond II
     ##plot(net,showedgenumber=true)
     @test [e.inCycle for e in net.edge] == [-1,-1,3,3,-1,-1,-1,-1,-1,-1,3,3] # or: error in incycle
-    @test [e.containRoot for e in net.edge] == [true,true,false,true,true,false,false,false,false,false,false,true] # or: error in contain root
+    @test [e.containroot for e in net.edge] == [true,true,false,true,true,false,false,false,false,false,false,true] # or: error in contain root
     @test [e.istIdentifiable for e in net.edge] == [false,false,true,true,false,false,false,true,false,false,true,true] # or: istIdentifiable not correct
     @test (net.edge[3].hybrid && net.edge[11].hybrid) # or: hybrid edges wrong")
 

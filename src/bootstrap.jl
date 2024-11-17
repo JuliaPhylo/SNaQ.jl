@@ -271,7 +271,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
             btr = data[igene]
             length(btr) > 0 || error("no bootstrap trees for $(igene)th gene")
             for itree in 1:length(btr)
-                btr[itree].numHybrids == 0 || error("network $itree is not a tree for $(igene)th gene")
+                btr[itree].numhybrids == 0 || error("network $itree is not a tree for $(igene)th gene")
             end
         end
     end
@@ -291,7 +291,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
             rethrow(err)
         end
     end
-    runs2 == 0 || otherNet.numTaxa > 0 ||
+    runs2 == 0 || otherNet.numtaxa > 0 ||
         error("""otherNet not given and prcnet>0. Please set prcnet to 0 to start optimizations
                 from the same network always, or else provide an other network "otherNet"
                 to start the optimization from this other network in pcrnet % of runs.""")

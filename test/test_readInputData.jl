@@ -130,7 +130,7 @@ if false # was used to time `countquartetsintrees` vs `readTrees2CF`
 dir = "/Users/ane/Documents/private/concordance/quartetNetwork/multiind/data"
 treefile = joinpath(dir, "raxml_1387_sample_5species4alleles.tre")
 tree = readmultinewick(treefile); # 1387 trees
-# extrema([t.numTaxa for t in tree]) # 4-16 taxa in each
+# extrema([t.numtaxa for t in tree]) # 4-16 taxa in each
 @time df1 = writeTableCF(countquartetsintrees(tree)...)
 # 0.139761 seconds (900.12 k allocations: 52.000 MiB, 11.52% gc time). 3876×8 DataFrames.DataFrame
 @time df2 = writeTableCF(readTrees2CF(tree, writeTab=false, writeSummary=false))

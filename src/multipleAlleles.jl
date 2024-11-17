@@ -294,7 +294,7 @@ function mergeLeaves!(net::HybridNetwork)
             par.name = other.name
             par.leaf = true
             push!(net.leaf,par)
-            net.numTaxa += 1
+            net.numtaxa += 1
         end
     end
 end

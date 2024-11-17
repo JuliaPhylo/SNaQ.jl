@@ -515,8 +515,8 @@ extractQuartet!(net::HybridNetwork, d::DataCF) = extractQuartet!(net, d.quartet)
 # function to check if there are potential redundant cycles in net
 # return the flag (true=redundant cycle found) and the hybrid node for the redundant cycle
 function hasRedundantCycle(net::Network)
-    length(net.hybrid) == net.numHybrids || error("found net with length net.hybrid of $(length(net.hybrid)) and net.numHybrids of $(net.numHybrids)")
-    if net.numHybrids > 0
+    length(net.hybrid) == net.numhybrids || error("found net with length net.hybrid of $(length(net.hybrid)) and net.numhybrids of $(net.numhybrids)")
+    if net.numhybrids > 0
         for h in net.hybrid
             k = sum([(n.inCycle == h.number && length(n.edge) == 3) ? 1 : 0 for n in net.node])
             if k < 2
@@ -530,7 +530,7 @@ end
 
 # function to delete redundante cycles on all hybrid nodes in net
 function redundantCycle!(net::Network)
-    length(net.hybrid) == net.numHybrids || error("found net with length net.hybrid of $(length(net.hybrid)) and net.numHybrids of $(net.numHybrids)")
+    length(net.hybrid) == net.numhybrids || error("found net with length net.hybrid of $(length(net.hybrid)) and net.numhybrids of $(net.numhybrids)")
     if(length(net.hybrid) > 0)
         redCycle, node = hasRedundantCycle(net)
         while(redCycle)
@@ -607,7 +607,7 @@ end
 
 # Function to check that external edges do not have nodes with only two edges
 function cleanExtEdges!(net::Network)
-#    if(net.numHybrids > 0)
+#    if net.numhybrids > 0
         for l in net.leaf
             length(l.edge) == 1 || error("leaf $(l.number) with $(length(l.edge)) edges, not 1")
             deleteIntLeafWhile!(net,getOtherNode(l.edge[1],l),l)
@@ -787,9 +787,9 @@ end
 # 1 (equivalent to tree), 2 (minor CF different)
 function identifyQuartet!(qnet::QuartetNetwork)
     #if(qnet.which == -1)
-        if(qnet.numHybrids == 0)
+        if qnet.numhybrids == 0
             qnet.which = 1
-        elseif(qnet.numHybrids == 1)
+        elseif qnet.numhybrids == 1
             identifyQuartet!(qnet, qnet.hybrid[1])
             if(qnet.typeHyb[1] == 5)
                 qnet.which = 2
@@ -1087,12 +1087,12 @@ end
 # fixit: need to add a loop, eliminate type1 until there are none, and then identify again
 function eliminateHybridization!(qnet::QuartetNetwork)
     qnet.which != -1 || error("qnet which has to be updated by now to 1 or 2, and it is $(qnet.which)")
-    if(qnet.numHybrids == 1)
+    if qnet.numhybrids == 1
         eliminateHybridization!(qnet,qnet.hybrid[1])
-    elseif(qnet.numHybrids > 1)
+    elseif qnet.numhybrids > 1
         #eliminate in order: first type1 only
         DEBUGC && @debug "starting eliminateHyb for more than one hybrid with types $([n.typeHyb for n in qnet.hybrid])"
-        while(qnet.numHybrids > 0 && any([n.typeHyb == 1 for n in qnet.hybrid]))
+        while(qnet.numhybrids > 0 && any([n.typeHyb == 1 for n in qnet.hybrid]))
             hybrids = copy(qnet.hybrid)
             for n in hybrids
                 if(n.typeHyb == 1) #only delete type 1 hybridizations (non identifiable ones)
@@ -1101,7 +1101,7 @@ function eliminateHybridization!(qnet::QuartetNetwork)
                 end
             end
             qnet.typeHyb = Int[]
-            if(qnet.numHybrids > 0)
+            if qnet.numhybrids > 0
                 DEBUGC && @debug "need to identify hybridizations again after deleting type 1 hybridizations"
                 identifyQuartet!(qnet)
             end
@@ -1235,14 +1235,14 @@ function calculateExpCF!(qnet::QuartetNetwork)
             error("quartet network needs to have updated formula and t1 before computing the expCF")
         end
     elseif(qnet.which == 2)
-        if(qnet.numHybrids == 1)
+        if qnet.numhybrids == 1
             if(qnet.hybrid[1].typeHyb == 5)
                 quartetType5!(qnet,qnet.hybrid[1])
             else
                 error("strange quartet network type $(qnet.which) with one hybrid node $(qnet.hybrid[1].number) but it is not type 5, it is type $(qnet.hybrid[1].typeHyb)")
             end
         else
-            error("quartet network with type $(qnet.which) but with $(qnet.numHybrids) hybrid nodes. all hybridizations type 1 (not identifiable) have been eliminated already, so there should only be one hybrid.")
+            error("quartet network with type $(qnet.which) but with $(qnet.numhybrids) hybrid nodes. all hybridizations type 1 (not identifiable) have been eliminated already, so there should only be one hybrid.")
         end
     end
 end
@@ -1261,7 +1261,7 @@ end
 # after extractQuartet(net,data) that updates quartet.qnet
 # warning: only updates expCF for quartet.changed=true
 function calculateExpCFAll!(data::DataCF)
-    !all((q->(q.qnet.numTaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
+    !all((q->(q.qnet.numtaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
     #@warn "assume the numbers for the taxon read from the observed CF table match the numbers given to the taxon when creating the object network"
     for q in data.quartet
         if(q.qnet.changed)
@@ -1279,7 +1279,7 @@ end
 # warning: assumes qnet.indexht is updated already
 # warning: only updates expCF for quartet.qnet.changed=true
 function calculateExpCFAll!(data::DataCF, x::Vector{Float64},net::HybridNetwork)
-    !all((q->(q.qnet.numTaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
+    !all((q->(q.qnet.numtaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
     #println("calculateExpCFAll in x: $(x) with net.ht $(net.ht)")
     for q in data.quartet
         update!(q.qnet,x,net)
@@ -1326,7 +1326,7 @@ function topologyQPseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
         error("starting topology not a level 1 network")
     end
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
-    all((q->(q.qnet.numTaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
+    all((q->(q.qnet.numtaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
     for q in d.quartet
         if verbose println("computing expCF for quartet $(q.taxon)") # to stdout
         else @debug        "computing expCF for quartet $(q.taxon)"; end # to logger if debug turned on by user

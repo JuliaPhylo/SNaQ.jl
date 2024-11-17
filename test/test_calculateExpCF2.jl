@@ -20,7 +20,7 @@ qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
 
 eliminateHybridization!(qnet)
 qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-qnet.numHybrids == 1 || error("qnet not correctly eliminated hyb")
+qnet.numhybrids == 1 || error("qnet not correctly eliminated hyb")
 qnet.hybrid[1].k == 4 || error("qnet not correclty identified")
 qnet.hybrid[1].typeHyb == 5 || error("qnet not correclty identified")
 qnet.hybrid[1].isBadDiamondI || error("qnet forgot it is a bad diamondI")
