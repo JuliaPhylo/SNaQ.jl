@@ -1,5 +1,8 @@
 # circularity: a node has a vector of edges, and an edge has a vector of nodes
 
+inCycle(e::Edge) = e.inte1
+inCycle!(e::Edge, b::Bool) = (e.inte1 = b) # returns b
+
 # type created from a HybridNetwork only to extract a given quartet
 """
     QuartetNetwork(net::HybridNetwork)
