@@ -27,7 +27,7 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
     for n in nodes
         if isNodeNumIn(n,net.node) # very important to check
             if size(n.edge,1) == 2 # delete n if:
-                if (!n.hybrid && (!leaveRoot || !isEqual(net.node[net.root],n)) ||
+                if (!n.hybrid && (!leaveRoot || !isEqual(getroot(net),n)) ||
                     (n.hybrid && sum(e.hybrid for e in n.edge) == 1))
                     deleteIntNode!(net,n)
                     continue # n was deleted: skip the rest
@@ -151,7 +151,7 @@ function cleanAfterReadAll!(net::HybridNetwork, leaveRoot::Bool)
     end
     @debug "check root placement -----"
     checkRootPlace!(net)
-    net.node[net.root].leaf && @warn "root node $(net.node[net.root].number) is a leaf, so when plotting net, it can look weird"
+    getroot(net).leaf && @warn "root node $(getroot(net).number) is a leaf, so when plotting net, it can look weird"
     net.cleaned = true #fixit: set to false inside updateAllReadTopology if problem encountered
     net.isRooted = false
 end
@@ -208,11 +208,11 @@ end
 # warning: it needs updateContainRoot set
 function checkRootPlace!(net::HybridNetwork; verbose=false::Bool, outgroup="none"::AbstractString)
     if(outgroup == "none")
-        if(!canBeRoot(net.node[net.root]))
-            verbose && println("root node $(net.node[net.root].number) placement is not ok, we will change it to the first found node that agrees with the direction of the hybrid edges")
+        if !canBeRoot(getroot(net))
+            verbose && println("root node $(getroot(net).number) placement is not ok, we will change it to the first found node that agrees with the direction of the hybrid edges")
             for i in 1:length(net.node)
                 if(canBeRoot(net.node[i]))
-                    net.root = i
+                    net.rooti = i
                     break
                 end
             end
@@ -229,12 +229,12 @@ function checkRootPlace!(net::HybridNetwork; verbose=false::Bool, outgroup="none
         length(leaf.edge) == 1 || error("found leaf with more than 1 edge: $(leaf.number)")
         other = getOtherNode(leaf.edge[1],leaf);
         if(canBeRoot(other))
-            net.root = getIndexNode(other.number,net)
+            net.rooti = getIndexNode(other.number,net)
         else
             throw(RootMismatch("outgroup $(outgroup) contradicts direction of hybrid edges"))
         end
     end
-    canBeRoot(net.node[net.root]) || error("tried to place root, but couldn't. root is node $(net.node[net.root])")
+    canBeRoot(getroot(net)) || error("tried to place root, but couldn't. root is node $(getroot(net))")
 end
 
 
@@ -263,7 +263,7 @@ function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Boo
     end
     assignhybridnames!(net)
     if net.numnodes == 1
-        print(s,string(net.node[net.root].number,";")) # error if 'string' is an argument name.
+        print(s,string(getroot(net).number,";")) # error if 'string' is an argument name.
     else
         if(!isTree(net) && !net.cleaned)
             @debug "net not cleaned inside writenewick_level1, need to run updateContainRoot"
@@ -274,7 +274,7 @@ function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Boo
         end
         updateRoot!(net,outgroup)
         #@debug begin printEverything(net); "printed everything" end
-        CHECKNET && canBeRoot(net.node[net.root])
+        CHECKNET && canBeRoot(getroot(net))
         if(multall)
             mergeLeaves!(net)
             ## make sure the root is not on a leaf
@@ -331,8 +331,8 @@ otherwise taxa are labelled by their numbers (unique identifiers).
 - multall: (default false). set to true when there are multiple
   alleles per population.
 
-The topology may be written using a root different than net.root,
-if net.root is incompatible with one of more hybrid node.
+The topology may be written using a root different than net.rooti,
+if net.rooti is incompatible with one of more hybrid node.
 Missing hybrid names are written as "#Hi" where "i" is the hybrid node number if possible.
 """ #"
 writenewick_level1(net::HybridNetwork; di=false::Bool, string=true::Bool, namelabel=true::Bool,
@@ -342,7 +342,7 @@ writenewick_level1(net, di, string, namelabel, outgroup, printID, round, digits,
 
 # function to check if root is well-placed
 # and look for a better place if not
-# searches on net.node because net.root is the index in net.node
+# searches on net.node because net.rooti is the index in net.node
 # if we search in net.edge, we then need to search in net.node
 # this function is only used inside writenewick_level1
 function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
@@ -386,7 +386,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
                 setLength!(edge,t/2)
                 setLength!(newedge,t/2)
             end
-            net.root = length(net.node) #last node is root
+            net.rooti = length(net.node) #last node is root
        else
             @warn "external edge $(net.node[index].edge[1].number) leading to outgroup $(outgroup) cannot contain root, root placed wherever"
             checkroot = true
@@ -411,8 +411,8 @@ end
 # but if left in the network, everything crashes (as everything assumes three edges per node)
 # fromUpdateRoot=true if called after updateRoot (in which case leaf has to be a leaf), ow it is used in readTopUpdate
 function undoRoot!(net::HybridNetwork, fromUpdateRoot::Bool=true)
-    if(length(net.node[net.root].edge) == 2)
-        root = net.node[net.root]
+    if length(getroot(net).edge) == 2
+        root = getroot(net)
         leaf = getOtherNode(root.edge[1],root).leaf ? getOtherNode(root.edge[1],root) : getOtherNode(root.edge[2],root)
         (fromUpdateRoot && leaf.leaf) || error("root should have one neighbor leaf which has to be the outgroup defined")
         deleteIntLeafWhile!(net,root,leaf);
