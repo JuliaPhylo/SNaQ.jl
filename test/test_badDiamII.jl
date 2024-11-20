@@ -5,7 +5,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
 
 @testset "moveTargetUpdate! reject 2-cycle proposal" begin
     net3c_newick = "(1,2,(((3,4))#H1:::0.6,(#H1:::0.4,(5,6))));" # 3-cycle adjacent to 3 cherries
-    net3 = readTopologyLevel1(net3c_newick)
+    net3 = readnewick_level1(net3c_newick)
     # net3.node[6].isBadTriangle : not isVeryBadTriangle nor isExtBadTriangle
     hn = net3.hybrid[1] # more robust than net3.node[6]
     tmp = SNaQ.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
@@ -17,16 +17,16 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     global tree, net, df, d
 
     tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-    net = readTopologyLevel1(tree);
+    net = readnewick_level1(tree);
     SNaQ.checkNet(net)
-    #printNodes(net)
-    #printEdges(net)
+    #printnodes(net)
+    #printedges(net)
     @test net.node[10].number == 3 # or: wrong hybrid
     @test net.node[10].hybrid # or: does not know it is hybrid
     @test net.node[10].isBadDiamondII # or: does not know it is bad diamond II
     ##plot(net,showedgenumber=true)
     @test [e.inCycle for e in net.edge] == [-1,-1,3,3,-1,-1,-1,-1,-1,-1,3,3] # or: error in incycle
-    @test [e.containRoot for e in net.edge] == [true,true,false,true,true,false,false,false,false,false,false,true] # or: error in contain root
+    @test [e.containroot for e in net.edge] == [true,true,false,true,true,false,false,false,false,false,false,true] # or: error in contain root
     @test [e.istIdentifiable for e in net.edge] == [false,false,true,true,false,false,false,true,false,false,true,true] # or: istIdentifiable not correct
     @test (net.edge[3].hybrid && net.edge[11].hybrid) # or: hybrid edges wrong")
 
@@ -51,7 +51,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     @test net2.edge[11].istIdentifiable # or: wrong hybrid is t identifiable
     @test net2.edge[11].length < 0.01 # or: wrong bl estimated
     @test net2.edge[10].length == 0.0 # or: tree edge in bad diamond II not 0
-    #printEdges(net2)
+    #printedges(net2)
 
     @test_logs show(devnull, net2)
     @test_logs [show(devnull, net2.node[i]) for i in [1,3,10]];
@@ -59,7 +59,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     @test_logs show(devnull, d)
     @test_logs show(devnull, d.quartet[1])
     @test_logs show(devnull, d.quartet[1].qnet)
-    @test tipLabels(d.quartet) == ["1","2","3","4","5","6"]
+    @test tiplabels(d.quartet) == ["1","2","3","4","5","6"]
     a = (@test_logs fittedQuartetCF(d, :wide));
     @test size(a) == (15,10)
     a = (@test_logs fittedQuartetCF(d, :long));
@@ -67,12 +67,12 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
 
 end
 
-## testing readTopology----------------------------------------------------------------
-## will remove this from the test because readTopology should not have to worry about istIdentifiable
+## testing readnewick----------------------------------------------------------------
+## will remove this from the test because readnewick should not have to worry about istIdentifiable
 ## we move into updateGammaz
 ## tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-## net2 = readTopology(tree)
-## printEdges(net2)
+## net2 = readnewick(tree)
+## printedges(net2)
 
 ## for e in net2.edge
 ##     if(e.node[1].leaf || e.node[2].leaf)
@@ -84,10 +84,10 @@ end
 
 ## ## this case works fine
 ## tree = "((((8,10))#H1,7),6,(4,#H1));" # Case I Bad diamond I
-## net = readTopologyLevel1(tree)
+## net = readnewick_level1(tree)
 ## checkNet(net)
-## net2 = readTopology(tree)
-## printEdges(net2)
+## net2 = readnewick(tree)
+## printedges(net2)
 
 ## for e in net2.edge
 ##     if(e.node[1].leaf || e.node[2].leaf)

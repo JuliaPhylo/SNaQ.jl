@@ -2,8 +2,8 @@
 # claudia may 2015
 
 tree = "(((((((1,2),3),4),5),(6,7)),(8,9)),10);"
-currT0 = readTopologyLevel1(tree);
-#printEdges(currT0)
+currT0 = readnewick_level1(tree);
+#printedges(currT0)
 besttree = deepcopy(currT0);
 
 Random.seed!(16);
@@ -21,11 +21,11 @@ successful,hybrid,flag,nocycle,flag2,flag3 = SNaQ.addHybridizationUpdate!(besttr
 @test hybrid.k == 3
 @test hybrid.isVeryBadTriangle
 ed = PhyloNetworks.hybridEdges(hybrid)
-@test ed[1].isMajor
+@test ed[1].ismajor
 @test ed[1].gamma > 0.5
 @test ed[1].hybrid
 
 # did not recognize as bad diamond II
 tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-net = readTopologyLevel1(tree);
+net = readnewick_level1(tree);
 net.node[10].isBadDiamondII || error("does not recognize as bad diamond II")

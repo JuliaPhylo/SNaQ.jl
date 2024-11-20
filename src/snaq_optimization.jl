@@ -6,44 +6,45 @@
 const move2int = Dict{Symbol,Int}(:add=>1,:MVorigin=>2,:MVtarget=>3,:CHdir=>4,:delete=>5, :nni=>6)
 const int2move = Dict{Int,Symbol}(move2int[k]=>k for k in keys(move2int))
 """
-default values for tolerance parameters,
-used in the optimization of branch lengths (fAbs, fRel, xAbs, xRel)
-and in the acceptance of topologies (likAbs, numFails).
+Default values for tolerance parameters used in the
+optimization of branch lengths and γ's (`fAbs`, `fRel`, `xAbs`, `xRel`) and
+acceptance of topologies (`likAbs`, `numFails`).
 
-if changes are made here, **make the same** in the docstring for snaq! below
+Below, PN refers to PhyloNetworks.jl, which contained `snaq!` up until PN v0.16.
+Starting with PN v0.17, `snaq!` is part of this package SNaQ.jl.
 
-version | fAbs | fRel | xAbs | xRel | numFails | likAbs | multiplier
---------|------|------|------|------|----------|--------|-----------
-v0.5.1  | 1e-6 | 1e-6 | 1e-3 | 1e-2 |     75   |  1e-6  |
-v0.3.0  | 1e-6 | 1e-5 | 1e-4 | 1e-3 |    100   |  0.01  |
-v0.0.1  | 1e-6 | 1e-5 | 1e-4 | 1e-3 |    100   |        | 10000
-older   | 1e-10| 1e-12| 1e-10| 1e-10|
+pkg version | fRel | fAbs | xRel | xAbs | numFails | likAbs | multiplier
+------------|------|------|------|------|----------|--------|-----------
+SNaQ v0.1   | 1e-6 | 1e-6 | 1e-2 | 1e-3 |     75   |  1e-6  |
+PN v0.5.1   | 1e-6 | 1e-6 | 1e-2 | 1e-3 |     75   |  1e-6  |
+PN v0.3.0   | 1e-5 | 1e-6 | 1e-3 | 1e-4 |    100   |  0.01  |
+PN v0.0.1   | 1e-5 | 1e-6 | 1e-3 | 1e-4 |    100   |        | 10000
+PN older    | 1e-12| 1e-10| 1e-10| 1e-10|
 
 v0.5.1: based on Nan Ji's work. same xAbs and xRel as in phylonet (as of 2015).
-earlier: multiplier was used; later: likAbs = multiplier*fAbs)
+earlier: a `multiplier` was used; later: `likAbs` corresponds to `multiplier*fAbs`.
 "older": values from GLM.jl, Prof Bates
 
-default values used on a single topology, to optimize branch lengths
-and gammas, at the very end of snaq!, and by
-topologyMaxQPseudolik! since v0.5.1.
+Default values used on a *single* topology to optimize branch lengths and gammas,
+at the very end of snaq!.
 
-version | fAbsBL | fRelBL | xAbsBL | xRelBL
---------|--------|--------|--------|-------
-v0.0.1  | 1e-10  | 1e-12  | 1e-10  | 1e-10
+pkg version | fRelBL | fAbsBL | xRelBL | xAbsBL
+------------|--------|--------|--------|-------
+SNaQ v0.1   | 1e-12  | 1e-10  | 1e-10  | 1e-10
+PN v0.0.1   | 1e-12  | 1e-10  | 1e-10  | 1e-10
 """
-const fAbs = 1e-6
 const fRel = 1e-6
-const xAbs = 1e-3
+const fAbs = 1e-6
 const xRel = 1e-2
-const qAbs = 1e-4
+const xAbs = 1e-3
 const numFails = 75 # number of failed proposals allowed before stopping the procedure (like phylonet)
 const numMoves = Int[] #empty to be calculated inside based on coupon's collector
 const likAbs = 1e-6 # loglik absolute tolerance to accept new topology
 
-const fAbsBL = 1e-10
 const fRelBL = 1e-12
-const xAbsBL = 1e-10
+const fAbsBL = 1e-10
 const xRelBL = 1e-10
+const xAbsBL = 1e-10
 # ---------------------- branch length optimization ---------------------------------
 
 # function to get the branch lengths/gammas to optimize for a given network
@@ -65,7 +66,7 @@ function parameters(net::Network)
             push!(n,e.number)
             push!(indxt, getIndex(e,net))
         end
-        if(e.hybrid && !e.isMajor)
+        if e.hybrid && !e.ismajor
             node = e.node[e.isChild1 ? 1 : 2]
             node.hybrid || error("strange thing, hybrid edge $(e.number) pointing at tree node $(node.number)")
             if(!node.isBadDiamondI)
@@ -102,24 +103,24 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
     size(net.numht,1) > 0 || error("net.numht not correctly updated, need to run parameters first")
     @debug (size(qnet.indexht,1) == 0 ? "" :
         "deleting qnet.indexht to replace with info in net")
-    nh = net.numht[1 : net.numHybrids - net.numBad]
+    nh = net.numht[1 : net.numhybrids - net.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    nt = net.numht[net.numHybrids - net.numBad + 1 : net.numHybrids - net.numBad + k]
-    nhz = net.numht[net.numHybrids - net.numBad + k + 1 : length(net.numht)]
+    nt = net.numht[net.numhybrids - net.numBad + 1 : net.numhybrids - net.numBad + k]
+    nhz = net.numht[net.numhybrids - net.numBad + k + 1 : length(net.numht)]
     qnh = Int[]
     qnt = Int[]
     qnhz = Int[]
     qindxh = Int[]
     qindxt = Int[]
     qindxhz = Int[]
-    if(qnet.numHybrids == 1 && qnet.hybrid[1].isBadDiamondI)
+    if qnet.numhybrids == 1 && qnet.hybrid[1].isBadDiamondI
         ind1 = parse(Int,string(string(qnet.hybrid[1].number),"1"))
         ind2 = parse(Int,string(string(qnet.hybrid[1].number),"2"))
         i = findfirst(isequal(ind1), nhz)
         i != nothing || error("ind1 not found in nhz")
         edges = hybridEdges(qnet.hybrid[1])
-        push!(qnhz,i+net.numHybrids-net.numBad+k)
-        push!(qnhz,i+1+net.numHybrids-net.numBad+k)
+        push!(qnhz,i+net.numhybrids-net.numBad+k)
+        push!(qnhz,i+1+net.numhybrids-net.numBad+k)
         push!(qindxhz,getIndex(getOtherNode(edges[1],qnet.hybrid[1]),qnet))
         push!(qindxhz,getIndex(getOtherNode(edges[2],qnet.hybrid[1]),qnet))
     else
@@ -131,8 +132,8 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                 i = findfirst(isequal(ind1), nhz)
                 i != nothing || error("ind1 not found in nhz")
                 edges = hybridEdges(n)
-                push!(qnhz,i+net.numHybrids-net.numBad+k)
-                push!(qnhz,i+1+net.numHybrids-net.numBad+k)
+                push!(qnhz,i+net.numhybrids-net.numBad+k)
+                push!(qnhz,i+1+net.numhybrids-net.numBad+k)
                 push!(qindxhz,getIndex(getOtherNode(edges[1],n),qnet))
                 push!(qindxhz,getIndex(getOtherNode(edges[2],n),qnet))
                 found = true
@@ -147,7 +148,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     if isnothing(enum_in_nt)
                         error("identifiable edge $(e.number) in qnet not found in net")
                     end
-                    push!(qnt, enum_in_nt + net.numHybrids - net.numBad)
+                    push!(qnt, enum_in_nt + net.numhybrids - net.numBad)
                     push!(qindxt, getIndex(e,qnet))
                 end
                 if(!e.istIdentifiable && all((n->!n.leaf),e.node) && !e.hybrid && e.fromBadDiamondI) # tree edge not identifiable but internal with length!=0 (not bad diamII nor bad triangle)
@@ -155,10 +156,10 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     if isnothing(enum_in_nhz)
                         error("internal edge $(e.number) corresponding to gammaz in qnet not found in net.ht")
                     end
-                    push!(qnhz, enum_in_nhz + net.numHybrids - net.numBad + k)
+                    push!(qnhz, enum_in_nhz + net.numhybrids - net.numBad + k)
                     push!(qindxhz, getIndex(e,qnet))
                 end
-                if(e.hybrid && !e.isMajor)
+                if e.hybrid && !e.ismajor
                     node = e.node[e.isChild1 ? 1 : 2]
                     node.hybrid || error("strange hybrid edge $(e.number) poiting to tree node $(node.number)")
                     enum_in_nh = findfirst(isequal(e.number), nh)
@@ -199,7 +200,7 @@ function update!(qnet::QuartetNetwork,x::Vector{Float64}, net::HybridNetwork)
     for i in 1:length(ch)
         qnet.changed |= (ch[i] && qnet.hasEdge[i])
     end
-    #DEBUGC && @debug "inside update!, qnet.changed is $(qnet.changed), ch $(ch) and qnet.hasEdge $(qnet.hasEdge), $(qnet.quartetTaxon), numHyb $(qnet.numHybrids)"
+    #DEBUGC && @debug "inside update!, qnet.changed is $(qnet.changed), ch $(ch) and qnet.hasEdge $(qnet.hasEdge), $(qnet.quartetTaxon), numHyb $(qnet.numhybrids)"
     if(qnet.changed)
         if(any([n.isBadDiamondI for n in qnet.hybrid])) # qnet.indexht is only two values: gammaz1,gammaz2 #FIXIT: this could crash if hybrid for bad diamond should disappear after cleaning qnet
             @debug "it is inside update! and identifies that ht changed and it is inside the bad diamond I case"
@@ -212,11 +213,11 @@ function update!(qnet::QuartetNetwork,x::Vector{Float64}, net::HybridNetwork)
             end
         else
             for i in 1:length(qnet.indexht)
-                if(qnet.indexht[i] <= net.numHybrids - net.numBad)
+                if qnet.indexht[i] <= net.numhybrids - net.numBad
                     0 <= x[qnet.indexht[i]] <= 1 || error("new gamma value should be between 0,1: $(x[qnet.indexht[i]]).")
                     qnet.edge[qnet.index[i]].hybrid || error("something odd here, optimizing gamma for tree edge $(qnet.edge[qnet.index[i]].number)")
-                    setGamma!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]], true)
-                elseif(qnet.indexht[i] <= net.numHybrids - net.numBad + k)
+                    setgamma!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]], true)
+                elseif qnet.indexht[i] <= net.numhybrids - net.numBad + k
                     setLength!(qnet.edge[qnet.index[i]],x[qnet.indexht[i]])
                 else
                     DEBUGC && @debug "updating qnet parameters, found gammaz case when hybridization has been removed"
@@ -252,11 +253,11 @@ function updateParameters!(net::HybridNetwork, xmin::Vector{Float64})
     net.ht = xmin
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
     for i in 1:length(net.ht)
-        if(i <= net.numHybrids - net.numBad)
+        if i <= net.numhybrids - net.numBad
             0 <= net.ht[i] <= 1 || error("new gamma value should be between 0,1: $(net.ht[i]).")
             net.edge[net.index[i]].hybrid || error("something odd here, optimizing gamma for tree edge $(net.edge[net.index[i]].number)")
-            setGamma!(net.edge[net.index[i]],net.ht[i], true)
-        elseif(i <= net.numHybrids - net.numBad + k)
+            setgamma!(net.edge[net.index[i]],net.ht[i], true)
+        elseif i <= net.numhybrids - net.numBad + k
             setLength!(net.edge[net.index[i]],net.ht[i])
         else
             0 <= net.ht[i] <= 1 || error("new gammaz value should be between 0,1: $(net.ht[i]).")
@@ -273,14 +274,14 @@ end
 # function for the upper bound of ht
 function upper(net::HybridNetwork)
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    return vcat(ones(net.numHybrids-net.numBad), repeat([10],inner=[k]),
-                ones(length(net.ht)-k-net.numHybrids+net.numBad))
+    return vcat(ones(net.numhybrids-net.numBad), repeat([10],inner=[k]),
+                ones(length(net.ht)-k-net.numhybrids+net.numBad))
 end
 
 # function to calculate the inequality gammaz1+gammaz2 <= 1
 function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Integer, verbose::Bool)
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    hz = x[net.numHybrids - net.numBad + k + 1 : length(x)]
+    hz = x[net.numhybrids - net.numBad + k + 1 : length(x)]
     if verbose # goes to stdout
         println("enters calculateIneqGammaz with hz $(hz), and hz[ind*2] + hz[ind*2-1] - 1 = $(hz[ind*2] + hz[ind*2-1] - 1)")
     else # goes to logger (if debug messages are turned on by user)
@@ -289,21 +290,25 @@ function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Intege
     hz[ind*2] + hz[ind*2-1] - 1
 end
 
-# numerical optimization of branch lengths given a network (or tree)
-# and data (set of quartets with obsCF)
-# using BOBYQA from NLopt package
-# warning: this function assumes that the network has all the good attributes set. It will not be efficient to re-read the network inside
-# to guarantee all the correct attributes, because this is done over and over inside snaq
-# also, net is modified inside to set its attribute net.loglik equal to the min
 """
-`optBL` road map
+    optBL!(
+        net::HybridNetwork,
+        d::DataCF,
+        verbose::Bool,
+        ftolRel::Float64,
+        ftolAbs::Float64,
+        xtolRel::Float64,
+        xtolAbs::Float64
+    )
 
-Function that optimizes the numerical parameters (branch lengths and inheritance probabilities) for a given network. This function is called multiple times inside `optTopLevel!`.
+Optimize the edge parameters (lengths and inheritance probabilities γ) of a
+given level-1 network, using the BOBYQA algorithm from the NLopt package.
+The optimum found is used to modify `net` with new edge lengths, hybrid edge γs,
+and minimum `net.loglik`.
 
-- Input: network `net`, data `d`
-- Numerical tolerances: `ftolAbs, ftolRel, xtolAbs, xtolRel`
-- Function based on `MixedModels` `fit` function
-- The function assumes `net` has all the right attributes, and cannot check this inside because it would be inefficient
+*Warning*: `net` is assumed to have up-to-date and correct level-1 attributes.
+This is not checked for efficiency, because this function is called repeatedly
+inside `optTopLevel!` and [`snaq!`](@ref).
 
 Procedure:
 
@@ -340,10 +345,20 @@ The objective function `obj(x,g)` calls
    - If the `q.qnet.changed=true` (that is, any of `qnet` branches changed value), we need to call `calculateExpCFAll!(qnet)` on a copy of `q.qnet` (again because we want to leave `q.qnet` with the edge correspondence to `net`)
 - `update!(net,x)` simply saves the new x in `net.ht`
 
-Finally, we call `NLopt.optimize`, and we update the `net.loglik` and `net.ht` at the end.
-After `optBL`, we want to call `afterOptBLAll` (or `afterOptBLAllMultipleAlleles`) to check if there are `h==0,1`; `t==0`; `hz==0,1`.
+Finally, after calling `NLopt.optimize`, `net.loglik` and `net.ht` are updated
+with the optimum score and parameter values that were found.
+After `optBL`, we want to call `afterOptBLAll` (or `afterOptBLAllMultipleAlleles`)
+to check if there are `h==0,1`; `t==0`; `hz==0,1`.
 """
-function optBL!(net::HybridNetwork, d::DataCF, verbose::Bool, ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64)
+function optBL!(
+    net::HybridNetwork,
+    d::DataCF,
+    verbose::Bool,
+    ftolRel::Float64,
+    ftolAbs::Float64,
+    xtolRel::Float64,
+    xtolAbs::Float64
+)
     (ftolRel > 0 && ftolAbs > 0 && xtolAbs > 0 && xtolRel > 0) || error("tolerances have to be positive, ftol (rel,abs), xtol (rel,abs): $([ftolRel, ftolAbs, xtolRel, xtolAbs])")
     if verbose println("OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)");
     else @debug        "OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)"; end
@@ -411,24 +426,55 @@ optBL!(net::HybridNetwork, d::DataCF, ftolRel::Float64, ftolAbs::Float64, xtolRe
 
 # rename optBL for a more user-friendly name
 """
-`topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF)`
+    topologyMaxQPseudolik!(
+        net::HybridNetwork,
+        d::DataCF;
+        verbose = true,
+        ftolRel = 1e-6,
+        ftolAbs = 1e-6,
+        xtolRel = 1e-2,
+        xtolAbs = 1e-3
+    )
 
-Estimate the branch lengths and inheritance probabilities (γ's) for a given network topology.
-The network is *not* modified, only the object `d` is, with updated expected concordance factors.
+Estimate the branch lengths and inheritance probabilities (γ's) for a given
+network topology. The network is *not* modified, only the object `d` is,
+with updated expected concordance factors.
 
 Ouput: new network, with optimized parameters (branch lengths and gammas).
 The maximized quartet pseudo-deviance is the negative log pseudo-likelihood,
 up to an additive constant, such that a perfect fit corresponds to a deviance of 0.0.
 This is also an attribute of the network, which can be accessed with `net.loglik`.
 
-Optional arguments (default value):
+Optional arguments:
 
-- verbose (false): if true, information on the numerical optimization is printed to screen
-- ftolRel (1e-5), ftolAbs (1e-6), xtolRel (1e-3), xtolAbs (1e-4):
-  absolute and relative tolerance values for the pseudo-deviance function
-  and the parameters
+- `verbose`: if `true`, information on the numerical optimization is printed to screen
+- `ftolRel`, `ftolAbs`, `xtolRel`, `xtolAbs`: absolute and relative tolerance
+  values for the pseudo-deviance function (`f`) and the parameters (`x`).
+
+The default tolerance values are quite lenient, for faster running time.
+They are more lenient than those used in `snaq!`, so we can expect that `snaq!`
+returns a better (lower) score for the same network topology.
+It is *highly* recommended to use more stringent value than the default,
+for example 1e-12 for `ftolRel`, and 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`
+to match those in [`snaq!`](@ref).
+
+To further optimize branch lengths and γs, another strategy is the run the
+`topologyMaxQPseudolik!` multiple times, because each time the edge parameters
+in the network are improved, and re-starting a search from a good place leads
+to finding even better edge parameter values. If `snaq!` finds a better score
+for the given network topology, then using this strategy (effectively used by
+`snaq!` when optimizing edge parameters at each trial) and using stringent
+tolerances should eliminate the difference.
 """
-function topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF; verbose=false::Bool, ftolRel=fRel::Float64, ftolAbs=fAbs::Float64, xtolRel=xRel::Float64, xtolAbs=xAbs::Float64)
+function topologyMaxQPseudolik!(
+    net::HybridNetwork,
+    d::DataCF;
+    verbose::Bool=false,
+    ftolRel::Float64=fRel,
+    ftolAbs::Float64=fAbs,
+    xtolRel::Float64=xRel,
+    xtolAbs::Float64=xAbs,
+)
     tmp1, tmp2 = taxadiff(d,net)
     length(tmp1)==0 || error("these taxa appear in one or more quartets, but not in the starting topology: $tmp1")
     if length(tmp2)>0
@@ -440,7 +486,7 @@ function topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF; verbose=false::Bo
             deleteleaf!(net, tax)
         end
     end
-    net = readTopologyUpdate(writeTopologyLevel1(net)) # update everything for level 1
+    net = readTopologyUpdate(writenewick_level1(net)) # update everything for level 1
     try
         checkNet(net)
     catch err
@@ -449,7 +495,7 @@ function topologyMaxQPseudolik!(net::HybridNetwork, d::DataCF; verbose=false::Bo
     end
     if(!isempty(d.repSpecies))
       expandLeaves!(d.repSpecies, net)
-      net = readTopologyLevel1(writeTopologyLevel1(net)) # dirty fix to multiple alleles problem with expandLeaves
+      net = readnewick_level1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
     end
     optBL!(net, d, verbose, ftolRel, ftolAbs, xtolRel,xtolAbs)
     if(net.numBad > 0) # to keep gammaz info in parenthetical description of bad diamond I
@@ -601,13 +647,13 @@ Procedure:
 function afterOptBL!(currT::HybridNetwork, d::DataCF,closeN ::Bool, origin::Bool,verbose::Bool, N::Integer, movesgamma::Vector{Int})
     global CHECKNET
     !isTree(currT) || return false,true,true,true
-    nh = currT.ht[1 : currT.numHybrids - currT.numBad]
+    nh = currT.ht[1 : currT.numhybrids - currT.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in currT.edge])
-    nt = currT.ht[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    nhz = currT.ht[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
-    indh = currT.index[1 : currT.numHybrids - currT.numBad]
-    indt = currT.index[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    indhz = currT.index[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
+    nt = currT.ht[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    nhz = currT.ht[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
+    indh = currT.index[1 : currT.numhybrids - currT.numBad]
+    indt = currT.index[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    indhz = currT.index[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     !reduce(&,[flagh,flagt,flaghz]) || return false,true,true,true
     @debug "begins afterOptBL because of conflicts: flagh,flagt,flaghz=$([flagh,flagt,flaghz])"
@@ -729,13 +775,13 @@ function afterOptBLAllMultipleAlleles!(currT::HybridNetwork, d::DataCF, N::Integ
     global CHECKNET
     !isempty(d.repSpecies) || error("calling afterOptBLAllMultipleAlleles but this is not a case with multple alleles")
     !isTree(currT) || return false,true,true,true
-    nh = currT.ht[1 : currT.numHybrids - currT.numBad]
+    nh = currT.ht[1 : currT.numhybrids - currT.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in currT.edge])
-    nt = currT.ht[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    nhz = currT.ht[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
-    indh = currT.index[1 : currT.numHybrids - currT.numBad]
-    indt = currT.index[currT.numHybrids - currT.numBad + 1 : currT.numHybrids - currT.numBad + k]
-    indhz = currT.index[currT.numHybrids - currT.numBad + k + 1 : length(currT.ht)]
+    nt = currT.ht[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    nhz = currT.ht[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
+    indh = currT.index[1 : currT.numhybrids - currT.numBad]
+    indt = currT.index[currT.numhybrids - currT.numBad + 1 : currT.numhybrids - currT.numBad + k]
+    indhz = currT.index[currT.numhybrids - currT.numBad + k + 1 : length(currT.ht)]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     !reduce(&,[flagh,flagt,flaghz]) || return false,true,true,true
     @debug "begins afterOptBL because of conflicts: flagh,flagt,flaghz=$([flagh,flagt,flaghz])"
@@ -860,16 +906,16 @@ function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Boo
     end
     if tries >= N
         @debug "afterOptBLAll ended because it tried $(tries) times with startover $(startover)"
-        @debug writeTopologyLevel1(currT,true)
+        @debug writenewick_level1(currT,true)
         flagh,flagt,flaghz = isValid(currT)
         if(!flagh || !flaghz)
             @debug "gammaz zero situation still in currT, need to move down one level to h-1"
             moveDownLevel!(currT)
             @debug begin
-                printEdges(currT)
+                printedges(currT)
                 printPartitions(currT)
-                #printNodes(currT)
-                writeTopologyLevel1(currT,true)
+                #printnodes(currT)
+                writenewick_level1(currT,true)
             end
             optBL!(currT,d,verbose,ftolRel, ftolAbs, xtolRel, xtolAbs)
         end
@@ -882,23 +928,23 @@ end
 # -------------- heuristic search for topology -----------------------
 
 function isTree(net::HybridNetwork)
-    net.numHybrids == length(net.hybrid) || error("numHybrids does not match to length of net.hybrid")
-    net.numHybrids != 0 || return true
+    net.numhybrids == length(net.hybrid) || error("numhybrids does not match to length of net.hybrid")
+    net.numhybrids != 0 || return true
     return false
 end
 
 # function to adjust the weight of addHybrid if net is in a much lower layer
-# net.numHybrids<<hmax
+# net.numhybrids<<hmax
 # takes as input the vector of weights for each move (add,mvorigin,mvtarget,chdir,delete,nni)
 function adjustWeight(net::HybridNetwork,hmax::Integer,w::Vector{Float64})
-    if(hmax - net.numHybrids > 0)
+    if hmax - net.numhybrids > 0
         hmax >= 0 || error("hmax must be non negative: $(hmax)")
         length(w) == 6 || error("length of w should be 6 as there are only 6 moves: $(w)")
         approxEq(sum(w),1.0) || error("vector of move weights should add up to 1: $(w),$(sum(w))")
         all((i->(0<=i<=1)), w) || error("weights must be nonnegative and less than one $(w)")
         suma = w[5]+w[2]+w[3]+w[4]+w[6]
         v = zeros(6)
-        k = hmax - net.numHybrids
+        k = hmax - net.numhybrids
         for i in 1:6
             if(i == 1)
                 v[i] = w[1]*k/(suma + w[1]*k)
@@ -925,11 +971,11 @@ function adjustWeightMovesfail!(v::Vector{Float64}, movesfail::Vector{Int}, Nmov
         isTree(net) || error("hmax is $(hmax) but net is not a tree")
         v[6] == 0 && return false #nni
     else
-        if(0 < net.numHybrids < hmax)
+        if 0 < net.numhybrids < hmax
             sum(v) != 0 || return false #all moves
-        elseif(net.numHybrids == 0)
+        elseif net.numhybrids == 0
             v[1] == 0 && v[6] == 0 && return false #nni or add
-        elseif(net.numHybrids == hmax)
+        elseif net.numhybrids == hmax
             sum(v[2:4]) + v[6] != 0 || return false #all moves except add/delete
         end
     end
@@ -944,9 +990,9 @@ end
 # for topology that maximizes the P-loglik within the space of
 # topologies with the same number of hybridizations
 # possible moves: move origin/target, change direction hybrid edge, tree nni
-# needs the network to know the current numHybrids
+# needs the network to know the current numhybrids
 # takes as input the vector of weights for each move (add,mvorigin, mvtarget, chdir, delete,nni)
-# and dynamic=true, adjusts the weight for addHybrid if net is in a lower layer (net.numHybrids<<hmax)
+# and dynamic=true, adjusts the weight for addHybrid if net is in a lower layer (net.numhybrids<<hmax)
 # movesfail and Nmov are to count number of fails in each move
 function whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64}, dynamic::Bool, movesfail::Vector{Int}, Nmov::Vector{Int})
     hmax >= 0 || error("hmax must be non negative: $(hmax)")
@@ -969,7 +1015,7 @@ function whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64}, dynamic:
         flag = adjustWeightMovesfail!(v,movesfail,Nmov,net,hmax)
         @debug "weights after adjusting by movesfail $(v)"
         flag || return :none
-        if(0 < net.numHybrids < hmax)
+        if 0 < net.numhybrids < hmax
             if(r < v[1])
                 return :add
             elseif(r < v[1]+v[2])
@@ -983,14 +1029,14 @@ function whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64}, dynamic:
             else
                 return :nni
             end
-        elseif(net.numHybrids == 0)
+        elseif net.numhybrids == 0
             suma = v[1]+v[6]
             if(r < (v[1])/suma)
                 return :add
             else
                 return :nni
             end
-        else # net.numHybrids == hmax
+        else # net.numhybrids == hmax
             suma = v[5]+v[2]+v[3]+v[4]+v[6]
             if(r < v[2]/suma)
                 return :MVorigin
@@ -1013,7 +1059,7 @@ whichMove(net::HybridNetwork,hmax::Integer,w::Vector{Float64},movesfail::Vector{
 #function to choose a hybrid node for the given moves
 function chooseHybrid(net::HybridNetwork)
     !isTree(net) || error("net is a tree, cannot choose hybrid node")
-    net.numHybrids > 1 || return net.hybrid[1]
+    net.numhybrids > 1 || return net.hybrid[1]
     index1 = 0
     while(index1 == 0 || index1 > size(net.hybrid,1))
         index1 = round(Integer,rand()*size(net.hybrid,1));
@@ -1190,9 +1236,9 @@ function calculateNmov!(net::HybridNetwork, N::Vector{Int})
         N[6] = ceil(coupon(4*numIntTreeEdges(net))) #nni
     else
         N[1] = ceil(coupon(binom(numTreeEdges(net),2))) #add
-        N[2] = ceil(coupon(2*4*net.numHybrids)) #mvorigin
-        N[3] = ceil(coupon(2*4*net.numHybrids)) #mtarget
-        N[4] = ceil(coupon(2*net.numHybrids)) #chdir
+        N[2] = ceil(coupon(2*4*net.numhybrids)) #mvorigin
+        N[3] = ceil(coupon(2*4*net.numhybrids)) #mtarget
+        N[4] = ceil(coupon(2*net.numhybrids)) #chdir
         N[5] = 10000 #delete
         N[6] = ceil(coupon(4*numIntTreeEdges(net))) #nni
     end
@@ -1232,14 +1278,14 @@ or `failures<Nfail`, or `stillmoves=true`:
 
 - `Nmov` is updated based on `newT`. The type of move proposed will depend on `newT` (which is the same as `currT` at this point). For example, if `currT` is a tree, we cannot propose move origin/target.
 
-- `move = whichMove` selects randomly a type of move, depending on `Nmov,movesfail,hmax,newT` with weights 1/5 by default for all, and 0 for delete. These weights are adjusted depending on `newT.numHybrids` and `hmax`. If `newT.numHybrids` is far from `hmax`, we give higher probability to adding a new hybrid (we want to reach the `hmax` sooner, maybe not the best strategy, easy to change).
+- `move = whichMove` selects randomly a type of move, depending on `Nmov,movesfail,hmax,newT` with weights 1/5 by default for all, and 0 for delete. These weights are adjusted depending on `newT.numhybrids` and `hmax`. If `newT.numhybrids` is far from `hmax`, we give higher probability to adding a new hybrid (we want to reach the `hmax` sooner, maybe not the best strategy, easy to change).
    Later, we adjust the weights by `movesfail` (first, give weight of 0 if `movesfail[i]>Nmov[i]`, that is, if we reached the maximum possible number of moves allowed for a certain type) and then increase the probability of the other moves.
    So, unless one move has `w=0`, nothing changes. This could be improved by using the outlier quartets to guide the proposal of moves.
 
 - `whichMove` will choose a move randomly from the weights, it will return `none` if no more moves allowed, in which case, the optimization ends
 
 - `flag=proposedTop!(move, newT)` will modify `newT` based on `move`.
-  The function `proposedTop` will return `flag=true` if the move was successful (the move succeeded by `inCycle`, `containRoot`, available edge to make the move (more details in `proposedTop`)).
+  The function `proposedTop` will return `flag=true` if the move was successful (the move succeeded by `inCycle`, `containroot`, available edge to make the move (more details in `proposedTop`)).
   If `flag=false`, then `newT` is cleaned, except for the case of multiple alleles.
   The function `proposedTop` keeps count of `movescount` (successful move), `movesfail` (unsuccessful move),
 
@@ -1298,10 +1344,10 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     absDiff = liktolAbs + 1
     newT = deepcopy(currT)
     @debug begin
-        printEdges(newT)
+        printedges(newT)
         printPartitions(newT)
         println("++++")
-        writeTopologyLevel1(newT,true)
+        writenewick_level1(newT,true)
     end
     writelog && write(logfile, "\nBegins heuristic optimization of network------\n")
     loopcount = 0
@@ -1358,11 +1404,11 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                     newT = deepcopy(currT)
                 end
                 @debug begin
-                    printEdges(newT)
+                    printedges(newT)
                     printPartitions(newT)
-                    #printNodes(newT)
+                    #printnodes(newT)
                     println("++++")
-                    println(writeTopologyLevel1(newT,true))
+                    println(writenewick_level1(newT,true))
                     "ends step $(count) with absDiff $(accepted ? absDiff : 0.0) and failures $(failures)"
                 end
             else
@@ -1401,10 +1447,10 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     writelog && write(logfile,"\nEND optTopLevel: found minimizer topology at step $(count) (failures: $(failures)) with -loglik=$(round(newT.loglik, digits=5)) and ht_min=$(round.(newT.ht, digits=5))")
     writelog && printCounts(movescount,movesgamma,logfile)
     @debug begin
-        printEdges(newT)
+        printedges(newT)
         printPartitions(newT)
-        printNodes(newT)
-        writeTopologyLevel1(newT,true) ## this changes non-identifiable BLs in newT to -1
+        printnodes(newT)
+        writenewick_level1(newT,true) ## this changes non-identifiable BLs in newT to -1
     end
     if CHECKNET && !isempty(d.repSpecies)
         checkTop4multAllele(newT) || error("newT not suitable for multiple alleles at the very end")
@@ -1458,15 +1504,15 @@ end
 function moveDownLevel!(net::HybridNetwork)
     global CHECKNET
     !isTree(net) ||error("cannot delete hybridization in a tree")
-    @debug "MOVE: need to go down one level to h-1=$(net.numHybrids-1) hybrids because of conflicts with gamma=0,1"
+    @debug "MOVE: need to go down one level to h-1=$(net.numhybrids-1) hybrids because of conflicts with gamma=0,1"
     @debug begin printEverything(net); "printed everything" end
     CHECKNET && checkNet(net)
-    nh = net.ht[1 : net.numHybrids - net.numBad]
+    nh = net.ht[1 : net.numhybrids - net.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    nt = net.ht[net.numHybrids - net.numBad + 1 : net.numHybrids - net.numBad + k]
-    nhz = net.ht[net.numHybrids - net.numBad + k + 1 : length(net.ht)]
-    indh = net.index[1 : net.numHybrids - net.numBad]
-    indhz = net.index[net.numHybrids - net.numBad + k + 1 : length(net.ht)]
+    nt = net.ht[net.numhybrids - net.numBad + 1 : net.numhybrids - net.numBad + k]
+    nhz = net.ht[net.numhybrids - net.numBad + k + 1 : length(net.ht)]
+    indh = net.index[1 : net.numhybrids - net.numBad]
+    indhz = net.index[net.numhybrids - net.numBad + k + 1 : length(net.ht)]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     if(!flagh)
         for i in 1:length(nh)
@@ -1525,10 +1571,10 @@ end
 # checks if there are problems in estimated net.ht:
 # returns flag for h, flag for t, flag for hz
 function isValid(net::HybridNetwork)
-    nh = net.ht[1 : net.numHybrids - net.numBad]
+    nh = net.ht[1 : net.numhybrids - net.numBad]
     k = sum([e.istIdentifiable ? 1 : 0 for e in net.edge])
-    nt = net.ht[net.numHybrids - net.numBad + 1 : net.numHybrids - net.numBad + k]
-    nhz = net.ht[net.numHybrids - net.numBad + k + 1 : length(net.ht)]
+    nt = net.ht[net.numhybrids - net.numBad + 1 : net.numhybrids - net.numBad + k]
+    nhz = net.ht[net.numhybrids - net.numBad + k + 1 : length(net.ht)]
     #println("isValid on nh $(nh), nt $(nt), nhz $(nhz)")
     return all((n->(0<n<1 && !approxEq(n,0.0) && !approxEq(n,1.0))), nh), all((n->(n>0 && !approxEq(n,0.0))), nt), all((n->(0<n<1 && !approxEq(n,0.0) && !approxEq(n,1.0))), nhz)
 end
@@ -1596,7 +1642,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         str *= "Outgroup: $(outgroup) (for rooting at the final step)\n"
     end
     str *= (writelog ? "rootname for files: $(rootname)\n" : "no output files\n")
-    str *= "BEGIN: $(runs) runs on starting tree $(writeTopologyLevel1(currT0,true))\n"
+    str *= "BEGIN: $(runs) runs on starting tree $(writenewick_level1(currT0,true))\n"
     if Distributed.nprocs()>1
         str *= "       using $(Distributed.nprocs()) processors\n"
     end
@@ -1649,7 +1695,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
             logstr *= "\nFINISHED SNaQ for run $(i), -loglik of best $(best.loglik)\n"
             verbose && print(stdout, logstr)
             if writelog_1proc
-              logstr = writeTopologyLevel1(best,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)) ## printID=true calls setNonIdBL
+              logstr = writenewick_level1(best,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)) ## printID=true calls setNonIdBL
               logstr *= "\n---------------------\n"
               write(logfile, logstr)
               flush(logfile)
@@ -1700,7 +1746,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                        with the subject BUG IN NETWORKS FILE. You can get this network from the .out file.
                        You can also post this problem to the google group, or github issues. Thank you!\n""")
         end
-        write(s,"$(writeTopologyLevel1(maxNet,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(maxNet.loglik) (best network found, remaining sorted by log-pseudolik; the smaller, the better)\n")
+        write(s,"$(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(maxNet.loglik) (best network found, remaining sorted by log-pseudolik; the smaller, the better)\n")
         # best network is included first: for score comparison with other networks
         foundBad = false
         for n in otherNet
@@ -1721,7 +1767,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         ind = sortperm([n.loglik for n in otherNet])
         otherNet = otherNet[ind]
         for n in otherNet
-            write(s,"$(writeTopologyLevel1(n,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(n.loglik)\n")
+            write(s,"$(writenewick_level1(n,printID=true, multall=!isempty(d.repSpecies))), with -loglik $(n.loglik)\n")
         end
         foundBad && write(s,"Problem found when optimizing branch lengths for some networks, left loglik as -1. Please report this issue on github. Thank you!")
         close(s)
@@ -1748,21 +1794,21 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     end
 
     writelog &&
-    write(logfile,"\nMaxNet is $(writeTopologyLevel1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
-    print(stdout,"\nMaxNet is $(writeTopologyLevel1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
+    write(logfile,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
+    print(stdout,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(maxNet.loglik)\n")
 
     s = writelog ? open(juliaout,"w") : stdout
-    str = writeTopologyLevel1(maxNet, printID=true,multall=!isempty(d.repSpecies)) * """
+    str = writenewick_level1(maxNet, printID=true,multall=!isempty(d.repSpecies)) * """
      -Ploglik = $(maxNet.loglik)
-     Dendroscope: $(writeTopologyLevel1(maxNet,di=true, multall=!isempty(d.repSpecies)))
+     Dendroscope: $(writenewick_level1(maxNet,di=true, multall=!isempty(d.repSpecies)))
      Elapsed time: $(telapsed) seconds, $(runs) attempted runs
     -------
     List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
     """
     for n in bestnet
       str *= " "
-      str *= (outgroup == "none" ? writeTopologyLevel1(n,printID=true, multall=!isempty(d.repSpecies)) :
-                                   writeTopologyLevel1(n,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)))
+      str *= (outgroup == "none" ? writenewick_level1(n,printID=true, multall=!isempty(d.repSpecies)) :
+                                   writenewick_level1(n,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)))
       str *= ", with -loglik $(n.loglik)\n"
     end
     str *= "-------\n"
@@ -1820,7 +1866,7 @@ function optTopRun1!(currT0::HybridNetwork, liktolAbs, Nfail::Integer, d::DataCF
         if(!isTree(currT))
             if(rand() < 1-probST) # modify starting network by mvorigin, mvtarget with equal prob
                 currT0 = deepcopy(currT) # to go back if new topology does not work for mult alleles
-                if(currT.numHybrids == 1)
+                if currT.numhybrids == 1
                     ind = 1
                 else
                     ind = 0
@@ -1879,15 +1925,15 @@ up to an additive constant, such that a perfect fit corresponds to a deviance of
 
 Output:
 
-- estimated network in file `.out` (also in `.log`): best network overall and list of
-  networks from each individual run.
+- estimated network in file `.out` (also in `.log`): best network overall and
+  list of networks from each individual run.
 - the best network and modifications of it, in file `.networks`.
   All networks in this file have the same undirected topology as the best network,
-  but have different hybrid/gene flow directions. These other networks are reported with
-  their pseudo-likelihood scores, because
-   non-identifiability issues can cause them to have very similar scores, and because
-   SNaQ was shown to estimate the undirected topology accurately but not the direction of
-   hybridization in cases of near non-identifiability.
+  but have different hybrid/gene flow directions.
+  These other networks are reported with their pseudo-likelihood scores, because
+  non-identifiability issues can cause them to have very similar scores, and
+  because SNaQ was shown to estimate the undirected topology accurately but
+  not the direction of hybridization in cases of near non-identifiability.
 - if any error occurred, file `.err` provides information (seed) to reproduce the error.
 
 There are many optional arguments, including
@@ -1913,27 +1959,28 @@ There are many optional arguments, including
   are first optimized roughly with [`updateBL!`](@ref) by using the average CF of
   all quartets defining each branch and back-calculating the coalescent units.
 
-The following optional arguments control when to stop the optimization of branch lengths
-and γ's on each individual candidate network. Defaults are in parentheses:
+The following optional arguments control when to stop the optimization of branch
+lengths and γ's on each individual candidate network. Defaults are in parentheses:
 
-- `ftolRel` (1e-6) and `ftolAbs` (1e-6): relative and absolute differences of the network score
-  between the current and proposed parameters,
-- `xtolRel` (1e-2) and `xtolAbs` (1e-3): relative and absolute differences between the current
-  and proposed parameters.
+- `ftolRel` (1e-6) and `ftolAbs` (1e-6): relative and absolute differences of
+  the network score between the current and proposed parameters,
+- `xtolRel` (1e-2) and `xtolAbs` (1e-3): relative and absolute differences
+  between the current and proposed parameters.
 
-Greater values will result in a less thorough but faster search. These parameters are used
-when evaluating candidate networks only.
+Greater values will result in a less thorough but faster search.
+These parameters are used when evaluating candidate networks only.
 The following optional arguments control when to stop proposing new network topologies:
 
 - `Nfail` (75): maximum number of times that new topologies are proposed and rejected (in a row).
-- `liktolAbs` (1e-6): the proposed network is accepted if its score is better than the current score by
-  at least liktolAbs.
+- `liktolAbs` (1e-6): the proposed network is accepted if its score is better
+  than the current score by at least liktolAbs.
 
-Lower values of `Nfail` and greater values of `liktolAbs` and `ftolAbs` would result in a less thorough but faster search.
+Lower values of `Nfail` and greater values of `liktolAbs` and `ftolAbs` would
+result in a less thorough but faster search.
 
 At the end, branch lengths and γ's are optimized on the last "best" network
 with different and very thorough tolerance parameters:
-1e-12 for ftolRel, 1e-10 for ftolAbs, xtolRel, xtolAbs.
+1e-12 for `ftolRel`, 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`.
 
 See also: [`topologyMaxQPseudolik!`](@ref) to optimize parameters on a fixed topology,
 and [`topologyQPseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
@@ -1942,20 +1989,34 @@ of a fixed topology with fixed parameters.
 Reference:  
 Claudia Solís-Lemus and Cécile Ané (2016).
 Inferring phylogenetic networks with maximum pseudolikelihood under incomplete lineage sorting.
-[PLoS Genetics](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
-12(3):e1005896
+[PLoS Genetics 12(3):e1005896](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
 """
-function snaq!(currT0::HybridNetwork, d::DataCF;
-      hmax=1::Integer, liktolAbs=likAbs::Float64, Nfail=numFails::Integer,
-      ftolRel=fRel::Float64, ftolAbs=fAbs::Float64, xtolRel=xRel::Float64, xtolAbs=xAbs::Float64,
-      verbose=false::Bool, closeN=true::Bool, Nmov0=numMoves::Vector{Int},
-      runs=10::Integer, outgroup="none"::AbstractString, filename="snaq"::AbstractString,
-      seed=0::Integer, probST=0.3::Float64, updateBL=true::Bool, probQR=0.0::Float64, 
-      qtolAbs=qAbs::Float64, qinfTest=false::Bool, propQuartets=1.0::Float64)
+function snaq!(
+    currT0::HybridNetwork,
+    d::DataCF;
+    hmax::Integer=1,
+    liktolAbs::Float64=likAbs,
+    Nfail::Integer=numFails,
+    ftolRel::Float64=fRel,
+    ftolAbs::Float64=fAbs,
+    xtolRel::Float64=xRel,
+    xtolAbs::Float64=xAbs,
+    verbose::Bool=false,
+    closeN::Bool=true,
+    Nmov0::Vector{Int}=numMoves,
+    runs::Integer=10,
+    outgroup::AbstractString="none",
+    filename::AbstractString="snaq",
+    seed::Integer=0,
+    probST::Float64=0.3,
+    updateBL::Bool=true,
+    probQR::Float64=0.0,
+    qtolAbs::Float64=qAbs,
+    qinfTest::Bool=false,
+    propQuartets::Float64=1.0
+)
     0.0<=probST<=1.0 || error("probability to keep the same starting topology should be between 0 and 1: $(probST)")
-    0.0<=probQR<=1.0 || error("probability to guide proposals by quartet-ranking should be between 0 and 1: $(probQR)")
-    0.0<propQuartets<=1.0 || error("proportion of sampled quartets must be between 0 and 1: $(propQuartets)")
-    currT0.numTaxa >= 5 || error("cannot estimate hybridizations in topologies with fewer than 5 taxa, this topology has $(currT0.numTaxa) taxa")
+    currT0.numtaxa >= 5 || error("cannot estimate hybridizations in topologies with fewer than 5 taxa, this topology has $(currT0.numtaxa) taxa")
     typemax(Int) > length(d.quartet) ||
     @warn "the number of rows / 4-taxon sets exceeds the max integer of type $Int ($(typemax(Int))). High risk of overflow errors..."
     # need a clean starting net. fixit: maybe we need to be more thorough here
@@ -1971,7 +2032,7 @@ function snaq!(currT0::HybridNetwork, d::DataCF;
             deleteleaf!(currT0, tax)
         end
     end
-    startnet = readTopologyUpdate(writeTopologyLevel1(currT0)) # update all level-1 things
+    startnet = readTopologyUpdate(writenewick_level1(currT0)) # update all level-1 things
     flag = checkNet(startnet,true) # light checking only
     flag && error("starting topology suspected not level-1")
     try
@@ -1986,7 +2047,7 @@ function snaq!(currT0::HybridNetwork, d::DataCF;
     # for the case of multiple alleles: expand into two leaves quartets like sp1 sp1 sp2 sp3.
     if !isempty(d.repSpecies)
         expandLeaves!(d.repSpecies,startnet)
-        startnet = readTopologyLevel1(writeTopologyLevel1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
+        startnet = readnewick_level1(writenewick_level1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
     end
     # check for uninformative quartets, if qinfTest == true
     # these are defined as quartets where observed CFs are all within qinfTol
@@ -2048,7 +2109,7 @@ function findStartingTopology!(currT0::HybridNetwork, probST::Float64, multAll::
         if !isTree(currT)
             if rand() < 1-probST # modify starting network by mvorigin, mvtarget with equal prob
                 currT0 = deepcopy(currT) # to go back if new topology does not work for mult alleles
-                ind = rand(1:currT.numHybrids)
+                ind = rand(1:currT.numhybrids)
                 mymove = ( rand()<0.5 ? "origin" : "target" )
                 mymove_fun! = (mymove=="origin" ? moveOriginUpdateRepeat! : moveTargetUpdateRepeat!)
                 suc = mymove_fun!(currT,currT.hybrid[ind],true)

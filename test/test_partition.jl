@@ -6,12 +6,12 @@ tree = "(((((((1,2),3),4),5),(6,7)),(8,9)),10);"
 # earlier seeds: 2738, 56326 up to v0.14.2
 seed = 41
 
-currT0 = readTopologyLevel1(tree);
+currT0 = readnewick_level1(tree);
 Random.seed!(seed);
 besttree = deepcopy(currT0);
 successful,_ = addHybridizationUpdate!(besttree);
 @test successful
-@test_logs writeTopologyLevel1(besttree,true)
+@test_logs writenewick_level1(besttree,true)
 net = deepcopy(besttree);
 length(net.partition)
 @test Set([e.number for e in p.edges] for p in net.partition) ==
@@ -20,7 +20,7 @@ length(net.partition)
 successful = false
 successful,_ = addHybridizationUpdate!(besttree);
 @test successful
-@test_logs writeTopologyLevel1(besttree,true)
+@test_logs writenewick_level1(besttree,true)
 net = deepcopy(besttree);
 @test length(net.partition) == 9
 @test Set([e.number for e in p.edges] for p in net.partition) ==

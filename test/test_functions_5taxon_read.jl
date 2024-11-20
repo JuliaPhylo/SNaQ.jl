@@ -14,22 +14,22 @@ function testCaseC(net::HybridNetwork)
     node.isExtBadTriangle ? error("thinks it is extremely bad triangle") : nothing
     net.hasVeryBadTriangle ? nothing : error("net does not know it has very bad triangle")
     net.numBad == 0 ? nothing : error("net.numBad should be 0")
-    net.numHybrids != 1 ? error("should have 1 hybrid, but net.numHybrids is $(net.numHybrids): $([n.number for n in net.hybrid])") : nothing
+    net.numhybrids != 1 ? error("should have 1 hybrid, but net.numhybrids is $(net.numhybrids): $([n.number for n in net.hybrid])") : nothing
 end
 
 # Case F bad diamond I
 function testCaseF(net::HybridNetwork)
     net.visited = [e.istIdentifiable for e in net.edge];
-    net.numHybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numHybrids)")
+    net.numhybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numhybrids)")
     node=net.hybrid[1];
     node.k != 4 ? error("k diff than 4") : nothing
     (net.edge[3].inCycle != node.number || net.edge[4].inCycle != node.number || net.edge[5].inCycle != node.number || net.edge[7].inCycle != node.number ) ? error("edges not correctly in cycle") : nothing
     (net.node[3].inCycle  != node.number || net.node[4].inCycle  != node.number || net.node[6].inCycle  != node.number || net.node[7].inCycle  != node.number) ? error("nodes not correctly in cycle") : nothing
     !node.isBadDiamondI ? error("does not know it is bad diamond I") : nothing
     node.isBadDiamondII ? error("thinks it is bad diamond II") : nothing
-    net.edge[2].containRoot ? error("edge can contain root") : nothing
-    (!net.edge[3].hybrid || !net.edge[3].isMajor) ? error("edge 3 is not hybrid or major") : nothing
-    (!net.edge[5].hybrid || net.edge[5].isMajor) ? error("edge 5 is not hybrid or is major") : nothing
+    net.edge[2].containroot ? error("edge can contain root") : nothing
+    (!net.edge[3].hybrid || !net.edge[3].ismajor) ? error("edge 3 is not hybrid or major") : nothing
+    (!net.edge[5].hybrid || net.edge[5].ismajor) ? error("edge 5 is not hybrid or is major") : nothing
     net.node[4].gammaz != net.edge[3].gamma*net.edge[4].z ? error("node 4 gammaz not correctly calculated") : nothing
     net.node[6].gammaz != net.edge[5].gamma*net.edge[7].z ? error("node 6 gammaz not correctly calculated") : nothing
     (net.edge[4].istIdentifiable || net.edge[7].istIdentifiable) ? error("edges identifiable that should not") : nothing
@@ -42,15 +42,15 @@ end
 # Case G
 function testCaseG(net::HybridNetwork)
     net.visited = [e.istIdentifiable for e in net.edge];
-    net.numHybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numHybrids)")
+    net.numhybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numhybrids)")
     node=net.hybrid[1];
     node.k != 4 ? error("k diff than 4") : nothing
     (net.edge[5].inCycle != node.number || net.edge[6].inCycle != node.number || net.edge[7].inCycle != node.number || net.edge[9].inCycle != node.number ) ? error("edges not correctly in cycle") : nothing
     (net.node[5].inCycle  != node.number || net.node[6].inCycle  != node.number || net.node[8].inCycle  != node.number || net.node[9].inCycle  != node.number) ? error("nodes not correctly in cycle") : nothing
     (node.isBadDiamondI || node.isBadDiamondII ) ? error("thinks it is bad diamond") : nothing
-    net.edge[4].containRoot ? error("edge can contain root") : nothing
-    (!net.edge[5].hybrid || !net.edge[5].isMajor) ? error("edge 5 is not hybrid or major") : nothing
-    (!net.edge[7].hybrid || net.edge[7].isMajor) ? error("edge 7 is not hybrid or is major") : nothing
+    net.edge[4].containroot ? error("edge can contain root") : nothing
+    (!net.edge[5].hybrid || !net.edge[5].ismajor) ? error("edge 5 is not hybrid or major") : nothing
+    (!net.edge[7].hybrid || net.edge[7].ismajor) ? error("edge 7 is not hybrid or is major") : nothing
     net.node[5].gammaz != -1 ? error("node 5 gammaz should be -1") : nothing
     (!net.edge[6].istIdentifiable || !net.edge[3].istIdentifiable || !net.edge[9].istIdentifiable) ? error("edges identifiable as not identifiable") : nothing
     net.visited[6] = false;
@@ -63,15 +63,15 @@ end
 # Case H
 function testCaseH(net::HybridNetwork)
     net.visited = [e.istIdentifiable for e in net.edge];
-    net.numHybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numHybrids)")
+    net.numhybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numhybrids)")
     node=net.hybrid[1];
     node.k != 4 ? error("k diff than 4") : nothing
     (net.edge[4].inCycle != node.number || net.edge[5].inCycle != node.number || net.edge[7].inCycle != node.number || net.edge[9].inCycle != node.number ) ? error("edges not correctly in cycle") : nothing
     (net.node[4].inCycle  != node.number || net.node[6].inCycle  != node.number || net.node[8].inCycle  != node.number || net.node[10].inCycle  != node.number) ? error("nodes not correctly in cycle") : nothing
     (node.isBadDiamondI || node.isBadDiamondII) ? error("thinks it is bad diamond") : nothing
-    net.edge[8].containRoot ? error("8 can contain root") : nothing
-    (!net.edge[9].hybrid || !net.edge[9].isMajor) ? error("edge 9 is not hybrid or major") : nothing
-    (!net.edge[4].hybrid || net.edge[4].isMajor) ? error("edge 4 is not hybrid or is major") : nothing
+    net.edge[8].containroot ? error("8 can contain root") : nothing
+    (!net.edge[9].hybrid || !net.edge[9].ismajor) ? error("edge 9 is not hybrid or major") : nothing
+    (!net.edge[4].hybrid || net.edge[4].ismajor) ? error("edge 4 is not hybrid or is major") : nothing
     node.gammaz != -1 ? error("hybrid node gammaz should be -1") : nothing
     (!net.edge[3].istIdentifiable || !net.edge[5].istIdentifiable || !net.edge[7].istIdentifiable) ? error("edge9,5,13not identifiable") : nothing
     net.visited[3] = false;
@@ -85,13 +85,13 @@ end
 # Case J
 function testCaseJ(net::HybridNetwork)
     net.visited = [e.istIdentifiable for e in net.edge];
-    net.numHybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numHybrids)")
+    net.numhybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numhybrids)")
     node=net.hybrid[1];
     node.k != 5 ? error("k diff than 5") : nothing
     (net.edge[2].inCycle != node.number || net.edge[4].inCycle != node.number || net.edge[6].inCycle != node.number || net.edge[10].inCycle != node.number || net.edge[8].inCycle != node.number) ? error("edges not correctly in cycle") : nothing
     (net.node[2].inCycle  != node.number || net.node[4].inCycle  != node.number || net.node[6].inCycle  != node.number || net.node[10].inCycle  != node.number || net.node[9].inCycle) != node.number ? error("nodes not correctly in cycle") : nothing
-    net.edge[1].containRoot ? error("edge can contain root") : nothing
-    (!net.edge[2].hybrid || !net.edge[2].isMajor) ? error("edge 2 is not hybrid or major") : nothing
+    net.edge[1].containroot ? error("edge can contain root") : nothing
+    (!net.edge[2].hybrid || !net.edge[2].ismajor) ? error("edge 2 is not hybrid or major") : nothing
     node.gammaz != -1 ? error("hybrid node gammaz should be -1") : nothing
     (!net.edge[4].istIdentifiable || !net.edge[6].istIdentifiable || !net.edge[10].istIdentifiable) ? error("edge9,5,10not identifiable") : nothing
     net.visited[4] = false;
@@ -111,7 +111,7 @@ function testCaseD(net::HybridNetwork)
     node.isExtBadTriangle ? error("thinks it is extremely bad triangle") : nothing
     net.hasVeryBadTriangle ? nothing : error("net does not know it has very bad triangle")
     net.numBad == 0 ? nothing : error("net.numBad should be 0")
-    net.numHybrids != 1 ? error("should have 1 hybrid, but net.numHybrids is $(net.numHybrids): $([n.number for n in net.hybrid])") : nothing
+    net.numhybrids != 1 ? error("should have 1 hybrid, but net.numhybrids is $(net.numhybrids): $([n.number for n in net.hybrid])") : nothing
 end
 
 # Case E bad triangle I
@@ -124,13 +124,13 @@ function testCaseE(net::HybridNetwork)
     node.isExtBadTriangle ? error("thinks it is extremely bad triangle") : nothing
     net.hasVeryBadTriangle ? nothing : error("net does not know it has very bad triangle")
     net.numBad == 0 ? nothing : error("net.numBad should be 0")
-    net.numHybrids != 1 ? error("should have 1 hybrid, but net.numHybrids is $(net.numHybrids): $([n.number for n in net.hybrid])") : nothing
+    net.numhybrids != 1 ? error("should have 1 hybrid, but net.numhybrids is $(net.numhybrids): $([n.number for n in net.hybrid])") : nothing
 end
 
 
 # Case I bad diamond II
 function testCaseI(net::HybridNetwork)
-    net.numHybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numHybrids)")
+    net.numhybrids == 1 ? nothing : error("networks should have one hybrid node and it has $(net.numhybrids)")
     node = net.hybrid[1];
     node.isBadDiamondII ? nothing : error("does not know it is bad diamond II")
     node.isBadDiamondI ? error("thinks it is bad diamond I") : nothing
@@ -149,8 +149,8 @@ function testCaseI(net::HybridNetwork)
     node3 = PhyloNetworks.getIndexNode(3,net);
     (net.edge[edge4].inCycle != node.number || net.edge[edge9].inCycle != node.number || net.edge[edge6].inCycle != node.number || net.edge[edge10].inCycle != node.number ) ? error("edges not correctly in cycle") : nothing
     (net.node[node1].inCycle  != node.number || net.node[node2].inCycle  != node.number || net.node[node5].inCycle  != node.number || net.node[node3].inCycle  != node.number) ? error("nodes 1,5,11,12 not correctly in cycle") : nothing
-    (net.edge[edge1].containRoot || net.edge[edge2].containRoot || net.edge[edge3].containRoot) ? error("edges can contain root and shouldn't") : nothing
-    (!net.edge[edge4].hybrid || !net.edge[edge4].isMajor) ? error("edge 4 is not hybrid or major") : nothing
+    (net.edge[edge1].containroot || net.edge[edge2].containroot || net.edge[edge3].containroot) ? error("edges can contain root and shouldn't") : nothing
+    (!net.edge[edge4].hybrid || !net.edge[edge4].ismajor) ? error("edge 4 is not hybrid or major") : nothing
     net.edge[edge3].length != 0 ? error("edges should have length 0") : nothing
     net.edge[edge3].istIdentifiable ? error("edge9,4 identifiable and should not") : nothing
     (net.edge[edge4].istIdentifiable && net.edge[edge9].istIdentifiable && net.edge[edge6].istIdentifiable && net.edge[edge10].istIdentifiable) || error("edges that should be identifiable, are not")
@@ -168,8 +168,8 @@ function testTree(net::HybridNetwork)
     !all([!e.hybrid for e in net.edge]) ? error("some edge is still hybrid") : nothing
     !all([!e.hybrid for e in net.node]) ? error("some node is still hybrid") : nothing
     !all([!e.hasHybEdge for e in net.node]) ? error("some node has hybrid edge") : nothing
-    !all([e.isMajor for e in net.edge]) ? error("some edge is not major") : nothing
-    !all([e.containRoot for e in net.edge]) ? error("some edge cannot contain root") : nothing
+    !all([e.ismajor for e in net.edge]) ? error("some edge is not major") : nothing
+    !all([e.containroot for e in net.edge]) ? error("some edge cannot contain root") : nothing
     edge9 = getIndexNumEdge(9,net);
     edge5 = getIndexNumEdge(5,net);
     (!net.edge[5].istIdentifiable || !net.edge[3].istIdentifiable) ? error("edge3,5 not identifiable") : nothing

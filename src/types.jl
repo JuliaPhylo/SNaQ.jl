@@ -1,4 +1,97 @@
-# circularity: a node has a vector of edges, and an edge has a vector of nodes
+"""
+# Use of internal field names from PhyloNetworks' types
+
+## Edge type
+
+- `y` = exp(-t) where t is the edge length
+- `z` = 1-y
+- `inte1`: get and set by `inCycle()` and `inCycle!()`.
+  Hybrid node number if this edge is part of a cycle created by
+  such hybrid node. -1 if not part of cycle. used to add new hybrid edge.
+  updated after edge is part of a network.
+- `boole1`: `istIdentifiable()`?
+  true if the parameter t (length) for this edge is identifiable as part of a
+  network. updated after part of a network.
+- `boole2`: `fromBadDiamondI()`
+  true if the edge came from deleting a bad diamond I hybridization.
+
+## Node type
+
+- `fvalue` get by `gammaz()`
+  = γ(1-exp(-t)) if tree node, gamma2z if hybrid node.
+  updated after node is part of network with `updateGammaz!`
+- `booln1`: hasHybEdge?
+  is there a hybrid edge in edge? only needed when hybrid=false (tree node)
+- `booln2`: isBadDiamondI?
+  for hybrid node, is it bad diamond case I, update in `updateGammaz!`.
+  The hybrid node is in a *bad diamond* if it forms a cycle of 4 nodes (diamond)
+  where both parents of the hybrid nodes are connected to a leaf.
+  In a bad diamond of type I, the hybrid node itself is also connected to a leaf
+  but the common neighbor of the 2 hybrid's parents is *not* connected to a leaf.
+- `booln3`: isBadDiamondII?
+  for hybrid node, is it bad diamond case II, update in `updateGammaz!`.
+  In a bad diamond of type II, the hybrid node has an internal node as child,
+  and the common neighbor of the 2 hybrid's parents is connected to a leaf.
+- `booln4`: isExtBadTriangle?
+  for hybrid node, is it extremely bad triangle, udpate in `updateGammaz!`.
+  The hybrid node is in *triangle* if it forms a cycle of 3 nodes. This means that
+  the 2 parents of the hybrid are directly related: one is the child of the other.
+  The triangle type depends on the number of leaves attached the 3 triangle nodes
+  * `isExtBadTriangle` is true if ≥ 2 of the 3 nodes are connected to a leaf,
+    in which case the reticulation is undetectable from unrooted quartet CFs
+    (except for anomalies; but here edge lengths < 0 are allowed when taking subnetworks).
+    Thus it's best to exclude these reticulations from a search.
+- `booln5`: isVeryBadTriangle?
+  for hybrid node, is it very bad triangle, udpate in `updateGammaz!`.
+  * `isVeryBadTriangle` is true if exactly 1 of the 3 nodes is connected to a leaf.
+    (this boolean seems to be set to true if the triangle is extremely bad, that
+    is: if 1 *or more* of the 3 nodes connect to a leaf)
+- `booln6`: isBadTriangle?
+  for hybrid node, is it very bad triangle, udpate in `updateGammaz!`.
+  * `isBadTriangle` is true if the triangle is "good" as per Solís-Lemus & Ané (2016),
+    that is, if all 3 nodes in the cycle are not connected to any leaves
+    (the reticulation is detectable from quartet concordance factors,
+    even though all branch lengths are not identifiable).
+- `intn1`: get and set by `inCycle()` and `inCycle!()`.
+  Number of the hybrid node, if this node is part of a cycle created by such
+  a hybrid node, -1 if not part of cycle.
+- `prev`: previous node in cycle, used in `updateInCycle`. set to `nothing` to begin with.
+- `intn2`: `k` = num nodes in cycle, only stored in hybrid node, updated after
+  node becomes part of network. default -1
+- `int8n3`: `typeHyb`
+  type of hybridization (1,2,3,4 or 5), needed for quartet network only. default -1
+
+For details about bad diamond and triangles, see
+Solís-Lemus & Ané (2016, doi:10.1371/journal.pgen.1005896)
+
+## HybridNetwork type
+
+- `vec_bool`: visited
+- `vec_edge`: edges_changed
+- `vec_node`: nodes_changed
+- `vec_float`: ht
+  vector of parameters to optimize
+- `vec_int2`: numht
+  vector of number of the hybrid nodes and edges in `ht` e.g. [3,6,8,...],
+  2 hybrid nodes 3,6, and edge 8 is the 1st identifiable
+- `intg1`: numBad
+  number of bad diamond I hybrid nodes, set as 0
+- `boolg1`: hasVeryBadTriangle
+  true if the network has extremely/very bad triangles that should be ignored
+- `vec_int3`: index
+  index in `net.edge`, `net.node` of elements in net.ht to make updating easy
+- `fscore`: loglik
+  value of the mininum negative pseudo deviance (up to a factor) after optBL
+- `vec_int4`: blacklist
+  reusable array of integers, used in afterOptBL
+- `partition`: to choose edges from a partition only to avoid intersecting cycles
+- `boolg2`: cleaned
+  attribute to know if the network has been cleaned after readm. default `false`
+"""
+inCycle(e::Edge) = e.inte1
+inCycle!(e::Edge, b::Bool) = (e.inte1 = b) # returns b
+inCycle(n::Node) = n.intn1
+inCycle!(n::Node, b::Bool) = (n.intn1 = b)
 
 # type created from a HybridNetwork only to extract a given quartet
 """
@@ -55,9 +148,9 @@ In addition, currently edges that are no longer identifiable in `QuartetNetwork`
 do not appear in `hasEdge` nor `index`. Need to study this.
 
 ```jldoctest
-julia> net0 = readTopology("(s17:13.76,(((s3:10.98,(s4:8.99,s5:8.99)I1:1.99)I2:0.47,(((s6:2.31,s7:2.31)I3:4.02,(s8:4.97,#H24:0.0::0.279)I4:1.36)I5:3.64,((s9:8.29,((s10:2.37,s11:2.37)I6:3.02,(s12:2.67,s13:2.67)I7:2.72)I8:2.89)I9:0.21,((s14:2.83,(s15:1.06,s16:1.06)I10:1.78)I11:2.14)#H24:3.52::0.72)I12:1.47)I13:1.48)I14:1.26,(((s18:5.46,s19:5.46)I15:0.59,(s20:4.72,(s21:2.40,s22:2.40)I16:2.32)I17:1.32)I18:2.68,(s23:8.56,(s1:4.64,s2:4.64)I19:3.92)I20:0.16)I21:3.98)I22:1.05);");
+julia> net0 = readnewick("(s17:13.76,(((s3:10.98,(s4:8.99,s5:8.99)I1:1.99)I2:0.47,(((s6:2.31,s7:2.31)I3:4.02,(s8:4.97,#H24:0.0::0.279)I4:1.36)I5:3.64,((s9:8.29,((s10:2.37,s11:2.37)I6:3.02,(s12:2.67,s13:2.67)I7:2.72)I8:2.89)I9:0.21,((s14:2.83,(s15:1.06,s16:1.06)I10:1.78)I11:2.14)#H24:3.52::0.72)I12:1.47)I13:1.48)I14:1.26,(((s18:5.46,s19:5.46)I15:0.59,(s20:4.72,(s21:2.40,s22:2.40)I16:2.32)I17:1.32)I18:2.68,(s23:8.56,(s1:4.64,s2:4.64)I19:3.92)I20:0.16)I21:3.98)I22:1.05);");
 
-julia> net = readTopologyLevel1(writeTopology(net0)) ## need level1 attributes for functions below
+julia> net = readnewick_level1(writenewick(net0)) ## need level1 attributes for functions below
 HybridNetwork, Un-rooted Network
 46 edges
 46 nodes: 23 tips, 1 hybrid nodes, 22 internal tree nodes.
@@ -97,14 +190,14 @@ julia> qnet.edge[qnet.index[1]].number ## 11 = minor hybrid edge
 ```
 """
 mutable struct QuartetNetwork <: Network
-    numTaxa::Int
-    numNodes::Int
-    numEdges::Int
+    numtaxa::Int
+    numnodes::Int
+    numedges::Int
     node::Array{Node,1}
     edge::Array{Edge,1}
     hybrid::Array{Node,1} # array of hybrid nodes in network
     leaf::Array{Node,1} # array of leaves
-    numHybrids::Int # number of hybrid nodes
+    numhybrids::Int # number of hybrid nodes
     hasEdge::Array{Bool,1} # array of boolean with all the original identifiable edges of HybridNetwork and gammas (net.ht)
     quartetTaxon::Array{String,1} # the quartet taxa in the order it represents. Points to same array as its Quartet.taxon
     which::Int8 # 0 it tree quartet, 1 is equivalent to tree quartet and 2 if two minor CF different, default -1
@@ -120,7 +213,7 @@ mutable struct QuartetNetwork <: Network
     # inner constructor
     function QuartetNetwork(net::HybridNetwork)
         net2 = deepcopy(net); #fixit: maybe we dont need deepcopy of all, maybe only arrays
-        new(net2.numTaxa,net2.numNodes,net2.numEdges,net2.node,net2.edge,net2.hybrid,net2.leaf,net2.numHybrids, [true for e in net2.edge],[],-1,[], -1.,net2.names,Int8[-1,-1,-1,-1],Int8[-1,-1,-1],[0,0,0],[],true,[])
+        new(net2.numtaxa,net2.numnodes,net2.numedges,net2.node,net2.edge,net2.hybrid,net2.leaf,net2.numhybrids, [true for e in net2.edge],[],-1,[], -1.,net2.names,Int8[-1,-1,-1,-1],Int8[-1,-1,-1],[0,0,0],[],true,[])
     end
     QuartetNetwork() = new(0,0,0,[],[],[],[],0,[],[],-1,[],-1.0,[],[],[],[],[],true,[])
 end
@@ -132,12 +225,12 @@ abstract type AQuartet end
 
 type that saves the information on a given 4-taxon subset. It contains the following attributes:
 
-- number: integer
-- taxon: vector of taxon names, like t1 t2 t3 t4
-- obsCF: vector of observed CF, in order 12|34, 13|24, 14|23
-- logPseudoLik
-- ngenes: number of gene trees used to compute the observed CF; -1.0 if unknown
-- qnet: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
+- `number`: integer
+- `taxon`: vector of taxon names, like t1 t2 t3 t4
+- `obsCF`: vector of observed CF, in order 12|34, 13|24, 14|23
+- `logPseudoLik`
+- `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
+- `qnet`: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
   emphasize that the expCF depend on a specific network, not the data
 
 see also: [`QuartetT`](@ref) for quartet with data of user-defined type `T`,
@@ -288,16 +381,16 @@ end
 
 type that contains the following attributes:
 
-- quartet (vector of Quartets)
-- numQuartets
-- tree (vector of trees: empty if a table of CF was input instead of list of trees)
-- numTrees (-1 if a table CF was input instead of list of trees)
-- repSpecies (taxon names that were repeated in table of CF or input gene trees: used inside snaq for multiple alleles case)
+- `quartet` (vector of Quartets)
+- `numQuartets`
+- `tree` (vector of trees: empty if a table of CF was input instead of list of trees)
+- `numTrees` (-1 if a table CF was input instead of list of trees)
+- `repSpecies` (taxon names that were repeated in table of CF or input gene trees: used inside snaq for multiple alleles case)
 
-The list of Quartet may be accessed with the attribute .quartet.
-If the input was a list of trees, the HybridNetwork's can be accessed with the attribute .tree.
-For example, if the DataCF object is named d, d.quartet[1] will show the first quartet
-and d.tree[1] will print the first input tree.
+The list of `Quartet` may be accessed with the attribute `.quartet`.
+If the input was a list of trees, the `HybridNetwork`'s can be accessed with the attribute `.tree`.
+For example, if the `DataCF` object is named `d`, `d.quartet[1]` will show the first quartet
+and `d.tree[1]` will print the first input tree.
 """
 mutable struct DataCF # fixit
     quartet::Array{Quartet,1} # array of quartets read from CF output table or list of quartets in file

@@ -39,28 +39,28 @@ module SNaQ
     global CHECKNET = false # for debugging only
 
 
-    import PhyloNetworks: HybridNetwork, tipLabels,getTipSubmatrix,
-        resetNodeNumbers!,resetEdgeNumbers!,
-        inheritanceWeight, isEqual,approxEq,
+    import PhyloNetworks: HybridNetwork, tiplabels,getTipSubmatrix,
+        resetnodenumbers!,resetedgenumbers!,
+        isEqual,approxEq,
         assignhybridnames!, 
         getOtherNode,getIndex,getIndexEdge,getIndexNode,
         pushEdge!,pushNode!,
         setNode!,setEdge!,
         removeEdge!,removeNode!,
         searchHybridNode,searchHybridEdge,
-        sampleBootstrapTrees, sampleBootstrapTrees!, tree2Matrix,
+        samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
         addBL, deleteEdge!, deleteNode!,
         getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
         hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
-        Edge, Node, Network, Partition,pushHybrid!,removeHybrid!,printEdges,printPartitions
+        Edge, Node, Network, Partition,pushHybrid!,removeHybrid!,printedges,printPartitions
 
 
     export
         ## types & network definition
         DataCF,
         Quartet,
-        readTopologyLevel1,
-        readMultiTopologyLevel1,
+        readnewick_level1,
+        readmultinewick_level1,
         sorttaxa!,
         # quartet CF
         readTrees2CF,
@@ -70,7 +70,6 @@ module SNaQ
         writeTableCF,
         readPhylip2CF,
         mapAllelesCFtable,
-        readInputTrees,
         readnexus_treeblock,
         summarizeDataCF,
         fittedQuartetCF,
@@ -93,7 +92,7 @@ module SNaQ
     include("multipleAlleles.jl")
     include("parsimony.jl")
     include("pseudolik.jl")
-    include("readData.jl")
+    include("readquartetdata.jl")
     include("readwrite.jl")
     include("snaq_optimization.jl")
     include("undo.jl")

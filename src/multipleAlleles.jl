@@ -14,12 +14,12 @@ species name that the allele maps onto, based on the mapping file. The mapping f
 
 Optional arguments:
 
-- file name to write/save resulting CF table. If not specified, then the output
+- `filename` to write/save resulting CF table. If not specified, then the output
   data frame is not saved to a file.
-- column numbers for the taxon names. 1-4 by default.
+- `columns` column numbers for the taxon names. 1-4 by default.
 - any keyword arguments that `CSV.File` would accept.
-  For example, delim=',' by default: columns are delimited by commas.
-  Unless specified otherwise by the user, `pool`=false
+  For example, `delim=','` by default: columns are delimited by commas.
+  Unless specified otherwise by the user, `pool=false`
   (to read taxon names as Strings, not levels of a categorical factor,
   for combining the 4 columns with taxon names more easily).
   The same CSV arguments are used to read both input file (mapping file and quartet file)
@@ -294,7 +294,7 @@ function mergeLeaves!(net::HybridNetwork)
             par.name = other.name
             par.leaf = true
             push!(net.leaf,par)
-            net.numTaxa += 1
+            net.numtaxa += 1
         end
     end
 end

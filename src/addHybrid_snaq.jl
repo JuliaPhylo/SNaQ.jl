@@ -219,8 +219,8 @@ function parameters4createHybrid!(edge1::Edge, edge2::Edge,net::HybridNetwork)
     t3 = edge2.length - t1;
     edge4 = Edge(max_edge+2,t3);
     edge2.length = t1;
-    edge3.containRoot = edge1.containRoot
-    edge4.containRoot = edge2.containRoot
+    edge3.containroot = edge1.containroot
+    edge4.containroot = edge2.containroot
     return edge3, edge4
 end
 
@@ -250,8 +250,8 @@ function addHybridization!(net::HybridNetwork, blacklist::Bool, usePartition::Bo
     return hybrid
 end
 function addHybridization!(net::HybridNetwork, blacklist::Bool, usePartition::Bool)
-    if(net.numHybrids > 0 && usePartition)
-        !isempty(net.partition) || error("net has $(net.numHybrids) but net.partition is empty")
+    if net.numhybrids > 0 && usePartition
+        !isempty(net.partition) || error("net has $(net.numhybrids) but net.partition is empty")
         index = choosePartition(net)
         if(index == 0) #no place for new hybrid
             @debug "no partition suitable to place new hybridization"
@@ -332,7 +332,7 @@ function updateAllNewHybrid!(hybrid::Node,net::HybridNetwork, updatemajor::Bool,
                 if(updatePart)
                     updatePartition!(net,nodesInCycle)
                 end
-                flag3, edgesRoot = updateContainRoot!(net,hybrid); #update contain root even if it is bad triangle to writeTopologyLevel1 correctly
+                flag3, edgesRoot = updateContainRoot!(net,hybrid); #update contain root even if it is bad triangle to writenewick_level1 correctly
                 #undoistIdentifiable!(edgesGammaz);
                 #undoGammaz!(hybrid,net);
                 #undoInCycle!(edgesInCycle, nodesInCycle);
@@ -398,8 +398,8 @@ function addHybridizationUpdateSmart!(net::HybridNetwork, blacklist::Bool, N::In
             if(nocycle || !flag)
                 @debug "MOVE: added hybridization $(i) times trying to avoid incycle conflicts, but failed"
             else
-                if(!flag3 && flag2) #containRoot failed
-                    @debug "MOVE: added hybrid causes problems with containRoot, will change the direction to fix it"
+                if !flag3 && flag2 #containroot failed
+                    @debug "MOVE: added hybrid causes problems with containroot, will change the direction to fix it"
                     success = changeDirectionUpdate!(net,hybrid) #change dir of minor
                 elseif(!flag2 && flag3) #gammaz failed
                     @debug "MOVE: added hybrid has problem with gammaz (not identifiable bad triangle)"
@@ -410,8 +410,8 @@ function addHybridizationUpdateSmart!(net::HybridNetwork, blacklist::Bool, N::In
                         @debug "MOVE: we will move target to fix the gammaz situation"
                         success = moveTargetUpdateRepeat!(net,hybrid,true)
                     end
-                elseif(!flag2 && !flag3) #containRoot AND gammaz failed
-                    @debug "MOVE: containRoot and gammaz both fail"
+                elseif !flag2 && !flag3 #containroot AND gammaz failed
+                    @debug "MOVE: containroot and gammaz both fail"
                 end
             end
             if !success

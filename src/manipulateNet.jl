@@ -14,7 +14,7 @@ single cycle with a single reticulation.
 All level-1 fields of `net` are assumed up-to-date.
 # Example
 ```julia
-julia> net = readTopology("(A:1.0,((B:1.1,#H1:0.2::0.2):1.2,(((C:0.52,(E:0.5)#H2:0.02::0.7):0.6,(#H2:0.01::0.3,F:0.7):0.8):0.9,(D:0.8)#H1:0.3::0.8):1.3):0.7):0.1;");
+julia> net = readnewick("(A:1.0,((B:1.1,#H1:0.2::0.2):1.2,(((C:0.52,(E:0.5)#H2:0.02::0.7):0.6,(#H2:0.01::0.3,F:0.7):0.8):0.9,(D:0.8)#H1:0.3::0.8):1.3):0.7):0.1;");
 julia> vnet = undirectedOtherNetworks(net)
 ```
 """
@@ -24,10 +24,10 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
 # Potential bug: if new node is -1, then inCycle will become meaningless: changed in readSubTree here
 # WARNING: does not update partition, because only thing to change is hybrid node number
     if !insideSnaq
-        net0 = readTopologyLevel1(writeTopologyLevel1(net0))
+        net0 = readnewick_level1(writenewick_level1(net0))
     end
     otherNet = HybridNetwork[]
-    for i in 1:net0.numHybrids #need to do for by number, not node
+    for i in 1:net0.numhybrids #need to do for by number, not node
         net = deepcopy(net0) # to avoid redoing attributes after each cycle is finished
         ## undo attributes at current hybrid node:
         hybrid = net.hybrid[i]
@@ -39,7 +39,7 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
         undoGammaz!(hybrid,net);
         othermaj = getOtherNode(edges[1],hybrid)
         edgesmaj = hybridEdges(othermaj)
-        if edgesmaj[3].containRoot #if containRoot=true, then we need to undo
+        if edgesmaj[3].containroot #if containroot=true, then we need to undo
             undoContainRoot!(edgesRoot);
         end
         ## changes to new hybrid node:
@@ -51,18 +51,18 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
                 ind = getIndexNode(newn.number,newnet) # find the newn node in the new network
                 @debug "moving hybrid to node $(newnet.node[ind].number)"
                 hybridatnode!(newnet, newnet.hybrid[i], newnet.node[ind])
-                @debug begin printEdges(newnet); "printed edges" end
-                @debug begin printNodes(newnet); "printed nodes" end
+                @debug begin printedges(newnet); "printed edges" end
+                @debug begin printnodes(newnet); "printed nodes" end
                 undoInCycle!(newedgesInCycle, newnodesInCycle);
-                @debug begin printEdges(newnet); "printed edges" end
-                @debug begin printNodes(newnet); "printed nodes" end
+                @debug begin printedges(newnet); "printed edges" end
+                @debug begin printnodes(newnet); "printed nodes" end
                 ##undoPartition!(net,hybrid, edgesInCycle)
                 success, hybrid0, flag, nocycle, flag2, flag3 = updateAllNewHybrid!(newnet.node[ind], newnet, false,false,false)
                 if success
-                    @debug "successfully added new network: $(writeTopologyLevel1(newnet))"
+                    @debug "successfully added new network: $(writenewick_level1(newnet))"
                     push!(otherNet,newnet)
                 else
-                    println("the network obtained by putting the new hybrid in node $(newnet.node[ind].number) is not good, inCycle,gammaz,containRoot: $([flag,flag2,flag3]), we will skip it")
+                    println("the network obtained by putting the new hybrid in node $(newnet.node[ind].number) is not good, inCycle,gammaz,containroot: $([flag,flag2,flag3]), we will skip it")
                 end
             end
         end
@@ -83,7 +83,7 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
                     checkRootPlace!(n, verbose=true, outgroup=outgroup)
                 catch
                     @debug "found one network incompatible with outgroup"
-                    @debug "$(writeTopologyLevel1(n))"
+                    @debug "$(writenewick_level1(n))"
                     whichKeep[i] = false
                 end
             end
@@ -109,7 +109,7 @@ single cycle with a single reticulation.
 # example
 
 ```julia
-net = readTopology("(A:1.0,((B:1.1,#H1:0.2::0.2):1.2,(((C:0.52,(E:0.5)#H2:0.02::0.7):0.6,(#H2:0.01::0.3,F:0.7):0.8):0.9,(D:0.8)#H1:0.3::0.8):1.3):0.7):0.1;");
+net = readnewick("(A:1.0,((B:1.1,#H1:0.2::0.2):1.2,(((C:0.52,(E:0.5)#H2:0.02::0.7):0.6,(#H2:0.01::0.3,F:0.7):0.8):0.9,(D:0.8)#H1:0.3::0.8):1.3):0.7):0.1;");
 using PhyloPlots
 plot(net, shownodenumber=true); # to locate nodes and their numbers. D of hybrid origin
 hybridatnode!(net, -4)
@@ -166,11 +166,11 @@ function hybridatnode!(net::HybridNetwork, hybrid::Node, newNode::Node)
                 found = true
                 makeEdgeHybrid!(e,newNode, 0.51, switchHyb=true) #first found, major edge, need to optimize gamma anyway
                 ##e.gamma = -1
-                ##e.containRoot = true ## need attributes like in snaq
+                ##e.containroot = true ## need attributes like in snaq
             else
                 makeEdgeHybrid!(e,newNode, 0.49, switchHyb=true) #second found, minor edge
                 ##e.gamma = -1
-                ##e.containRoot = true
+                ##e.containroot = true
             end
         end
     end
@@ -178,7 +178,7 @@ end
 
 # Not used anywhere, but tested
 # does not call hybridatnode! but repeats its code: oops! violates DRY principle
-# nodeNumber should correspond to the number assigned by readTopologyLevel1,
+# nodeNumber should correspond to the number assigned by readnewick_level1,
 # and the node numbers in `net` are irrelevant.
 """
     hybridatnode(net::HybridNetwork, nodeNumber::Integer)
@@ -188,7 +188,7 @@ Compared to [`hybridatnode!`], this method checks that `net` is of level 1
 (required) and does not modify it.
 """
 function hybridatnode(net0::HybridNetwork, nodeNumber::Integer)
-    net = readTopologyLevel1(writeTopologyLevel1(net0)) # we need inCycle attributes
+    net = readnewick_level1(writenewick_level1(net0)) # we need inCycle attributes
     ind = 0
     try
         ind = getIndexNode(nodeNumber,net)
@@ -217,11 +217,11 @@ function hybridatnode(net0::HybridNetwork, nodeNumber::Integer)
                 found = true
                 makeEdgeHybrid!(e,net.node[ind], 0.51, switchHyb=true) #first found, major edge, need to optimize gamma anyway
                 e.gamma = -1
-                e.containRoot = true
+                e.containroot = true
             else
                 makeEdgeHybrid!(e,net.node[ind], 0.49, switchHyb=true) #second found, minor edge
                 e.gamma = -1
-                e.containRoot = true
+                e.containroot = true
             end
         end
     end

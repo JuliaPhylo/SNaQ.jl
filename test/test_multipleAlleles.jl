@@ -2,11 +2,11 @@
 global tree, df, d, net, currT
 
 @testset "test: map alleles to species" begin
-    tree = readTopology("(6,(5,(7,(3,4))));");
+    tree = readnewick("(6,(5,(7,(3,4))));");
     SNaQ.expandLeaves!(["7"],tree)
-    @test writeTopology(tree) == "(6,(5,((7:0.0,7__2:0.0):1.0,(3,4))));"
+    @test writenewick(tree) == "(6,(5,((7:0.0,7__2:0.0):1.0,(3,4))));"
     SNaQ.mergeLeaves!(tree)
-    @test writeTopology(tree) == "(6,(5,(7:1.0,(3,4))));"
+    @test writenewick(tree) == "(6,(5,(7:1.0,(3,4))));"
     alleleDF=DataFrame(allele=["1","2"], species=["7","7"])
     CSV.write("tmp.csv", alleleDF);
     df = (@test_logs (:warn, r"^not all alleles were mapped") mapAllelesCFtable("tmp.csv",
@@ -61,7 +61,7 @@ d3 = DataFrame(t1=repeat([letters[1]],outer=[24]),t2=repeat([letters[2]],outer=[
 @test d2==d3
 
 dat = readTableCF(d);
-net = (@test_logs readTopologyLevel1("(a,((b)#H1,((#H1,c),d)));"));
+net = (@test_logs readnewick_level1("(a,((b)#H1,((#H1,c),d)));"));
 # earlier warning: "net does not have identifiable branch lengths"
 @test_logs topologyQPseudolik!(net, dat);
 sorttaxa!(dat)
@@ -102,7 +102,7 @@ d = readTableCF(df)
 @test d.repSpecies == ["7"]
 
 tree = "((6,4),(7,8),10);"
-currT = readTopology(tree);
+currT = readnewick(tree);
 
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
@@ -110,21 +110,21 @@ estNet = snaq!(currT,d,hmax=1,seed=7, runs=1, filename="", Nfail=10)
 redirect_stdout(originalstdout)
 @test 172.5 < estNet.loglik < 182.5 # 177.299499 on my machine, but always 180.001966 on GitHub workflows...
 @test estNet.hybrid[1].k >= 4
-@test estNet.numTaxa == 5
+@test estNet.numtaxa == 5
 #=
 redirect_stdout(devnull) # requires julia v1.6
 estNet = snaq!(currT,d,hmax=1,seed=8306, runs=1, filename="", Nfail=10,
                ftolAbs=1e-6,ftolRel=1e-5,xtolAbs=1e-4,xtolRel=1e-3)
 redirect_stdout(originalstdout)
 @test estNet.hybrid[1].k == 5 # or: wrong k in hybrid
-@test estNet.numTaxa == 5 # or: wrong # taxa
+@test estNet.numtaxa == 5 # or: wrong # taxa
 =#
 
 # net = snaq!(currT,d,hmax=1,seed=8378,filename="")
-net = readTopology("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.09464128563363322,(7:0.0,(6)#H7:::0.5258836303362331):0.36355727108454877,8);")
+net = readnewick("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.09464128563363322,(7:0.0,(6)#H7:::0.5258836303362331):0.36355727108454877,8);")
 @test topologyQPseudolik!(net, d) ≈ 174.58674796123705
 @test net.loglik ≈ 174.58674796123705
-net = readTopology("(((4,#H1),10),(7,(6)#H1),8);")
+net = readnewick("(((4,#H1),10),(7,(6)#H1),8);")
 net = topologyMaxQPseudolik!(net,d,  # loose tolerance for faster test
         ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
 @test net.loglik > 174.5
@@ -136,19 +136,25 @@ estNet = snaq!(currT,d,hmax=1,seed=6355, runs=1, filename="", Nfail=10,
                outgroup="10")
 redirect_stdout(originalstdout)
 # below, mostly check for 1 reticulation and "10" as outgroup. exact net depends on RNG :(
+<<<<<<< HEAD
 netstring = writeTopology(estNet; round=true, digits=1)
 @show netstring
 @test occursin(r"^\(\(7:0.*,#H\d:::.*,10\);", netstring) ||
       occursin(r"^\(10,\(.*,#H\d:::0.\d\)", netstring) ||
+=======
+netstring = writenewick(estNet; round=true, digits=1)
+@test occursin(r"^\(\(7:0.0,#H\d:::.*,10\);", netstring) ||
+      occursin(r"^\(10,\(.*,#H\d:::0.\d\);", netstring) ||
+>>>>>>> origin/dev
       occursin(r",10,#H\d:::0.\d\);", netstring)
 end # test of snaq on multiple alleles
 
 #----------------------------------------------------------#
-#   testing writeTopologyLevel1 with multiple alleles      #
+#   testing writenewick_level1 with multiple alleles       #
 #----------------------------------------------------------#
-@testset "writeTopologyLevel1 multiall=true" begin
-net = readTopologyLevel1("(A,(((B,B__2),E),(C,D)));")
-@test writeTopologyLevel1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
-end # test of writeTopologyLevel1
+@testset "writenewick_level1 multiall=true" begin
+net = readnewick_level1("(A,(((B,B__2),E),(C,D)));")
+@test writenewick_level1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
+end # test of writenewick_level1
 
 end # overall multiple allele sets of testests

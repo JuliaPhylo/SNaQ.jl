@@ -139,8 +139,8 @@ Output: [`DataCF`](@ref) object
 
 Optional arguments:
 
-- summaryfile: if specified, a summary file will be created with that name.
-- delim (for the first form only): to specify how columns are delimited,
+- `summaryfile`: if specified, a summary file will be created with that name.
+- `delim` (for the first form only): to specify how columns are delimited,
   with single quotes: delim=';'. Default is a `csv` file, i.e. `delim=','`.
 - `mergerows`: false by default. When true, will attempt to merge multiple rows
   corresponding to the same four-taxon set (by averaging their quartet CFs) even
@@ -272,20 +272,27 @@ end
 # ---------------- read input gene trees and calculate obsCF ----------------------
 
 """
-    readInputTrees(file)
+    readmultinewick_level1(file)
 
-Read a text file with a list of trees/networks in parenthetical format
-(one tree per line) and transform them like [`readTopologyLevel1`](@ref)
-does: to be unrooted, with resolved polytomies, missing branch lengths
-set to 1.0, etc. See [`PhyloNetworks.readMultiTopology`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readMultiTopology) to read multiple
-trees or networks with no modification.
+Read a text file with a list of trees/networks in extended newick format
+(one tree per line) and transform them like [`readnewick_level1`](@ref).
+Namely, in each tree/network
+- the root is suppressed (becomes of degree 3 if it was of degree 2)
+- any polytomy is resolved arbitrarily
+- any missing branch length is set to 1
+- any branch length above 10 is set to 10 (this assumes branch lengths in coalescent units)
+- any missing γ's are set to (0.1, 0.9)
+and more (see [`readnewick_level1`](@ref)).
+
+See [`PhyloNetworks.readmultinewick`]()
+to read multiple trees or networks with no modification.
 
 Output: array of HybridNetwork objects.
 
 Each line starting with "(" will be considered as describing one topology.
 The file can have extra lines that are ignored.
 """
-function readInputTrees(file::AbstractString)
+function readmultinewick_level1(file::AbstractString)
     try
         s = open(file)
     catch
@@ -335,7 +342,7 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
     end
     return vquartet
 end
-allQuartets(numTaxa::Integer, writeFile::Bool) = allQuartets(1:numTaxa, writeFile)
+allQuartets(numtaxa::Integer, writeFile::Bool) = allQuartets(1:numtaxa, writeFile)
 
 
 # function to list num randomly selected quartets for a vector of all quartets
@@ -396,7 +403,7 @@ function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::In
     close(out)
     return randquartets
 end
-randQuartets(numTaxa::Integer,num::Integer, writeFile::Bool) = randQuartets(1:numTaxa,num, writeFile)
+randQuartets(numtaxa::Integer,num::Integer, writeFile::Bool) = randQuartets(1:numtaxa,num, writeFile)
 
 
 # function to read list of quartets from a file
@@ -452,7 +459,7 @@ networks that users give as input, or get as output.
 """
 function taxadiff(quartets::Vector{Quartet}, t::HybridNetwork;
                   multiplealleles=true::Bool)
-    tq = tipLabels(quartets)
+    tq = tiplabels(quartets)
     secondallele = occursin.(Ref(r"__2$"), tq)
     for i in length(secondallele):-1:1
         secondallele[i] || continue
@@ -462,7 +469,7 @@ function taxadiff(quartets::Vector{Quartet}, t::HybridNetwork;
             deleteat!(tq, i) # delete "mouse__2" from tq IF "mouse" is present
         end
     end
-    tn = tipLabels(t)
+    tn = tiplabels(t)
     return (setdiff(tq,tn), setdiff(tn,tq))
 end
 
@@ -472,7 +479,7 @@ taxadiff(d::DataCF, t::HybridNetwork; multiplealleles=true::Bool) =
 
 # extract & sort the union of taxa of list of gene trees
 function unionTaxa(trees::Vector{HybridNetwork})
-    taxa = reduce(union, tipLabels(t) for t in trees)
+    taxa = reduce(union, tiplabels(t) for t in trees)
     return sort_stringasinteger!(taxa)
 end
 
@@ -500,11 +507,11 @@ function unionTaxa(quartets::Vector{Quartet})
     taxa = reduce(union, q.taxon for q in quartets)
     return sort_stringasinteger!(taxa)
 end
-unionTaxaTree(file::AbstractString) = unionTaxa(readInputTrees(file))
+unionTaxaTree(file::AbstractString) = unionTaxa(readmultinewick_level1(file))
 
 
-tipLabels(q::Vector{Quartet}) = unionTaxa(q)
-tipLabels(d::DataCF) = unionTaxa(d.quartet)
+tiplabels(q::Vector{Quartet}) = unionTaxa(q)
+tiplabels(d::DataCF) = unionTaxa(d.quartet)
 
 """
     calculateObsCFAll!(DataCF, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
@@ -564,7 +571,7 @@ function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{Hy
         sum13 = 0
         sum14 = 0
         for t in trees
-            isTree(t) || error("gene tree found in file that is a network $(writeTopology(t))")
+            isTree(t) || error("gene tree found in file that is a network $(writenewick(t))")
             if sameTaxa(q,t)
                 M = tree2Matrix(t,taxa) #fixit: way to reuse M? length(t.edge) will be different across trees
                 res = extractQuartetTree(q,M,taxa)
@@ -741,7 +748,7 @@ more alleles will be given more weight.
 
 # examples
 ```jldoctest
-julia> tree1 = readTopology("(E,(A,B),(C,D),O);"); tree2 = readTopology("(((A,B),(C,D)),E);");
+julia> tree1 = readnewick("(E,(A,B),(C,D),O);"); tree2 = readnewick("(((A,B),(C,D)),E);");
 
 julia> q,t = countquartetsintrees([tree1, tree2]);
 Reading in trees, looking at 15 quartets in each...
@@ -772,7 +779,7 @@ julia> q[11] # tree 1 has ACEO unresolved, and tree 2 is missing O: no data for 
 4-taxon set number 11; taxon numbers: 1,3,5,6
 data: [0.0, 0.0, 0.0, 0.0]
 
-julia> tree1 = readTopology("(E,(a1,B),(a2,D),O);"); tree2 = readTopology("(((a1,a2),(B,D)),E);");
+julia> tree1 = readnewick("(E,(a1,B),(a2,D),O);"); tree2 = readnewick("(((a1,a2),(B,D)),E);");
 
 julia> q,t = countquartetsintrees([tree1, tree2], Dict("a1"=>"A", "a2"=>"A"); showprogressbar=false);
 
@@ -807,7 +814,7 @@ julia> show(df, allcols=true)
 
 julia> # using CSV; CSV.write(df, "filename.csv");
 
-julia> tree2 = readTopology("((A,(B,D)),E);");
+julia> tree2 = readnewick("((A,(B,D)),E);");
 
 julia> q,t = countquartetsintrees([tree1, tree2], Dict("a1"=>"A", "a2"=>"A"); weight_byallele=true);
 Reading in trees, looking at 5 quartets in each...
@@ -891,10 +898,10 @@ end
 function countquartetsintrees!(quartet::Vector{QuartetT{MVector{4,Float64}}},
             tree::HybridNetwork, whichQ::Symbol, weight_byallele::Bool, nCk::Matrix,
             taxonnumber::Dict{<:AbstractString,Int}, taxonmap::Dict{<:AbstractString,<:AbstractString})
-    tree.numHybrids == 0 || error("input phylogenies must be trees")
+    tree.numhybrids == 0 || error("input phylogenies must be trees")
     # next: reset node & edge numbers so that they can be used as indices: 1,2,3,...
-    resetNodeNumbers!(tree; checkPreorder=true, type=:postorder) # leaves first & post-order
-    resetEdgeNumbers!(tree)
+    resetnodenumbers!(tree; checkPreorder=true, type=:postorder) # leaves first & post-order
+    resetedgenumbers!(tree)
     # next: build list leaf number -> species ID, using the node name then taxon map
     nleaves = length(tree.leaf)
     nnodes  = length(tree.node)
@@ -1032,7 +1039,7 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
         end
     end
     println("read input trees from file $(treefile)\nand quartetfile $(quartetfile)")
-    trees = readInputTrees(treefile)
+    trees = readmultinewick_level1(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
@@ -1091,7 +1098,7 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
         end
     end
     println("read input trees from file $(treefile). no quartet file given.")
-    trees = readInputTrees(treefile)
+    trees = readmultinewick_level1(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, unionTaxaTree(treefile), writetab, "none",false, true)
@@ -1142,14 +1149,14 @@ and calculate the proportion of these trees having a given quartet (concordance 
 for all quartets or for a sample of quartets.
 Optional arguments include:
 
-- quartetfile: name of text file with list of 4-taxon subsets to be analyzed. If none is specified, the function will list all possible 4-taxon subsets.
-- whichQ="rand": to choose a random sample of 4-taxon subsets
-- numQ: size of random sample (ignored if whichQ is not set to "rand")
-- writeTab=false: does not write the observedCF to a table (default true)
-- CFfile: name of file to save the observedCF (default tableCF.txt)
-- writeQ=true: save intermediate files with the list of all 4-taxon subsets and chosen random sample (default false).
-- writeSummary: write descriptive stats of input data (default: true)
-- nexus: if true, it assumes the gene trees are written in nexus file (default: false)
+- `quartetfile`: name of text file with list of 4-taxon subsets to be analyzed. If none is specified, the function will list all possible 4-taxon subsets.
+- `whichQ="rand"`: to choose a random sample of 4-taxon subsets
+- `numQ`: size of random sample (ignored if whichQ is not set to "rand")
+- `writeTab=false`: does not write the observedCF to a table (default true)
+- `CFfile`: name of file to save the observedCF (default tableCF.txt)
+- `writeQ=true`: save intermediate files with the list of all 4-taxon subsets and chosen random sample (default false).
+- `writeSummary`: write descriptive stats of input data (default: true)
+- `nexus`: if true, it assumes the gene trees are written in nexus file (default: false)
 
 See also:
 [`countquartetsintrees`](@ref), which uses a much faster algorithm;
@@ -1161,7 +1168,7 @@ function readTrees2CF(treefile::AbstractString; quartetfile="none"::AbstractStri
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
     trees = (nexus ?
              readnexus_treeblock(treefile, readTopologyUpdate, false, false; reticulate=false) :
-             readInputTrees(treefile))
+             readmultinewick_level1(treefile))
     if length(taxa)==0        # unionTaxa(trees) NOT default argument:
       taxa = unionTaxa(trees) # otherwise: tree file is read twice
     end
@@ -1269,8 +1276,8 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 `summarizeDataCF(d::DataCF)`
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
-- filename: if provided, the summary will be saved in the filename, not to screen
-- pc (number between (0,1)): threshold of percentage of missing genes to identify 4-taxon subsets with fewer genes than the threshold
+- `filename`: if provided, the summary will be saved in the filename, not to screen
+- `pc` (number between (0,1)): threshold of percentage of missing genes to identify 4-taxon subsets with fewer genes than the threshold
 """
 function summarizeDataCF(d::DataCF; filename="none"::AbstractString, pc=0.7::Float64)
     0<=pc<=1 || error("percentage of missing genes should be between 0,1, not: $(pc)")
@@ -1305,7 +1312,7 @@ function updateBL!(net::HybridNetwork,d::DataCF)
     for i in 1:length(edges)
         ind = getIndexEdge(edges[i],net) # helpful error if not found
         if net.edge[ind].length < 0.0 || net.edge[ind].length==1.0
-            # readTopologyLevel1 changes missing branch length to 1.0
+            # readnewick_level1 changes missing branch length to 1.0
             setLength!(net.edge[ind], (lengths[i] > 0 ? lengths[i] : 0.0))
         end
     end
@@ -1343,16 +1350,18 @@ function edgesParts(net::HybridNetwork)
     return parts
 end
 
-# aux function to traverse the network from a node and an edge
-# based on traverseContainRoot
-# warning: it does not go accross hybrid node, minor hybrid edge
-# there is another getDescendants below for updatePartition
-function getDescendants!(node::Node, edge::Edge, descendants::Array{Node,1})
-    if(node.leaf)
+# Traverse the network from a node towards an edge, following major edges only.
+# The other `getDescendants` updates the nodes `.inCycle`, to update partitions later.
+function getDescendants!(
+    node::Node,
+    edge::Edge,
+    descendants::Array{Node,1}
+)
+    if node.leaf
         push!(descendants, node)
     else
         for e in node.edge
-            if(!isEqual(edge,e) && e.isMajor)
+            if !isEqual(edge,e) && e.ismajor
                 other = getOtherNode(e,node);
                 getDescendants!(other,e, descendants);
             end
@@ -1361,17 +1370,22 @@ function getDescendants!(node::Node, edge::Edge, descendants::Array{Node,1})
 end
 
 
-# based on getDescendants on readData.jl but with vector of edges, instead of nodes
+# similar to `getDescendants!` above, but uses a vector of edges instead of nodes
 # finds the partition corresponding to the node and edge in the cycle
 # used in chooseEdgesGamma and to set net.partition
 # cycleNum is a variable that will save another hybrid node number if found
-function getDescendants!(node::Node, edge::Edge, descendants::Vector{Edge}, cycleNum::Vector{Int})
+function getDescendants!(
+    node::Node,
+    edge::Edge,
+    descendants::Vector{Edge},
+    cycleNum::Vector{Int}
+)
     @debug "getDescendants of node $(node.number) and edge $(edge.number)"
-    if(node.inCycle != -1)
+    if node.inCycle != -1
         push!(cycleNum,node.inCycle)
-    elseif(!node.leaf && node.inCycle == -1)
+    elseif !node.leaf && node.inCycle == -1
         for e in node.edge
-            if(!isEqual(edge,e) && e.isMajor)
+            if(!isEqual(edge,e) && e.ismajor)
                 push!(descendants,e)
                 getDescendants!(getOtherNode(e,node),e,descendants,cycleNum)
             end

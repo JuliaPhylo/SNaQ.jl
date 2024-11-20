@@ -1,4 +1,4 @@
-# functions to update incycle, containRoot, gammaz
+# functions to update incycle, containroot, gammaz
 # Claudia March 2015
 #####################
 
@@ -50,7 +50,7 @@ function updateInCycle!(net::HybridNetwork,node::Node)
             net.visited[getIndex(curr,net)] = true
             atstart = isEqual(curr,start)
             for e in curr.edge
-                e.isMajor || continue
+                e.ismajor || continue
                 other = getOtherNode(e,curr)
                 if atstart || (!other.leaf && !net.visited[getIndex(other,net)])
                     other.prev = curr
@@ -88,12 +88,12 @@ The input `node` to `updateContainRoot!` must be a hybrid node
 (can come from searchHybridNode).
 `updateContainRoot!` starts at the input node and calls `traverseContainRoot!`,
 which traverses the network recursively.
-By default, containRoot attributes of edges are true.
-Changes `containRoot` to false for all the visited edges: those
+By default, containroot attributes of edges are true.
+Changes `containroot` to false for all the visited edges: those
 below the input node, but not beyond any other hybrid node.
 
 `updateContainRoot!` Returns a `flag` and an array of edges whose
-containRoot has been changed from true to false.
+containroot has been changed from true to false.
 `flag` is false if the set of edges to place the root is empty
 
 In `traverseContainRoot!`, `rightDir` turns false if hybridizations
@@ -101,8 +101,8 @@ have incompatible directions (vector of length 1, to be modified).
 
 Warning:
 
-- does *not* update `containRoot` of minor hybrid edges.
-- assumes correct `isMajor` attributes: to stop the recursion at minor hybrid edges.
+- does *not* update `containroot` of minor hybrid edges.
+- assumes correct `ismajor` attributes: to stop the recursion at minor hybrid edges.
 - assumes correct hybrid attributes of both nodes & edges: to check if various
   hybridizations have compatible directions.
   For each hybrid node that is encountered, checks if it was reached
@@ -113,7 +113,7 @@ Warning:
 function traverseContainRoot!(node::Node, edge::Edge, edges_changed::Array{Edge,1}, rightDir::Vector{Bool})
     if node.hybrid
         if edge.hybrid
-            edge.isMajor || error("hybrid edge $(edge.number) is minor and we should not traverse the graph through minor edges")
+            edge.ismajor || error("hybrid edge $(edge.number) is minor and we should not traverse the graph through minor edges")
             DEBUGC && @debug "traverseContainRoot reaches hybrid node $(node.number) through major hybrid edge $(edge.number)"
             rightDir[1] &= true  # This line has no effect: x && true = x
         else #approach hybrid node through tree edge => wrong direction
@@ -122,11 +122,11 @@ function traverseContainRoot!(node::Node, edge::Edge, edges_changed::Array{Edge,
         end
     elseif !node.leaf
         for e in node.edge
-            if !isEqual(edge,e) && e.isMajor # minor edges avoided-> their containRoot not updated
+            if !isEqual(edge,e) && e.ismajor # minor edges avoided-> their containroot not updated
                 other = getOtherNode(e,node);
-                if e.containRoot # only considered changed those that were true and not hybrid
+                if e.containroot # only considered changed those that were true and not hybrid
                     DEBUGC && @debug "traverseContainRoot changing edge $(e.number) to false, at this moment, rightDir is $(rightDir[1])"
-                    e.containRoot = false;
+                    e.containroot = false;
                     push!(edges_changed, e);
                 end
                 traverseContainRoot!(other,e, edges_changed, rightDir);
@@ -141,18 +141,18 @@ end
 #        flag: false if the set of edges to place the root is empty
 @doc (@doc traverseContainRoot!) updateContainRoot!
 function updateContainRoot!(net::HybridNetwork, node::Node)
-    node.hybrid || error("node $(node.number )is not hybrid, cannot update containRoot")
+    node.hybrid || error("node $(node.number )is not hybrid, cannot update containroot")
     net.edges_changed = Edge[];
     rightDir = [true] #assume good direction, only changed if found hybrid node through tree edge
     for e in node.edge
         if !e.hybrid
             other = getOtherNode(e,node);
-            e.containRoot = false;
+            e.containroot = false;
             push!(net.edges_changed,e);
             traverseContainRoot!(other,e, net.edges_changed,rightDir);
         end
     end
-    if !rightDir[1] || all((e->!e.containRoot), net.edge)
+    if !rightDir[1] || all((e->!e.containroot), net.edge)
         return false,net.edges_changed
     else
         return true,net.edges_changed
@@ -188,7 +188,7 @@ function updateGammaz!(net::HybridNetwork, node::Node, allow::Bool)
     other_min = getOtherNode(edge_min,node);
     node.k > 2 || error("cycle with only $(node.k) nodes: parallel edges") # return false, []
     if(node.k == 4) # could be bad diamond I,II
-#        net.numTaxa >= 5 || return false, [] #checked inside optTopRuns now
+#        net.numtaxa >= 5 || return false, [] #checked inside optTopRuns now
         edgebla,edge_min2,tree_edge3 = hybridEdges(other_min);
         edgebla,edge_maj2,tree_edge1 = hybridEdges(other_maj);
         other_min2 = getOtherNode(edge_min2,other_min);
@@ -226,11 +226,11 @@ function updateGammaz!(net::HybridNetwork, node::Node, allow::Bool)
             edge_min.istIdentifiable = true
         end
     elseif(node.k == 3) # could be extreme/very bad triangle or just bad triangle
-        if(net.numTaxa <= 5)
+        if net.numtaxa <= 5
             @debug "extremely or very bad triangle found"
             node.isVeryBadTriangle = true
             net.hasVeryBadTriangle = true
-        elseif(net.numTaxa >= 6)
+        elseif net.numtaxa >= 6
             edgebla,tree_edge_incycle,tree_edge1 = hybridEdges(other_min);
             edgebla,edgebla,tree_edge3 = hybridEdges(other_maj);
             isLeaf1 = getOtherNode(tree_edge1,other_min);
@@ -314,7 +314,7 @@ end
 # by nodesChanged vector (obtained from updateInCycle)
 # warning: needs updateInCycle for all hybrids before running this
 function updatePartition!(net::HybridNetwork, nodesChanged::Vector{Node})
-    if(net.numHybrids == 0)
+    if net.numhybrids == 0
         net.partition = Partition[]
     end
     for n in nodesChanged

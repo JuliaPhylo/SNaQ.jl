@@ -19,7 +19,7 @@ try
     qnet.hybrid[1].prev.number != -7 ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 != 0.2-log(1-0.1*(1-exp(-1.1))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -47,7 +47,7 @@ try
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 1 || qnet.numHybrids != 1 ? error("qnet should have 1 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 1 || qnet.numhybrids != 1 ? error("qnet should have 1 hybrid nodes") : nothing
     qnet.t1 != -1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -74,7 +74,7 @@ try
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 1 || qnet.numHybrids != 1 ? error("qnet should have 1 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 1 || qnet.numhybrids != 1 ? error("qnet should have 1 hybrid nodes") : nothing
     qnet.t1 != -1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -98,7 +98,7 @@ try
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 > 0.30001 || qnet.t1 < 0.2999999999 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -126,7 +126,7 @@ try
     qnet.hybrid[1].prev.number != -3 ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 != 0.2-log(1-0.1*(1-exp(-0.1))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -168,7 +168,7 @@ try
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 1 || qnet.numHybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 1 || qnet.numhybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 != -1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -193,7 +193,7 @@ try
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
     qnet.t1 != 0.1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -217,7 +217,7 @@ try
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
     qnet.t1 != 0.1-log(1-(0.3*(1-exp(-0.1)))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -243,7 +243,7 @@ try
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
     qnet.t1 != 0.1-log(1-(0.7*(1-exp(-0.2)))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -271,7 +271,7 @@ try
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 1 || qnet.numHybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 1 || qnet.numhybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 != -1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -311,7 +311,7 @@ try
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 1 || qnet.numHybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 1 || qnet.numhybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 != -1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -339,7 +339,7 @@ try
     (qnet.hybrid[1].prev.number != -2 && qnet.hybrid[1].prev.number != -3) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
     !approxEq(qnet.t1,-log(1+0.1*(1-exp(-1))-0.1*0.1*(1-exp(-1-1))-0.1*0.1*(1-exp(-1))-0.9*0.9*(1-exp(-2.)))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -366,7 +366,7 @@ try
     (qnet.hybrid[1].prev.number != -6 && qnet.hybrid[1].prev.number != -3) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
     !approxEq(qnet.t1,-log(1+0.1*(1-exp(-2))-0.1*0.1*(1-exp(-1))-0.1*0.1*(1-exp(-2))-0.9*0.9*(1-exp(-2.)))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -395,7 +395,7 @@ try
     (qnet.hybrid[1].prev.number != -6 && qnet.hybrid[1].prev.number != -3) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 0 || qnet.numHybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
+    size(qnet.hybrid,1) != 0 || qnet.numhybrids != 0 ? error("qnet should have 0 hybrid nodes") : nothing
     !approxEq(qnet.t1,-log(1+0.1*(1-exp(-1))-0.1*0.1*(1-exp(-1))-0.1*0.1*(1-exp(-1))-0.9*0.9*(1-exp(-3)))) ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)
@@ -423,7 +423,7 @@ try
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
-    size(qnet.hybrid,1) != 1 || qnet.numHybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
+    size(qnet.hybrid,1) != 1 || qnet.numhybrids != 1 ? error("qnet should not have hybrid nodes anymore") : nothing
     qnet.t1 != -1 ? error("internal edge length not correctly updated") : nothing
 
     updateSplit!(qnet)

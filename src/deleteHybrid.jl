@@ -40,7 +40,7 @@ function identifyInCycle(net::Network,node::Node)
                 net.visited[getIndex(curr,net)] = true
                 atstart = isEqual(curr,start)
                 for e in curr.edge
-                    e.isMajor || continue
+                    e.ismajor || continue
                     other = getOtherNode(e,curr)
                     if atstart || (!other.leaf && !net.visited[getIndex(other,net)])
                         other.prev = curr
@@ -76,14 +76,14 @@ end
 function traverseIdentifyRoot(node::Node, edge::Edge, edges_changed::Array{Edge,1})
     if(!node.leaf && !node.hybrid)
         for e in node.edge
-            if(!isEqual(edge,e) && e.isMajor && !e.hybrid)
+            if !isEqual(edge,e) && e.ismajor && !e.hybrid
                 other = getOtherNode(e,node);
                 push!(edges_changed, e);
                 if(!other.hybrid)
                     #if(!other.hasHybEdge)
                         traverseIdentifyRoot(other,e, edges_changed);
                     #else
-                    #    if(hybridEdges(other)[1].isMajor)
+                    #    if hybridEdges(other)[1].ismajor
                     #        traverseIdentifyRoot(other,e, edges_changed);
                     #    end
                     #end
@@ -94,12 +94,12 @@ function traverseIdentifyRoot(node::Node, edge::Edge, edges_changed::Array{Edge,
 end
 
 
-# function to identify containRoot
+# function to identify containroot
 # depending on a hybrid node on the network
 # input: hybrid node (can come from searchHybridNode)
 # return array of edges affected by the hybrid node
 function identifyContainRoot(net::HybridNetwork, node::Node)
-    node.hybrid || error("node $(node.number) is not hybrid, cannot identify containRoot")
+    node.hybrid || error("node $(node.number) is not hybrid, cannot identify containroot")
     net.edges_changed = Edge[];
     for e in node.edge
         if(!e.hybrid)
@@ -130,9 +130,9 @@ function deleteHybridizationUpdate!(net::HybridNetwork, hybrid::Node, random::Bo
     undoGammaz!(hybrid,net);
     othermaj = getOtherNode(edges[1],hybrid)
     edgesmaj = hybridEdges(othermaj)
-    @debug "edgesmaj[3] $(edgesmaj[3].number) is the one to check if containRoot=false already: $(edgesmaj[3].containRoot)"
-    if(edgesmaj[3].containRoot) #if containRoot=true, then we need to undo
-        push!(edgesRoot, edges[1]) ## add hybrid edges to edgesRoot to undo containRoot
+    @debug "edgesmaj[3] $(edgesmaj[3].number) is the one to check if containroot=false already: $(edgesmaj[3].containroot)"
+    if edgesmaj[3].containroot #if containroot=true, then we need to undo
+        push!(edgesRoot, edges[1]) ## add hybrid edges to edgesRoot to undo containroot
         push!(edgesRoot, edges[2])
         undoContainRoot!(edgesRoot);
     end
@@ -172,7 +172,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setEdge!(other1,treeedge1);
             removeEdge!(other1, hybedge1);
             PhyloNetworks.deleteEdge!(net,hybedge1);
-            #treeedge1.containRoot = (!treeedge1.containRoot || !hybedge1.containRoot) ? false : true #causes problems if hybrid.CR=false
+            #treeedge1.containroot = (!treeedge1.containroot || !hybedge1.containroot) ? false : true #causes problems if hybrid.CR=false
             if(blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
                 push!(net.blacklist, treeedge1.number)
@@ -186,7 +186,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setEdge!(other3,hybedge1);
             removeEdge!(other3,treeedge1);
             PhyloNetworks.deleteEdge!(net,treeedge1);
-            hybedge1.containRoot = (!treeedge1.containRoot || !hybedge1.containRoot) ? false : true
+            hybedge1.containroot = (!treeedge1.containroot || !hybedge1.containroot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(hybedge1.number)")
                 push!(net.blacklist, hybedge1.number)
@@ -215,7 +215,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setEdge!(treenode1,treeedge2);
             removeEdge!(treenode1,treeedge1);
             PhyloNetworks.deleteEdge!(net,treeedge1);
-            treeedge2.containRoot = (!treeedge1.containRoot || !treeedge2.containRoot) ? false : true
+            treeedge2.containroot = (!treeedge1.containroot || !treeedge2.containroot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(treeedge2.number)")
                 push!(net.blacklist, treeedge2.number)
@@ -227,7 +227,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             setEdge!(treenode2,treeedge1);
             removeEdge!(treenode2,treeedge2);
             PhyloNetworks.deleteEdge!(net,treeedge2);
-            treeedge1.containRoot = (!treeedge1.containRoot || !treeedge2.containRoot) ? false : true
+            treeedge1.containroot = (!treeedge1.containroot || !treeedge2.containroot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
                 push!(net.blacklist, treeedge1.number)
@@ -277,7 +277,7 @@ deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool) = deleteHybrid!(node,ne
 # needs a list of the edges in cycle
 function undoPartition!(net::HybridNetwork, hybrid::Node, edgesInCycle::Vector{Edge})
     hybrid.hybrid || error("node $(hybrid.number) is not hybrid, and we need hybrid node inside deleteHybUpdate for undoPartition")
-    if(net.numHybrids == 0)
+    if net.numhybrids == 0
         net.partition = Partition[]
     else
         cycles = Int[]
