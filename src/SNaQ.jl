@@ -30,6 +30,7 @@ module SNaQ
     using StatsFuns # logsumexp, logaddexp, log2π, various cdf
     using StatsModels # re-exported by GLM. for ModelFrame ModelMatrix Formula etc
     using PhyloNetworks
+    using Graphs    # biconnected_components
 
     import Base: show
     import GLM: ftest
@@ -78,7 +79,12 @@ module SNaQ
         readSnaqNetwork,
         topologyMaxQPseudolik!,
         topologyQPseudolik!,
-        bootsnaq
+        bootsnaq,
+        # Topological restrictions
+        restrict_maximum_level,
+        require_galled_tree,
+        require_galled_network,
+        restriction_set
         
 
     include("types.jl")
@@ -97,5 +103,6 @@ module SNaQ
     include("snaq_optimization.jl")
     include("undo.jl")
     include("update.jl")
+    include("network_properties.jl")
 
 end
