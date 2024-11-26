@@ -1,6 +1,6 @@
 using Graphs, PhyloNetworks
 
-# snaq!(tre0, df, top_restrictions(max_level=3, require_galled_tree=true))
+# snaq!(tre0, df, restriction_set(max_level=3, require_galled_tree=true))
 
 function restriction_set(; max_level::Real=Inf, require_galled_tree::Bool=false, require_galled_network::Bool=false)
 

@@ -1160,7 +1160,7 @@ Only the case of multiple alleles the moves does not undo what it did, because i
 #     return false
 # end
 
-function proposedTop!(move::Integer, newT::HybridNetwork,random::Bool, count::Integer, 
+function proposedTop!(move::Integer, newT::HybridNetwork, restrictions::Function,random::Bool, count::Integer, 
     N::Integer, movescount::Vector{Int}, movesfail::Vector{Int}, multall::Bool, probQR::Float64, d::DataCF)
     global CHECKNET
     1 <= move <= 6 || error("invalid move $(move)") #fixit: if previous move rejected, do not redo it!
@@ -1195,6 +1195,11 @@ function proposedTop!(move::Integer, newT::HybridNetwork,random::Bool, count::In
         @debug "entered to check topology for mult allele: $(success2)"
         success &= success2
     end
+    success &= restrictions(newT)
+    if !restrictions(newT)
+        @info "newT failed to meet restrictions: $(writeTopology(newT))"
+    end
+
     movescount[move] += 1
     movescount[move+6] += success ? 1 : 0
     movesfail[move] += success ? 0 : 1
@@ -1206,18 +1211,18 @@ function proposedTop!(move::Integer, newT::HybridNetwork,random::Bool, count::In
     return false
 end
 
-proposedTop!(move::Integer, newT::HybridNetwork, random::Bool, count::Integer, N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool) =
-    proposedTop!(move, newT, random, count, N, movescount, movesfail, multall, 0.0, DataCF())
-proposedTop!(move::Symbol, newT::HybridNetwork, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool, d::DataCF) =
+proposedTop!(move::Integer, newT::HybridNetwork, restrictions::Function, random::Bool, count::Integer, N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool) =
+    proposedTop!(move, newT, restrictions, random, count, N, movescount, movesfail, multall, 0.0, DataCF())
+proposedTop!(move::Symbol, newT::HybridNetwork, restrictions::Function, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool, d::DataCF) =
     proposedTop!( try move2int[move] catch; error("invalid move $(string(move))") end,
-        newT, random,count,N, movescount,movesfail, multall, 0.0, d)
-proposedTop!(move::Symbol, newT::HybridNetwork, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool) =
-    proposedTop!(move, newT, random, count, N, movescount, movesfail, multall, DataCF())
-proposedTop!(move::Symbol, newT::HybridNetwork, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool, probQR::Float64, d::DataCF) =
+        newT, restrictions, random,count,N, movescount,movesfail, multall, 0.0, d)
+proposedTop!(move::Symbol, newT::HybridNetwork, restrictions::Function, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool) =
+    proposedTop!(move, newT, restrictions, random, count, N, movescount, movesfail, multall, DataCF())
+proposedTop!(move::Symbol, newT::HybridNetwork, restrictions::Function, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool, probQR::Float64, d::DataCF) =
     proposedTop!( try move2int[move] catch; error("invalid move $(string(move))") end,
-        newT, random,count,N, movescount,movesfail, multall, probQR, d)
-proposedTop!(move::Symbol, newT::HybridNetwork, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool, probQR::Float64) =
-    proposedTop!(move, newT, random, count, N, movescount, movesfail, multall, probQR, DataCF())
+        newT, restrictions, random,count,N, movescount,movesfail, multall, probQR, d)
+proposedTop!(move::Symbol, newT::HybridNetwork, restrictions::Function, random::Bool, count::Integer,N::Integer, movescount::Vector{Int},movesfail::Vector{Int}, multall::Bool, probQR::Float64) =
+    proposedTop!(move, newT, restrictions, random, count, N, movescount, movesfail, multall, probQR, DataCF())
 
 # function to calculate Nmov, number max of tries per move
 # order: (add,mvorigin,mvtarget,chdir,delete,nni)
@@ -1308,7 +1313,7 @@ end while
 After choosing the best network `newT`, we do one last more thorough optimization of branch lengths with `optBL`,
 we change non identifiable branch lengths to -1 (only in debug mode) and return `newT`
 """
-function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,
+function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,
                       ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64, probQR::Float64,
                       verbose::Bool, closeN ::Bool, Nmov0::Vector{Int}, logfile::IO,
                       writelog::Bool)
@@ -1324,9 +1329,11 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     @debug begin printEverything(currT); "printed everything" end
     CHECKNET && checkNet(currT)
     count = 0
+
     movescount = zeros(Int,18) #1:6 number of times moved proposed, 7:12 number of times success move (no intersecting cycles, etc.), 13:18 accepted by loglik
     movesgamma = zeros(Int,13) #number of moves to fix gamma zero: proposed, successful, movesgamma[13]: total accepted by loglik
     movesfail = zeros(Int,6) #count of failed moves for current topology
+    
     failures = 0
     stillmoves = true
     if(isempty(Nmov0))
@@ -1369,7 +1376,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                 newT0 = deepcopy(newT)
             end
             #probosedTop --> Will guide moves by quartet rank with probability probQR (which is by default 0, meaning targets of changes are random)
-            flag = proposedTop!(move,newT,true, count,10, movescount,movesfail,!isempty(d.repSpecies), probQR, d) #N=10 because with 1 it never finds an edge for nni
+            flag = proposedTop!(move,newT,restrictions, true, count,10, movescount,movesfail,!isempty(d.repSpecies), probQR, d) #N=10 because with 1 it never finds an edge for nni
             if(flag) #no need else in general because newT always undone if failed, but needed for multiple alleles
                 accepted = false
                 all((e->!(e.hybrid && e.inCycle == -1)), newT.edge) || error("found hybrid edge with inCycle == -1")
@@ -1458,9 +1465,9 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     return newT
 end
 
-optTopLevel!(currT::HybridNetwork, d::DataCF, hmax::Integer) = optTopLevel!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, 0.0, false,true,numMoves, stdout,true)
-optTopLevel!(currT::HybridNetwork, d::DataCF, hmax::Integer, verbose::Bool) = optTopLevel!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, 0.0, verbose,true,numMoves,stdout,true)
-optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64, verbose::Bool, closeN ::Bool, Nmov0::Vector{Int}) = optTopLevel!(currT, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, 0.0, verbose, closeN , Nmov0,stdout,true)
+optTopLevel!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer) = optTopLevel!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, 0.0, false,true,numMoves, stdout,true)
+optTopLevel!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer, verbose::Bool) = optTopLevel!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, 0.0, verbose,true,numMoves,stdout,true)
+optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64, verbose::Bool, closeN ::Bool, Nmov0::Vector{Int}) = optTopLevel!(currT, restrictions, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, 0.0, verbose, closeN , Nmov0,stdout,true)
 
 
 
@@ -1612,7 +1619,7 @@ All return their optimized network.
 - `optTopLevel!` calls `optBL!` various times and proposes new network with various moves.
 
 """
-function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,
+function optTopRuns!(currT0::HybridNetwork, restrictions::Function, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,
                      ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64,
                      verbose::Bool, closeN ::Bool, Nmov0::Vector{Int}, runs::Integer,
                      outgroup::AbstractString, rootname::AbstractString, seed::Integer, probST::Float64,
@@ -1690,7 +1697,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                 updateSubsetQuartets!(d, propQuartets)
             end
             
-            best = optTopRun1!(currT0, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs,
+            best = optTopRun1!(currT0, restrictions, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs,
                        verbose, closeN , Nmov0,seeds[i],logfile,writelog_1proc,probST,probQR);
             logstr *= "\nFINISHED SNaQ for run $(i), -loglik of best $(best.loglik)\n"
             verbose && print(stdout, logstr)
@@ -1819,10 +1826,10 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     return maxNet
 end
 
-optTopRuns!(currT::HybridNetwork, d::DataCF, hmax::Integer, runs::Integer, outgroup::AbstractString, rootname::AbstractString) = optTopRuns!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, runs, outgroup,rootname,0,0.3,0.0)
-optTopRuns!(currT::HybridNetwork, d::DataCF, hmax::Integer, runs::Integer, outgroup::AbstractString) = optTopRuns!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, runs, outgroup,"optTopRuns",0,0.3,0.0)
-optTopRuns!(currT::HybridNetwork, d::DataCF, hmax::Integer, runs::Integer) = optTopRuns!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, runs, "none", "optTopRuns",0,0.3,0.0)
-optTopRuns!(currT::HybridNetwork, d::DataCF, hmax::Integer) = optTopRuns!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, 10, "none", "optTopRuns",0,0.3,0.0)
+optTopRuns!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer, runs::Integer, outgroup::AbstractString, rootname::AbstractString) = optTopRuns!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, runs, outgroup,rootname,0,0.3,0.0)
+optTopRuns!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer, runs::Integer, outgroup::AbstractString) = optTopRuns!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, runs, outgroup,"optTopRuns",0,0.3,0.0)
+optTopRuns!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer, runs::Integer) = optTopRuns!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, runs, "none", "optTopRuns",0,0.3,0.0)
+optTopRuns!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer) = optTopRuns!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, 10, "none", "optTopRuns",0,0.3,0.0)
 
 # picks a modification of starting topology and calls optTopLevel
 # the seed is used as is
@@ -1847,8 +1854,8 @@ does not violate the multiple alleles condition.
 After modifying the starting topology with NNI and/or move origin/target,
 `optTopLevel` is called.
 """
-function optTopRun1!(currT0::HybridNetwork, liktolAbs, Nfail::Integer, d::DataCF, hmax::Integer,
-                     ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64,
+function optTopRun1!(currT0::HybridNetwork, restrictions::Function, liktolAbs, Nfail::Integer, d::DataCF, 
+                     hmax::Integer, ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64,
                      verbose::Bool, closeN ::Bool, Nmov0::Vector{Int},seed::Integer,
                      logfile::IO, writelog::Bool, probST::Float64, probQR::Float64)
     Random.seed!(seed)
@@ -1899,11 +1906,11 @@ function optTopRun1!(currT0::HybridNetwork, liktolAbs, Nfail::Integer, d::DataCF
         end
     end
     GC.gc();
-    optTopLevel!(currT, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, probQR, verbose, closeN , Nmov0,logfile,writelog)
+    optTopLevel!(currT, restrictions, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, probQR, verbose, closeN , Nmov0,logfile,writelog)
 end
 
-optTopRun1!(currT::HybridNetwork, d::DataCF, hmax::Integer) = optTopRun1!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, 0,stdout,true,0.3,0.0)
-optTopRun1!(currT::HybridNetwork, d::DataCF, hmax::Integer, seed::Integer) = optTopRun1!(currT, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves,seed,stdout,true,0.3,0.0)
+optTopRun1!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer) = optTopRun1!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, 0,stdout,true,0.3,0.0)
+optTopRun1!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer, seed::Integer) = optTopRun1!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves,seed,stdout,true,0.3,0.0)
 
 
 # function SNaQ: it calls directly optTopRuns but has a prettier name
@@ -1993,7 +2000,8 @@ Inferring phylogenetic networks with maximum pseudolikelihood under incomplete l
 """
 function snaq!(
     currT0::HybridNetwork,
-    d::DataCF;
+    d::DataCF,
+    restrictions::Function;
     hmax::Integer=1,
     liktolAbs::Float64=likAbs,
     Nfail::Integer=numFails,
@@ -2011,7 +2019,7 @@ function snaq!(
     probST::Float64=0.3,
     updateBL::Bool=true,
     probQR::Float64=0.0,
-    qtolAbs::Float64=qAbs,
+    qinfTol::Float64=0.0,
     qinfTest::Bool=false,
     propQuartets::Float64=1.0
 )
@@ -2054,12 +2062,12 @@ function snaq!(
     # if qinfTol == 0.0, then 'uninformative' quartets are those where CFs are all the same (e.g., == 0.33)
     if qinfTest == true
         #NOTE: This function modifies supplied network
-        uninformative = updateUninformativeQuartets!(d, qtolAbs)
+        uninformative = updateUninformativeQuartets!(d, qinfTol)
         if uninformative > 0
             println("Excluding ",uninformative," uninformative/ inconclusive quartets")
         end
     end
-    net = optTopRuns!(startnet, liktolAbs, Nfail, d, hmax, ftolRel,ftolAbs, xtolRel,xtolAbs,
+    net = optTopRuns!(startnet, restrictions, liktolAbs, Nfail, d, hmax, ftolRel,ftolAbs, xtolRel,xtolAbs,
                       verbose, closeN, Nmov0, runs, outgroup, filename,seed,probST,probQR, 
                       propQuartets)
     
