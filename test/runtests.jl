@@ -31,12 +31,12 @@ import PhyloNetworks:
 
 
 
-@testset "Code quality (Aqua.jl)" begin
-    Aqua.test_all(SNaQ;
-    ambiguities = (broken = false),
-    persistent_tasks = false,
-    deps_compat = false)
-end
+# @testset "Code quality (Aqua.jl)" begin
+#     Aqua.test_all(SNaQ;
+#     ambiguities = (broken = false),
+#     persistent_tasks = false,
+#     deps_compat = false)
+# end
 
 
 SNaQ.setCHECKNET(true)

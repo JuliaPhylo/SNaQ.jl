@@ -395,7 +395,7 @@ function updateHasEdge!(qnet::QuartetNetwork, net::HybridNetwork)
             end
         end
         if e.hybrid && !e.ismajor
-            node = e.node[e.isChild1 ? 1 : 2]
+            node = e.node[e.ischild1 ? 1 : 2]
             node.hybrid || error("strange thing, hybrid edge $(e.number) pointing at tree node $(node.number)")
             if(!node.isBadDiamondI)
                 #println("found hybrid edge $(e.number) in net and qnet")

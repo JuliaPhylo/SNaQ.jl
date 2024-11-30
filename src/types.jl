@@ -88,10 +88,154 @@ Solís-Lemus & Ané (2016, doi:10.1371/journal.pgen.1005896)
 - `boolg2`: cleaned
   attribute to know if the network has been cleaned after readm. default `false`
 """
-inCycle(e::Edge) = e.inte1
-inCycle!(e::Edge, b::Bool) = (e.inte1 = b) # returns b
-inCycle(n::Node) = n.intn1
-inCycle!(n::Node, b::Bool) = (n.intn1 = b)
+blank_func() = 0
+import Base: getproperty, getfield, getindex, setproperty!
+
+# Edge symbol mappings
+@inline function Base.getproperty(t::Edge, s::Symbol)
+  if s === :istIdentifiable
+    return getfield(t, :boole1)
+  elseif s === :fromBadDiamondI
+    return getfield(t, :boole2)
+  elseif s === :inCycle
+    return getfield(t, :inte1)
+  else
+    return getfield(t, s)
+  end
+end
+
+@inline function Base.setproperty!(t::Edge, s::Symbol, v)
+  if s === :istIdentifiable
+    s = :boole1
+  elseif s === :fromBadDiamondI
+    s = :boole2
+  elseif s === :inCycle
+    s = :inte1
+  end
+  ty = fieldtype(Edge, s)
+  val = v isa ty ? v : convert(ty, v)
+  return setfield!(t, s, val)
+end
+
+# Node symbol mappings
+@inline function Base.getproperty(t::Node, s::Symbol)
+  if s === :hasHybEdge
+    return getfield(t, :booln1)
+  elseif s === :isBadDiamondI
+    return getfield(t, :booln2)
+  elseif s === :isBadDiamondII
+    return getfield(t, :booln3)
+  elseif s === :isExtBadTriangle
+    return getfield(t, :booln4)
+  elseif s === :isVeryBadTriangle
+    return getfield(t, :booln5)
+  elseif s === :isBadTriangle
+    return getfield(t, :booln6)
+  elseif s === :k
+    return getfield(t, :intn2)
+  elseif s === :typeHyb
+    return getfield(t, :int8n3)
+  elseif s === :inCycle
+    return getfield(t, :intn1)
+  elseif s === :gammaz
+    return getfield(t, :fvalue)
+  else
+    return getfield(t, s)
+  end
+end
+
+@inline function Base.setproperty!(t::Node, s::Symbol, v)
+  if s === :hasHybEdge
+    s = :booln1
+  elseif s === :isBadDiamondI
+    s = :booln2
+  elseif s === :isBadDiamondII
+    s = :booln3
+  elseif s === :isExtBadTriangle
+    s = :booln4
+  elseif s === :isVeryBadTriangle
+    s = :booln5
+  elseif s === :isBadTriangle
+    s = :booln6
+  elseif s === :k
+    s = :intn2
+  elseif s === :typeHyb
+    s = :int8n3
+  elseif s === :inCycle
+    s = :intn1
+  elseif s === :gammaz
+    s = :fvalue
+  end
+  ty = fieldtype(Node, s)
+  val = v isa ty ? v : convert(ty, v)
+  return setfield!(t, s, val)
+end
+
+# HybridNetwork symbol mappings
+@inline function Base.getproperty(t::HybridNetwork, s::Symbol)
+  if s === :visited
+    return getfield(t, :vec_bool)
+  elseif s === :edges_changed
+    return getfield(t, :vec_edge)
+  elseif s === :nodes_changed
+    return getfield(t, :vec_node)
+  elseif s === :ht
+    return getfield(t, :vec_float)
+  elseif s === :numht
+    return getfield(t, :vec_int2)
+  elseif s === :numBad
+    return getfield(t, :intg1)
+  elseif s === :hasVeryBadTriangle
+    return getfield(t, :boolg1)
+  elseif s === :index
+    return getfield(t, :vec_int3)
+  elseif s === :loglik
+    return getfield(t, :fscore)
+  elseif s === :blacklist
+    return getfield(t, :vec_int4)
+  elseif s === :cleaned
+    return getfield(t, :boolg2)
+  else
+    return getfield(t, s)
+  end
+end
+
+@inline function Base.setproperty!(t::HybridNetwork, s::Symbol, v)
+  if s === :visited
+    s = :vec_bool
+  elseif s === :edges_changed
+    s = :vec_edge
+  elseif s === :nodes_changed
+    s = :vec_node
+  elseif s === :ht
+    s = :vec_float
+  elseif s === :numht
+    s = :vec_int2
+  elseif s === :numBad
+    s = :intg1
+  elseif s === :hasVeryBadTriangle
+    s = :boolg1
+  elseif s === :index
+    s = :vec_int3
+  elseif s === :loglik
+    s = :fscore
+  elseif s === :blacklist
+    s = :vec_int4
+  elseif s === :cleaned
+    s = :boolg2
+  end
+  ty = fieldtype(HybridNetwork, s)
+  val = v isa ty ? v : convert(ty, v)
+  return setfield!(t, s, val)
+end
+
+
+
+# functions for interfacting with PhyloNetworks Node, Edge, and HybridNetwork internal fields
+# inCycle(e::Edge) = e.inte1
+# inCycle!(e::Edge, b::Bool) = (e.inte1 = b) # returns b
+# inCycle(n::Node) = n.intn1
+# inCycle!(n::Node, b::Bool) = (n.intn1 = b)
 
 # type created from a HybridNetwork only to extract a given quartet
 """
