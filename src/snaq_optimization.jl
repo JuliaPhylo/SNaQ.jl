@@ -1709,7 +1709,6 @@ function optTopRuns!(currT0::HybridNetwork, restrictions::Function, liktolAbs::F
             end
             return best
         catch(err)
-            rethrow(err)
             msg = "\nERROR found on SNaQ for run $(i) seed $(seeds[i]): $(err)\n"
             logstr = msg * "\n---------------------\n"
             if writelog_1proc
