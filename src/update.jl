@@ -280,7 +280,7 @@ updateGammaz!(net::HybridNetwork, node::Node) = updateGammaz!(net, node, false)
 #it is not only if followed by leaf, or if a newly converted tree edge
 function isEdgeIdentifiable(edge::Edge)
     if(edge.hybrid)
-        node = edge.node[edge.isChild1 ? 1 : 2]
+        node = edge.node[edge.ischild1 ? 1 : 2]
         #println("is edge $(edge.number) identifiable, node $(node.number)")
         node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
         major,minor,tree = hybridEdges(node)

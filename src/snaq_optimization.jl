@@ -67,7 +67,7 @@ function parameters(net::Network)
             push!(indxt, getIndex(e,net))
         end
         if e.hybrid && !e.ismajor
-            node = e.node[e.isChild1 ? 1 : 2]
+            node = e.node[e.ischild1 ? 1 : 2]
             node.hybrid || error("strange thing, hybrid edge $(e.number) pointing at tree node $(node.number)")
             if(!node.isBadDiamondI)
                 push!(h,e.gamma)
@@ -160,7 +160,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     push!(qindxhz, getIndex(e,qnet))
                 end
                 if e.hybrid && !e.ismajor
-                    node = e.node[e.isChild1 ? 1 : 2]
+                    node = e.node[e.ischild1 ? 1 : 2]
                     node.hybrid || error("strange hybrid edge $(e.number) poiting to tree node $(node.number)")
                     enum_in_nh = findfirst(isequal(e.number), nh)
                     found = (enum_in_nh != nothing)
@@ -529,7 +529,7 @@ Returns true if change was successful (not testing `optBL` again), and false if 
 """
 function moveHybrid!(net::HybridNetwork, edge::Edge, closeN ::Bool, origin::Bool,N::Integer, movesgamma::Vector{Int})
     edge.hybrid || error("edge $(edge.number) cannot be deleted because it is not hybrid")
-    node = edge.node[edge.isChild1 ? 1 : 2];
+    node = edge.node[edge.ischild1 ? 1 : 2];
     node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
     @debug "MOVE: moving hybrid for edge $(edge.number)"
     if(closeN )
@@ -578,7 +578,7 @@ function gammaZero!(net::HybridNetwork, d::DataCF, edge::Edge, closeN ::Bool, or
     currTloglik = net.loglik
     edge.hybrid || error("edge $(edge.number) should be hybrid edge because it corresponds to a gamma (or gammaz) in net.ht")
     @debug "gamma zero situation found for hybrid edge $(edge.number) with gamma $(edge.gamma)"
-    node = edge.node[edge.isChild1 ? 1 : 2];
+    node = edge.node[edge.ischild1 ? 1 : 2];
     node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
     success = changeDirectionUpdate!(net,node) #changes dir of minor
     movesgamma[4] += 1
@@ -1455,7 +1455,7 @@ function moveDownLevel!(net::HybridNetwork)
         for i in 1:length(nh)
             if(approxEq(nh[i],0.0) || approxEq(nh[i],1.0))
                 edge = net.edge[indh[i]]
-                node = edge.node[edge.isChild1 ? 1 : 2];
+                node = edge.node[edge.ischild1 ? 1 : 2];
                 node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
                 deleteHybridizationUpdate!(net,node)
             end
@@ -1470,7 +1470,7 @@ function moveDownLevel!(net::HybridNetwork)
                 approxEq(nodehz.gammaz,nhz[i]) || error("nodehz $(nodehz.number) gammaz $(nodehz.gammaz) should match the gammaz in net.ht $(nhz[i]) and it does not")
                 edges = hybridEdges(nodehz)
                 edges[1].hybrid || error("bad diamond I situation, node $(nodehz.number) has gammaz $(nodehz.gammaz) so should be linked to hybrid edge, but it is not")
-                node = edges[1].node[edges[1].isChild1 ? 1 : 2];
+                node = edges[1].node[edges[1].ischild1 ? 1 : 2];
                 node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
                 deleteHybridizationUpdate!(net,node)
                 break
@@ -1480,7 +1480,7 @@ function moveDownLevel!(net::HybridNetwork)
                 approxEq(nodehz.gammaz,nhz[i+1]) || error("nodehz $(nodehz.number) gammaz $(nodehz.gammaz) should match the gammaz in net.ht $(nhz[i+1]) and it does not")
                 edges = hybridEdges(nodehz)
                 edges[1].hybrid || error("bad diamond I situation, node $(nodehz.number) has gammaz $(nodehz.gammaz) so should be linked to hybrid edge, but it is not")
-                node = edges[1].node[edges[1].isChild1 ? 1 : 2];
+                node = edges[1].node[edges[1].ischild1 ? 1 : 2];
                 node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
                 deleteHybridizationUpdate!(net,node)
                 break
@@ -1490,7 +1490,7 @@ function moveDownLevel!(net::HybridNetwork)
                     approxEq(nodehz.gammaz,nhz[i+1]) || error("nodehz $(nodehz.number) gammaz $(nodehz.gammaz) should match the gammaz in net.ht $(nhz[i+1]) and it does not")
                     edges = hybridEdges(nodehz);
                     edges[1].hybrid || error("bad diamond I situation, node $(nodehz.number) has gammaz $(nodehz.gammaz) so should be linked to hybrid edge, but it is not")
-                    node = edges[1].node[edges[1].isChild1 ? 1 : 2];
+                    node = edges[1].node[edges[1].ischild1 ? 1 : 2];
                     node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
                     deleteHybridizationUpdate!(net,node)
                     break
@@ -1632,6 +1632,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
             end
             return best
         catch(err)
+            rethrow(err)
             msg = "\nERROR found on SNaQ for run $(i) seed $(seeds[i]): $(err)\n"
             logstr = msg * "\n---------------------\n"
             if writelog_1proc

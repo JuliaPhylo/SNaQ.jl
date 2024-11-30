@@ -20,9 +20,9 @@ function makeEdgeHybrid!(edge::Edge,node::Node,gamma::Float64; switchHyb=false::
     #println("$(getOtherNode(edge,node).hasHybEdge) debe ser true")
     size(edge.node,1) == 2 || error("strange edge $(edge.number) has $(size(edge.node,1)) nodes instead of 2")
     if(isEqual(edge.node[1],node))
-        edge.isChild1 = true
+        edge.ischild1 = true
     elseif(isEqual(edge.node[2],node))
-        edge.isChild1 = false
+        edge.ischild1 = false
     else
         error("node $(node.number) is not attached to edge $(edge.number)")
     end

@@ -430,7 +430,7 @@ Warning: despite the name "loglik", this score is only proportional
 to the network's pseudo-deviance: the lower, the better.
 Do NOT use this score to calculate an AIC or BIC (etc.) value.
 """
-function Network(file::AbstractString)
+function readSnaqNetwork(file::AbstractString)
     open(file) do s
         line = readline(s)
         line[1] == '(' ||
