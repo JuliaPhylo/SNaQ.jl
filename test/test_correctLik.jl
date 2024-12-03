@@ -4,6 +4,7 @@
 
 # -------------------5taxon tree------------------
 
+SNaQ.setCHECKNET(true)
 SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correctLik.jl")
 
 df=DataFrame(t1=["6","6","10","6","6"],
@@ -43,7 +44,7 @@ for j in 2:5 @test tmp[j,6] ≈ 0.7547470392190385; end
 lik = logPseudoLik(d)
 @test lik ≈ 193.7812623319291
 #estTree = optTopRun1!(currT,d,0,5454) # issue with printCounts, TravisCI?
-#@test estTree.loglik ≈ 0.0 atol=1e-8
+#@test loglik(estTree) ≈ 0.0 atol=1e-8
 #println("passed optTopRun1! on tree")
 end
 
@@ -67,7 +68,7 @@ estNet = optTopRun1!(currT, 0.01,75, d,1, 1e-5,1e-6,1e-3,1e-4,
                      false,true,Int[], 54, stdout,false,0.3)
 # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
 # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-@test estNet.loglik < 0.00217
+@test loglik(estNet) < 0.00217
 end
 
 @testset "snaq! in serial and in parallel" begin
@@ -88,10 +89,10 @@ end
   redirect_stdout(originalstdout)
   rmprocs(workers())
   @test writenewick(n1, round=true)==writenewick(n2, round=true)
-  @test n1.loglik == n2.loglik
+  @test loglik(n1) == loglik(n2)
   n3 = readSnaqNetwork("snaq.out")
   @test writenewick(n3, round=true)==writenewick(n2, round=true)
-  @test n3.loglik > 0.0
+  @test loglik(n3) > 0.0
   rm("snaq.out")
   rm("snaq.networks")
   rm("snaq.log") # .log and .err should be git-ignored, but still

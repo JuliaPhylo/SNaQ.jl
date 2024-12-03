@@ -112,8 +112,7 @@ function cleanAlleleDF!(newdf::DataFrame, cols::Vector{<:Integer}; keepOne=false
                     keep = true
                     push!(repSpecies, string(u))
                     # change the second instance of a repeated taxon name with suffix
-                    k = findlast(ind)
-                    newdf[i,cols[k]] = string(u, repeatAlleleSuffix)
+                    newdf[i,cols[findlast(ind)]] = string(u, repeatAlleleSuffix)
                 end
             end
         end
@@ -161,7 +160,7 @@ function expandLeaves!(repSpecies::Union{Vector{String},Vector{Int}},tree::Hybri
                 end
                 removeLeaf!(tree,n)
                 n.leaf = false
-                n.edge[1].istIdentifiable = true
+                istIdentifiable!(n.edge[1], true)
                 n.name = ""
                 max_node = maximum([e.number for e in tree.node]);
                 max_edge = maximum([e.number for e in tree.edge]);

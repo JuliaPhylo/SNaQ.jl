@@ -21,28 +21,28 @@ function identifyInCycle(net::Network,node::Node)
     dist = 0;
     queue = PriorityQueue();
     path = Node[];
-    net.edges_changed = Edge[];
-    net.nodes_changed = Node[];
-    push!(net.edges_changed,hybedge);
-    push!(net.nodes_changed,node);
+    edges_changed!(net, Edge[])
+    nodes_changed!(net, Node[])
+    push!(edges_changed(net),hybedge);
+    push!(nodes_changed(net),node);
     found = false;
-    net.visited = [false for i = 1:size(net.node,1)];
+    visited!(net, [false for i = 1:size(net.node,1)]);
     enqueue!(queue,node,dist);
     while(!found)
         if(isempty(queue))
-            return true, net.edges_changed, net.nodes_changed
+            return true, edges_changed(net), nodes_changed(net)
         else
             curr = dequeue!(queue);
             if isEqual(curr,lastnode)
                 found = true;
                 push!(path,curr);
-            elseif !net.visited[getIndex(curr,net)]
-                net.visited[getIndex(curr,net)] = true
+            elseif !visited(net)[getIndex(curr,net)]
+                visited(net)[getIndex(curr,net)] = true
                 atstart = isEqual(curr,start)
                 for e in curr.edge
                     e.ismajor || continue
                     other = getOtherNode(e,curr)
-                    if atstart || (!other.leaf && !net.visited[getIndex(other,net)])
+                    if atstart || (!other.leaf && !visited(net)[getIndex(other,net)])
                         other.prev = curr
                         dist = dist+1
                         enqueue!(queue,other,dist)
@@ -53,16 +53,16 @@ function identifyInCycle(net::Network,node::Node)
     end # end while
     curr = pop!(path);
     while(!isEqual(curr, start))
-        if(curr.inCycle == start.number)
-            push!(net.nodes_changed, curr);
+        if(inCycle(curr) == start.number)
+            push!(nodes_changed(net), curr);
             edge = getconnectingedge(curr, curr.prev);
-            if(edge.inCycle == start.number)
-                push!(net.edges_changed, edge);
+            if(inCycle(edge) == start.number)
+                push!(edges_changed(net), edge);
             end
             curr = curr.prev;
         end
     end
-    return false, net.edges_changed, net.nodes_changed
+    return false, edges_changed(net), nodes_changed(net)
 end
 
 
@@ -80,7 +80,7 @@ function traverseIdentifyRoot(node::Node, edge::Edge, edges_changed::Array{Edge,
                 other = getOtherNode(e,node);
                 push!(edges_changed, e);
                 if(!other.hybrid)
-                    #if(!other.hasHybEdge)
+                    #if(!hasHybEdge(other))
                         traverseIdentifyRoot(other,e, edges_changed);
                     #else
                     #    if hybridEdges(other)[1].ismajor
@@ -100,15 +100,15 @@ end
 # return array of edges affected by the hybrid node
 function identifyContainRoot(net::HybridNetwork, node::Node)
     node.hybrid || error("node $(node.number) is not hybrid, cannot identify containroot")
-    net.edges_changed = Edge[];
+    edges_changed!(net, Edge[])
     for e in node.edge
         if(!e.hybrid)
             other = getOtherNode(e,node);
-            push!(net.edges_changed,e);
-            traverseIdentifyRoot(other,e, net.edges_changed);
+            push!(edges_changed(net),e);
+            traverseIdentifyRoot(other,e, edges_changed(net));
         end
     end
-    return net.edges_changed
+    return edges_changed(net)
 end
 
 # function to undo the effect of a hybridization
@@ -175,11 +175,11 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             #treeedge1.containroot = (!treeedge1.containroot || !hybedge1.containroot) ? false : true #causes problems if hybrid.CR=false
             if(blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
-                push!(net.blacklist, treeedge1.number)
+                push!(blacklist(net), treeedge1.number)
             end
         else
             makeEdgeTree!(hybedge1,node)
-            other1.hasHybEdge = false;
+            hasHybEdge!(other1, false);
             setLength!(hybedge1, addBL(hybedge1.length, treeedge1.length));
             removeNode!(node,hybedge1);
             setNode!(hybedge1,other3);
@@ -189,7 +189,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             hybedge1.containroot = (!treeedge1.containroot || !hybedge1.containroot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(hybedge1.number)")
-                push!(net.blacklist, hybedge1.number)
+                push!(blacklist(net), hybedge1.number)
             end
         end
         hybindex = findfirst([e.hybrid for e in other2.edge]);
@@ -218,7 +218,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             treeedge2.containroot = (!treeedge1.containroot || !treeedge2.containroot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(treeedge2.number)")
-                push!(net.blacklist, treeedge2.number)
+                push!(blacklist(net), treeedge2.number)
             end
         else
             setLength!(treeedge1, addBL(treeedge2.length, treeedge1.length));
@@ -230,7 +230,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             treeedge1.containroot = (!treeedge1.containroot || !treeedge2.containroot) ? false : true
             if(blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
-                push!(net.blacklist, treeedge1.number)
+                push!(blacklist(net), treeedge1.number)
             end
         end
         #removeHybrid!(net,node);

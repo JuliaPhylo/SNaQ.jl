@@ -77,13 +77,13 @@ see [`PhyloNetworks.Node`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/
 """
 function setNonIdBL!(net::HybridNetwork)
     for e in net.edge
-        if !e.istIdentifiable
-            keeplength = any(n -> (n.isBadDiamondII || n.isBadTriangle), e.node)
+        if !istIdentifiable(e)
+            keeplength = any(n -> (isBadDiamondII(n) || isBadTriangle(n)), e.node)
             # if below 'bad' hybrid node, length=0 by constraint. If above, length estimated.
             # next: keep length if edge across from hybrid node in bad diamond I.
-            if  !keeplength && e.inCycle != -1
-                hyb = net.node[getIndexNode(e.inCycle, net)]
-                if hyb.isBadDiamondI
+            if  !keeplength && inCycle(e) != -1
+                hyb = net.node[getIndexNode(inCycle(e), net)]
+                if isBadDiamondI(hyb)
                     keeplength |= !any(n -> (n==hyb), e.node) # only if e across hyb: no touching it
                 end
             end

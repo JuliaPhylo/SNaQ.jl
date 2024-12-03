@@ -15,7 +15,7 @@
 #   nocycle: true if there is no cycle (instead of error). it is used in addHybridization
 # calculates also the number of nodes in the cycle and put as hybrid node attribute "k"
 # warning: it is not checking if hybrid node or minor hybrid edge
-#          were already part of a cycle (inCycle!= -1)
+#          were already part of a cycle (inCycle = -1)
 #          But it is checking so for the other edges in cycle
 # warning: it needs extra things: visited attribute, prev attribute
 #          unlike updateInCycle recursive, but it is expected
@@ -23,36 +23,36 @@
 function updateInCycle!(net::HybridNetwork,node::Node)
     node.hybrid || error("node is not hybrid")
     start = node
-    node.inCycle = node.number
-    node.k = 1
+    inCycle!(node, node.number)
+    k!(node, 1)
     hybedge = getparentedgeminor(node)
-    hybedge.inCycle = node.number
+    inCycle!(hybedge, node.number)
     lastnode = getOtherNode(hybedge,node)
     dist = 0
     queue = PriorityQueue()
     path = Node[]
-    net.edges_changed = Edge[]
-    net.nodes_changed = Node[]
-    push!(net.edges_changed,hybedge)
-    push!(net.nodes_changed,node)
+    edges_changed!(net, Edge[])
+    nodes_changed!(net, Node[])
+    push!(edges_changed(net),hybedge)
+    push!(nodes_changed(net),node)
     found = false
-    net.visited = falses(length(net.node))
+    visited!(net, falses(length(net.node)))
     enqueue!(queue,node,dist)
     while !found
         if isempty(queue)
-            return false, true, net.edges_changed, net.nodes_changed
+            return false, true, edges_changed(net), nodes_changed(net)
         end
         curr = dequeue!(queue)
         if isEqual(curr,lastnode)
             found = true
             push!(path,curr)
-        elseif !net.visited[getIndex(curr,net)]
-            net.visited[getIndex(curr,net)] = true
+        elseif !visited(net)[getIndex(curr,net)]
+            visited(net)[getIndex(curr,net)] = true
             atstart = isEqual(curr,start)
             for e in curr.edge
                 e.ismajor || continue
                 other = getOtherNode(e,curr)
-                if atstart || (!other.leaf && !net.visited[getIndex(other,net)])
+                if atstart || (!other.leaf && !visited(net)[getIndex(other,net)])
                     other.prev = curr
                     dist = dist+1
                     enqueue!(queue,other,dist)
@@ -62,22 +62,22 @@ function updateInCycle!(net::HybridNetwork,node::Node)
     end # end while
     curr = pop!(path)
     while !isEqual(curr, start)
-        if curr.inCycle!= -1
+        if inCycle(curr)!= -1
             push!(path,curr)
             curr = curr.prev
         else
-            curr.inCycle = start.number
-            push!(net.nodes_changed, curr)
-            node.k  =  node.k + 1
+            inCycle!(curr, start.number)
+            push!(nodes_changed(net), curr)
+            k!(node, k(node) + 1)
             edge = getconnectingedge(curr, curr.prev)
-            edge.inCycle = start.number
-            push!(net.edges_changed, edge)
+            inCycle!(edge, start.number)
+            push!(edges_changed(net), edge)
             curr = curr.prev
         end
     end
-    flag = isempty(path) # || node.k<3
+    flag = isempty(path) # || k(node)<3
     !flag && @debug "warning: new cycle intersects existing cycle"
-    return flag, false, net.edges_changed, net.nodes_changed
+    return flag, false, edges_changed(net), nodes_changed(net)
 end
 
 """
@@ -142,20 +142,20 @@ end
 @doc (@doc traverseContainRoot!) updateContainRoot!
 function updateContainRoot!(net::HybridNetwork, node::Node)
     node.hybrid || error("node $(node.number )is not hybrid, cannot update containroot")
-    net.edges_changed = Edge[];
+    edges_changed!(net, Edge[])
     rightDir = [true] #assume good direction, only changed if found hybrid node through tree edge
     for e in node.edge
         if !e.hybrid
             other = getOtherNode(e,node);
             e.containroot = false;
-            push!(net.edges_changed,e);
-            traverseContainRoot!(other,e, net.edges_changed,rightDir);
+            push!(edges_changed(net),e);
+            traverseContainRoot!(other,e, edges_changed(net),rightDir);
         end
     end
     if !rightDir[1] || all((e->!e.containroot), net.edge)
-        return false,net.edges_changed
+        return false,edges_changed(net)
     else
-        return true,net.edges_changed
+        return true,edges_changed(net)
     end
 end
 
@@ -168,26 +168,27 @@ end
 #        updates gammaz with whatever
 # edge lengths are originally in the network
 #        allow = true, returns true always, used when reading topology
-# returns net.hasVeryBadTriangle, array of edges changed (istIdentifiable, except hybrid edges)
+# returns hasVeryBadTriangle(net), array of edges changed (istIdentifiable, except hybrid edges)
 #         false if the network has extremely/very bad triangles
 # warning: needs to have updateInCycle already done as it needs inCycle, and k
 # check: assume any tree node that has hybrid Edge has only
 # one tree edge in cycle (true?)
-# updates net.numBad attribute when found a bad diamond I
+# updates numBad(net) attribute when found a bad diamond I
 function updateGammaz!(net::HybridNetwork, node::Node, allow::Bool)
     node.hybrid || error("node $(node.number) is not hybrid, cannot updategammaz")
-    node.k != -1 || error("update in cycle should have been run before: node.k not -1")
-    node.isExtBadTriangle = false
-    node.isVeryBadTriangle = false
-    node.isBadTriangle = false
-    node.isBadDiamondI = false
-    node.isBadDiamondII = false
-    net.edges_changed = Edge[];
+    k(node) != -1 || error("update in cycle should have been run before: k(node) not -1")
+    isExtBadTriangle!(node, false)
+    isVeryBadTriangle!(node, false)
+    isBadTriangle!(node, false)
+    isBadDiamondI!(node, false)
+    isBadDiamondII!(node, false)
+    hasVeryBadTriangle!(net, false)
+    edges_changed!(net, Edge[])
     edge_maj, edge_min, tree_edge2 = hybridEdges(node);
     other_maj = getOtherNode(edge_maj,node);
     other_min = getOtherNode(edge_min,node);
-    node.k > 2 || error("cycle with only $(node.k) nodes: parallel edges") # return false, []
-    if(node.k == 4) # could be bad diamond I,II
+    k(node) > 2 || error("cycle with only $(k(node)) nodes: parallel edges") # return false, []
+    if(k(node) == 4) # could be bad diamond I,II
 #        net.numtaxa >= 5 || return false, [] #checked inside optTopRuns now
         edgebla,edge_min2,tree_edge3 = hybridEdges(other_min);
         edgebla,edge_maj2,tree_edge1 = hybridEdges(other_maj);
@@ -197,39 +198,39 @@ function updateGammaz!(net::HybridNetwork, node::Node, allow::Bool)
         isLeaf3 = getOtherNode(tree_edge3,other_min);
         tree_edge4 = nothing;
         for e in other_min2.edge
-            if(isa(tree_edge4,Nothing) && e.inCycle == -1 && !e.hybrid)
+            if(isa(tree_edge4,Nothing) && inCycle(e) == -1 && !e.hybrid)
                 tree_edge4 = e;
             end
         end
         if(isEqual(other_min2,getOtherNode(edge_maj2,other_maj)) && isLeaf1.leaf && isLeaf2.leaf && isLeaf3.leaf) # bad diamond I
             @debug "bad diamond I found"
-            net.numBad += 1
-            node.isBadDiamondI = true;
-            other_min.gammaz = edge_min.gamma*edge_min2.z;
-            other_maj.gammaz = edge_maj.gamma*edge_maj2.z;
-            edge_min2.istIdentifiable = false;
-            edge_maj2.istIdentifiable = false;
-            edge_maj.istIdentifiable = false;
-            edge_min.istIdentifiable = false;
-            push!(net.edges_changed,edge_min2);
-            push!(net.edges_changed,edge_min);
-            push!(net.edges_changed,edge_maj2);
-            push!(net.edges_changed,edge_maj);
+            numBad!(net, numBad(net) + 1)
+            isBadDiamondI!(node, true);
+            gammaz!(other_min, edge_min.gamma*edge_min2.z);
+            gammaz!(other_maj, edge_maj.gamma*edge_maj2.z);
+            istIdentifiable!(edge_min2, false)
+            istIdentifiable!(edge_maj2, false)
+            istIdentifiable!(edge_maj, false)
+            istIdentifiable!(edge_min, false)
+            push!(edges_changed(net),edge_min2);
+            push!(edges_changed(net),edge_min);
+            push!(edges_changed(net),edge_maj2);
+            push!(edges_changed(net),edge_maj);
         elseif(isEqual(other_min2,getOtherNode(edge_maj2,other_maj)) && isLeaf1.leaf && !isLeaf2.leaf && isLeaf3.leaf && getOtherNode(tree_edge4,other_min2).leaf) # bad diamond II
             @debug "bad diamond II found"
-            node.isBadDiamondII = true;
+            isBadDiamondII!(node, true);
             setLength!(edge_maj,edge_maj.length+tree_edge2.length)
             setLength!(tree_edge2,0.0)
-            push!(net.edges_changed,tree_edge2)
-            tree_edge2.istIdentifiable = false
-            edge_maj.istIdentifiable = true
-            edge_min.istIdentifiable = true
+            push!(edges_changed(net),tree_edge2)
+            istIdentifiable!(tree_edge2, false)
+            istIdentifiable!(edge_maj, true)
+            istIdentifiable!(edge_min, true)
         end
-    elseif(node.k == 3) # could be extreme/very bad triangle or just bad triangle
+    elseif(k(node) == 3) # could be extreme/very bad triangle or just bad triangle
         if net.numtaxa <= 5
             @debug "extremely or very bad triangle found"
-            node.isVeryBadTriangle = true
-            net.hasVeryBadTriangle = true
+            isVeryBadTriangle!(node, true)
+            hasVeryBadTriangle!(net, true)
         elseif net.numtaxa >= 6
             edgebla,tree_edge_incycle,tree_edge1 = hybridEdges(other_min);
             edgebla,edgebla,tree_edge3 = hybridEdges(other_maj);
@@ -240,37 +241,37 @@ function updateGammaz!(net::HybridNetwork, node::Node, allow::Bool)
                 nl = count([l.leaf for l in [isLeaf1,isLeaf2,isLeaf3]])
                 if nl >= 2
                     @debug "warning: extremely bad triangle found"
-                    node.isExtBadTriangle = true;
-                    net.hasVeryBadTriangle = true
+                    isExtBadTriangle!(node, true);
+                    hasVeryBadTriangle!(net, true)
                 elseif nl == 1
                     @debug "warning: bad triangle I or II found"
-                    node.isVeryBadTriangle = true;
-                    net.hasVeryBadTriangle = true
+                    isVeryBadTriangle!(node, true);
+                    hasVeryBadTriangle!(net, true)
                 end
             else
-                node.isBadTriangle = true
+                isBadTriangle!(node, true)
                 setLength!(edge_maj,edge_maj.length+tree_edge2.length)
                 setLength!(tree_edge2,0.0)
-                tree_edge2.istIdentifiable = false
-                push!(net.edges_changed, tree_edge2);
+                istIdentifiable!(tree_edge2, false)
+                push!(edges_changed(net), tree_edge2);
             end
         end
     end #ends the search for bad things
-    if(node.k > 3 && !node.isBadDiamondI && !node.isBadDiamondII)
+    if(k(node) > 3 && !isBadDiamondI(node) && !isBadDiamondII(node))
         #println("si entra el ultimo if de k>3 y no bad diamondI,II")
         edgebla,tree_edge_incycle,tree_edge1 = hybridEdges(other_min);
-        if(!tree_edge_incycle.istIdentifiable)
-            tree_edge_incycle.istIdentifiable = true;
-            push!(net.edges_changed,tree_edge_incycle);
+        if(!istIdentifiable(tree_edge_incycle))
+            istIdentifiable!(tree_edge_incycle, true)
+            push!(edges_changed(net),tree_edge_incycle);
         end
-        edge_maj.istIdentifiable = isEdgeIdentifiable(edge_maj)
-        edge_min.istIdentifiable = isEdgeIdentifiable(edge_min)
+        istIdentifiable!(edge_maj, isEdgeIdentifiable(edge_maj))
+        istIdentifiable!(edge_min, isEdgeIdentifiable(edge_min))
     end
-    isBadTriangle(node) == net.hasVeryBadTriangle || error("node $(node.number) is very bad triangle but net.hasVeryBadTriangle is $(net.hasVeryBadTriangle)")
+    isBadTriangle(node) == hasVeryBadTriangle(net) || error("node $(node.number) is very bad triangle but hasVeryBadTriangle(net) is $(hasVeryBadTriangle(net))")
     if(allow)
-        return true, net.edges_changed
+        return true, edges_changed(net)
     else
-        return !net.hasVeryBadTriangle, net.edges_changed
+        return !hasVeryBadTriangle(net), edges_changed(net)
     end
 end
 
@@ -292,11 +293,11 @@ function isEdgeIdentifiable(edge::Edge)
         end
     else
         if(reduce(&,[!edge.node[1].leaf,!edge.node[2].leaf]))
-            if(!edge.node[1].hybrid && !edge.node[2].hybrid && !edge.fromBadDiamondI)
+            if(!edge.node[1].hybrid && !edge.node[2].hybrid && !fromBadDiamondI(edge))
                 return true
             elseif(edge.node[1].hybrid || edge.node[2].hybrid)
                 ind = edge.node[1].hybrid ? 1 : 2
-                if(!edge.node[ind].isBadDiamondII && !edge.node[ind].isBadTriangle)
+                if(!isBadDiamondII(edge.node[ind]) && !isBadTriangle(edge.node[ind]))
                     return true
                 else
                     return false
@@ -321,13 +322,13 @@ function updatePartition!(net::HybridNetwork, nodesChanged::Vector{Node})
         if(length(n.edge) == 3) #because we are allowing the root to have only two edges when read from parenthetical format
             edge = nothing
             for e in n.edge
-                if(e.inCycle == -1)
+                if(inCycle(e) == -1)
                     edge = e
                 end
             end
             !isa(edge,Nothing) || error("one edge in n.edge for node $(n.number) should not be in cycle")
             descendants = [edge]
-            cycleNum = [nodesChanged[1].inCycle]
+            cycleNum = [inCycle(nodesChanged[1])]
             getDescendants!(getOtherNode(edge,n),edge,descendants,cycleNum)
             !isempty(descendants) || error("descendants is empty for node $(n.number)")
             @debug "for node $(n.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"

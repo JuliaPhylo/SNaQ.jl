@@ -14,8 +14,8 @@ qnet = extractQuartet!(net,q1);
 try
     identifyQuartet!(qnet)
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 3 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 2 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 3 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 2 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     qnet.hybrid[1].prev.number != -7 ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -42,8 +42,8 @@ qnet = extractQuartet!(net,q2);
 try
     identifyQuartet!(qnet)
     qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 4 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 5 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 4 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 5 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -69,8 +69,8 @@ qnet = extractQuartet!(net,q3);
 try
     identifyQuartet!(qnet)
     qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 4 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 5 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 4 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 5 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -121,8 +121,8 @@ qnet = extractQuartet!(net,q5);
 try
     identifyQuartet!(qnet)
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 3 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 2 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 3 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 2 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     qnet.hybrid[1].prev.number != -3 ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -163,8 +163,8 @@ qnet = extractQuartet!(net,q1);
 try
     identifyQuartet!(qnet)
     qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 4 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 5 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 4 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 5 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -266,8 +266,8 @@ qnet = extractQuartet!(net,q5);
 try
     identifyQuartet!(qnet)
     qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 4 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 5 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 4 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 5 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -306,8 +306,8 @@ qnet = extractQuartet!(net,q1);
 try
     identifyQuartet!(qnet)
     qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 4 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 5 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 4 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 5 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -334,8 +334,8 @@ qnet = extractQuartet!(net,q2);
 try
     identifyQuartet!(qnet)
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 3 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 4 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 3 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 4 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     (qnet.hybrid[1].prev.number != -2 && qnet.hybrid[1].prev.number != -3) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -361,8 +361,8 @@ qnet = extractQuartet!(net,q3);
 try
     identifyQuartet!(qnet)
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 3 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 4 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 3 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 4 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     (qnet.hybrid[1].prev.number != -6 && qnet.hybrid[1].prev.number != -3) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -390,8 +390,8 @@ qnet = extractQuartet!(net,q4);
 try
     identifyQuartet!(qnet)
     qnet.which != 1 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 3 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 4 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 3 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 4 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     (qnet.hybrid[1].prev.number != -6 && qnet.hybrid[1].prev.number != -3) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
@@ -418,8 +418,8 @@ qnet = extractQuartet!(net,q5);
 try
     identifyQuartet!(qnet)
     qnet.which != 2 ? error("qnet which not correctly assigned") : nothing
-    qnet.hybrid[1].k != 4 ? error("qnet.hybrid[1].k not correctly assigned") : nothing
-    qnet.hybrid[1].typeHyb != 5 ? error("qnet.hybrid[1].typeHyb not correctly assigned") : nothing
+    k(qnet.hybrid[1]) != 4 ? error("k(qnet.hybrid[1]) not correctly assigned") : nothing
+    typeHyb(qnet.hybrid[1]) != 5 ? error("typeHyb(qnet.hybrid[1]) not correctly assigned") : nothing
     !isa(qnet.hybrid[1].prev,Nothing) ? error("qnet.hybrid[1].prev not correctly assigned") : nothing
 
     eliminateHybridization!(qnet)
