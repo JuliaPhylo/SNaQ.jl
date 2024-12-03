@@ -15,7 +15,7 @@ df=DataFrame(t1=["6","6","10","6","6"],
              obsCF14=[0.2729102510259939, 0.30161247267865315, 0.3967750546426937, 0.24693940689390592, 0.2729102510259939])
 d = readTableCF(df)
 @test_throws ErrorException writeExpCF(d)
-@test writeTableCF(d) == rename(df, [:obsCF12 => :CF12_34, :obsCF13 => :CF13_24, :obsCF14 => :CF14_23])
+@test tablequartetCF(d) == rename(df, [:obsCF12 => :CF12_34, :obsCF13 => :CF13_24, :obsCF14 => :CF14_23])
 @test tiplabels(d) ==  ["4","6","7","8","10"]
 @test_logs descData(d, devnull)
 
@@ -23,7 +23,7 @@ df[!,:ngenes] = [10,10,10,10,20]
 allowmissing!(df, :ngenes)
 d = readTableCF(df)
 df[1,:ngenes] = missing; d.quartet[1].ngenes = -1.0
-newdf = writeTableCF(d)
+newdf = tablequartetCF(d)
 @test newdf[!,1:7] == rename(df, [:obsCF12 => :CF12_34, :obsCF13 => :CF13_24, :obsCF14 => :CF14_23])[!,1:7]
 @test ismissing(newdf[1,:ngenes])
 @test newdf[2:end,:ngenes] == df[2:end,:ngenes]

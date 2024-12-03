@@ -114,7 +114,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
     if inputastrees # allocate memory, to be re-used later
         newtrees = samplebootstrap_multiloci(data, row=1)
         newd = readTrees2CF(newtrees, quartetfile=quartetfile, writeTab=false, writeSummary=false)
-        taxa = unionTaxa(newtrees)
+        taxa = tiplabels(newtrees)
     else
         newdf = sampleCFfromCI(data, -1) # column names check, newdf has obsCF in columns 5-7
         # seed=-1: deep copy only, no rand()

@@ -18,7 +18,7 @@ import SNaQ: checkNet,
     writeExpCF, writenewick_level1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!, nchoose1234, QuartetT,undirectedOtherNetworks,hybridatnode!
+    updatePartition!, optBL!,undirectedOtherNetworks,hybridatnode!
 
 
 import PhyloNetworks:
@@ -26,7 +26,8 @@ import PhyloNetworks:
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,searchHybridEdge,
-    ladderpartition,pushHybrid!
+    ladderpartition,pushHybrid!,
+    nchoose1234, QuartetT
 
 
 
