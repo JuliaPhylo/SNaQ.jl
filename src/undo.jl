@@ -10,10 +10,10 @@
 # of edges/nodes changed
 function undoInCycle!(edges::Array{Edge,1},nodes::Array{Node,1})
     for e in edges
-        e.inCycle = -1;
+        inCycle!(e, -1);
     end
     for n in nodes
-        n.inCycle = -1;
+        inCycle!(n, -1);
     end
 end
 
@@ -32,7 +32,7 @@ undoContainRoot!(edges::Vector{Edge}) = undoContainRoot!(edges,true)
 # it only changes the status of istIdentifiable to true
 function undoistIdentifiable!(edges::Array{Edge,1})
     for e in edges
-        !e.istIdentifiable ? e.istIdentifiable = true : e.istIdentifiable = false;
+        !istIdentifiable(e) ? istIdentifiable!(e, true) : istIdentifiable!(e, false);
     end
 end
 
@@ -49,46 +49,46 @@ Recalculate branch lengths in terms of `gammaz`.
 """
 function undoGammaz!(node::Node, net::HybridNetwork)
     node.hybrid || error("cannot undo gammaz if starting node is not hybrid")
-    if(node.isBadDiamondI)
+    if(isBadDiamondI(node))
         edge_maj, edge_min, tree_edge2 = hybridEdges(node);
         other_maj = getOtherNode(edge_maj,node);
         other_min = getOtherNode(edge_min,node);
         edgebla,tree_edge_incycle1,tree_edge = hybridEdges(other_min);
         edgebla,tree_edge_incycle2,tree_edge = hybridEdges(other_maj);
-        other_min.gammaz != -1 || error("bad diamond I in node $(node.number) but no gammaz updated correctly")
-        setLength!(tree_edge_incycle1,-log(1-other_min.gammaz))
-        other_maj.gammaz != -1 || error("bad diamond I in node $(node.number) but no gammaz updated correctly")
-        setLength!(tree_edge_incycle2,-log(1-other_maj.gammaz))
-        if approxEq(other_maj.gammaz,0.0) && approxEq(other_min.gammaz,0.0)
+        gammaz(other_min) != -1 || error("bad diamond I in node $(node.number) but no gammaz updated correctly")
+        setLength!(tree_edge_incycle1,-log(1-gammaz(other_min)))
+        gammaz(other_maj) != -1 || error("bad diamond I in node $(node.number) but no gammaz updated correctly")
+        setLength!(tree_edge_incycle2,-log(1-gammaz(other_maj)))
+        if approxEq(gammaz(other_maj),0.0) && approxEq(gammaz(other_min),0.0)
             setgamma!(edge_maj,0.0, true) # gamma could be anything if both gammaz are 0.0, but will set to 0.0
             setLength!(edge_maj,0.0)
             setLength!(edge_min,0.0)
         else
-            setgamma!(edge_maj,other_maj.gammaz / (other_maj.gammaz+other_min.gammaz), true)
+            setgamma!(edge_maj,gammaz(other_maj) / (gammaz(other_maj)+gammaz(other_min)), true)
         end
-        other_min.gammaz = -1.0
-        other_maj.gammaz = -1.0
-        tree_edge_incycle1.istIdentifiable = true;
-        tree_edge_incycle2.istIdentifiable = true;
-        edge_maj.istIdentifiable = true;
-        edge_min.istIdentifiable = true;
-        node.isBadDiamondI = false
-        net.numBad -= 1
-    elseif(node.isBadDiamondII)
+        gammaz!(other_min, -1.0)
+        gammaz!(other_maj, -1.0)
+        istIdentifiable!(tree_edge_incycle1, true);
+        istIdentifiable!(tree_edge_incycle2, true);
+        istIdentifiable!(edge_maj, true);
+        istIdentifiable!(edge_min, true);
+        isBadDiamondI!(node, false)
+        numBad!(net, numBad(net) - 1)
+    elseif(isBadDiamondII(node))
         edge_maj, edge_min, tree_edge2 = hybridEdges(node);
-        tree_edge2.istIdentifiable = true
-        node.isBadDiamondII = false
-    elseif(node.isBadTriangle)
+        istIdentifiable!(tree_edge2, true)
+        isBadDiamondII!(node, false)
+    elseif(isBadTriangle(node))
         edge_maj, edge_min, tree_edge2 = hybridEdges(node);
-        tree_edge2.istIdentifiable = true
-        node.isBadTriangle = false
-    elseif(node.isVeryBadTriangle || node.isExtBadTriangle)
-        node.isVeryBadTriangle = false
-        node.isExtBadTriangle = false
-        net.hasVeryBadTriangle = false
+        istIdentifiable!(tree_edge2, true)
+        isBadTriangle!(node, false)
+    elseif(isVeryBadTriangle(node) || isExtBadTriangle(node))
+        isVeryBadTriangle!(node, false)
+        isExtBadTriangle!(node, false)
+        hasVeryBadTriangle!(net, false)
     else
         edge_maj, edge_min, tree_edge2 = hybridEdges(node);
-        edge_maj.istIdentifiable = isEdgeIdentifiable(edge_maj)
-        edge_min.istIdentifiable = isEdgeIdentifiable(edge_min)
+        istIdentifiable!(edge_maj, isEdgeIdentifiable(edge_maj))
+        istIdentifiable!(edge_min, isEdgeIdentifiable(edge_min))
     end
 end

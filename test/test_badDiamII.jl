@@ -1,12 +1,13 @@
 # updateGammaz does not recognize this as bad diamond II
 # Claudia April 2015
 using SNaQ
+SNaQ.setCHECKNET(true)
 SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correctLik.jl")
 
 @testset "moveTargetUpdate! reject 2-cycle proposal" begin
     net3c_newick = "(1,2,(((3,4))#H1:::0.6,(#H1:::0.4,(5,6))));" # 3-cycle adjacent to 3 cherries
     net3 = readnewick_level1(net3c_newick)
-    # net3.node[6].isBadTriangle : not isVeryBadTriangle nor isExtBadTriangle
+    # isBadTriangle(net3.node[6]) : not isVeryBadTriangle nor isExtBadTriangle
     hn = net3.hybrid[1] # more robust than net3.node[6]
     tmp = SNaQ.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
     @test !any(tmp)
@@ -23,11 +24,11 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     #printedges(net)
     @test net.node[10].number == 3 # or: wrong hybrid
     @test net.node[10].hybrid # or: does not know it is hybrid
-    @test net.node[10].isBadDiamondII # or: does not know it is bad diamond II
+    @test isBadDiamondII(net.node[10]) # or: does not know it is bad diamond II
     ##plot(net,showedgenumber=true)
-    @test [e.inCycle for e in net.edge] == [-1,-1,3,3,-1,-1,-1,-1,-1,-1,3,3] # or: error in incycle
+    @test [inCycle(e) for e in net.edge] == [-1,-1,3,3,-1,-1,-1,-1,-1,-1,3,3] # or: error in incycle
     @test [e.containroot for e in net.edge] == [true,true,false,true,true,false,false,false,false,false,false,true] # or: error in contain root
-    @test [e.istIdentifiable for e in net.edge] == [false,false,true,true,false,false,false,true,false,false,true,true] # or: istIdentifiable not correct
+    @test [istIdentifiable(e) for e in net.edge] == [false,false,true,true,false,false,false,true,false,false,true,true] # or: istIdentifiable not correct
     @test (net.edge[3].hybrid && net.edge[11].hybrid) # or: hybrid edges wrong")
 
     df=DataFrame(t1=["1","1","2","2","1","2","2","2","2","2","1","2","2","3","2"],
@@ -41,14 +42,14 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
 
     Random.seed!(345);
     net2 = topologyMaxQPseudolik!(net,d, ftolRel=1e-5,ftolAbs=1e-6,xtolRel=1e-3,xtolAbs=1e-4)
-    @test net2.loglik < 340.5 # loglik ~ 339.95
-    @test net2.edge[3].istIdentifiable # or: wrong hybrid is t identifiable
+    @test loglik(net2) < 340.5 # loglik ~ 339.95
+    @test istIdentifiable(net2.edge[3]) # or: wrong hybrid is t identifiable
     # @test 9.95 < net2.edge[3].length < 9.99
     # why it's not a good idea to test the branch length estimate:
     # BL~4.92 when loglik~339.95
     # BL>9.95 when loglik>340
     # BL~0.0  when loglik~339.88 (using tolerances of 1e-8)
-    @test net2.edge[11].istIdentifiable # or: wrong hybrid is t identifiable
+    @test istIdentifiable(net2.edge[11]) # or: wrong hybrid is t identifiable
     @test net2.edge[11].length < 0.01 # or: wrong bl estimated
     @test net2.edge[10].length == 0.0 # or: tree edge in bad diamond II not 0
     #printedges(net2)
@@ -76,9 +77,9 @@ end
 
 ## for e in net2.edge
 ##     if(e.node[1].leaf || e.node[2].leaf)
-##         !e.istIdentifiable || error("ext edge should not identifiable")
+##         !istIdentifiable(e) || error("ext edge should not identifiable")
 ##     else
-##         e.istIdentifiable || error("int edge should not identifiable")
+##         istIdentifiable(e) || error("int edge should not identifiable")
 ##     end
 ## end
 
@@ -91,8 +92,8 @@ end
 
 ## for e in net2.edge
 ##     if(e.node[1].leaf || e.node[2].leaf)
-##         !e.istIdentifiable || error("ext edge should not identifiable")
+##         !istIdentifiable(e) || error("ext edge should not identifiable")
 ##     else
-##         e.istIdentifiable || error("int edge should not identifiable")
+##         istIdentifiable(e) || error("int edge should not identifiable")
 ##     end
 ## end

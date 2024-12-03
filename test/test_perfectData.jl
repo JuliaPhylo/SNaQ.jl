@@ -2,6 +2,7 @@
 ## with a network of 15 taxa, 3 hyb
 ## Claudia September 2016
 
+SNaQ.setCHECKNET(true)
 SNaQ.CHECKNET || error("need CHECKNET==true in PhyloNetworks to test snaq in test_correctLik.jl")
 
 qvec = Quartet[];

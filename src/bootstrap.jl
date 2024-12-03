@@ -184,7 +184,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             end
         end
         if runs1>0 && runs2>0
-            net = (net1.loglik < net2.loglik ? net1 : net2)
+            net = (loglik(net1) < loglik(net2) ? net1 : net2)
         end
         writelog && flush(logfile)
 
@@ -207,7 +207,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         else
             write(s,"$(writenewick_level1(n,outgroup))\n")
         end
-        # "with -loglik $(n.loglik)" not printed: not comparable across bootstrap networks
+        # "with -loglik $(loglik(n))" not printed: not comparable across bootstrap networks
       end
       close(s)
     end
