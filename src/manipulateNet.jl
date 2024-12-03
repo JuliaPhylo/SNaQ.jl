@@ -129,12 +129,12 @@ function hybridatnode!(net::HybridNetwork, nodeNumber::Integer)
     catch
         error("cannot set node $(nodeNumber) as hybrid because it is not part of net")
     end
-    net.node[ind].inCycle != -1 || error("node $(nodeNumber) is not part of any cycle, so we cannot make it hybrid")
+    inCycle(net.node[ind]) != -1 || error("node $(nodeNumber) is not part of any cycle, so we cannot make it hybrid")
     indhyb = 0
     try
-        indhyb = getIndexNode(net.node[ind].inCycle,net)
+        indhyb = getIndexNode(inCycle(net.node[ind]),net)
     catch
-        error("cannot find the hybrid node with number $(net.node[ind].inCycle)")
+        error("cannot find the hybrid node with number $(inCycle(net.node[ind]))")
     end
     hybrid = net.node[indhyb]
     hybridatnode!(net,hybrid,net.node[ind])
@@ -156,12 +156,12 @@ function hybridatnode!(net::HybridNetwork, hybrid::Node, newNode::Node)
     hybedges = hybridEdges(hybrid)
     makeEdgeTree!(hybedges[1],hybrid)
     makeEdgeTree!(hybedges[2],hybrid)
-    hybedges[1].inCycle = hybrid.number #just to keep attributes ok
-    hybedges[2].inCycle = hybrid.number
+    inCycle!(hybedges[1], hybrid.number) #just to keep attributes ok
+    inCycle!(hybedges[2], hybrid.number)
     switchHybridNode!(net,hybrid,newNode)
     found = false
     for e in newNode.edge
-        if e.inCycle == hybrid.number
+        if inCycle(e) == hybrid.number
             if !found
                 found = true
                 makeEdgeHybrid!(e,newNode, 0.51, switchHyb=true) #first found, major edge, need to optimize gamma anyway
@@ -195,24 +195,24 @@ function hybridatnode(net0::HybridNetwork, nodeNumber::Integer)
     catch
         error("cannot set node $(nodeNumber) as hybrid because it is not part of net")
     end
-    net.node[ind].inCycle != -1 || error("node $(nodeNumber) is not part of any cycle, so we cannot make it hybrid")
+    inCycle(net.node[ind]) != -1 || error("node $(nodeNumber) is not part of any cycle, so we cannot make it hybrid")
     indhyb = 0
     try
-        indhyb = getIndexNode(net.node[ind].inCycle,net)
+        indhyb = getIndexNode(inCycle(net.node[ind]),net)
     catch
-        error("cannot find the hybrid node with number $(net.node[ind].inCycle)")
+        error("cannot find the hybrid node with number $(inCycle(net.node[ind]))")
     end
     hybrid = net.node[indhyb]
     hybrid.hybrid || error("node $(hybrid.number) should be hybrid, but it is not")
     hybedges = hybridEdges(hybrid)
     makeEdgeTree!(hybedges[1],hybrid)
     makeEdgeTree!(hybedges[2],hybrid)
-    hybedges[1].inCycle = hybrid.number #just to keep attributes ok
-    hybedges[2].inCycle = hybrid.number
+    inCycle!(hybedges[1], hybrid.number) #just to keep attributes ok
+    inCycle!(hybedges[2], hybrid.number)
     switchHybridNode!(net,hybrid,net.node[ind])
     found = false
     for e in net.node[ind].edge
-        if e.inCycle == hybrid.number
+        if inCycle(e) == hybrid.number
             if !found
                 found = true
                 makeEdgeHybrid!(e,net.node[ind], 0.51, switchHyb=true) #first found, major edge, need to optimize gamma anyway

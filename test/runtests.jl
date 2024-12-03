@@ -18,7 +18,19 @@ import SNaQ: checkNet,
     writeExpCF, writenewick_level1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!,undirectedOtherNetworks,hybridatnode!
+    updatePartition!, optBL!, nchoose1234, QuartetT,undirectedOtherNetworks,hybridatnode!,
+    # field getters
+    istIdentifiable, fromBadDiamondI, inCycle, hasHybEdge,
+    isBadDiamondI, isBadDiamondII, isExtBadTriangle, isVeryBadTriangle,
+    k, typeHyb, gammaz,
+    visited, edges_changed, nodes_changed, ht, numht,
+    numBad, hasVeryBadTriangle, index, loglik, blacklist, cleaned,
+    # field setters
+    istIdentifiable!, fromBadDiamondI!, inCycle!, hasHybEdge!,
+    isBadDiamondI!, isBadDiamondII!, isExtBadTriangle!, isVeryBadTriangle!,
+    k!, typeHyb!, gammaz!,
+    visited!, edges_changed!, nodes_changed!, ht!, numht!,
+    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
 
 
 import PhyloNetworks:

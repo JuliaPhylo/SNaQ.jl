@@ -11,10 +11,10 @@ net1 = readnewick(joinpath(exampledir,"net1.out"))
 rotate!(net1, -6)
 net2 = readnewick(joinpath(exampledir,"net2.out"))
 net3 = readnewick(joinpath(exampledir,"net3.out"))
-net0.loglik = 53.53150526187732
-net1.loglik = 28.31506721890958
-net2.loglik = 28.31506721890957
-net3.loglik = 28.315067218909626
+loglik!(net0, 53.53150526187732)
+loglik!(net1, 28.31506721890958)
+loglik!(net2, 28.31506721890957)
+loglik!(net3, 28.315067218909626)
 ```
 # Getting a Network
 
@@ -269,7 +269,7 @@ a multiple of the negative log-likelihood up to a constant (the constant is
 such that the score is 0 if the network fits the data perfectly).
 The lower the better. We can plot these scores across hybrid values:
 ```@example snaqplot
-scores = [net0.loglik, net1.loglik, net2.loglik, net3.loglik]
+scores = [loglik(net0), loglik(net1), loglik(net2), loglik(net3)]
 hmax = collect(0:3)
 R"svg(name('snaqplot_scores_heuristic.svg'), width=4, height=3)" # hide
 R"par"(mar=[2.5,2.5,.5,.5], mgp=[1.4,.4,0], tck=-0.02, las=1, lab=[3,5,7]);  # hide

@@ -2,6 +2,7 @@
 # prompted by Cecile finding cases when containroot was not updated
 # Claudia December 2015
 
+SNaQ.setCHECKNET(true)
 SNaQ.CHECKNET || error("need CHECKNET==true in PhyloNetworks to test snaq in test_correctLik.jl")
 
 @testset "test: delete hybridization" begin
@@ -21,8 +22,8 @@ successful,_ = addHybridizationUpdate!(besttree);
 net = deepcopy(besttree);
 
 @test sum(!e.containroot for e in net.edge) == 3 # 3 edges can't contain the root
-@test sum(e.inCycle==11 for e in net.edge) == 6
-@test sum(n.inCycle==11 for n in net.node) == 6
+@test sum(inCycle(e)==11 for e in net.edge) == 6
+@test sum(inCycle(n)==11 for n in net.node) == 6
 @test length(net.partition) == 6
 @test Set([e.number for e in p.edges] for p in net.partition) ==
     Set([[14], [11], [10], [9,7,5,3,1,2,4,6,8], [17], [15]])
@@ -33,10 +34,10 @@ successful,_ = addHybridizationUpdate!(besttree);
 @test successful
 net = deepcopy(besttree);
 @test sum(!e.containroot for e in net.edge) == 8
-@test sum(e.inCycle==11 for e in net.edge) == 6 # edges 12, 13, 16, 18, 19, 20
-@test sum(n.inCycle==11 for n in net.node) == 6
-@test sum(e.inCycle==13 for e in net.edge) == 4 # edges 5, 7, 22, 23
-@test sum(n.inCycle==13 for n in net.node) == 4
+@test sum(inCycle(e)==11 for e in net.edge) == 6 # edges 12, 13, 16, 18, 19, 20
+@test sum(inCycle(n)==11 for n in net.node) == 6
+@test sum(inCycle(e)==13 for e in net.edge) == 4 # edges 5, 7, 22, 23
+@test sum(inCycle(n)==13 for n in net.node) == 4
 
 # test partition
 @test length(net.partition) == 9
@@ -46,7 +47,7 @@ net = deepcopy(besttree);
 ## # ===== identify containroot for net.node[21]
 ## net0=deepcopy(net);
 ## hybrid = net.node[21];
-## hybrid.isBadDiamondI
+## isBadDiamondI(hybrid)
 ## nocycle, edgesInCycle, nodesInCycle = identifyInCycle(net,hybrid);
 ## [n.number for n in edgesInCycle] == [23,9,7,5,22] || error("wrong identified cycle")
 ## [n.number for n in nodesInCycle] == [13,14,-4,-5,-6] || error("wrong identified cycle")
@@ -73,8 +74,8 @@ deleteHybridizationUpdate!(net,net.node[21], false,false);
 @test Set([e.number for e in p.edges] for p in net.partition) ==
     Set([[15], [10], [11], [17], [14], [3,1,2,8,9,6,4,7,5]])
 @test sum(!e.containroot for e in net.edge) == 3
-@test sum(e.inCycle==11 for e in net.edge) == 6
-@test sum(e.inCycle==13 for e in net.edge) == 0
+@test sum(inCycle(e)==11 for e in net.edge) == 6
+@test sum(inCycle(e)==13 for e in net.edge) == 0
 
 # =============== delete first hybridization ===================
 deleteHybridizationUpdate!(net,net.node[19]);

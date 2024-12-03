@@ -886,9 +886,9 @@ function getDescendants!(
     cycleNum::Vector{Int}
 )
     @debug "getDescendants of node $(node.number) and edge $(edge.number)"
-    if node.inCycle != -1
-        push!(cycleNum,node.inCycle)
-    elseif !node.leaf && node.inCycle == -1
+    if inCycle(node) != -1
+        push!(cycleNum,inCycle(node))
+    elseif !node.leaf && inCycle(node) == -1
         for e in node.edge
             if(!isEqual(edge,e) && e.ismajor)
                 push!(descendants,e)

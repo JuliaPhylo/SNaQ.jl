@@ -1,6 +1,6 @@
 # test for hasEdge of a QuartetNetwork
 # Claudia January 2015
-# Also, tests for net.ht, net.numht, qnet.indexht
+# Also, tests for ht(net), numht(net), qnet.indexht
 
 #println("----- Case G ------")
 include("../examples/case_g_example.jl");
@@ -25,8 +25,8 @@ try
     q5.qnet.hasEdge == [true, true,true,false] ? nothing : error("q5 wrong hasEdge")
 
 
-    net.ht == [0.1,0.2,0.1,1.0] ? nothing : error("net.ht not correct")
-    net.numht == [7,3,6,9] ? nothing : error("net.numth not correct")
+    ht(net) == [0.1,0.2,0.1,1.0] ? nothing : error("ht(net) not correct")
+    numht(net) == [7,3,6,9] ? nothing : error("net.numth not correct")
 
     q1.qnet.indexht == [1,2,3,4] ? nothing : error("q1.qnet.indexht not correct")
     q2.qnet.indexht == [1,3,4] ? nothing : error("q2.qnet.indexht not correct")
@@ -34,12 +34,13 @@ try
     q4.qnet.indexht == [2,3] ? nothing : error("q4.qnet.indexht not correct")
     q5.qnet.indexht == [1,2,3] ? nothing : error("q5.qnet.indexht not correct")
 
-    q1.qnet.index == [7,3,6,9] ? nothing : error("q1.qnet.index not correct")
-    q2.qnet.index == [5,4,7] ? nothing : error("q2.qnet.index not correct")
-    q3.qnet.index == [5,4,7] ? nothing : error("q3.qnet.index not correct")
-    q4.qnet.index == [3,4] ? nothing : error("q4.qnet.index not correct")
-    q5.qnet.index == [7,3,6] ? nothing : error("q5.qnet.index not correct")
-catch
+    q1.qnet.index == [7,3,6,9] ? nothing : error("q1.index(qnet) not correct")
+    q2.qnet.index == [5,4,7] ? nothing : error("q2.index(qnet) not correct")
+    q3.qnet.index == [5,4,7] ? nothing : error("q3.index(qnet) not correct")
+    q4.qnet.index == [3,4] ? nothing : error("q4.index(qnet) not correct")
+    q5.qnet.index == [7,3,6] ? nothing : error("q5.index(qnet) not correct")
+catch e
+    rethrow(e)
     println("---- error in case G -----")
     global error1 = true
 end
@@ -68,8 +69,8 @@ try
     q5.qnet.hasEdge == [false, true,true] ? nothing : error("q5 wrong hasEdge")
 
 
-    all(map(approxEq,net.ht,[0.1,0.7*(1-exp(-0.2)),0.3*(1-exp(-0.1))])) ? nothing : error("net.ht not correct")
-    net.numht == [9,21,22] ? nothing : error("net.numth not correct")
+    all(map(approxEq,ht(net),[0.1,0.7*(1-exp(-0.2)),0.3*(1-exp(-0.1))])) ? nothing : error("ht(net) not correct")
+    numht(net) == [9,21,22] ? nothing : error("net.numth not correct")
 
     q1.qnet.indexht == [2,3] ? nothing : error("q1.qnet.indexht not correct")
     q2.qnet.indexht == [1] ? nothing : error("q2.qnet.indexht not correct")
@@ -77,12 +78,13 @@ try
     q4.qnet.indexht == [1,2] ? nothing : error("q4.qnet.indexht not correct")
     q5.qnet.indexht == [2,3] ? nothing : error("q5.qnet.indexht not correct")
 
-    q1.qnet.index == [1,3] ? nothing : error("q1.qnet.index not correct")
-    q2.qnet.index == [4] ? nothing : error("q2.qnet.index not correct")
-    q3.qnet.index == [5,3] ? nothing : error("q3.qnet.index not correct")
-    q4.qnet.index == [5,3] ? nothing : error("q4.qnet.index not correct")
-    q5.qnet.index == [1,3] ? nothing : error("q5.qnet.index not correct")
-catch
+    q1.qnet.index == [1,3] ? nothing : error("q1.index(qnet) not correct")
+    q2.qnet.index == [4] ? nothing : error("q2.index(qnet) not correct")
+    q3.qnet.index == [5,3] ? nothing : error("q3.index(qnet) not correct")
+    q4.qnet.index == [5,3] ? nothing : error("q4.index(qnet) not correct")
+    q5.qnet.index == [1,3] ? nothing : error("q5.index(qnet) not correct")
+catch e
+    rethrow(e)
     println("---- error in case F -----")
     global error1 = true
 end
@@ -108,8 +110,8 @@ try
     q5.qnet.hasEdge == [true,false,true,false,true] ? nothing : error("q5 wrong hasEdge")
 
 
-    net.ht == [0.1,2.,1.,1.,1.] ? nothing : error("net.ht not correct")
-    net.numht == [9,4,6,9,10] ? nothing : error("net.numth not correct")
+    ht(net) == [0.1,2.,1.,1.,1.] ? nothing : error("ht(net) not correct")
+    numht(net) == [9,4,6,9,10] ? nothing : error("net.numth not correct")
 
     q1.qnet.indexht == [1,3,5] ? nothing : error("q1.qnet.indexht not correct")
     q2.qnet.indexht == [1,2,3,4,5] ? nothing : error("q2.qnet.indexht not correct")
@@ -117,13 +119,14 @@ try
     q4.qnet.indexht == [1,2,3,4,5] ? nothing : error("q4.qnet.indexht not correct")
     q5.qnet.indexht == [1,3,5] ? nothing : error("q5.qnet.indexht not correct")
 
-    q1.qnet.index == [7,4,8] ? nothing : error("q1.qnet.index not correct")
-    q2.qnet.index == [8,4,6,8,9] ? nothing : error("q2.qnet.index not correct")
-    q3.qnet.index == [8,4,6,8,9] ? nothing : error("q3.qnet.index not correct")
-    q4.qnet.index == [8,4,5,8,9] ? nothing : error("q4.qnet.index not correct")
-    q5.qnet.index == [7,4,8] ? nothing : error("q5.qnet.index not correct")
+    q1.qnet.index == [7,4,8] ? nothing : error("q1.index(qnet) not correct")
+    q2.qnet.index == [8,4,6,8,9] ? nothing : error("q2.index(qnet) not correct")
+    q3.qnet.index == [8,4,6,8,9] ? nothing : error("q3.index(qnet) not correct")
+    q4.qnet.index == [8,4,5,8,9] ? nothing : error("q4.index(qnet) not correct")
+    q5.qnet.index == [7,4,8] ? nothing : error("q5.index(qnet) not correct")
 
-catch
+catch e
+    rethrow(e)
     println("---- error in case I -----")
     global error1 = true
 end
