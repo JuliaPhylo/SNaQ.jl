@@ -157,7 +157,7 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
     inblack = true
     cherry = false
     nonidentifiable = false
-    while !inlimits || edges[index1].inCycle != -1 || edges[index2].inCycle != -1 || inblack || cherry || nonidentifiable
+    while !inlimits || inCycle(edges[index1]) != -1 || inCycle(edges[index2]) != -1 || inblack || cherry || nonidentifiable
         index1 = round(Integer,rand()*size(edges,1));
         index2 = round(Integer,rand()*size(edges,1));
         if index1 != index2 && index1 != 0 && index2 != 0 && index1 <= size(edges,1) && index2 <= size(edges,1)
