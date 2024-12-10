@@ -500,7 +500,7 @@ function extractQuartet!(net::HybridNetwork, quartet::Quartet)
     end
     qnet = extractQuartet(net,list)
     @debug "EXTRACT: extracted quartet $(quartet.taxon)"
-    redundantCycle!(qnet) #removes no leaves, cleans external edges
+    #redundantCycle!(qnet) #removes no leaves, cleans external edges
     updateHasEdge!(qnet,net)
     parameters!(qnet,net)
     qnet.quartetTaxon = quartet.taxon

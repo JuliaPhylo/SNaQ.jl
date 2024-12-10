@@ -302,7 +302,7 @@ function chooseEdgeOriginTarget!(neighbor::Vector{Edge}, node::Node, d::DataCF)
             #ind = round(Integer,rand()*length(neighbor));
         end
         #println("ind es $(ind), neighbor edge $(neighbor[ind].number)")
-        if(!neighbor[ind].hybrid && (neighbor[ind].inCycle == -1 || neighbor[ind].inCycle == node.number))
+        if(!neighbor[ind].hybrid && (inCycle(neighbor[ind]) == -1 || inCycle(neighbor[ind]) == node.number))
             return true, neighbor[ind], ind
         else
             deleteat!(neighbor,ind)

@@ -703,20 +703,20 @@ function parsimonyGF(net::HybridNetwork, species::Array{String},
     # inCycle = # of detached parents if the node has detached parents only.
     # Do this now to avoid re-doing it at each site.
     # `inCycle` was used earlier to find blobs.
-    for n in net.node n.inCycle=0; end
+    for n in net.node inCycle!(n, 0); end
     # first: calculate inCycle = # of detached parents
     for e in net.edge
         e.fromBadDiamondI || continue # to next edge if current edge not cut
         n = getchild(e)
-        n.inCycle += 1
+        inCycle!(n, inCycle(n) + 1)
     end
     # second: make inCycle = 0 if node has a non-detached parent
     for n in net.node
-        n.inCycle > 0 || continue # to next node if inCycle = 0 already
+        inCycle(n) > 0 || continue # to next node if inCycle = 0 already
         for e in n.edge
             n == getchild(e) || continue
             !e.fromBadDiamondI || continue
-            n.inCycle = 0 # if e parent of n and e not cut: make inCycle 0
+            inCycle!(n, 0) # if e parent of n and e not cut: make inCycle 0
             break
         end
     end
@@ -930,12 +930,12 @@ function parsimonyBottomUpGF!(node::Node, blobroot::Node, nchar::Integer,
     node != blobroot ||  return nothing
     # if blob root has detached parents only, these are paid for in the blob
     # in which this blob root is a leaf.
-    node.inCycle > 0 || return nothing # inCycle = # of detached parents
+    inCycle(node) > 0 || return nothing # inCycle = # of detached parents
     # if we get here, it means that "node" is not root of current blob, but
     # is root of a tree after detaching all guessed parents from their children.
     # pay now for re-attaching the guessed parents to node
     cost = 0.0 # variable external to 'for' loops below
-    if node.inCycle == 1 # 1 detached parent, no non-detached parents
+    if inCycle(node) == 1 # 1 detached parent, no non-detached parents
         for e in node.edge
             par = getparent(e)
             if par == node continue; end

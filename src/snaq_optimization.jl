@@ -365,9 +365,13 @@ function optBL!(
     (ftolRel > 0 && ftolAbs > 0 && xtolAbs > 0 && xtolRel > 0) || error("tolerances have to be positive, ftol (rel,abs), xtol (rel,abs): $([ftolRel, ftolAbs, xtolRel, xtolAbs])")
     if verbose println("OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)");
     else @debug        "OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)"; end
+    @info "A"
     parameters!(net); # branches/gammas to optimize: ht(net), numht(net)
+    @info "B"
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
+    @info "C"
     nht = length(ht(net))
+    @info "D"
     numBad(net) >= 0 || error("network has negative number of bad hybrids")
     #opt = NLopt.Opt(numBad(net) == 0 ? :LN_BOBYQA : :LN_COBYLA,k) # :LD_MMA if use gradient, :LN_COBYLA for nonlinear/linear constrained optimization derivative-free, :LN_BOBYQA for bound constrained derivative-free
     opt = NLopt.Opt(:LN_BOBYQA,nht) # :LD_MMA if use gradient, :LN_COBYLA for nonlinear/linear constrained optimization derivative-free, :LN_BOBYQA for bound constrained derivative-free
@@ -380,6 +384,7 @@ function optBL!(
     NLopt.lower_bounds!(opt, zeros(nht))
     NLopt.upper_bounds!(opt,upper(net))
     count = 0
+    @info "E"
     function obj(x::Vector{Float64},g::Vector{Float64}) # added g::Vector{Float64} for gradient, ow error
         if(verbose) #|| numBad(net) > 0) #we want to see what happens with bad diamond I
             println("inside obj with x $(x)")
@@ -393,7 +398,9 @@ function optBL!(
         end
         return val
     end
+    @info "F"
     NLopt.min_objective!(opt,obj)
+    @info "G"
     ## if(numBad(net) == 1)
     ##     function inequalityGammaz(x::Vector{Float64},g::Vector{Float64})
     ##         val = calculateIneqGammaz(x,net,1,verbose)
@@ -1910,8 +1917,16 @@ function optTopRun1!(currT0::HybridNetwork, restrictions::Function, liktolAbs, N
     optTopLevel!(currT, restrictions, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, probQR, verbose, closeN , Nmov0,logfile,writelog)
 end
 
+optTopRun1!(currT0::HybridNetwork, liktolAbs, Nfail::Integer, d::DataCF, 
+            hmax::Integer, ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64,
+            verbose::Bool, closeN ::Bool, Nmov0::Vector{Int},seed::Integer,
+            logfile::IO, writelog::Bool, probST::Float64, probQR::Float64) =
+    optTopRun1!(currT0, (net::HybridNetwork) -> true, liktolAbs, Nfail, d, hmax, ftolRel,
+                ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0,seed, logfile, writelog, probST, probQR)
 optTopRun1!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer) = optTopRun1!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, 0,stdout,true,0.3,0.0)
 optTopRun1!(currT::HybridNetwork, d::DataCF, restrictions::Function, hmax::Integer, seed::Integer) = optTopRun1!(currT, restrictions, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves,seed,stdout,true,0.3,0.0)
+optTopRun1!(currT::HybridNetwork, d::DataCF, hmax::Integer) = optTopRun1!(currT, (n::HybridNetwork) -> true, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves, 0,stdout,true,0.3,0.0)
+optTopRun1!(currT::HybridNetwork, d::DataCF, hmax::Integer, seed::Integer) = optTopRun1!(currT, (n::HybridNetwork) -> true, likAbs, numFails, d, hmax,fRel, fAbs, xRel, xAbs, false, true, numMoves,seed,stdout,true,0.3,0.0)
 
 
 # function SNaQ: it calls directly optTopRuns but has a prettier name
@@ -2097,6 +2112,7 @@ function snaq!(
     end
     return net
 end
+snaq!(t0::HybridNetwork, d::DataCF; kwargs...) = snaq!(t0, d, (n::HybridNetwork) -> true; kwargs...)
 
 
 ## function to modify the starting topology currT0 by an NNI move with probability 1-probST
