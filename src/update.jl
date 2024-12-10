@@ -85,7 +85,7 @@ end
     traverseContainRoot!(Node, Edge, edges_changed::Array{Edge,1}, rightDir::Vector{Bool})
 
 The input `node` to `updateContainRoot!` must be a hybrid node
-(can come from searchHybridNode).
+(can come from PhyloNetworks.searchHybridNode).
 `updateContainRoot!` starts at the input node and calls `traverseContainRoot!`,
 which traverses the network recursively.
 By default, containroot attributes of edges are true.
@@ -136,7 +136,7 @@ function traverseContainRoot!(node::Node, edge::Edge, edges_changed::Array{Edge,
 end
 
 
-# node: must be hybrid node (can come from searchHybridNode)
+# node: must be hybrid node (can come from PhyloNetworks.searchHybridNode)
 # return flag, array of edges changed
 #        flag: false if the set of edges to place the root is empty
 @doc (@doc traverseContainRoot!) updateContainRoot!
@@ -164,7 +164,7 @@ end
 # "extreme bad triangle", "very" bad triangle I,II) k = 2 (bad diamond
 # I,II) also checks if hybrid node has leaf child, in which case,
 # major edge is non identifiable
-# input: hybrid node around which to check (can come from searchHybridNode)
+# input: hybrid node around which to check (can come from PhyloNetworks.searchHybridNode)
 #        updates gammaz with whatever
 # edge lengths are originally in the network
 #        allow = true, returns true always, used when reading topology

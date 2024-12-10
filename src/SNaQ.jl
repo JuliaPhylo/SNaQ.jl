@@ -37,23 +37,21 @@ module SNaQ
     global CHECKNET = false # for debugging only
 
 
-    import PhyloNetworks: HybridNetwork, tiplabels,getTipSubmatrix,
-        resetnodenumbers!,resetedgenumbers!,
-        isEqual,approxEq,
+    import PhyloNetworks: HybridNetwork, Edge, Node, Network, Partition,
+        tiplabels,
+        isEqual, approxEq,
         assignhybridnames!, 
-        getOtherNode,getIndex,getIndexEdge,getIndexNode,
-        pushEdge!,pushNode!,
-        setNode!,setEdge!,
-        removeEdge!,removeNode!,
-        searchHybridNode,searchHybridEdge,
-        samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
+        getOtherNode, getIndex, getIndexEdge, getIndexNode,
+        pushEdge!, pushNode!,
+        setNode!, setEdge!,
+        removeEdge!, removeNode!,
         addBL, deleteEdge!, deleteNode!,
-        getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges, ladderpartition,##. Possible PN jetsam. only used in SNaQ functions
-        hybridEdges, whichPartition,removeLeaf!, ##Almost used only in SNaQ functions
-        Edge, Node, Network, Partition,pushHybrid!,removeHybrid!,printedges,printPartitions,
-        AQuartet,QuartetT, sort_stringasinteger!,tablequartetCF,nchoose1234,tiplabels,
+        getconnectingedge, deleteIntNode!, numTreeEdges, numIntTreeEdges,
+        hybridEdges, whichpartition, removeLeaf!, ##Almost used only in SNaQ functions
+        pushHybrid!, removeHybrid!, printedges, printpartitions,
+        samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
+        AQuartet, sort_stringasinteger!, tablequartetCF,
         RootMismatch
-
 
     export
         ## types & network definition
@@ -64,10 +62,8 @@ module SNaQ
         sorttaxa!,
         # quartet CF
         readTrees2CF,
-        countquartetsintrees,
         readTableCF,
         readTableCF!,
-        tablequartetCF,
         mapAllelesCFtable,
         readnexus_treeblock,
         summarizeDataCF,

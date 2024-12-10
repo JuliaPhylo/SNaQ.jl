@@ -123,11 +123,11 @@ function updateAllReadTopology!(net::HybridNetwork)
                 end
             end
             @debug "before update partition"
-            @debug begin printPartitions(net); "printed partitions" end
+            @debug begin printpartitions(net); "printed partitions" end
             for n in net.hybrid #need to updatePartition after all inCycle
                 nocycle, edgesInCycle, nodesInCycle = identifyInCycle(net,n);
                 updatePartition!(net,nodesInCycle)
-                @debug begin printPartitions(net);
+                @debug begin printpartitions(net);
                     "partitions after updating partition for hybrid node $(n.number)"
                 end
             end
@@ -369,7 +369,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
             newedge = Edge(max_edge+1) #fixit: maybe this edge not identifiable, need to add that check
             newnode = Node(max_node+1,false,false,[edge,newedge])
             if(cleaned(net) && !isTree(net) && !isempty(net.partition)) # fixit: this will crash if network estimated with snaq, and then manipulated
-                part = whichPartition(net,edge)
+                part = whichpartition(net,edge)
                 push!(net.partition[part].edges,newedge)
             end
             setNode!(edge,newnode)

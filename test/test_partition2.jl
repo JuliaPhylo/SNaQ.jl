@@ -11,7 +11,7 @@ text = "(Xmayae,((Xhellerii,(((Xclemenciae_F2,Xmonticolus):1.458,(((((Xmontezuma
 
 #net = readnewick("cui3.out")
 net = readnewick(text)
-#printPartitions(net)
+#printpartitions(net)
 #printedges(net)
 cleanBL!(net)
 cleanAfterRead!(net,false)
@@ -111,5 +111,5 @@ updatePartition!(net,nodesInCycle)
 @test [n.number for n in net.partition[14].edges] == [50]
 @test [n.number for n in net.partition[15].edges] == [2]
 end
-#printPartitions(net)
+#printpartitions(net)
 end

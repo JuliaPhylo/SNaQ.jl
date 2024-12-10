@@ -913,7 +913,7 @@ function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Boo
             moveDownLevel!(currT)
             @debug begin
                 printedges(currT)
-                printPartitions(currT)
+                printpartitions(currT)
                 #printnodes(currT)
                 writenewick_level1(currT,true)
             end
@@ -1286,7 +1286,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     newT = deepcopy(currT)
     @debug begin
         printedges(newT)
-        printPartitions(newT)
+        printpartitions(newT)
         println("++++")
         writenewick_level1(newT,true)
     end
@@ -1345,7 +1345,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                 end
                 @debug begin
                     printedges(newT)
-                    printPartitions(newT)
+                    printpartitions(newT)
                     #printnodes(newT)
                     println("++++")
                     println(writenewick_level1(newT,true))
@@ -1388,7 +1388,7 @@ function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     writelog && printCounts(movescount,movesgamma,logfile)
     @debug begin
         printedges(newT)
-        printPartitions(newT)
+        printpartitions(newT)
         printnodes(newT)
         writenewick_level1(newT,true) ## this changes non-identifiable BLs in newT to -1
     end

@@ -18,7 +18,7 @@ import SNaQ: checkNet,
     writeExpCF, writenewick_level1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!, nchoose1234, QuartetT,undirectedOtherNetworks,hybridatnode!,
+    updatePartition!, optBL!,undirectedOtherNetworks,hybridatnode!,
     # field getters
     istIdentifiable, fromBadDiamondI, inCycle, hasHybEdge,
     isBadDiamondI, isBadDiamondII, isExtBadTriangle, isVeryBadTriangle,
@@ -37,19 +37,15 @@ import PhyloNetworks:
     Node, Edge,
     setNode!,setEdge!,
     approxEq,
-    searchHybridNode,searchHybridEdge,
-    ladderpartition,pushHybrid!,
-    nchoose1234, QuartetT
+    searchHybridNode,
+    pushHybrid!
 
-
-
-
-# @testset "Code quality (Aqua.jl)" begin
-#     Aqua.test_all(SNaQ;
-#     ambiguities = (broken = false),
-#     persistent_tasks = false,
-#     deps_compat = false)
-# end
+@testset "Code quality (Aqua.jl)" begin
+    Aqua.test_all(SNaQ;
+    ambiguities = (broken = false),
+    persistent_tasks = false,
+    deps_compat = false)
+end
 
 
 SNaQ.setCHECKNET(true)
