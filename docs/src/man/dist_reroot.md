@@ -3,13 +3,13 @@ using PhyloNetworks, SNaQ
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
+raxmlCF = readTableCF(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
 astralfile = joinpath(exampledir,"astral.tre")
 astraltree = readmultinewick(astralfile)[102] # 102th tree = last tree here
 net0 = readnewick(joinpath(exampledir,"net0.out"))
 net1 = readnewick(joinpath(exampledir,"net1.out"))
-net0.loglik = 53.53150526187732
-net1.loglik = 28.31506721890958
+loglik!(net0, 53.53150526187732)
+loglik!(net1, 28.31506721890958)
 ```
 # Comparing and manipulating networks
 

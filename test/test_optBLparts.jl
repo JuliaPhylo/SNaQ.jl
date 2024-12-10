@@ -1,6 +1,7 @@
 # test the components in optBL separately
 # Claudia January 2015
 
+
 globalerror = false
 #println("--------- Case G --------------")
 include("../examples/case_g_example.jl");
@@ -14,7 +15,7 @@ q5 = Quartet(5,["6","7","4","10"],[0.5,0.4,0.1]);
 d = DataCF([q1,q2,q3,q4,q5]);
 extractQuartet!(net,d)
 
-oldht = net.ht
+oldht = ht(net)
 
 x = [0.3,1.0,1.5,2.0]
 err = false
@@ -44,8 +45,9 @@ try
     reduce(&,[q.qnet.changed for q in d.quartet]) || error("all qnet should be changed")
 
     update!(net,x)
-    net.ht == x || ("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || ("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -81,8 +83,9 @@ try
     [q.qnet.changed for q in d.quartet] == [true,true,true,false,false] || error("q.qnet.changed not correct for all quartets")
 
     update!(net,x)
-    net.ht == x || error("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || error("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -117,8 +120,9 @@ try
     [q.qnet.changed for q in d.quartet] == [true,true,true,false,true] || error("q.qnet.changed not correct for all quartets")
 
     update!(net,x)
-    net.ht == x || error("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || error("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -141,7 +145,8 @@ try
     reduce(&,map(approxEq,q4.qnet.expCF,[1/3*exp(-x[2]-x[3]),1-2/3*exp(-x[2]-x[3]),1/3*exp(-x[2]-x[3])])) || error("q4 expCF wrong")
     reduce(&,map(approxEq,q5.qnet.expCF,[(1-x[1])/3*exp(-x[2])+x[1]/3*exp(-x[2]-x[3]),(1-x[1])*(1-2/3*exp(-x[2]))+x[1]*(1-2/3*exp(-x[2]-x[3])),
                                     (1-x[1])/3*exp(-x[2])+x[1]/3*exp(-x[2]-x[3])])) || error("q5 expCF wrong")
-catch
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -166,7 +171,7 @@ q5 = Quartet(5,["6","7","4","10"],[0.5,0.4,0.1]);
 d = DataCF([q1,q2,q3,q4,q5]);
 extractQuartet!(net,d)
 
-oldht = net.ht
+oldht = ht(net)
 
 x = [0.4,0.2,0.1]
 err = false
@@ -175,7 +180,7 @@ err = false
 
 try
     update!(q1.qnet,x,net)
-    q1.qnet.node[1].gammaz !=x[2] || q1.qnet.node[3].gammaz !=x[3]  ? error("qnet gammaz not correct") : nothing
+    gammaz(q1.qnet.node[1]) !=x[2] || gammaz(q1.qnet.node[3]) !=x[3]  ? error("qnet gammaz $(gammaz(q1.qnet.node[3])) $(gammaz(q1.qnet.node[3])) not correct") : nothing
 
     update!(q2.qnet,x,net)
     q2.qnet.edge[4].length !=x[1]  ? error("qnet edges lengths not correct") : nothing
@@ -189,13 +194,14 @@ try
     q4.qnet.edge[3].length !=-log(1-x[2]) ? error("qnet edges gammaz not correct") : nothing
 
     update!(q5.qnet,x,net)
-    q1.qnet.node[1].gammaz !=x[2] || q1.qnet.node[3].gammaz !=x[3]  ? error("qnet gammaz not correct") : nothing
+    gammaz(q1.qnet.node[1]) !=x[2] || gammaz(q1.qnet.node[3]) !=x[3]  ? error("qnet gammaz not correct") : nothing
 
     reduce(&,[q.qnet.changed for q in d.quartet]) || error("all qnet should be changed")
 
     update!(net,x)
-    net.ht == x || ("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || ("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -210,7 +216,7 @@ x = [0.1,0.2,0.1] # changing gammaz1, gammaz2 only
 
 try
     update!(q1.qnet,x,net)
-    q1.qnet.node[1].gammaz !=x[2] || q1.qnet.node[3].gammaz !=x[3]  ? error("qnet gammaz not correct") : nothing
+    gammaz(q1.qnet.node[1]) !=x[2] || gammaz(q1.qnet.node[3]) !=x[3]  ? error("qnet gammaz not correct") : nothing
 
     update!(q2.qnet,x,net)
     q2.qnet.edge[4].length !=x[1]  ? error("qnet edges lengths not correct") : nothing
@@ -224,13 +230,14 @@ try
     q4.qnet.edge[3].length !=-log(1-x[2]) ? error("qnet edges gammaz not correct") : nothing
 
     update!(q5.qnet,x,net)
-    q1.qnet.node[1].gammaz !=x[2] || q1.qnet.node[3].gammaz !=x[3]  ? error("qnet gammaz not correct") : nothing
+    gammaz(q1.qnet.node[1]) !=x[2] || gammaz(q1.qnet.node[3]) !=x[3]  ? error("qnet gammaz not correct") : nothing
 
     [q.qnet.changed for q in d.quartet] == [true,false,true,true,true] || error("q.qnet.changed not correct for all quartets")
 
     update!(net,x)
-    net.ht == x || error("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || error("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -251,7 +258,8 @@ try
     reduce(&,map(approxEq,q4.qnet.expCF,[1/3*exp(-x[1]+log(1-x[2])),1-2/3*exp(-x[1]+log(1-x[2])),1/3*exp(-x[1]+log(1-x[2]))])) || error("q4 expCF wrong")
     reduce(&,map(approxEq,q5.qnet.expCF,[(1-x[2]-x[3])/3,(1+2*x[2]-x[3])/3,(1-x[2]+2*x[3])/3])) || error("q5 expCF wrong")
 
-catch
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -276,7 +284,7 @@ q5 = Quartet(5,["6","7","4","10"],[0.5,0.4,0.1]);
 d = DataCF([q1,q2,q3,q4,q5]);
 extractQuartet!(net,d)
 
-oldht = net.ht
+oldht = ht(net)
 
 x = [0.2,0.2,0.1,0.1,0.1]
 err = false
@@ -307,8 +315,9 @@ try
     reduce(&,[q.qnet.changed for q in d.quartet]) || error("all qnet should be changed")
 
     update!(net,x)
-    net.ht == x || ("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || ("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -346,8 +355,9 @@ try
     [q.qnet.changed for q in d.quartet] == [false, true, true, true, false] || error("not all qnet should be changed")
 
     update!(net,x)
-    net.ht == x || ("net.ht not correctly changed to x with update")
-catch
+    ht(net) == x || ("ht(net) not correctly changed to x with update")
+catch e
+    rethrow(e)
     global err = true
 end
 
@@ -372,7 +382,8 @@ try
     reduce(&,map(approxEq,q4.qnet.expCF, [1/3*exp(-t),1-2/3*exp(-t),1/3*exp(-t)])) || error("q4 expCF wrong")
     reduce(&,map(approxEq,q5.qnet.expCF,[(1-x[1])*(1/3*exp(-x[3]))+x[1]*(1-2/3*exp(-x[4])),(1-x[1])*(1-2/3*exp(-x[3]))+x[1]*(1/3*exp(-x[4])),(1-x[1])*(1/3*exp(-x[3]))+x[1]*(1/3*exp(-x[4]))])) || error("q5 expCF wrong")
 
-catch
+catch e
+    rethrow(e)
     global err = true
 end
 

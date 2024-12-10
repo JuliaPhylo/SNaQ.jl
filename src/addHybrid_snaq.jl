@@ -100,7 +100,7 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
     inblack = true
     cherry = false
     nonidentifiable = false
-    while !inlimits || edges[index1].inCycle != -1 || edges[index2].inCycle != -1 || inblack || cherry || nonidentifiable
+    while !inlimits || inCycle(edges[index1]) != -1 || inCycle(edges[index2]) != -1 || inblack || cherry || nonidentifiable
         #choose edge w/ quartet-weighted sampling with probability probQR, otherwise choose random edge
         if(probQR>0.0 && rand() < probQR)
             index1 = sampleEdgeQuartetWeighted(edges, d)
@@ -119,19 +119,19 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
             inlimits = false
             @goto outer
         end
-        if blacklist && !isempty(net.blacklist)
-            length(net.blacklist) % 2 == 0 || error("net.blacklist should have even number of entries, not length: $(length(net.blacklist))")
+        if blacklist && !isempty(blacklist(net))
+            length(blacklist(net)) % 2 == 0 || error("blacklist(net) should have even number of entries, not length: $(length(blacklist(net)))")
             i = 1
-            while i < length(net.blacklist)
-                if edges[index1].number == net.blacklist[i]
-                    if edges[index2].number == net.blacklist[i+1]
+            while i < length(blacklist(net))
+                if edges[index1].number == blacklist(net)[i]
+                    if edges[index2].number == blacklist(net)[i+1]
                         inblack = true
                     else
                         inblack = false
                         @goto outer
                     end
-                elseif edges[index2].number == net.blacklist[i]
-                    if edges[index1].number == net.blacklist[i+1]
+                elseif edges[index2].number == blacklist(net)[i]
+                    if edges[index1].number == blacklist(net)[i+1]
                         inblack = true
                     else
                         inblack = false
@@ -158,7 +158,6 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
     cherry = false
     nonidentifiable = false
     while !inlimits || edges[index1].inCycle != -1 || edges[index2].inCycle != -1 || inblack || cherry || nonidentifiable
-        #choose edge w/ quartet-weighted sampling with probability probQR, otherwise choose random edge
         index1 = round(Integer,rand()*size(edges,1));
         index2 = round(Integer,rand()*size(edges,1));
         if index1 != index2 && index1 != 0 && index2 != 0 && index1 <= size(edges,1) && index2 <= size(edges,1)
@@ -168,23 +167,23 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
             inlimits = false
             @goto outer
         end
-        if blacklist && !isempty(net.blacklist)
-            length(net.blacklist) % 2 == 0 || error("net.blacklist should have even number of entries, not length: $(length(net.blacklist))")
+        if blacklist && !isempty(blacklist(net))
+            length(blacklist(net)) % 2 == 0 || error("blacklist(net) should have even number of entries, not length: $(length(blacklist(net)))")
             i = 1
-            while i < length(net.blacklist)
-                if edges[index1].number == net.blacklist[i]
-                    if edges[index2].number == net.blacklist[i+1]
+            while i < length(blacklist(net))
+                if edges[index1].number == blacklist(net)[i]
+                    if edges[index2].number == blacklist(net)[i+1]
                         inblack = true
                     else
                         inblack = false
                         @goto outer
                     end
-                elseif edges[index2].number == net.blacklist[i]
-                    if edges[index1].number == net.blacklist[i+1]
+                elseif edges[index2].number == blacklist(net)[i]
+                    if edges[index1].number == blacklist(net)[i+1]
                         inblack = true
                     else
                         inblack = false
-                        @goto outer
+                        @goto outer 
                     end
                 end
                 i += 2
@@ -284,7 +283,7 @@ function updateMajorHybrid!(net::HybridNetwork, node::Node)
     for e in node.edge
         if(e.hybrid)
             hybedge = e
-        elseif(e.inCycle != -1 && !e.hybrid)
+        elseif(inCycle(e) != -1 && !e.hybrid)
             edgecycle = e
         end
     end

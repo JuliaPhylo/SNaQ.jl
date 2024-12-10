@@ -20,21 +20,21 @@ function makeEdgeHybrid!(edge::Edge,node::Node,gamma::Float64; switchHyb=false::
     #println("$(getOtherNode(edge,node).hasHybEdge) debe ser true")
     size(edge.node,1) == 2 || error("strange edge $(edge.number) has $(size(edge.node,1)) nodes instead of 2")
     if(isEqual(edge.node[1],node))
-        edge.isChild1 = true
+        edge.ischild1 = true
     elseif(isEqual(edge.node[2],node))
-        edge.isChild1 = false
+        edge.ischild1 = false
     else
         error("node $(node.number) is not attached to edge $(edge.number)")
     end
     edge.hybrid = true
-    getOtherNode(edge,node).hasHybEdge = true
+    hasHybEdge!(getOtherNode(edge,node), true)
     if switchHyb
         edge.gamma = gamma;
         edge.ismajor = (gamma>=0.5) ? true : false
     else
         setgamma!(edge,gamma,false)
     end
-    edge.istIdentifiable = isEdgeIdentifiable(edge)
+    istIdentifiable!(edge, isEdgeIdentifiable(edge))
     edge.containroot = false
 end
 
@@ -49,24 +49,24 @@ function exchangeHybridNode!(net::HybridNetwork, current::Node,new::Node)
     !nocycle || error("strange here: change direction on hybrid node $(current.number) that does not have a cycle to begin with")
     #println("edges in cycle for node $(current.number) are $([e.number for e in edgesInCycle]) and nodes in cycle $([n.number for n in nodesInCycle])")
     for e in edgesInCycle
-        e.inCycle = new.number
+        inCycle!(e, new.number)
     end
     for n in nodesInCycle
-        n.inCycle = new.number
+        inCycle!(n, new.number)
     end
     update = true
     new.hybrid = true
-    new.k = current.k
+    k!(new, k(current))
     removeHybrid!(net,current)
     pushHybrid!(net,new)
     current.hybrid = false
-    current.k = -1
-    if(current.isBadDiamondI || current.isBadDiamondII)
-        current.isBadDiamondI = false
-        current.isBadDiamondII = false
+    k!(current, k(current) + 1)
+    if(isBadDiamondI(current) || isBadDiamondII(current))
+        isBadDiamondI!(current, false)
+        isBadDiamondII!(current, false)
         update = false
-    elseif(current.isBadTriangle)
-        current.isBadTriangle = false
+    elseif(isBadTriangle(current))
+        isBadTriangle!(current, false)
         update = true
     end
     return update
@@ -115,8 +115,8 @@ function changeDirection!(node::Node, net::HybridNetwork, isminor::Bool)
         setLength!(edgemin1,tmajor)
         setLength!(edgemin2,ttree)
         # -- update partition
-        indexPedgemin = whichPartition(net,edgemin2,node.number)
-        indexPtree = whichPartition(net,tree,node.number)
+        indexPedgemin = whichpartition(net,edgemin2,node.number)
+        indexPtree = whichpartition(net,tree,node.number)
         ind = getIndex(edgemin2,net.partition[indexPedgemin].edges)
         deleteat!(net.partition[indexPedgemin].edges,ind)
         ind = getIndex(tree,net.partition[indexPtree].edges)
@@ -156,8 +156,8 @@ function changeDirection!(node::Node, net::HybridNetwork, isminor::Bool)
         setLength!(edgemaj1,tminor)
         setLength!(edgemaj2,ttree)
         # -- update partition
-        indexPedgemaj = whichPartition(net,edgemaj2,node.number)
-        indexPtree = whichPartition(net,tree,node.number)
+        indexPedgemaj = whichpartition(net,edgemaj2,node.number)
+        indexPtree = whichpartition(net,tree,node.number)
         ind = getIndex(edgemaj2,net.partition[indexPedgemaj].edges)
         deleteat!(net.partition[indexPedgemaj].edges,ind)
         ind = getIndex(tree,net.partition[indexPtree].edges)
@@ -169,11 +169,11 @@ function changeDirection!(node::Node, net::HybridNetwork, isminor::Bool)
         alreadyNoRoot = !edgemaj2.containroot
         @debug "edgemaj2 is $(edgemaj2.number) and its containroot is $(edgemaj2.containroot), alreadyNoRoot $(alreadyNoRoot)"
     end
-    if(node.isBadDiamondI || node.isBadDiamondII)
-        node.isBadDiamondI = false
-        node.isBadDiamondII = false
+    if(isBadDiamondI(node) || isBadDiamondII(node))
+        isBadDiamondI!(node, false)
+        isBadDiamondII!(node, false)
         return false, alreadyNoRoot
-    elseif(node.isBadTriangle)
+    elseif(isBadTriangle(node))
         return false, alreadyNoRoot
     end
     return true, alreadyNoRoot
@@ -202,7 +202,7 @@ function changeDirectionUpdate!(net::HybridNetwork,node::Node, random::Bool)
     end
     @debug "MOVE: change direction around hybrid node $(node.number) for minor $(minor)------- "
     update, alreadyNoRoot = changeDirection!(node,net,minor)
-    if(node.k == 4 && update)
+    if(k(node) == 4 && update)
         flag2, edgesgammaz = updateGammaz!(net,node)
     else
         flag2 = true
@@ -217,11 +217,11 @@ function changeDirectionUpdate!(net::HybridNetwork,node::Node, random::Bool)
         else
             @debug "MOVE: change direction around hybrid node $(node.number) FAILED because of containroot"
             CHECKNET && checkNet(net)
-            node.isBadDiamondI || undoGammaz!(node,net)
+            isBadDiamondI(node) || undoGammaz!(node,net)
             alreadyNoRoot || undoContainRoot!(edgesroot) #only undo edgesroot if there were changed: alreadyNoRoot=true => no change
             update,a = changeDirection!(node,net,minor);
             alreadyNoRoot == a || error("change direction alreadyNoRoot should match when done the first time and when undoing")
-            if(node.k == 4 && update)
+            if(k(node) == 4 && update)
                 flag2, edgesgammaz = updateGammaz!(net,node)
             else
                 flag2 = true
@@ -234,9 +234,9 @@ function changeDirectionUpdate!(net::HybridNetwork,node::Node, random::Bool)
     else
         @debug "MOVE: change direction around hybrid node $(node.number) FAILED because of gammaz"
         CHECKNET && checkNet(net)
-        node.isBadDiamondI || undoGammaz!(node,net)
+        isBadDiamondI(node) || undoGammaz!(node,net)
         update,a = changeDirection!(node,net,minor);
-        if(node.k == 4 && update)
+        if(k(node) == 4 && update)
             flag2, edgesgammaz = updateGammaz!(net,node)
         else
             flag2 = true
@@ -284,7 +284,7 @@ function chooseEdgeOriginTarget!(neighbor::Vector{Edge}, node::Node)
     length(neighbor) < 5 || error("neighbor should have at most 4 edges: $([n.number for n in neighbor])")
     while(!isempty(neighbor))
         ind = rand(1:length(neighbor))
-        if(!neighbor[ind].hybrid && (neighbor[ind].inCycle == -1 || neighbor[ind].inCycle == node.number))
+        if(!neighbor[ind].hybrid && (inCycle(neighbor[ind]) == -1 || inCycle(neighbor[ind]) == node.number))
             return true, neighbor[ind], ind
         else
             deleteat!(neighbor,ind)
@@ -326,10 +326,10 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
     in(newedge,net.edge) || error("newedge $(newedge.number) not in net.edge")
     @debug "othermin $(othermin.number) with edges $([e.number for e in othermin.edge])"
     @debug "tree1 is $(tree1.number), tree2 is $(tree2.number)"
-    if(tree1.inCycle == node.number && tree2.inCycle == -1)
+    if(inCycle(tree1) == node.number && inCycle(tree2) == -1)
         treej = tree1
         treei = tree2
-    elseif(tree2.inCycle == node.number && tree1.inCycle == -1)
+    elseif(inCycle(tree2) == node.number && inCycle(tree1) == -1)
         treej = tree2
         treei = tree1
     else
@@ -433,7 +433,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
     if !undo
         if from_otheri
             # -- update partition
-            indexPtreei = whichPartition(net,treei,node.number)
+            indexPtreei = whichpartition(net,treei,node.number)
             ind = getIndex(newedge,net.partition[indexPtreei].edges)
             deleteat!(net.partition[indexPtreei].edges,ind)
             ind = getIndex(treei,net.partition[indexPtreei].edges)
@@ -443,7 +443,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
             for i in 1:3 #check of 3 edges inside hybridEdges
                 if(!isEqual(edges[i],treei) && !isEqual(edges[i],newedge))
                     descendants = [edges[i]]
-                    cycleNum = [node.inCycle]
+                    cycleNum = [inCycle(node)]
                     getDescendants!(getOtherNode(edges[i],otheri),edges[i],descendants,cycleNum)
                     !isempty(descendants) || error("descendants is empty for node $(otheri.number)")
                     @debug "for node $(otheri.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"
@@ -453,19 +453,19 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
                         ind = getIndex(e,net.partition[indexPtreei].edges)
                         deleteat!(net.partition[indexPtreei].edges,ind)
                     end
-                    net.partition[indexPtreei].cycle = union([node.inCycle],symdiff(net.partition[indexPtreei].cycle,cycleNum))
+                    net.partition[indexPtreei].cycle = union([inCycle(node)],symdiff(net.partition[indexPtreei].cycle,cycleNum))
                     break
                 end
             end
             # -- update in cycle
-            newedge.inCycle = node.number
+            inCycle!(newedge, node.number)
             switchCycleTree!(tree1,tree2,node)
-            node.k += 1
-            otheri.inCycle = node.number
+            k!(node, k(node) + 1)
+            inCycle!(otheri, node.number)
         elseif(from_otherj)
-            if(newedge.inCycle == node.number)
+            if(inCycle(newedge) == node.number)
                 # -- update partition
-                indexPtreei = whichPartition(net,treei,node.number)
+                indexPtreei = whichpartition(net,treei,node.number)
                 push!(net.partition[indexPtreei].edges,treej)
                 push!(net.partition[indexPtreei].edges,newedge)
                 ind = getIndex(treei,net.partition[indexPtreei].edges)
@@ -473,7 +473,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
                 edges = hybridEdges(otherj)
                 for i in 1:3 #check of 3 edges inside hybridEdges
                     if(!isEqual(edges[i],treej) && !isEqual(edges[i],newedge))
-                        indexP = whichPartition(net,edges[i],node.number)
+                        indexP = whichpartition(net,edges[i],node.number)
                         for e in net.partition[indexP].edges
                             push!(net.partition[indexPtreei].edges,e)
                         end
@@ -483,15 +483,15 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
                     end
                 end
                 # -- update in cycle
-                newedge.inCycle = -1
+                inCycle!(newedge, -1)
                 switchCycleTree!(tree1,tree2,node)
-                otherj.inCycle = -1
-                node.k -= 1
+                inCycle!(otherj, -1)
+                k!(node, k(node) - 1)
                 return true
             else
                 # -- update partition
-                indexPnew = whichPartition(net,newedge,node.number)
-                indexPtreei = whichPartition(net,treei,node.number)
+                indexPnew = whichpartition(net,newedge,node.number)
+                indexPtreei = whichpartition(net,treei,node.number)
                 ind = getIndex(newedge,net.partition[indexPnew].edges)
                 deleteat!(net.partition[indexPnew].edges,ind)
                 ind = getIndex(treei,net.partition[indexPtreei].edges)
@@ -501,9 +501,9 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
             end
         end
     else #yes undo
-        if(newedge.inCycle == node.number)
+        if(inCycle(newedge) == node.number)
             # -- update partition
-            indexPtreei = whichPartition(net,treei,node.number)
+            indexPtreei = whichpartition(net,treei,node.number)
             push!(net.partition[indexPtreei].edges,treej)
             push!(net.partition[indexPtreei].edges,newedge)
             ind = getIndex(treei,net.partition[indexPtreei].edges)
@@ -511,7 +511,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
             edges = hybridEdges(otherj)
             for i in 1:3 #check of 3 edges inside hybridEdges
                 if(!isEqual(edges[i],treej) && !isEqual(edges[i],newedge))
-                    indexP = whichPartition(net,edges[i],node.number)
+                    indexP = whichpartition(net,edges[i],node.number)
                     for e in net.partition[indexP].edges
                         push!(net.partition[indexPtreei].edges,e)
                     end
@@ -521,14 +521,14 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
                 end
             end
             # -- update in cycle
-            newedge.inCycle = -1
+            inCycle!(newedge, -1)
             switchCycleTree!(tree1,tree2,node)
-            node.k -= 1
-            otherj.inCycle = -1
-        elseif(newedge.inCycle == -1)
+            k!(node, k(node) - 1)
+            inCycle!(otherj, -1)
+        elseif(inCycle(newedge) == -1)
             if(newedgeincycle)
                 # -- update partition
-                indexPtreei = whichPartition(net,treei,node.number)
+                indexPtreei = whichpartition(net,treei,node.number)
                 ind = getIndex(newedge,net.partition[indexPtreei].edges)
                 deleteat!(net.partition[indexPtreei].edges,ind)
                 ind = getIndex(treei,net.partition[indexPtreei].edges)
@@ -538,7 +538,7 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
                 for i in 1:3 #check of 3 edges inside hybridEdges
                     if(!isEqual(edges[i],treei) && !isEqual(edges[i],newedge))
                         descendants = [edges[i]]
-                        cycleNum = [node.inCycle]
+                        cycleNum = [inCycle(node)]
                         getDescendants!(getOtherNode(edges[i],otheri),edges[i],descendants,cycleNum)
                         !isempty(descendants) || error("descendants is empty for node $(otheri.number)")
                         @debug "for node $(otheri.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"
@@ -548,19 +548,19 @@ function moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, t
                             ind = getIndex(e,net.partition[indexPtreei].edges)
                             deleteat!(net.partition[indexPtreei].edges,ind)
                         end
-                        net.partition[indexPtreei].cycle = union([node.inCycle],symdiff(net.partition[indexPtreei].cycle,cycleNum))
+                        net.partition[indexPtreei].cycle = union([inCycle(node)],symdiff(net.partition[indexPtreei].cycle,cycleNum))
                         break
                     end
                 end
                 # -- update in cycle
-                newedge.inCycle = node.number
+                inCycle!(newedge, node.number)
                 switchCycleTree!(tree1,tree2,node)
-                otheri.inCycle = node.number
-                node.k += 1
+                inCycle!(otheri, node.number)
+                k!(node, k(node) + 1)
             else
                 # -- update partition
-                indexPnew = whichPartition(net,newedge,node.number)
-                indexPtreei = whichPartition(net,treei,node.number)
+                indexPnew = whichpartition(net,newedge,node.number)
+                indexPtreei = whichpartition(net,treei,node.number)
                 ind = getIndex(newedge,net.partition[indexPnew].edges)
                 deleteat!(net.partition[indexPnew].edges,ind)
                 ind = getIndex(treei,net.partition[indexPtreei].edges)
@@ -578,11 +578,11 @@ moveOrigin!(net::HybridNetwork,node::Node,othermin::Node,tree1::Edge, tree2::Edg
 # function to switch the cycle of 2 tree edges in moveTarget
 function switchCycleTree!(tree1::Edge, tree2::Edge, node::Node)
     (!tree1.hybrid && !tree2.hybrid) || error("tree1 edge $(tree1.number) and tree2 $(tree2.number) cannot be hybrid to switch incycle attribute")
-    (tree1.inCycle == node.number && tree2.inCycle == -1) || (tree2.inCycle == node.number && tree1.inCycle == -1) || error("tree1 edge or tree2 edge must by in cycle by node $(node.number) and the other -1, but: $([tree1.inCycle, tree2.inCycle])")
-    k = tree1.inCycle
-    m = tree2.inCycle
-    tree2.inCycle = k
-    tree1.inCycle = m
+    (inCycle(tree1) == node.number && inCycle(tree2) == -1) || (inCycle(tree2) == node.number && inCycle(tree1) == -1) || error("tree1 edge or tree2 edge must by in cycle by node $(node.number) and the other -1, but: $([inCycle(tree1), inCycle(tree2)])")
+    t1_incyc = inCycle(tree1)
+    t2_incyc = inCycle(tree2)
+    inCycle!(tree2, t1_incyc)
+    inCycle!(tree1, t2_incyc)
 end
 
 # function to choose minor/major hybrid edge
@@ -620,7 +620,7 @@ chooseMinorMajor(node::Node, random::Bool) = chooseMinorMajor(node, random, fals
 # that includes all the suitable neighbors of othermin
 # to move the origin
 function getNeighborsOrigin(othernode::Node)
-    othernode.hasHybEdge || error("other node $(othernode.number) should the attach to the hybrid edge whose origin will be moved")
+    hasHybEdge(othernode) || error("other node $(othernode.number) should the attach to the hybrid edge whose origin will be moved")
     !othernode.hybrid || error("other node $(othernode.number) must not be the hybrid node to move origin")
     edges = hybridEdges(othernode)
     length(edges) == 3 || error("length of node.edge for node $(othernode.number) should be 3, not $(length(edges))")
@@ -669,7 +669,7 @@ function moveOriginUpdate!(net::HybridNetwork, node::Node, othermin::Node, newed
         @debug "MOVE: undoing move origin for conflict: gammaz"
         moveOrigin!(net,node,othermin,tree1,tree2,newedge,true,newedgeincycle);
         flag2, edgesGammaz = updateGammaz!(net,node)
-        (flag2 || node.isVeryBadTriangle || node.isExtBadTriangle) || error("updating gammaz for undone moveOrigin, should not be any problem")
+        (flag2 || isVeryBadTriangle(node) || isExtBadTriangle(node)) || error("updating gammaz for undone moveOrigin, should not be any problem")
         CHECKNET && checkNet(net)
         return false, flag2
     end
@@ -770,11 +770,11 @@ function switchMajorTree!(major::Edge, tree::Edge, node::Node)
     major.hybrid || error("major edge $(major.number) has to be hybrid to switch to tree")
     @debug "switch major $(major.number) tree $(tree.number), node $(node.number)"
     g = major.gamma #needed because changed inside makeEdgeTree
-    cycle = major.inCycle #needed because changed inside makeEdgeTree
+    cycle = inCycle(major) #needed because changed inside makeEdgeTree
     makeEdgeTree!(major,node)
     makeEdgeHybrid!(tree,node,g)
-    tree.inCycle = cycle
-    major.inCycle = -1
+    inCycle!(tree, cycle)
+    inCycle!(major, -1)
 end
 
 # function to move the target of a hybrid edge
@@ -788,7 +788,7 @@ end
 function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, newedge::Edge, undo::Bool, newedgeincycle::Bool)
     node.hybrid || error("cannot move origin of hybridization because node $(node.number) is not hybrid")
     length(newedge.node) == 2 || error("strange edge $(newedge.number) that has $(size(newedge.node,1)) nodes instead of 2")
-    newedge.inCycle == node.number || newedge.inCycle == -1 || error("newedge in cycle must be -1 or $(node.number), not $(newedge.inCycle)")
+    inCycle(newedge) == node.number || inCycle(newedge) == -1 || error("newedge in cycle must be -1 or $(node.number), not $(inCycle(newedge))")
     in(newedge,net.edge) || error("newedge $(newedge.number) not in net.edge")
     othermajor = getOtherNode(major,node);
     treenode = getOtherNode(tree,node);
@@ -821,7 +821,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
         from_treenode = true
     end
     # -- alreadyNoRoot?
-    if(newedge.inCycle != -1)
+    if(inCycle(newedge) != -1)
         alreadyNoRoot = false
     else
         if(neighbor && from_othermajor)
@@ -831,7 +831,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                 if(!isEqual(e,major) && !isEqual(e,tree)) #looking for minor edge
                     o = getOtherNode(e,node)
                     for e2 in o.edge
-                        if(!e2.hybrid && e2.inCycle != -1)
+                        if(!e2.hybrid && inCycle(e2) != -1)
                             alreadyNoRoot = !e2.containroot
                             break
                         end
@@ -913,7 +913,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
     if(!undo)
         if(from_treenode)
             # -- update partition
-            indexPtree = whichPartition(net,tree,node.number)
+            indexPtree = whichpartition(net,tree,node.number)
             ind = getIndex(newedge,net.partition[indexPtree].edges)
             deleteat!(net.partition[indexPtree].edges,ind)
             ind = getIndex(tree,net.partition[indexPtree].edges)
@@ -923,7 +923,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
             for i in 1:3 #check of 3 edges inside hybridEdges
                 if(!isEqual(edges[i],tree) && !isEqual(edges[i],newedge))
                     descendants = [edges[i]]
-                    cycleNum = [node.inCycle]
+                    cycleNum = [inCycle(node)]
                     getDescendants!(getOtherNode(edges[i],treenode),edges[i],descendants,cycleNum)
                     !isempty(descendants) || error("descendants is empty for node $(treenode.number)")
                     @debug "for node $(treenode.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"
@@ -933,21 +933,21 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                         ind = getIndex(e,net.partition[indexPtree].edges)
                         deleteat!(net.partition[indexPtree].edges,ind)
                     end
-                    net.partition[indexPtree].cycle = union([node.inCycle],symdiff(net.partition[indexPtree].cycle,cycleNum))
+                    net.partition[indexPtree].cycle = union([inCycle(node)],symdiff(net.partition[indexPtree].cycle,cycleNum))
                     break
                 end
             end
             # -- update in cycle
             @debug "from treenode treatment, switch major $(major.number) to tree $(tree.number)"
             switchMajorTree!(major,tree,node)
-            node.k += 1
-            newedge.inCycle = node.number
-            treenode.inCycle = node.number
+            k!(node, k(node) + 1)
+            inCycle!(newedge, node.number)
+            inCycle!(treenode, node.number)
         elseif(from_othermajor)
-            if(newedge.inCycle == node.number)
+            if(inCycle(newedge) == node.number)
                 @debug "from othermajor and newedge incycle treatment, switch major $(major.number) to tree $(tree.number)"
                 # -- update partition
-                indexPtree = whichPartition(net,tree,node.number)
+                indexPtree = whichpartition(net,tree,node.number)
                 push!(net.partition[indexPtree].edges,major)
                 push!(net.partition[indexPtree].edges,newedge)
                 ind = getIndex(tree,net.partition[indexPtree].edges)
@@ -955,7 +955,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                 edges = hybridEdges(othermajor)
                 for i in 1:3 #check of 3 edges inside hybridEdges
                     if(!isEqual(edges[i],major) && !isEqual(edges[i],newedge))
-                        indexP = whichPartition(net,edges[i],node.number)
+                        indexP = whichpartition(net,edges[i],node.number)
                         for e in net.partition[indexP].edges
                             push!(net.partition[indexPtree].edges,e)
                         end
@@ -966,14 +966,14 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                 end
                 # -- update inCycle
                 switchMajorTree!(major,tree,node)
-                node.k -= 1
-                newedge.inCycle = -1
-                othermajor.inCycle = -1
+                k!(node, k(node) - 1)
+                inCycle!(newedge, -1)
+                inCycle!(othermajor, -1)
                 return true, alreadyNoRoot
             else
                 # -- update partition
-                indexPnew = whichPartition(net,newedge,node.number)
-                indexPtree = whichPartition(net,tree,node.number)
+                indexPnew = whichpartition(net,newedge,node.number)
+                indexPtree = whichpartition(net,tree,node.number)
                 ind = getIndex(newedge,net.partition[indexPnew].edges)
                 deleteat!(net.partition[indexPnew].edges,ind)
                 ind = getIndex(tree,net.partition[indexPtree].edges)
@@ -981,13 +981,13 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                 push!(net.partition[indexPnew].edges,tree)
                 push!(net.partition[indexPtree].edges,newedge)
                 # -- update in cycle
-                major.istIdentifiable = isEdgeIdentifiable(major)
+                istIdentifiable!(major, isEdgeIdentifiable(major))
             end
         end
     else
         if(from_treenode)
             # -- update partition
-            indexPmajor = whichPartition(net,major,node.number)
+            indexPmajor = whichpartition(net,major,node.number)
             push!(net.partition[indexPmajor].edges,tree)
             push!(net.partition[indexPmajor].edges,newedge)
             ind = getIndex(major,net.partition[indexPmajor].edges)
@@ -995,7 +995,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
             edges = hybridEdges(treenode)
             for i in 1:3 #check of 3 edges inside hybridEdges
                 if(!isEqual(edges[i],tree) && !isEqual(edges[i],newedge))
-                    indexP = whichPartition(net,edges[i],node.number)
+                    indexP = whichpartition(net,edges[i],node.number)
                     for e in net.partition[indexP].edges
                         push!(net.partition[indexPmajor].edges,e)
                     end
@@ -1006,13 +1006,13 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
             end
             # -- update in cycle
             switchMajorTree!(tree,major,node)
-            node.k -= 1
-            newedge.inCycle = -1
-            treenode.inCycle = -1
+            k!(node, k(node) - 1)
+            inCycle!(newedge, -1)
+            inCycle!(treenode, -1)
         elseif(from_othermajor)
             if(newedgeincycle)
                 # -- update partition
-                indexPmajor = whichPartition(net,major,node.number)
+                indexPmajor = whichpartition(net,major,node.number)
                 ind = getIndex(major,net.partition[indexPmajor].edges)
                 deleteat!(net.partition[indexPmajor].edges,ind) #delete major
                 ind = getIndex(newedge,net.partition[indexPmajor].edges)
@@ -1022,7 +1022,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                 for i in 1:3 #check of 3 edges inside hybridEdges
                     if(!isEqual(edges[i],major) && !isEqual(edges[i],newedge))
                         descendants = [edges[i]]
-                        cycleNum = [node.inCycle]
+                        cycleNum = [inCycle(node)]
                         getDescendants!(getOtherNode(edges[i],othermajor),edges[i],descendants,cycleNum)
                         !isempty(descendants) || error("descendants is empty for node $(othermajor.number)")
                         @debug "for node $(othermajor.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"
@@ -1032,19 +1032,19 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                             ind = getIndex(e,net.partition[indexPmajor].edges)
                             deleteat!(net.partition[indexPmajor].edges,ind)
                         end
-                        net.partition[indexPmajor].cycle = union([node.inCycle],symdiff(net.partition[indexPmajor].cycle,cycleNum))
+                        net.partition[indexPmajor].cycle = union([inCycle(node)],symdiff(net.partition[indexPmajor].cycle,cycleNum))
                         break
                     end
                 end
                 # -- update inCycle
                 switchMajorTree!(tree,major,node)
-                node.k += 1
-                newedge.inCycle = node.number
-                othermajor.inCycle = node.number
+                k!(node, k(node) + 1)
+                inCycle!(newedge, node.number)
+                inCycle!(othermajor, node.number)
             else
                 # -- update partition
-                indexPnew = whichPartition(net,newedge,node.number)
-                indexPtree = whichPartition(net,tree,node.number)
+                indexPnew = whichpartition(net,newedge,node.number)
+                indexPtree = whichpartition(net,tree,node.number)
                 ind = getIndex(newedge,net.partition[indexPnew].edges)
                 deleteat!(net.partition[indexPnew].edges,ind)
                 ind = getIndex(tree,net.partition[indexPtree].edges)
@@ -1052,7 +1052,7 @@ function moveTarget!(net::HybridNetwork,node::Node, major::Edge, tree::Edge, new
                 push!(net.partition[indexPnew].edges,tree)
                 push!(net.partition[indexPtree].edges,newedge)
                 # -- update in cycle
-                major.istIdentifiable = isEdgeIdentifiable(major)
+                istIdentifiable!(major, isEdgeIdentifiable(major))
             end
         end
     end
@@ -1080,7 +1080,7 @@ adjacent to the parent node of `majoredge` or to the tree child of `hybrid_node`
 
 Output: tuple of 3 booleans `(success, flag_triangle, flag_root)`.
 - `success` is false if the move failed (lead to an invalid network for SNaQ)
-- `flag_triangle` is false if `net.hasVeryBadTriangle`
+- `flag_triangle` is false if `hasVeryBadTriangle(net)`
 - `flag_root` is false if the set of edges to place the root is empty
 If `success` is false, then the flags are not meant to be used downstream.
 """
@@ -1089,9 +1089,9 @@ function moveTargetUpdate!(net::HybridNetwork, node::Node, majoredge::Edge, newe
     node.hybrid || error("node $(node.number) is not hybrid, so we cannot delete hybridization event around it")
     @debug "MOVE: move Target for hybrid node $(node.number)"
     # reject the move if `node` is in a 3-cycle and `newedge` is in that cycle
-    if node.k == 3 && newedge.inCycle == node.number
+    if k(node) == 3 && inCycle(newedge) == node.number
         # then invalid move: would create a 2-cycle
-        node.isBadTriangle || @warn "network with a not-nice 3-cycle (at least 1 block has a single taxon)"
+        isBadTriangle(node) || @warn "network with a not-nice 3-cycle (at least 1 block has a single taxon)"
         return false,false,false
     end
     in(newedge,net.edge) || error("newedge $(newedge.number) not in net.edge")
@@ -1121,7 +1121,7 @@ function moveTargetUpdate!(net::HybridNetwork, node::Node, majoredge::Edge, newe
             moveTarget!(net,node,majoredge,tree,newedge,true,newedgeincycle);
             flag2, edgesGammaz = updateGammaz!(net,node)
             #@debug "undoContainRoot for edges $([e.number for e in edgesRoot])"
-            (flag2 || node.isVeryBadTriangle || node.isExtBadTriangle) || error("updating gammaz/root for undone moveTarget, should not be any problem, but flag2 $(flag2) and node not very/ext bad triangle")
+            (flag2 || isVeryBadTriangle(node) || isExtBadTriangle(node)) || error("updating gammaz/root for undone moveTarget, should not be any problem, but flag2 $(flag2) and node not very/ext bad triangle")
             CHECKNET && checkNet(net)
             return false, flag2,flag3
         end
@@ -1140,7 +1140,7 @@ function moveTargetUpdate!(net::HybridNetwork, node::Node, majoredge::Edge, newe
         moveTarget!(net,node,majoredge,tree,newedge,true,newedgeincycle);
         flag2, edgesGammaz = updateGammaz!(net,node)
         #@debug "undoContainRoot for edges $([e.number for e in edgesRoot])"
-        (flag2 || node.isVeryBadTriangle || node.isExtBadTriangle) || error("updating gammaz/root for undone moveTarget, should not be any problem, but flag2 $(flag2) and node not very/ext bad triangle")
+        (flag2 || isVeryBadTriangle(node) || isExtBadTriangle(node)) || error("updating gammaz/root for undone moveTarget, should not be any problem, but flag2 $(flag2) and node not very/ext bad triangle")
         CHECKNET && checkNet(net)
         return false, flag2, false
     end
@@ -1214,7 +1214,7 @@ end
 # do not have hybrid edges
 function hasNeighborHybrid(edge::Edge)
     length(edge.node) == 2 || error("edge $(edge.number) has $(length(edge.node)) nodes, should be 2")
-    return edge.node[1].hasHybEdge || edge.node[2].hasHybEdge
+    return hasHybEdge(edge.node[1]) || hasHybEdge(edge.node[2])
 end
 
 # function to choose a tree edge for NNI
@@ -1289,27 +1289,27 @@ function NNI!(net::Network,edge::Edge)
     n2 = edge.node[2]
     nohybrid = false
     @debug "e1 is $(e1.number), e2 is $(e2.number), e3 is $(e3.number), e4 is $(e4.number), n1 is $(n1.number), n2 is $(n2.number)"
-    if(edge.inCycle != -1)
-        node = net.node[getIndexNode(edge.inCycle,net)]
-        node.hybrid || error("edge $(edge.number) has incycle $(edge.inCycle) but node $(node.number) is not hybrid")
-        (n1.inCycle == edge.inCycle && n2.inCycle == edge.inCycle) || error("edge $(edge.number) is in cycle $(edge.inCycle) but its nodes are not: $(n1.number), $(n2.number)")
-        if((e2.inCycle == e3.inCycle == edge.inCycle && e1.inCycle == e4.inCycle == -1) || (e1.inCycle == e4.inCycle == edge.inCycle && e2.inCycle == e3.inCycle == -1))
+    if(inCycle(edge) != -1)
+        node = net.node[getIndexNode(inCycle(edge),net)]
+        node.hybrid || error("edge $(edge.number) has incycle $(inCycle(edge)) but node $(node.number) is not hybrid")
+        (inCycle(n1) == inCycle(edge) && inCycle(n2) == inCycle(edge)) || error("edge $(edge.number) is in cycle $(inCycle(edge)) but its nodes are not: $(n1.number), $(n2.number)")
+        if((inCycle(e2) == inCycle(e3) == inCycle(edge) && inCycle(e1) == inCycle(e4) == -1) || (inCycle(e1) == inCycle(e4) == inCycle(edge) && inCycle(e2) == inCycle(e3) == -1))
             nothing
-        elseif((e2.inCycle == e4.inCycle == edge.inCycle && e1.inCycle == e3.inCycle == -1) || (e1.inCycle == e3.inCycle == edge.inCycle && e2.inCycle == e4.inCycle == -1))
+        elseif((inCycle(e2) == inCycle(e4) == inCycle(edge) && inCycle(e1) == inCycle(e3) == -1) || (inCycle(e1) == inCycle(e3) == inCycle(edge) && inCycle(e2) == inCycle(e4) == -1))
             # -- update partition
-            if(e2.inCycle != -1)
-                indexPe3 = whichPartition(net,e3,node.number)
+            if(inCycle(e2) != -1)
+                indexPe3 = whichpartition(net,e3,node.number)
                 part = splice!(net.partition,indexPe3) # delete partition e3
-                indexPe1 = whichPartition(net,e1,node.number)
+                indexPe1 = whichpartition(net,e1,node.number)
                 for e in part.edges
                     push!(net.partition[indexPe1].edges,e) #put into partition e1
                 end
                 push!(net.partition[indexPe1].edges,edge) #put edge into partition e1
                 net.partition[indexPe1].cycle = union(net.partition[indexPe1].cycle,part.cycle)
             else
-                indexPe2 = whichPartition(net,e2,node.number)
+                indexPe2 = whichpartition(net,e2,node.number)
                 part = splice!(net.partition,indexPe2) # delete partition e2
-                indexPe4 = whichPartition(net,e4,node.number)
+                indexPe4 = whichpartition(net,e4,node.number)
                 @debug "deleted partition $([e.number for e in part.edges]) from net.partition"
                 for e in part.edges
                     @debug "partition for e4 is $([e.number for e in net.partition[indexPe4].edges]), pushing edge $(e.number)"
@@ -1322,36 +1322,36 @@ function NNI!(net::Network,edge::Edge)
                 @debug "new partition has cycle $(net.partition[indexPe4].cycle)"
             end
             # -- update inCycle
-            @debug "incycle e1 $(e1.inCycle), e2 $(e2.inCycle), e3 $(e3.inCycle), e4 $(e4.inCycle), edge $(edge.inCycle)"
-            if(e2.inCycle == e4.inCycle == edge.inCycle)
-                edge.inCycle = -1
-                n1.inCycle = -1
-                node.k -= 1;
-            elseif(e1.inCycle == e3.inCycle == edge.inCycle)
-                edge.inCycle = -1
-                n2.inCycle = -1
-                node.k -= 1;
+            @debug "incycle e1 $(inCycle(e1)), e2 $(inCycle(e2)), e3 $(inCycle(e3)), e4 $(inCycle(e4)), edge $(inCycle(edge))"
+            if(inCycle(e2) == inCycle(e4) == inCycle(edge))
+                inCycle!(edge, -1)
+                inCycle!(n1, -1)
+                k!(node, k(node) - 1)
+            elseif(inCycle(e1) == inCycle(e3) == inCycle(edge))
+                inCycle!(edge, -1)
+                inCycle!(n2, -1)
+                k!(node, k(node) - 1)
             end
         else
-            error("internal edge $(edge.number) is in cycle $(edge.inCycle), but it is not consistent with other edges")
+            error("internal edge $(edge.number) is in cycle $(inCycle(edge)), but it is not consistent with other edges")
         end
     else #edge not in cycle
-        (e1.inCycle == e2.inCycle && e3.inCycle == e4.inCycle) || error("both edges in edges1 $([e.number for e in edges1]) (or edges2 $([e.number for e in edges2])) must have the same inCycle attribute")
-        if(e1.inCycle != -1 && e3.inCycle != -1)
+        (inCycle(e1) == inCycle(e2) && inCycle(e3) == inCycle(e4)) || error("both edges in edges1 $([e.number for e in edges1]) (or edges2 $([e.number for e in edges2])) must have the same inCycle attribute")
+        if(inCycle(e1) != -1 && inCycle(e3) != -1)
             @debug "cannot do tree NNI because it will create intersecting cycles, nothing done. e1,e2,e3,e4: $([e1.number,e2.number,e3.number,e4.number])"
             return false
-        elseif(e1.inCycle != -1 && e3.inCycle == -1)
-            node = net.node[getIndexNode(e1.inCycle,net)]
-            node.hybrid || error("edge $(ed1.number) has incycle $(ed1.inCycle) but node $(node.number) is not hybrid")
+        elseif(inCycle(e1) != -1 && inCycle(e3) == -1)
+            node = net.node[getIndexNode(inCycle(e1),net)]
+            node.hybrid || error("edge $(ed1.number) has incycle $(inCycle(ed1)) but node $(node.number) is not hybrid")
             # -- update partition
-            indexP = whichPartition(net,edge,node.number) # find partition where edge is
+            indexP = whichpartition(net,edge,node.number) # find partition where edge is
             ind = getIndex(edge,net.partition[indexP].edges)
             deleteat!(net.partition[indexP].edges,ind)
             edges = hybridEdges(n2)
             for i in 1:3 #check of 3 edges inside hybridEdges
                 if(!isEqual(edges[i],e4) && !isEqual(edges[i],edge))
                     descendants = [edges[i]]
-                    cycleNum = [node.inCycle]
+                    cycleNum = [inCycle(node)]
                     getDescendants!(getOtherNode(edges[i],n2),edges[i],descendants,cycleNum)
                     !isempty(descendants) || error("descendants is empty for node $(n2.number)")
                     @debug "for node $(n2.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"
@@ -1361,26 +1361,26 @@ function NNI!(net::Network,edge::Edge)
                         ind = getIndex(e,net.partition[indexP].edges)
                         deleteat!(net.partition[indexP].edges,ind)
                     end
-                    net.partition[indexP].cycle = union([node.inCycle],symdiff(net.partition[indexP].cycle,cycleNum))
+                    net.partition[indexP].cycle = union([inCycle(node)],symdiff(net.partition[indexP].cycle,cycleNum))
                     break
                 end
             end
             # -- update in cycle
-            edge.inCycle = e1.inCycle
-            n2.inCycle = e1.inCycle
-            node.k += 1
-        elseif(e3.inCycle != -1 && e1.inCycle == -1)
-            node = net.node[getIndexNode(e3.inCycle,net)]
-            node.hybrid || error("edge $(ed3.number) has incycle $(ed3.inCycle) but node $(node.number) is not hybrid")
+            inCycle!(edge, inCycle(e1))
+            inCycle!(n2, inCycle(e1))
+            k!(node, k(node) + 1)
+        elseif(inCycle(e3) != -1 && inCycle(e1) == -1)
+            node = net.node[getIndexNode(inCycle(e3),net)]
+            node.hybrid || error("edge $(ed3.number) has incycle $(inCycle(ed3)) but node $(node.number) is not hybrid")
             # -- update partition
-            indexP = whichPartition(net,edge,node.number) # find partition where edge is
+            indexP = whichpartition(net,edge,node.number) # find partition where edge is
             ind = getIndex(edge,net.partition[indexP].edges)
             deleteat!(net.partition[indexP].edges,ind)
             edges = hybridEdges(n1)
             for i in 1:3 #check of 3 edges inside hybridEdges
                 if(!isEqual(edges[i],e1) && !isEqual(edges[i],edge))
                     descendants = [edges[i]]
-                    cycleNum = [node.inCycle]
+                    cycleNum = [inCycle(node)]
                     getDescendants!(getOtherNode(edges[i],n1),edges[i],descendants,cycleNum)
                     !isempty(descendants) || error("descendants is empty for node $(n1.number)")
                     @debug "for node $(n1.number), descendants are $([e.number for e in descendants]), and cycleNum is $(cycleNum)"
@@ -1390,14 +1390,14 @@ function NNI!(net::Network,edge::Edge)
                         ind = getIndex(e,net.partition[indexP].edges)
                         deleteat!(net.partition[indexP].edges,ind)
                     end
-                    net.partition[indexP].cycle = union([node.inCycle],symdiff(net.partition[indexP].cycle,cycleNum))
+                    net.partition[indexP].cycle = union([inCycle(node)],symdiff(net.partition[indexP].cycle,cycleNum))
                     break
                 end
             end
             # -- update in cycle
-            edge.inCycle = e3.inCycle
-            n1.inCycle = e3.inCycle
-            node.k += 1
+            inCycle!(edge, inCycle(e3))
+            inCycle!(n1, inCycle(e3))
+            k!(node, k(node) + 1)
         else
             nohybrid = true
         end

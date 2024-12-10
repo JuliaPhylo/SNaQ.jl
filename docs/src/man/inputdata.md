@@ -82,7 +82,7 @@ To read in all gene trees and directly summarize them by a list
 of quartet CFs (proportion of input trees with a given quartet):
 ```@repl qcf
 q,t = countquartetsintrees(genetrees); # read in trees, calculate quartet CFs
-df = writeTableCF(q,t)   # data frame with observed CFs: gene frequencies
+df = tablequartetCF(q,t)   # data frame with observed CFs: gene frequencies
 using CSV
 CSV.write("tableCF.csv", df); # to save the data frame to a file
 raxmlCF = readTableCF("tableCF.csv") # read in the file and produces a "DataCF" object
@@ -144,7 +144,7 @@ using CSV, DataFrames
 dat = CSV.read(buckyCFfile, DataFrame);
 first(dat, 6) # to see the first 6 rows
 buckyCF = readTableCF(dat)
-writeTableCF(buckyCF)
+tablequartetCF(buckyCF)
 ```
 In the input file, columns need to be in the right order:
 with the first 4 columns giving the names of the taxa in each 4-taxon set.

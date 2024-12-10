@@ -1,6 +1,7 @@
 # functions to try to debug cui3.out
 # converted to test function
 
+SNaQ.setCHECKNET(true)
 SNaQ.CHECKNET || error("need CHECKNET==true in PhyloNetworks to test snaq in test_correctLik.jl")
 
 @testset "test: level-1 partitions" begin
@@ -10,7 +11,7 @@ text = "(Xmayae,((Xhellerii,(((Xclemenciae_F2,Xmonticolus):1.458,(((((Xmontezuma
 
 #net = readnewick("cui3.out")
 net = readnewick(text)
-#printPartitions(net)
+#printpartitions(net)
 #printedges(net)
 cleanBL!(net)
 cleanAfterRead!(net,false)
@@ -27,8 +28,8 @@ flag, nocycle, edgesInCycle, nodesInCycle = updateInCycle!(net,n);
 flag2, edgesGammaz = updateGammaz!(net,n,false);
 @test flag2
 @test isempty([n.number for n in edgesGammaz])
-@test !n.isBadDiamondI
-@test !n.isBadDiamondII
+@test !isBadDiamondI(n)
+@test !isBadDiamondII(n)
 flag3, edgesRoot = updateContainRoot!(net,n);
 @test flag3
 @test [n.number for n in edgesRoot] == [7]
@@ -43,8 +44,8 @@ flag, nocycle, edgesInCycle, nodesInCycle = updateInCycle!(net,n);
 flag2, edgesGammaz = updateGammaz!(net,n,false);
 @test flag2
 @test isempty([n.number for n in edgesGammaz])
-@test !n.isBadDiamondI
-@test !n.isBadDiamondII
+@test !isBadDiamondI(n)
+@test !isBadDiamondII(n)
 flag3, edgesRoot = updateContainRoot!(net,n);
 @test flag3
 @test [n.number for n in edgesRoot] == [25,15,9,6,14,12,10,11,13,24,23,19,17,18,22,20,21]
@@ -59,8 +60,8 @@ flag, nocycle, edgesInCycle, nodesInCycle = updateInCycle!(net,n);
 flag2, edgesGammaz = updateGammaz!(net,n,false);
 @test flag2
 @test isempty([n.number for n in edgesGammaz])
-@test !n.isBadDiamondI
-@test !n.isBadDiamondII
+@test !isBadDiamondI(n)
+@test !isBadDiamondII(n)
 flag3, edgesRoot = updateContainRoot!(net,n);
 @test flag3
 @test [n.number for n in edgesRoot] == [47,5,3,4,46,45,27,44,28,43,29,42,32,30,41,33,40,34,39,35,38,36,37]
@@ -110,5 +111,5 @@ updatePartition!(net,nodesInCycle)
 @test [n.number for n in net.partition[14].edges] == [50]
 @test [n.number for n in net.partition[15].edges] == [2]
 end
-#printPartitions(net)
+#printpartitions(net)
 end

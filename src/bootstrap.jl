@@ -115,7 +115,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
     if inputastrees # allocate memory, to be re-used later
         newtrees = samplebootstrap_multiloci(data, row=1)
         newd = readTrees2CF(newtrees, quartetfile=quartetfile, writeTab=false, writeSummary=false)
-        taxa = unionTaxa(newtrees)
+        taxa = tiplabels(newtrees)
     else
         newdf = sampleCFfromCI(data, -1) # column names check, newdf has obsCF in columns 5-7
         # seed=-1: deep copy only, no rand()
@@ -184,7 +184,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             end
         end
         if runs1>0 && runs2>0
-            net = (net1.loglik < net2.loglik ? net1 : net2)
+            net = (loglik(net1) < loglik(net2) ? net1 : net2)
         end
         writelog && flush(logfile)
 
@@ -207,7 +207,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         else
             write(s,"$(writenewick_level1(n,outgroup))\n")
         end
-        # "with -loglik $(n.loglik)" not printed: not comparable across bootstrap networks
+        # "with -loglik $(loglik(n))" not printed: not comparable across bootstrap networks
       end
       close(s)
     end

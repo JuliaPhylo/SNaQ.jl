@@ -98,7 +98,7 @@ function printedges(io::IO, net::QuartetNetwork)
     for e in net.edge
         @printf(io, "%-4d %-6d %-6d ", e.number, getparent(e).number, getchild(e).number)
         @printf(io, "%-7.3f %-6s %-7s ", e.length, e.hybrid, e.ismajor)
-        @printf(io, "%-7.4g %-11s %-7d %-5s\n", e.gamma, e.containroot, e.inCycle, e.istIdentifiable)
+        @printf(io, "%-7.4g %-11s %-7d %-5s\n", e.gamma, e.containroot, inCycle(e), istIdentifiable(e))
     end
 end
 
@@ -119,7 +119,7 @@ function setLength!(edge::Edge, new_length::Number, negative::Bool)
     edge.length = new_length;
     edge.y = exp(-new_length);
     edge.z = 1.0 - edge.y;
-    #edge.istIdentifiable || @warn "set edge length for edge $(edge.number) that is not identifiable"
+    #istIdentifiable(edge) || @warn "set edge length for edge $(edge.number) that is not identifiable"
     return nothing
 end
 
@@ -154,7 +154,7 @@ but does not update anything else than γ and t's.
 Unlike `undoGammaz!`, no error if non-hybrid `node` or not at bad diamond I.
 """
 function setGammaBLfromGammaz!(node::Node, net::HybridNetwork)
-    if !node.isBadDiamondI || !node.hybrid
+    if !isBadDiamondI(node) || !node.hybrid
         return nothing
     end
     edge_maj, edge_min, tree_edge2 = hybridEdges(node);
@@ -162,17 +162,17 @@ function setGammaBLfromGammaz!(node::Node, net::HybridNetwork)
     other_min = getOtherNode(edge_min,node);
     edgebla,tree_edge_incycle1,tree_edge = hybridEdges(other_min);
     edgebla,tree_edge_incycle2,tree_edge = hybridEdges(other_maj);
-    if(approxEq(other_maj.gammaz,0.0) && approxEq(other_min.gammaz,0.0))
+    if(approxEq(gammaz(other_maj),0.0) && approxEq(gammaz(other_min),0.0))
         edge_maj.gamma = 1.0 # γ and t could be anything if both gammaz are 0
         edge_min.gamma = 0.0 # will set t's to 0 and minor γ to 0.
         newt = 0.0
     else
-        ((approxEq(other_min.gammaz,0.0) || other_min.gammaz >= 0.0) &&
-         (approxEq(other_maj.gammaz,0.0) || other_maj.gammaz >= 0.0)    ) ||
+        ((approxEq(gammaz(other_min),0.0) || gammaz(other_min) >= 0.0) &&
+         (approxEq(gammaz(other_maj),0.0) || gammaz(other_maj) >= 0.0)    ) ||
             error("bad diamond I in node $(node.number) but missing (or <0) gammaz")
-        ztotal = other_maj.gammaz + other_min.gammaz
-        edge_maj.gamma = other_maj.gammaz / ztotal
-        edge_min.gamma = other_min.gammaz / ztotal
+        ztotal = gammaz(other_maj) + gammaz(other_min)
+        edge_maj.gamma = gammaz(other_maj) / ztotal
+        edge_min.gamma = gammaz(other_min) / ztotal
         newt = -log(1-ztotal)
     end
     setLength!(tree_edge_incycle1,newt)
@@ -225,18 +225,18 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
         all(x->x.ismajor,net.edge) || error("net is a tree, but not all edges are major")
         all(x->!(x.hybrid),net.edge) || error("net is a tree, but not all edges are tree")
         all(x->!(x.hybrid),net.node) || error("net is a tree, but not all nodes are tree")
-        all(x->!(x.hasHybEdge),net.node) || error("net is a tree, but not all nodes hasHybEdge=false")
+        all(x->!(hasHybEdge(x)),net.node) || error("net is a tree, but not all nodes hasHybEdge=false")
         all(x->(x.gamma == 1.0 ? true : false),net.edge) || error("net is a tree, but not all edges have gamma 1.0")
     end
     for h in net.hybrid
         if(isBadTriangle(h))
             @debug "hybrid $(h.number) is very bad triangle"
-            net.hasVeryBadTriangle || error("hybrid node $(h.number) is very bad triangle, but net.hasVeryBadTriangle is $(net.hasVeryBadTriangle)")
-            h.isVeryBadTriangle || h.isExtBadTriangle || error("hybrid node $(h.number) is very bad triangle but it does not know it")
+            hasVeryBadTriangle(net) || error("hybrid node $(h.number) is very bad triangle, but hasVeryBadTriangle(net) is $(hasVeryBadTriangle(net))")
+            isVeryBadTriangle(h) || isExtBadTriangle(h) || error("hybrid node $(h.number) is very bad triangle but it does not know it")
         end
         nocycle,edges,nodes = identifyInCycle(net,h)
         for e in edges
-            e.inCycle == h.number || error("edge $(e.number) is in cycle of hybrid node $(h.number) but its inCycle attribute is $(e.inCycle)")
+            inCycle(e) == h.number || error("edge $(e.number) is in cycle of hybrid node $(h.number) but its inCycle attribute is $(inCycle(e))")
             if(e.length == -1.0)
                 if(light)
                     return true
@@ -247,24 +247,24 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
             if(e.hybrid)
                 !e.containroot || error("hybrid edge $(e.number) should not contain root") # fixit: disagree
                 o = getOtherNode(e,h)
-                o.hasHybEdge || error("found node $(o.number) attached to hybrid edge but hasHybEdge=$(o.hasHybEdge)")
+                hasHybEdge(o) || error("found node $(o.number) attached to hybrid edge but hasHybEdge=$(hasHybEdge(o))")
             end
         end
         for n in nodes
-            n.inCycle == h.number || error("node $(n.number) is in cycle of hybrid node $(h.number) but its inCycle attribute is $(n.inCycle)")
+            inCycle(n) == h.number || error("node $(n.number) is in cycle of hybrid node $(h.number) but its inCycle attribute is $(inCycle(n))")
             e1,e2,e3 = hybridEdges(n)
             i = 0
             for e in [e1,e2,e3]
-                if(isa(e,Nothing) && h.k != 2)
-                    error("edge found that is Nothing, and hybrid node $(h.number) k is $(h.k). edge as nothing can only happen when k=2")
+                if(isa(e,Nothing) && k(h) != 2)
+                    error("edge found that is Nothing, and hybrid node $(h.number) k is $(k(h)). edge as nothing can only happen when k=2")
                 elseif(!isa(e,Nothing))
-                    if(e.inCycle == -1)
+                    if(inCycle(e) == -1)
                         i += 1
                         desc = [e]
                         cycleNum = [h.number]
                         getDescendants!(getOtherNode(e,n),e,desc,cycleNum)
                         if(checkPartition && !isPartitionInNet(net,desc,cycleNum))
-                            printPartitions(net)
+                            printpartitions(net)
                             error("partition with cycle $(cycleNum) and edges $([e.number for e in desc]) not found in net.partition")
                         end
                     end
@@ -316,14 +316,14 @@ checkNet(net::HybridNetwork) = checkNet(net, false)
 function printEverything(net::HybridNetwork)
     printedges(net)
     printnodes(net)
-    printPartitions(net)
+    printpartitions(net)
     println("$(writenewick_level1(net))")
 end
 
 # function to check if a node is very or ext bad triangle
 function isBadTriangle(node::Node)
-    node.hybrid || error("cannot check if node $(node.number) is very bad triangle because it is not hybrid")
-    if(node.k == 3)
+    node.hybrid || return false #error("cannot check if node $(node.number) is very bad triangle because it is not hybrid")
+    if(k(node) == 3)
         edgemaj, edgemin, treeedge = hybridEdges(node)
         othermaj = getOtherNode(edgemaj,node)
         othermin = getOtherNode(edgemin,node)
@@ -347,10 +347,10 @@ end
 # function to switch a hybrid node in a network to another node in the cycle
 function switchHybridNode!(net::HybridNetwork, hybrid::Node, newHybrid::Node)
     hybrid.hybrid || error("node $(hybrid.number) has to be hybrid to switch to a different hybrid")
-    newHybrid.inCycle == hybrid.number || error("new hybrid needs to be in the cycle of old hybrid: $(hybrid.number)")
+    inCycle(newHybrid) == hybrid.number || error("new hybrid needs to be in the cycle of old hybrid: $(hybrid.number)")
     !newHybrid.hybrid || error("strange hybrid node $(newHybrid.number) in cycle of another hybrid $(hybrid.number)")
     newHybrid.hybrid = true
-    newHybrid.hasHybEdge = true
+    hasHybEdge!(newHybrid, true)
     newHybrid.name = hybrid.name
     pushHybrid!(net,newHybrid)
     makeNodeTree!(net,hybrid)

@@ -40,7 +40,7 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
                 end
                 hyb = count([e.hybrid for e in n.edge])
                 if hyb == 1
-                    n.hasHybEdge == true;
+                    hasHybEdge(n) == true;
                 elseif hyb > 1
                     @warn "strange tree node $(n.number) with more than one hybrid edge, intersecting cycles maybe"
                 end
@@ -112,22 +112,22 @@ function updateAllReadTopology!(net::HybridNetwork)
         #@warn "not a network read, but a tree as it does not have hybrid nodes"
         all((e->e.containroot), net.edge) ? nothing : error("some tree edge has contain root as false")
         all((e->!e.hybrid), net.edge) ? nothing : error("some edge is hybrid and should be all tree edges in a tree")
-        all((n->!n.hasHybEdge), net.node) ? nothing : error("some tree node has hybrid edge true, but it is a tree, there are no hybrid edges")
+        all((n->!hasHybEdge(n)), net.node) ? nothing : error("some tree node has hybrid edge true, but it is a tree, there are no hybrid edges")
     else
-        if(!net.cleaned)
+        if(!cleaned(net))
             for n in net.hybrid
                 success,hyb,flag,nocycle,flag2,flag3 = updateAllNewHybrid!(n,net,false,true,false)
                 if(!success)
                     @warn "current hybrid $(n.number) conflicts with previous hybrid by intersecting cycles: $(!flag), nonidentifiable topology: $(!flag2), empty space for contain root: $(!flag3), or does not create a cycle (probably problem with the root placement): $(nocycle)."
-                    #net.cleaned = false
+                    #cleaned!(net, false)
                 end
             end
             @debug "before update partition"
-            @debug begin printPartitions(net); "printed partitions" end
+            @debug begin printpartitions(net); "printed partitions" end
             for n in net.hybrid #need to updatePartition after all inCycle
                 nocycle, edgesInCycle, nodesInCycle = identifyInCycle(net,n);
                 updatePartition!(net,nodesInCycle)
-                @debug begin printPartitions(net);
+                @debug begin printpartitions(net);
                     "partitions after updating partition for hybrid node $(n.number)"
                 end
             end
@@ -152,7 +152,7 @@ function cleanAfterReadAll!(net::HybridNetwork, leaveRoot::Bool)
     @debug "check root placement -----"
     checkRootPlace!(net)
     getroot(net).leaf && @warn "root node $(getroot(net).number) is a leaf, so when plotting net, it can look weird"
-    net.cleaned = true #fixit: set to false inside updateAllReadTopology if problem encountered
+    cleaned!(net, true) #fixit: set to false inside updateAllReadTopology if problem encountered
     net.isrooted = false
 end
 
@@ -257,7 +257,7 @@ function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Boo
            outgroup::AbstractString, printID::Bool, roundBL::Bool, digits::Integer, multall::Bool)
     global CHECKNET
     net = deepcopy(net0) #writenewick_level1 needs containroot, but should not alter net0
-    # net.numBad == 0 || println("network with $(net.numBad) bad diamond I. Some γ and edge lengths t are not identifiable, although their γ * (1-exp(-t)) are.")
+    # numBad(net) == 0 || println("network with $(numBad(net)) bad diamond I. Some γ and edge lengths t are not identifiable, although their γ * (1-exp(-t)) are.")
     if printID
         setNonIdBL!(net) # changes non identifiable BL to -1.0, except those in/below bad diamonds/triangles.
     end
@@ -265,7 +265,7 @@ function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Boo
     if net.numnodes == 1
         print(s,string(getroot(net).number,";")) # error if 'string' is an argument name.
     else
-        if(!isTree(net) && !net.cleaned)
+        if(!isTree(net) && !cleaned(net))
             @debug "net not cleaned inside writenewick_level1, need to run updateContainRoot"
             for n in net.hybrid
                 flag,edges = updateContainRoot!(net,n)
@@ -368,8 +368,8 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
             max_node = maximum([e.number for e in net.node]);
             newedge = Edge(max_edge+1) #fixit: maybe this edge not identifiable, need to add that check
             newnode = Node(max_node+1,false,false,[edge,newedge])
-            if(net.cleaned && !isTree(net) && !isempty(net.partition)) # fixit: this will crash if network estimated with snaq, and then manipulated
-                part = whichPartition(net,edge)
+            if(cleaned(net) && !isTree(net) && !isempty(net.partition)) # fixit: this will crash if network estimated with snaq, and then manipulated
+                part = whichpartition(net,edge)
                 push!(net.partition[part].edges,newedge)
             end
             setNode!(edge,newnode)
@@ -401,7 +401,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
 # by the containroot attribute of edges around it
 function canBeRoot(n::Node)
     !n.hybrid || return false
-    #!n.hasHybEdge || return false #need to allow for some reason, check ipad notes
+    #!hasHybEdge(n) || return false #need to allow for some reason, check ipad notes
     !n.leaf || return false
     return any([e.containroot for e in n.edge])
 end
@@ -430,7 +430,7 @@ Warning: despite the name "loglik", this score is only proportional
 to the network's pseudo-deviance: the lower, the better.
 Do NOT use this score to calculate an AIC or BIC (etc.) value.
 """
-function Network(file::AbstractString)
+function readSnaqNetwork(file::AbstractString)
     open(file) do s
         line = readline(s)
         line[1] == '(' ||
@@ -440,7 +440,7 @@ function Network(file::AbstractString)
         # readTopologyUpdate is inadequate: would replace missing branch lengths, which are unidentifiable, by 1.0 values
         try
             vec = split(line,"-Ploglik = ")
-            net.loglik = parse(Float64,vec[2])
+            loglik!(net, parse(Float64,vec[2]))
         catch e
             @warn "could not find the network score; the error was:"
             rethrow(e)

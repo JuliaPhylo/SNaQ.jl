@@ -31,7 +31,7 @@ and calculate the quartet CFs at the species level:
 genetreefile = joinpath(dirname(pathof(SNaQ)), "..","examples","genetrees_alleletips.tre");
 genetrees = readmultinewick(genetreefile);
 sort(tiplabels(genetrees[1])) # multiple tips in species S1
-df_sp = writeTableCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...)
+df_sp = tablequartetCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...)
 ```
 
 Now `df_sp` is a data frame containing the quartet concordance factors
@@ -61,7 +61,7 @@ in which 2 individuals are from the same species, the following functions
 should be used:
 
 ```@repl multialleles
-df_ind = writeTableCF(countquartetsintrees(genetrees, showprogressbar=false)...); # no mapping: CFs across individuals
+df_ind = tablequartetCF(countquartetsintrees(genetrees, showprogressbar=false)...); # no mapping: CFs across individuals
 first(df_ind, 4) # to see the first 4 rows
 CSV.write("tableCF_individuals.csv", df_ind);  # to save to a file
 df_sp = mapAllelesCFtable(mappingfile, "tableCF_individuals.csv");
@@ -95,7 +95,7 @@ which can be calculated by averaging the CFs of quartets of individuals
 from the associated species:
 
 ```@repl multialleles
-df_sp = writeTableCF(d_sp) # data frame, quartet CFs averaged across individuals of same species
+df_sp = tablequartetCF(d_sp) # data frame, quartet CFs averaged across individuals of same species
 CSV.write("CFtable_species.csv", df_sp); # save to file
 ```
 
