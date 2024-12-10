@@ -59,21 +59,11 @@ df1 = tablequartetCF(countquartetsintrees(sixtrees)...)
 df2 = tablequartetCF(readTrees2CF(sixtrees, writeTab=false, writeSummary=false))
 o = [1,2,4,7,11,3,5,8,12,6,9,13,10,14,15]
 @test select!(df1, Not(:qind)) == df2[o,:]
-q,t = countquartetsintrees(sixtrees, Dict("A"=>"AB", "B"=>"AB"); showprogressbar=false);
-df1 = tablequartetCF(q,t)
-@test df1[!,:CF12_34] ≈ [0,0,2/3,2/3,1]
-@test df1[!,:CF13_24] ≈ [0,0,1/3,1/3,0]
-@test df1[!,:CF14_23] ≈ [1.,1,0,0,0]
-@test df1[!,:ngenes]  ≈ [6.,6,6,6,6]
-# again, but weight each allele
-q,t = countquartetsintrees(sixtrees, Dict("A"=>"AB", "B"=>"AB"); weight_byallele=true, showprogressbar=false);
-df1 = tablequartetCF(q,t)
-@test df1[!,:CF12_34] ≈ [0,0,7/11,7/11,1]
-@test df1[!,:CF13_24] ≈ [0,0,4/11,4/11,0]
-@test df1[!,:CF14_23] ≈ [1.,1,0,0,0]
-@test df1[!,:ngenes]  ≈ [11.,11,11,11,6]
-# different averaging: first across each set of 4 alleles, then
-# across sets of 4 alleles that map to the same set of 4 species
+## weight each allele, countquartetsintrees: already tested in PN
+# q,t = countquartetsintrees(sixtrees, Dict("A"=>"AB", "B"=>"AB"); weight_byallele=true, showprogressbar=false);
+# df1 = tablequartetCF(q,t)
+# mapAllelesCFtable performs a different averaging: first across each set of 4 alleles,
+# then across sets of 4 alleles that map to the same set of 4 species
 CSV.write("tmp_qCF.csv", df2)
 CSV.write("tmp_map.csv", DataFrame(allele = ["A","B"], species = ["AB","AB"]))
 df2_byallele = (@test_logs (:warn, r"not all alleles were mapped") mapAllelesCFtable("tmp_map.csv", "tmp_qCF.csv"))
@@ -83,7 +73,8 @@ df2 = tablequartetCF(q) # 45×8 DataFrames.DataFrame
 # df2[7:11,:]
 # df12 = innerjoin(df1, df2, on=[:t1,:t2,:t3,:t4], makeunique=true)
 # all([df12[:,4+i] ≈ df12[:,8+i] for i in 1:4]) # false: because averaging done differently by the 2 functions
-@test df2 == DataFrame(
+@test df2 == (
+  # add qind?
   t1=["AB","AB","AB","AB","AB","AB","AB","AB","AB","AB","C"],
   t2=["AB__2","AB__2","AB__2","AB__2","AB__2","AB__2","C","C","C","D","D"],
   t3=["C","C","C","D","D","E","D","D","E","E","E"],
