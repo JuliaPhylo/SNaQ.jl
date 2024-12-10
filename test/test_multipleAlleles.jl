@@ -136,17 +136,9 @@ estNet = snaq!(currT,d,hmax=1,seed=6353, runs=1, filename="", Nfail=10,
                outgroup="10")
 redirect_stdout(originalstdout)
 # below, mostly check for 1 reticulation and "10" as outgroup. exact net depends on RNG :(
-<<<<<<< HEAD
 netstring = writeTopology(estNet; round=true, digits=1)
-@show netstring
-@test occursin(r"^\(\(7:0.*,#H\d:::.*,10\);", netstring) ||
-      occursin(r"^\(10,\(.*,#H\d:::0.\d\)", netstring) ||
-=======
-netstring = writenewick(estNet; round=true, digits=1)
-@show netstring
 @test occursin(r"^\(\(7:0.0,#H\d:::.*,10\);", netstring) ||
       occursin(r"^\(10,\(.*,#H\d:::0.\d\);", netstring) ||
->>>>>>> origin/dev
       occursin(r",10,#H\d:::0.\d\);", netstring)
 end # test of snaq on multiple alleles
 
