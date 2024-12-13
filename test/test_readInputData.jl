@@ -55,10 +55,11 @@ end
 sixtreestr = ["(E,((A,B),(C,D)),O);","(((A,B),(C,D)),(E,O));","(A,B,((C,D),(E,O)));",
               "(B,((C,D),(E,O)));","((C,D),(A,(B,E)),O);","((C,D),(A,B,E),O);"]
 sixtrees = readnewick.(sixtreestr)
-df1 = tablequartetCF(countquartetsintrees(sixtrees)...)
-df2 = tablequartetCF(readTrees2CF(sixtrees, writeTab=false, writeSummary=false))
+df1 = DataFrame(tablequartetCF(countquartetsintrees(sixtrees)...))
+df2 = DataFrame(tablequartetCF(readTrees2CF(sixtrees, writeTab=false, writeSummary=false)))
 o = [1,2,4,7,11,3,5,8,12,6,9,13,10,14,15]
-@test select!(df1, Not(:qind)) == df2[o,:]
+select!(df1, Not(:qind))
+@test df1 == df2[o,:]
 ## weight each allele, countquartetsintrees: already tested in PN
 # q,t = countquartetsintrees(sixtrees, Dict("A"=>"AB", "B"=>"AB"); weight_byallele=true, showprogressbar=false);
 # df1 = tablequartetCF(q,t)
@@ -69,7 +70,7 @@ CSV.write("tmp_map.csv", DataFrame(allele = ["A","B"], species = ["AB","AB"]))
 df2_byallele = (@test_logs (:warn, r"not all alleles were mapped") mapAllelesCFtable("tmp_map.csv", "tmp_qCF.csv"))
 rm.(["tmp_qCF.csv","tmp_map.csv"]);
 q = readTableCF!(df2_byallele);
-df2 = tablequartetCF(q) # 45×8 DataFrames.DataFrame
+df2 = tablequartetCF(q) # 45×8 NamedTuple
 # df2[7:11,:]
 # df12 = innerjoin(df1, df2, on=[:t1,:t2,:t3,:t4], makeunique=true)
 # all([df12[:,4+i] ≈ df12[:,8+i] for i in 1:4]) # false: because averaging done differently by the 2 functions

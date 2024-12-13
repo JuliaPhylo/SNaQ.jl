@@ -17,26 +17,46 @@ writeExpCF(d::DataCF) = writeExpCF(d.quartet)
     tablequartetCF(vector of Quartet objects)
     tablequartetCF(DataCF)
 
-Build a DataFrame containing observed quartet concordance factors,
-with columns named:
+Build a NamedTuple containing observed quartet concordance factors,
+with the fields named:
 - `t1`, `t2`, `t3`, `t4` for the four taxon names in each quartet
 - `CF12_34`, `CF13_24`, `CF14_23` for the 3 quartets of a given four-taxon set
 - `ngenes` if this information is available for some quartets
+
+Some downstream functions may require the observed quartet concordance factors
+to be in a DataFrame, this can be easily converted by wrapping the output
+NamedTuple in the `DataFrame()` function
 """
 function tablequartetCF(quartets::Array{Quartet,1})
-    df = DataFrames.DataFrame(t1=String[],t2=String[],t3=String[],t4=String[],
-                              CF12_34=Float64[],CF13_24=Float64[],CF14_23=Float64[],
-                              ngenes=Union{Missing, Float64}[])
-    for q in quartets
+    nq = length(quartets)
+
+    nt  = (t1=Array{String}(undef,nq),
+            t2=Array{String}(undef,nq),
+            t3=Array{String}(undef,nq),
+            t4=Array{String}(undef,nq),
+            CF12_34=Array{Float64}(undef,nq),
+            CF13_24=Array{Float64}(undef,nq),
+            CF14_23=Array{Float64}(undef,nq),
+            ngenes=Array{Union{Missing, Float64}}(undef,nq))
+
+    for (i,q) in enumerate(quartets)
         length(q.taxon) == 4 || error("quartet $(q.number) does not have 4 taxa")
         length(q.obsCF) == 3 || error("quartet $(q.number) does have qnet with 3 expCF")
-        push!(df, [q.taxon[1],q.taxon[2],q.taxon[3],q.taxon[4],q.obsCF[1],q.obsCF[2],q.obsCF[3],
-                   (q.ngenes==-1.0 ? missing : q.ngenes)])
+        
+        nt.t1[i] = q.taxon[1]
+        nt.t2[i] = q.taxon[2]
+        nt.t3[i] = q.taxon[3]
+        nt.t4[i] = q.taxon[4]
+        nt.CF12_34[i] = q.obsCF[1]
+        nt.CF13_24[i] = q.obsCF[2]
+        nt.CF14_23[i] = q.obsCF[3]
+        nt.ngenes[i] = (q.ngenes==-1.0 ? missing : q.ngenes)
+        
     end
-    if all(ismissing, df[!,:ngenes])
-        select!(df, Not(:ngenes))
+    if all(ismissing, nt.ngenes)
+        nt = Base.structdiff(nt,NamedTuple{(:ngenes,)}((nothing,)))
     end
-    return df
+    return nt
 end
 tablequartetCF(d::DataCF) = tablequartetCF(d.quartet)
 
