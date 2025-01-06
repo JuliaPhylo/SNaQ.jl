@@ -1,4 +1,5 @@
 @testset "multiple alleles" begin
+import SNaQ: sorttaxa!
 global tree, df, d, net, currT
 
 @testset "test: map alleles to species" begin

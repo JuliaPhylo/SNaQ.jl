@@ -8,18 +8,13 @@ module SNaQ
     using Statistics: mean
 
     # other libraries, indicate compatible version in Project.toml
-    using BioSequences
-    using BioSymbols
     using CSV
     using DataFrames # innerjoin new in v0.21
     using DataStructures # for updateInCycle with priority queue
     using Distributions #for RateVariationAcrossSites
-    using FASTX
-    using GLM # for the lm function
     using NLopt # for branch lengths optimization
     using StaticArrays
     using StatsBase # sample, etc.
-    using StatsModels # re-exported by GLM. for ModelFrame ModelMatrix Formula etc
     using PhyloNetworks
 
     import Base: show
