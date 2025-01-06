@@ -93,7 +93,7 @@ The procedure to calculate expected CFs for a given network is as follows:
    `qnet=deepcopy(q.qnet)` and then `calculateExpCFAll!(qnet)`.
    Attributes that are updated on the original `QuartetNetwork` object `q.qnet` are:
     - `q.qnet.hasEdge`: array of booleans of length equal to `net.edge` that shows which identifiable edges and gammas of `net` (`ht(net)`) are in `qnet` (and still identifiable). Note that the first elements of the vector correspond to the gammas.
-    - `q.index(qnet)`: length should match the number of trues in `qnet.hasEdge`. It has the indexes in `qnet.edge` from the edges in `qnet.hasEdge`. Note that the first elements of the vector correspond to the gammas.
+    - `q.qnet.index`: length should match the number of trues in `qnet.hasEdge`. It has the indexes in `qnet.edge` from the edges in `qnet.hasEdge`. Note that the first elements of the vector correspond to the gammas.
     - `q.qnet.edge`: list of edges in `QuartetNetwork`. Note that external edges in `net` are collapsed when they appear in `QuartetNetwork`, so only internal edges map directly to edges in `net`
     - `q.qnet.expCF`: expected CF for this `Quartet`
 
@@ -128,7 +128,7 @@ do not appear in `hasEdge` nor `index`. Need to study this.
 julia> net0 = readnewick("(s17:13.76,(((s3:10.98,(s4:8.99,s5:8.99)I1:1.99)I2:0.47,(((s6:2.31,s7:2.31)I3:4.02,(s8:4.97,#H24:0.0::0.279)I4:1.36)I5:3.64,((s9:8.29,((s10:2.37,s11:2.37)I6:3.02,(s12:2.67,s13:2.67)I7:2.72)I8:2.89)I9:0.21,((s14:2.83,(s15:1.06,s16:1.06)I10:1.78)I11:2.14)#H24:3.52::0.72)I12:1.47)I13:1.48)I14:1.26,(((s18:5.46,s19:5.46)I15:0.59,(s20:4.72,(s21:2.40,s22:2.40)I16:2.32)I17:1.32)I18:2.68,(s23:8.56,(s1:4.64,s2:4.64)I19:3.92)I20:0.16)I21:3.98)I22:1.05);");
 
 julia> net = readnewicklevel1(writenewick(net0)) ## need level1 attributes for functions below
-HybridNetwork, Un-rooted Network
+HybridNetwork, Semidirected Network
 46 edges
 46 nodes: 23 tips, 1 hybrid nodes, 22 internal tree nodes.
 tip labels: s17, s3, s4, s5, ...
@@ -145,10 +145,10 @@ julia> qnet = SNaQ.extractQuartet!(net,q1)
 taxa: ["s1", "s16", "s18", "s23"]
 number of hybrid nodes: 1
 
-julia> sum([istIdentifiable(e) for e in net.edge]) ## 23 identifiable edges in net
+julia> sum([SNaQ.istIdentifiable(e) for e in net.edge]) ## 23 identifiable edges in net
 23
 
-julia> idedges = [ee.number for ee in net.edge[[istIdentifiable(e) for e in net.edge]]];
+julia> idedges = [ee.number for ee in net.edge[[SNaQ.istIdentifiable(e) for e in net.edge]]];
 
 julia> print(idedges)
 [5, 6, 9, 11, 12, 13, 17, 20, 21, 22, 26, 27, 28, 29, 30, 31, 34, 38, 39, 40, 44, 45, 46]
@@ -162,7 +162,7 @@ julia> sum(qnet.hasEdge) ## 8 = 1 gamma + 7 identifiable edges in qnet
 julia> print(idedges[qnet.hasEdge[2:end]]) ## 7 id. edges: [12, 13, 29, 30, 31, 45, 46]
 [12, 13, 29, 30, 31, 45, 46]
 
-julia> qnet.edge[index(qnet)[1]].number ## 11 = minor hybrid edge
+julia> qnet.edge[qnet.index[1]].number ## 11 = minor hybrid edge
 11
 ```
 """
