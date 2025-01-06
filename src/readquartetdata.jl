@@ -265,7 +265,6 @@ end
 # function to list all quartets for a set of taxa names
 # return a vector of quartet objects, and if writeFile=true, writes a file
 function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFile::Bool)
-    quartets = combinations(taxon,4)
     vquartet = Quartet[];
     if(writeFile)
         #allName = "allQuartets$(string(integer(time()/1000))).txt"
@@ -273,12 +272,21 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
         f = open(allName,"w")
     end
     i = 1
-    for q in quartets
-        if(writeFile)
-            write(f,"$(q[1]),$(q[2]),$(q[3]),$(q[4])\n")
+    
+    # Iterate over all quartet combinations (this is equivalent to enumerating `combinations(taxon, 4)`
+    # but does not require the `Combinatorics` pkg dependency)
+    for taxa_idx1 = 1:(length(taxon) - 3)
+        for taxa_idx2 = (taxa_idx1+1):(length(taxon)-2)
+            for taxa_idx3 = (taxa_idx2+1):(length(taxon)-1)
+                for taxa_idx4 = (taxa_idx3+1):length(taxon)
+                    if(writeFile)
+                        write(f,"$(taxon[taxa_idx1]),$(taxon[taxa_idx2]),$(taxon[taxa_idx3]),$(taxon[taxa_idx4])\n")
+                    end
+                    push!(vquartet,Quartet(i,string(taxon[taxa_idx1]),string(taxon[taxa_idx2]),string(taxon[taxa_idx3]),chomp(string(taxon[taxa_idx4])),[1.0,0.0,0.0]))
+                    i += 1 # overflow error if # quartets > typemax(Int), i.e. if 121,978+ taxa with Int64, 478+ taxa with Int32
+                end
+            end
         end
-        push!(vquartet,Quartet(i,string(q[1]),string(q[2]),string(q[3]),chomp(string(q[4])),[1.0,0.0,0.0]))
-        i += 1 # overflow error if # quartets > typemax(Int), i.e. if 121,978+ taxa with Int64, 478+ taxa with Int32
     end
     if(writeFile)
         close(f)
