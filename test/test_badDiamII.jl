@@ -6,7 +6,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
 
 @testset "moveTargetUpdate! reject 2-cycle proposal" begin
     net3c_newick = "(1,2,(((3,4))#H1:::0.6,(#H1:::0.4,(5,6))));" # 3-cycle adjacent to 3 cherries
-    net3 = readnewick_level1(net3c_newick)
+    net3 = readnewicklevel1(net3c_newick)
     # isBadTriangle(net3.node[6]) : not isVeryBadTriangle nor isExtBadTriangle
     hn = net3.hybrid[1] # more robust than net3.node[6]
     tmp = SNaQ.moveTargetUpdate!(net3, hn, getparentedge(hn), net3.edge[11])
@@ -18,7 +18,7 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     global tree, net, df, d
 
     tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-    net = readnewick_level1(tree);
+    net = readnewicklevel1(tree);
     SNaQ.checkNet(net)
     #printnodes(net)
     #printedges(net)
@@ -38,10 +38,10 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
                 CF1234=[0.565,0.0005,0.0005,0.565,0.00003,0.99986,0.0410167,1,0.99987,1,0.040167,0.998667,1,0.073167,0.00003],
                 CF1324=[0.0903,0.8599,0.8599,0.0903,0.8885,0.00006,0.263,0,0.00006,0,0.2630,0.00006,0,0.0424667,0.8885])
     df[!,:CF1423] = 1.0 .- df[!,:CF1234] .- df[!,:CF1324]
-    d = readTableCF(df)
+    d = readtableCF(df)
 
     Random.seed!(345);
-    net2 = topologyMaxQPseudolik!(net,d, ftolRel=1e-5,ftolAbs=1e-6,xtolRel=1e-3,xtolAbs=1e-4)
+    net2 = topologymaxQpseudolik!(net,d, ftolRel=1e-5,ftolAbs=1e-6,xtolRel=1e-3,xtolAbs=1e-4)
     @test loglik(net2) < 340.5 # loglik ~ 339.95
     @test istIdentifiable(net2.edge[3]) # or: wrong hybrid is t identifiable
     # @test 9.95 < net2.edge[3].length < 9.99
@@ -61,9 +61,9 @@ SNaQ.CHECKNET || error("need CHECKNET==true in SNaQ to test snaq in test_correct
     @test_logs show(devnull, d.quartet[1])
     @test_logs show(devnull, d.quartet[1].qnet)
     @test tiplabels(d.quartet) == ["1","2","3","4","5","6"]
-    a = (@test_logs fittedQuartetCF(d, :wide));
+    a = (@test_logs fittedquartetCF(d, :wide));
     @test size(a) == (15,10)
-    a = (@test_logs fittedQuartetCF(d, :long));
+    a = (@test_logs fittedquartetCF(d, :long));
     @test size(a) == (45,7)
 
 end
@@ -85,7 +85,7 @@ end
 
 ## ## this case works fine
 ## tree = "((((8,10))#H1,7),6,(4,#H1));" # Case I Bad diamond I
-## net = readnewick_level1(tree)
+## net = readnewicklevel1(tree)
 ## checkNet(net)
 ## net2 = readnewick(tree)
 ## printedges(net2)

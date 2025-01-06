@@ -3,7 +3,7 @@ using PhyloNetworks, SNaQ
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readTableCF(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
+raxmlCF = readtableCF(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 ```
 
@@ -15,11 +15,11 @@ in the plot will be close to the diagonal (x=y line).
 The following function will create a dataframe with the observed and expected CFs,
 which are all saved in the DataCF object after running snaq:
 ```@repl expCFs
-topologyMaxQPseudolik!(truenet, raxmlCF);
-df_wide = fittedQuartetCF(raxmlCF) # same as fittedQuartetCF(raxmlCF, :wide)
-df_long = fittedQuartetCF(raxmlCF, :long)
+topologymaxQpseudolik!(truenet, raxmlCF);
+df_wide = fittedquartetCF(raxmlCF) # same as fittedquartetCF(raxmlCF, :wide)
+df_long = fittedquartetCF(raxmlCF, :long)
 ```
-It is important to have run `snaq!`, `topologyQPseudolik!` or `topologyMaxQPseudolik!`
+It is important to have run `snaq!`, `topologyQpseudolik!` or `topologymaxQpseudolik!`
 before making these tables, or the result would be meaningless.
 These functions update the fitted concordance factors (those expected under the network)
 inside the DataCF object `raxmlCF`.

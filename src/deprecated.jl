@@ -1,2 +1,2 @@
-@deprecate readTopologyLevel1      readnewick_level1
-@deprecate readMultiTopologyLevel1 readmultinewick_level1
+@deprecate readTopologyLevel1      readnewicklevel1
+@deprecate readMultiTopologyLevel1 readmultinewicklevel1

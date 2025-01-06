@@ -16,17 +16,17 @@
 ## descData(d)
 
 
-## d = readTrees2CF("1.ms");
-## d = readTrees2CF("1.ms",filename="try.txt");
-## d = readTrees2CF("1.ms","allQuartets.txt",filename="hola.txt");
-## d = readTrees2CF("1.ms","allQuartets.txt",whichQ=:rand,numQ=10,filename="hola.txt");
+## d = readtrees2CF("1.ms");
+## d = readtrees2CF("1.ms",filename="try.txt");
+## d = readtrees2CF("1.ms","allQuartets.txt",filename="hola.txt");
+## d = readtrees2CF("1.ms","allQuartets.txt",whichQ=:rand,numQ=10,filename="hola.txt");
 
-## d= readTableCF("tableCF.txt");
-## d2= readTableCF("tableCFbad.txt")
+## d= readtableCF("tableCF.txt");
+## d2= readtableCF("tableCFbad.txt")
 ## end
 
 #Test consistency of writing/reading. Moved from test_relaxed_reading. Now only in PN. 
-net = readnewick_level1("(E,((B)#H1:::.5,((D,C),(#H1:::.5,A))));");
+net = readnewicklevel1("(E,((B)#H1:::.5,((D,C),(#H1:::.5,A))));");
 @test writenewick(net) == "(D:1.0,C:1.0,((#H1:1.0::0.5,A:1.0):1.0,((B:1.0)#H1:1.0::0.5,E:1.0):1.0):1.0);"
 originalstdout = stdout
 redirect_stdout(devnull) # requires julia v1.6
@@ -55,21 +55,22 @@ end
 sixtreestr = ["(E,((A,B),(C,D)),O);","(((A,B),(C,D)),(E,O));","(A,B,((C,D),(E,O)));",
               "(B,((C,D),(E,O)));","((C,D),(A,(B,E)),O);","((C,D),(A,B,E),O);"]
 sixtrees = readnewick.(sixtreestr)
-df1 = tablequartetCF(countquartetsintrees(sixtrees)...)
-df2 = tablequartetCF(readTrees2CF(sixtrees, writeTab=false, writeSummary=false))
+df1 = DataFrame(tablequartetCF(countquartetsintrees(sixtrees)...))
+df2 = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false)))
 o = [1,2,4,7,11,3,5,8,12,6,9,13,10,14,15]
-@test select!(df1, Not(:qind)) == df2[o,:]
+select!(df1, Not(:qind))
+@test df1 == df2[o,:]
 ## weight each allele, countquartetsintrees: already tested in PN
 # q,t = countquartetsintrees(sixtrees, Dict("A"=>"AB", "B"=>"AB"); weight_byallele=true, showprogressbar=false);
 # df1 = tablequartetCF(q,t)
-# mapAllelesCFtable performs a different averaging: first across each set of 4 alleles,
+# mapallelesCFtable performs a different averaging: first across each set of 4 alleles,
 # then across sets of 4 alleles that map to the same set of 4 species
 CSV.write("tmp_qCF.csv", df2)
 CSV.write("tmp_map.csv", DataFrame(allele = ["A","B"], species = ["AB","AB"]))
-df2_byallele = (@test_logs (:warn, r"not all alleles were mapped") mapAllelesCFtable("tmp_map.csv", "tmp_qCF.csv"))
+df2_byallele = (@test_logs (:warn, r"not all alleles were mapped") mapallelesCFtable("tmp_map.csv", "tmp_qCF.csv"))
 rm.(["tmp_qCF.csv","tmp_map.csv"]);
-q = readTableCF!(df2_byallele);
-df2 = tablequartetCF(q) # 45×8 DataFrames.DataFrame
+q = readtableCF!(df2_byallele);
+df2 = tablequartetCF(q) # 45×8 NamedTuple
 # df2[7:11,:]
 # df12 = innerjoin(df1, df2, on=[:t1,:t2,:t3,:t4], makeunique=true)
 # all([df12[:,4+i] ≈ df12[:,8+i] for i in 1:4]) # false: because averaging done differently by the 2 functions

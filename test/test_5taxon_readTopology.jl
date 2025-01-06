@@ -33,7 +33,7 @@ for t in tests
     #println("running $(t)")
     net = nothing;
     tree = whichtree(t)
-    net = readnewick_level1(tree);
+    net = readnewicklevel1(tree);
     if(t == "tree")
         try
             testTree(net)
@@ -141,5 +141,5 @@ end
 
 
 @testset "read level 1: hyb edge at root then 2-cycle" begin
-    @test_throws "cycle with only 2 nodes" readnewick_level1("((t9,((t3,t2))#H12:::0.52),#H12:::0.48);")
+    @test_throws "cycle with only 2 nodes" readnewicklevel1("((t9,((t3,t2))#H12:::0.52),#H12:::0.48);")
 end

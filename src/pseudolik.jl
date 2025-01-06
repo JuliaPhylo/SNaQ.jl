@@ -1294,7 +1294,7 @@ end
 
 # function to simply calculate the pseudolik of a given network
 """
-`topologyQPseudolik!(net::HybridNetwork, d::DataCF)`
+`topologyQpseudolik!(net::HybridNetwork, d::DataCF)`
 
 Calculate the quartet pseudo-deviance of a given network/tree for
 DataCF `d`. This is the negative log pseudo-likelihood,
@@ -1302,21 +1302,21 @@ up to an additive constant, such that a perfect fit corresponds to a deviance of
 
 Be careful if the net object does
 not have all internal branch lengths specified because then the
-pseudolikelihood will be meaningless. See [`topologyMaxQPseudolik!`](@ref) if you want branch lengths and numerical parameters optimized on the given network.
+pseudolikelihood will be meaningless. See [`topologymaxQpseudolik!`](@ref) if you want branch lengths and numerical parameters optimized on the given network.
 
 The loglik attribute of the network is updated, and `d` is updated with the expected
 concordance factors under the input network.
 """
-function topologyQPseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
+function topologyQpseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
     for ed in net0.edge
       !ed.hybrid || (ed.gamma >= 0.0) ||
-        error("hybrid edge has missing γ value. Cannot compute quartet pseudo-likelihood.\nTry `topologyMaxQPseudolik!` instead, to estimate these γ's.")
+        error("hybrid edge has missing γ value. Cannot compute quartet pseudo-likelihood.\nTry `topologymaxQpseudolik!` instead, to estimate these γ's.")
     end
     missingBL = any([e.length < 0.0 for e in net0.edge]) # at least one BL was missing
     net = readTopologyUpdate(writenewick_level1(net0))  # update level-1 attributes. Changes <0 BL into 1.0
     if(!isempty(d.repSpecies))
       expandLeaves!(d.repSpecies, net)
-      net = readnewick_level1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
+      net = readnewicklevel1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
     end
     missingBL && any([(e.length == 1.0 && istIdentifiable(e)) for e in net.edge]) &&
       @warn "identifiable edges lengths were originally missing, so assigned default value of 1.0"
