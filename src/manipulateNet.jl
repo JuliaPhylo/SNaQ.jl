@@ -24,7 +24,7 @@ function undirectedOtherNetworks(net0::HybridNetwork; outgroup="none"::AbstractS
 # Potential bug: if new node is -1, then inCycle will become meaningless: changed in readSubTree here
 # WARNING: does not update partition, because only thing to change is hybrid node number
     if !insideSnaq
-        net0 = readnewick_level1(writenewick_level1(net0))
+        net0 = readnewicklevel1(writenewick_level1(net0))
     end
     otherNet = HybridNetwork[]
     for i in 1:net0.numhybrids #need to do for by number, not node
@@ -178,7 +178,7 @@ end
 
 # Not used anywhere, but tested
 # does not call hybridatnode! but repeats its code: oops! violates DRY principle
-# nodeNumber should correspond to the number assigned by readnewick_level1,
+# nodeNumber should correspond to the number assigned by readnewicklevel1,
 # and the node numbers in `net` are irrelevant.
 """
     hybridatnode(net::HybridNetwork, nodeNumber::Integer)
@@ -188,7 +188,7 @@ Compared to [`hybridatnode!`], this method checks that `net` is of level 1
 (required) and does not modify it.
 """
 function hybridatnode(net0::HybridNetwork, nodeNumber::Integer)
-    net = readnewick_level1(writenewick_level1(net0)) # we need inCycle attributes
+    net = readnewicklevel1(writenewick_level1(net0)) # we need inCycle attributes
     ind = 0
     try
         ind = getIndexNode(nodeNumber,net)

@@ -10,7 +10,7 @@ global seed, currT0, besttree, net, successful,hybrid,flag,nocycle,flag2,flag3
 
 seed = 485 # 2738 at v0.14.2
 
-currT0 = readnewick_level1("(((((((1,2),3),4),5),(6,7)),(8,9)),10);");
+currT0 = readnewicklevel1("(((((((1,2),3),4),5),(6,7)),(8,9)),10);");
 # warning: the random number generator has a local scope:
 # with subsets of tests, the same seed would be re-used over and over.
 Random.seed!(seed);

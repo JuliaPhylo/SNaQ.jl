@@ -3,7 +3,7 @@ using PhyloNetworks, SNaQ
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readTrees2CF(raxmltrees, writeTab=false, writeSummary=false)
+raxmlCF = readtrees2CF(raxmltrees, writeTab=false, writeSummary=false)
 astralfile = joinpath(exampledir,"astral.tre")
 astraltree = readmultinewick(astralfile)[102] # 102th tree = last tree here
 net0 = readnewick(joinpath(exampledir,"net0.out"))
@@ -221,7 +221,7 @@ addprocs(nruns)
 net0 = readnewick("astraltree.tre");
 using DataFrames, CSV
 df_sp = CSV.read("tableCF_speciesNames.csv", DataFrame; pool=false);
-d_sp = readTableCF!(df_sp);
+d_sp = readtableCF!(df_sp);
 net = snaq!(net0, d_sp, hmax=h, filename=outputfile, seed=seed, runs=nruns)
 ```
 

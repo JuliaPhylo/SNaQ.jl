@@ -9,7 +9,7 @@ global tree, df, d, net, currT
     @test writenewick(tree) == "(6,(5,(7:1.0,(3,4))));"
     alleleDF=DataFrame(allele=["1","2"], species=["7","7"])
     CSV.write("tmp.csv", alleleDF);
-    df = (@test_logs (:warn, r"^not all alleles were mapped") mapAllelesCFtable("tmp.csv",
+    df = (@test_logs (:warn, r"^not all alleles were mapped") mapallelesCFtable("tmp.csv",
       joinpath(@__DIR__, "..", "examples", "tableCFCI.csv"),
       # joinpath(dirname(pathof(PhyloNetworks)), "..", "examples", "tableCFCI.csv"),
       filename="CFmapped.csv"))
@@ -60,10 +60,10 @@ d3 = DataFrame(t1=repeat([letters[1]],outer=[24]),t2=repeat([letters[2]],outer=[
                CF12_34=repeat([cfvalues[1]],outer=[24]),CF13_24=repeat([cfvalues[2]],outer=[24]),CF14_23=repeat([cfvalues[3]],outer=[24]));
 @test d2==d3
 
-dat = readTableCF(d);
-net = (@test_logs readnewick_level1("(a,((b)#H1,((#H1,c),d)));"));
+dat = readtableCF(d);
+net = (@test_logs readnewicklevel1("(a,((b)#H1,((#H1,c),d)));"));
 # earlier warning: "net does not have identifiable branch lengths"
-@test_logs topologyQPseudolik!(net, dat);
+@test_logs topologyQpseudolik!(net, dat);
 sorttaxa!(dat)
 
 @test [q.obsCF for q in dat.quartet] == [[0.6,0.39,0.01] for i in 1:24]
@@ -79,15 +79,15 @@ df = DataFrame(t1=["6","7"], t2=["7","6"], t3=["4","4"], t4=["8","8"],
     a=[true,true], # to test recognition of columns
     CF12_34=[0.25, 0.15], ngenes=[10,20],
     CF13_24=[0.3,0.55], b=[false,false], CF14_23=[0.45,0.3])
-@test length(readTableCF(df).quartet) == 2
-d = readTableCF(df, mergerows=true)
+@test length(readtableCF(df).quartet) == 2
+d = readtableCF(df, mergerows=true)
 @test isempty(d.repSpecies)
 @test length(d.quartet) == 1
 @test d.quartet[1].obsCF ≈ [0.3, 0.5, 0.2]
 @test d.quartet[1].ngenes ≈ 15
 SNaQ.descData(d, devnull)
 SNaQ.descData(d, "tmp.log")
-summarizeDataCF(d, filename="tmp.log")
+summarizedataCF(d, filename="tmp.log")
 rm("tmp.log")
 
 df=DataFrame(t1=["6","6","10","6","6","7","7","7","7","7",  "3", "7", "7"], # rows 11 & 13 (last & third to last): non-informative
@@ -97,7 +97,7 @@ df=DataFrame(t1=["6","6","10","6","6","7","7","7","7","7",  "3", "7", "7"], # ro
              CF1234=[0.2729102510259939, 0.3967750546426937, 0.30161247267865315, 0.24693940689390592, 0.2729102510259939, 0.155181,  0.792153,  0.486702,  0.962734,  0.202531,  0.3, 0.486886, 0.3],
              CF1324=[0.45417949794801216, 0.30161247267865315, 0.30161247267865315, 0.5061211862121882, 0.45417949794801216, 0.673426 ,0.145408,  0.391103, 0.023078,  0.714826,  0.3, 0.419015, 0.3],
              CF1423=[0.2729102510259939, 0.30161247267865315, 0.3967750546426937, 0.24693940689390592, 0.2729102510259939, 0.171393,  0.062439,  0.122195,  0.014188,  0.082643,  0.4, 0.094099, 0.4])
-d = readTableCF(df)
+d = readtableCF(df)
 @test !isempty(d.repSpecies)
 @test d.repSpecies == ["7"]
 
@@ -122,10 +122,10 @@ redirect_stdout(originalstdout)
 
 # net = snaq!(currT,d,hmax=1,seed=8378,filename="")
 net = readnewick("(((4,#H7:::0.47411636966376686):0.6360197250223204,10):0.09464128563363322,(7:0.0,(6)#H7:::0.5258836303362331):0.36355727108454877,8);")
-@test topologyQPseudolik!(net, d) ≈ 174.58674796123705
+@test topologyQpseudolik!(net, d) ≈ 174.58674796123705
 @test loglik(net) ≈ 174.58674796123705
 net = readnewick("(((4,#H1),10),(7,(6)#H1),8);")
-net = topologyMaxQPseudolik!(net,d,  # loose tolerance for faster test
+net = topologymaxQpseudolik!(net,d,  # loose tolerance for faster test
         ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
 @test loglik(net) > 174.5
 
@@ -147,7 +147,7 @@ end # test of snaq on multiple alleles
 #   testing writenewick_level1 with multiple alleles       #
 #----------------------------------------------------------#
 @testset "writenewick_level1 multiall=true" begin
-net = readnewick_level1("(A,(((B,B__2),E),(C,D)));")
+net = readnewicklevel1("(A,(((B,B__2),E),(C,D)));")
 @test writenewick_level1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
 end # test of writenewick_level1
 

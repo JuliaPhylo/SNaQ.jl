@@ -84,7 +84,7 @@ For example, let's take an object `raxmlCF` created from reading in some data
 
 ```@repl install
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
-raxmlCF = readTrees2CF(raxmltrees);
+raxmlCF = readtrees2CF(raxmltrees);
 ```
 
 Typing `varinfo()` will provide a list of objects and packages in memory,

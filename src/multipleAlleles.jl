@@ -6,7 +6,7 @@ repeatAlleleSuffix_re = Regex("$repeatAlleleSuffix\$")
 
 
 """
-    mapAllelesCFtable(mapping file, CF file; filename, columns, delim)
+    mapallelesCFtable(mapping file, CF file; filename, columns, delim)
 
 Create a new DataFrame containing the same concordance factors as in the input CF file,
 but with modified taxon names. Each allele name in the input CF table is replaced by the
@@ -24,20 +24,20 @@ Optional arguments:
   for combining the 4 columns with taxon names more easily).
   The same CSV arguments are used to read both input file (mapping file and quartet file)
 
-See also [`mapAllelesCFtable!`](@ref) to input DataFrames instead of file names.
+See also [`mapallelesCFtable!`](@ref) to input DataFrames instead of file names.
 
 If a `filename` is specified, such as "quartetCF_speciesNames.csv"
 in the example below, this file is best read later with the option
 `pool=false`. example:
 
 ```julia
-mapAllelesCFtable("allele-species-map.csv", "allele-quartet-CF.csv";
+mapallelesCFtable("allele-species-map.csv", "allele-quartet-CF.csv";
                   filename = "quartetCF_speciesNames.csv")
 df_sp = CSV.read("quartetCF_speciesNames.csv", DataFrame); # DataFrame object
-dataCF_specieslevel = readTableCF!(df_sp, mergerows=true); # DataCF object
+dataCF_specieslevel = readtableCF!(df_sp, mergerows=true); # DataCF object
 ```
 """
-function mapAllelesCFtable(alleleDF::AbstractString, cfDF::AbstractString;
+function mapallelesCFtable(alleleDF::AbstractString, cfDF::AbstractString;
         filename=""::AbstractString, columns=Int[]::Vector{Int}, CSVargs...)
     # force pool=false unless the user wants otherwise
     if :pool ∉ [pair[1] for pair in CSVargs]
@@ -45,11 +45,11 @@ function mapAllelesCFtable(alleleDF::AbstractString, cfDF::AbstractString;
     end
     d = DataFrame(CSV.File(alleleDF; CSVargs...); copycols=false)
     d2 = DataFrame(CSV.File(cfDF; CSVargs...); copycols=false)
-    mapAllelesCFtable!(d2,d, columns, filename != "", filename)
+    mapallelesCFtable!(d2,d, columns, filename != "", filename)
 end
 
 """
-    mapAllelesCFtable!(quartet CF DataFrame, mapping DataFrame, columns, write?, filename)
+    mapallelesCFtable!(quartet CF DataFrame, mapping DataFrame, columns, write?, filename)
 
 Modify (and return) the quartet concordance factor (CF) DataFrame:
 replace each allele name by the species name that the allele maps onto
@@ -58,11 +58,11 @@ named "allele" and "species" (see `rename!` to change column names if need be).
 
 If `write?` is `true`, the modified data frame is written to a file named "filename".
 
-Warning: [`mapAllelesCFtable`](@ref) takes the quartet data file as its second
-argument, while `mapAllelesCFtable!` takes the quartet data (which it modifies)
+Warning: [`mapallelesCFtable`](@ref) takes the quartet data file as its second
+argument, while `mapallelesCFtable!` takes the quartet data (which it modifies)
 as its first argument.
 """
-function mapAllelesCFtable!(cfDF::DataFrame, alleleDF::DataFrame, co::Vector{Int},write::Bool,filename::AbstractString)
+function mapallelesCFtable!(cfDF::DataFrame, alleleDF::DataFrame, co::Vector{Int},write::Bool,filename::AbstractString)
     size(cfDF,2) >= 7 || error("CF DataFrame should have 7+ columns: 4taxa, 3CF, and possibly ngenes")
     if length(co)==0 co=[1,2,3,4]; end
     allelecol, speciescol = compareTaxaNames(alleleDF,cfDF,co)
@@ -82,7 +82,7 @@ function mapAllelesCFtable!(cfDF::DataFrame, alleleDF::DataFrame, co::Vector{Int
 end
 
 # function to clean a df after changing allele names to species names
-# inside readTableCF!
+# inside readtableCF!
 # by deleting rows that are not informative like sp1 sp1 sp1 sp2
 # keepOne=true: we only keep one allele per species
 function cleanAlleleDF!(newdf::DataFrame, cols::Vector{<:Integer}; keepOne=false::Bool)

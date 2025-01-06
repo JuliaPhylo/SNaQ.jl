@@ -57,22 +57,20 @@ module SNaQ
         ## types & network definition
         DataCF,
         Quartet,
-        readnewick_level1,
-        readmultinewick_level1,
-        sorttaxa!,
+        readnewicklevel1,
+        readmultinewicklevel1,
         # quartet CF
-        readTrees2CF,
-        readTableCF,
-        readTableCF!,
-        mapAllelesCFtable,
-        readnexus_treeblock,
-        summarizeDataCF,
-        fittedQuartetCF,
+        readtrees2CF,
+        readtableCF,
+        readtableCF!,
+        mapallelesCFtable,
+        summarizedataCF,
+        fittedquartetCF,
         # fitting: SNaQ and network bootstrap
         snaq!,
-        readSnaqNetwork,
-        topologyMaxQPseudolik!,
-        topologyQPseudolik!,
+        readsnaqnetwork,
+        topologymaxQpseudolik!,
+        topologyQpseudolik!,
         bootsnaq
 
     include("types.jl")

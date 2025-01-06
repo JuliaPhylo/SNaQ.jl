@@ -64,9 +64,9 @@ tablequartetCF(d::DataCF) = tablequartetCF(d.quartet)
 
 
 """
-    readTableCF(file)
-    readTableCF(data frame)
-    readTableCF!(data frame)
+    readtableCF(file)
+    readtableCF(data frame)
+    readtableCF!(data frame)
 
 Read a file or DataFrame object containing a table of concordance factors (CF),
 with one row per 4-taxon set. The first 4 columns are assumed to give the labels
@@ -90,19 +90,19 @@ Optional arguments:
   if none of the species is repeated within any row (that is, in any set of 4 taxa)
 
 The last version modifies the input data frame, if species are represented by multiple alleles
-for instance (see [`readTableCF!`](@ref)(data frame, columns)).
+for instance (see [`readtableCF!`](@ref)(data frame, columns)).
 """
-function readTableCF(file::AbstractString; delim=','::Char, summaryfile=""::AbstractString, kwargs...)
+function readtableCF(file::AbstractString; delim=','::Char, summaryfile=""::AbstractString, kwargs...)
     df = DataFrame(CSV.File(file, delim=delim); copycols=false)
-    readTableCF!(df; summaryfile=summaryfile, kwargs...)
+    readtableCF!(df; summaryfile=summaryfile, kwargs...)
 end
 
-function readTableCF(df0::DataFrames.DataFrame; summaryfile=""::AbstractString, kwargs...)
+function readtableCF(df0::DataFrames.DataFrame; summaryfile=""::AbstractString, kwargs...)
     df = deepcopy(df0)
-    readTableCF!(df; summaryfile=summaryfile, kwargs...)
+    readtableCF!(df; summaryfile=summaryfile, kwargs...)
 end
 
-function readTableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, kwargs...)
+function readtableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, kwargs...)
     @debug "assume the numbers for the taxon read from the observed CF table match the numbers given to the taxon when creating the object network"
     taxoncolnames = [[:t1, :tx1, :tax1, :taxon1], [:t2, :tx2, :tax2, :taxon2],
                      [:t3, :tx3, :tax3, :taxon3], [:t4, :tx4, :tax4, :taxon4] ]
@@ -110,7 +110,7 @@ function readTableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
                 findfirst(x-> x ∈ taxoncolnames[2], DataFrames.propertynames(df)),
                 findfirst(x-> x ∈ taxoncolnames[3], DataFrames.propertynames(df)),
                 findfirst(x-> x ∈ taxoncolnames[4], DataFrames.propertynames(df))]
-    alternativecolnames = [ # obsCF12 is as exported by fittedQuartetCF()
+    alternativecolnames = [ # obsCF12 is as exported by fittedquartetCF()
         [:CF12_34, Symbol("CF12.34"), :obsCF12, :CF1234],
         [:CF13_24, Symbol("CF13.24"), :obsCF13, :CF1324],
         [:CF14_23, Symbol("CF14.23"), :obsCF14, :CF1423]
@@ -128,7 +128,7 @@ function readTableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
     columns = [taxoncol; obsCFcol]
     if withngenes  push!(columns, ngenecol)  end
 
-    d = readTableCF!(df, columns; kwargs...)
+    d = readtableCF!(df, columns; kwargs...)
 
     if withngenes # && d.numTrees == -1
         m1 = minimum([q.ngenes for q in d.quartet])
@@ -144,9 +144,9 @@ function readTableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
 end
 
 
-# see docstring below, for readTableCF!
+# see docstring below, for readtableCF!
 # takes in df and 7 or 8 column numbers (4 labels + 3 CFs + ngenes possibly)
-function readTableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false)
+function readtableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false)
     withngenes = (length(co)==8) # true if column :ngenes exists, false ow
     repSpecies = cleanAlleleDF!(df,co) # removes uninformative rows from df (not df0)
     # fixit: cleanAlleleDF! is time consuming but many times not needed
@@ -154,7 +154,7 @@ function readTableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false
     if mergerows || !isempty(repSpecies)
         df = mergeRows(df,co)   # warning: this 'df' is *not* changed externally
         co = collect(eachindex(co)) # 1:7 or 1:8
-    end                         # we cannot move to mapAllelesCFtable because we need repSpecies in here
+    end                         # we cannot move to mapallelesCFtable because we need repSpecies in here
     quartets = Quartet[]
     for i in 1:size(df,1)
         push!(quartets,Quartet(i,string(df[i,co[1]]),string(df[i,co[2]]),string(df[i,co[3]]),string(df[i,co[4]]),
@@ -167,12 +167,12 @@ function readTableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false
     if(!isempty(repSpecies))
         d.repSpecies = repSpecies
     end
-    return d  # return d, df ## to save memory & gc with readTableCF! for bootstrapping?
+    return d  # return d, df ## to save memory & gc with readtableCF! for bootstrapping?
 end
 
 
 """
-    readTableCF!(data frame, columns; mergerows=false)
+    readtableCF!(data frame, columns; mergerows=false)
 
 Read in quartet CFs from data frame, assuming information is in columns numbered `columns`,
 of length **7 or 8**: 4 taxon labels then 3 CFs then ngenes possibly.
@@ -189,7 +189,7 @@ If multiple rows correspond to the same 4-taxon set, these rows are merged and t
 If none of the species is repeated within any 4-taxon set, then this averaging
 is attempted only if `mergerows` is true.
 
-    readTableCF!(DataCF, data frame, columns)
+    readtableCF!(DataCF, data frame, columns)
 
 Modify the `.quartet.obsCF` values in the `DataCF` object with those read from the data frame
 in columns numbered `columns`.
@@ -201,9 +201,9 @@ Assumptions:
   but this assumption is *not checked* (for speed, e.g. during bootstrapping).
 - one single row per 4-taxon set (multiple individuals representatives
   of the same 4-taxon set should have been already merged);
-  basically: the DataCF should have been created from the data frame by `readTableCF!(df, colums)`
+  basically: the DataCF should have been created from the data frame by `readtableCF!(df, colums)`
 """
-function readTableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
+function readtableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
     for i in 1:size(df,1)
         for j in 1:3
             datcf.quartet[i].obsCF[j] = df[i,cols[j]]
@@ -215,17 +215,17 @@ end
 # ---------------- read input gene trees and calculate obsCF ----------------------
 
 """
-    readmultinewick_level1(file)
+    readmultinewicklevel1(file)
 
 Read a text file with a list of trees/networks in extended newick format
-(one tree per line) and transform them like [`readnewick_level1`](@ref).
+(one tree per line) and transform them like [`readnewicklevel1`](@ref).
 Namely, in each tree/network
 - the root is suppressed (becomes of degree 3 if it was of degree 2)
 - any polytomy is resolved arbitrarily
 - any missing branch length is set to 1
 - any branch length above 10 is set to 10 (this assumes branch lengths in coalescent units)
 - any missing γ's are set to (0.1, 0.9)
-and more (see [`readnewick_level1`](@ref)).
+and more (see [`readnewicklevel1`](@ref)).
 
 See [`PhyloNetworks.readmultinewick`]()
 to read multiple trees or networks with no modification.
@@ -235,7 +235,7 @@ Output: array of HybridNetwork objects.
 Each line starting with "(" will be considered as describing one topology.
 The file can have extra lines that are ignored.
 """
-function readmultinewick_level1(file::AbstractString)
+function readmultinewicklevel1(file::AbstractString)
     try
         s = open(file)
     catch
@@ -428,7 +428,7 @@ function tiplabels(quartets::Vector{Quartet})
     taxa = reduce(union, q.taxon for q in quartets)
     return sort_stringasinteger!(taxa)
 end
-tiplabelsTree(file::AbstractString) = tiplabels(readmultinewick_level1(file))
+tiplabelsTree(file::AbstractString) = tiplabels(readmultinewicklevel1(file))
 
 tiplabels(d::DataCF) = tiplabels(d.quartet)
 
@@ -549,8 +549,8 @@ Uses [`calculateObsCFAll!`](@ref), which implements a slow algorithm.
 
 See also:
 [`countquartetsintrees`](@ref), which uses a much faster algorithm;
-[`readTrees2CF`](@ref), which is basically a re-naming of `readInputData`, and
-[`readTableCF`](@ref) to read a table of quartet CFs directly.
+[`readtrees2CF`](@ref), which is basically a re-naming of `readInputData`, and
+[`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
 function readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
     if writetab
@@ -560,11 +560,11 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
         if (isfile(filename) && filesize(filename) > 0)
            error("""file $(filename) already exists and is non-empty. Cannot risk to erase data.
                     Choose a different CFfile name, use writeTab=false, or read the existing file
-                    with readTableCF(\"$(filename)\")""")
+                    with readtableCF(\"$(filename)\")""")
         end
     end
     println("read input trees from file $(treefile)\nand quartetfile $(quartetfile)")
-    trees = readmultinewick_level1(treefile)
+    trees = readmultinewicklevel1(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
@@ -596,7 +596,7 @@ function readInputData(trees::Vector{HybridNetwork}, quartetfile::AbstractString
         if (isfile(filename) && filesize(filename) > 0)
            error("""file $(filename) already exists and is non-empty. Cannot risk to erase data.
                     Choose a different CFfile name, use writeTab=false, or read the existing file
-                    with readTableCF(\"$(filename)\")""")
+                    with readtableCF(\"$(filename)\")""")
         end
         println("\ntable of obsCF printed to file $(filename)")
         df = tablequartetCF(d)
@@ -619,18 +619,18 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
         if (isfile(filename) && filesize(filename) > 0)
            error("""file $(filename) already exists and is non-empty. Cannot risk to erase data.
                     Choose a different CFfile name, use writeTab=false, or read the existing file
-                    with readTableCF(\"$(filename)\")""")
+                    with readtableCF(\"$(filename)\")""")
         end
     end
     println("read input trees from file $(treefile). no quartet file given.")
-    trees = readmultinewick_level1(treefile)
+    trees = readmultinewicklevel1(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, tiplabelsTree(treefile), writetab, "none",false, true)
 readInputData(treefile::AbstractString, taxa::Union{Vector{<:AbstractString}, Vector{Int}}) = readInputData(treefile, :all, 0, taxa, true, "none",false, true)
 # above: the use of tiplabelsTree to set the taxon set
 #        is not good: need to read the tree file twice: get the taxa, then get the trees
-#        this inefficiency was fixed in readTrees2CF
+#        this inefficiency was fixed in readtrees2CF
 
 
 function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integer, taxa::Union{Vector{<:AbstractString}, Vector{Int}}, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
@@ -666,8 +666,8 @@ end
 
 # rename the function readInputData to make it more user-friendly
 """
-    readTrees2CF(treefile)
-    readTrees2CF(vector of trees)
+    readtrees2CF(treefile)
+    readtrees2CF(vector of trees)
 
 Read trees in parenthetical format from a file, or take a vector of trees already read,
 and calculate the proportion of these trees having a given quartet (concordance factor: CF),
@@ -685,25 +685,25 @@ Optional arguments include:
 
 See also:
 [`countquartetsintrees`](@ref), which uses a much faster algorithm;
-[`readTableCF`](@ref) to read a table of quartet CFs directly.
+[`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
-function readTrees2CF(treefile::AbstractString; quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,
+function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,
                       writeTab=true::Bool, CFfile="none"::AbstractString,
                       taxa::AbstractVector=Vector{String}(),
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
     trees = (nexus ?
              readnexus_treeblock(treefile, readTopologyUpdate, false, false; reticulate=false) :
-             readmultinewick_level1(treefile))
+             readmultinewicklevel1(treefile))
     if length(taxa)==0        # tiplabels(trees) NOT default argument:
       taxa = tiplabels(trees) # otherwise: tree file is read twice
     end
-    readTrees2CF(trees, quartetfile=quartetfile, whichQ=whichQ, numQ=numQ, writeTab=writeTab,
+    readtrees2CF(trees, quartetfile=quartetfile, whichQ=whichQ, numQ=numQ, writeTab=writeTab,
                  CFfile=CFfile, taxa=taxa, writeQ=writeQ, writeSummary=writeSummary)
 end
 
 
 # same as before, but with input vector of HybridNetworks
-function readTrees2CF(trees::Vector{HybridNetwork};
+function readtrees2CF(trees::Vector{HybridNetwork};
         quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,
         writeTab=true::Bool, CFfile="none"::AbstractString,
         taxa::AbstractVector=tiplabels(trees),
@@ -798,13 +798,13 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 
 
 """
-`summarizeDataCF(d::DataCF)`
+`summarizedataCF(d::DataCF)`
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
 - `filename`: if provided, the summary will be saved in the filename, not to screen
 - `pc` (number between (0,1)): threshold of percentage of missing genes to identify 4-taxon subsets with fewer genes than the threshold
 """
-function summarizeDataCF(d::DataCF; filename="none"::AbstractString, pc=0.7::Float64)
+function summarizedataCF(d::DataCF; filename="none"::AbstractString, pc=0.7::Float64)
     0<=pc<=1 || error("percentage of missing genes should be between 0,1, not: $(pc)")
     if filename == "none"
         descData(d,stdout,pc)
@@ -837,7 +837,7 @@ function updateBL!(net::HybridNetwork,d::DataCF)
     for i in 1:length(edges)
         ind = getIndexEdge(edges[i],net) # helpful error if not found
         if net.edge[ind].length < 0.0 || net.edge[ind].length==1.0
-            # readnewick_level1 changes missing branch length to 1.0
+            # readnewicklevel1 changes missing branch length to 1.0
             setLength!(net.edge[ind], (lengths[i] > 0 ? lengths[i] : 0.0))
         end
     end
