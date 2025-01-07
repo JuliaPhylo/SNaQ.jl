@@ -1,3 +1,6 @@
+if Threads.nthreads() == 1 error("Tests must be run with >1 thread.") end
+
+
 using SNaQ
 using PhyloNetworks
 using Random

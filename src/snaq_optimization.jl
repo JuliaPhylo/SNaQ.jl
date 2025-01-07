@@ -2024,6 +2024,8 @@ function snaq!(
     # yes, need to check that everything is ok because it could have been cleaned and then modified
     tmp1, tmp2 = taxadiff(d,currT0)
     length(tmp1)==0 || error("these taxa appear in one or more quartets, but not in the starting topology: $tmp1")
+    seed != 0 && Threads.nthreads() > 1 && @warn("You are running snaq! with $(Threads.nthreads()) threads but are trying to use a set-seed. Results are not reproducible when multiple threads are used.")
+
     if length(tmp2)>0
         s = "these taxa will be deleted from the starting topology, they have no quartet CF data:\n"
         for tax in tmp2 s *= " $tax"; end
