@@ -45,6 +45,7 @@ const fRelBL = 1e-12
 const fAbsBL = 1e-10
 const xRelBL = 1e-10
 const xAbsBL = 1e-10
+const qAbs = 1e-4
 # ---------------------- branch length optimization ---------------------------------
 
 # function to get the branch lengths/gammas to optimize for a given network
@@ -1731,7 +1732,6 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     else
         error("all runs failed")
     end
-
     ## need to do this before setting BL to -1
     if (writelog && !isTree(maxNet)) ## only do networks file if maxNet is not tree
         println("best network and networks with different hybrid/gene flow directions printed to .networks file")

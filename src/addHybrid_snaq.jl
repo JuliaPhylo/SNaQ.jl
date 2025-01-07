@@ -230,7 +230,7 @@ end
 # blacklist used in afterOptBLAll
 # usePartition=true if we use the information on net.partition, default true
 function addHybridization!(net::HybridNetwork, blacklist::Bool, usePartition::Bool, probQR::Float64, d::DataCF)
-    if(net.numHybrids > 0 && usePartition)
+    if(net.numhybrids > 0 && usePartition)
         !isempty(net.partition) || error("net has $(net.numHybrids) but net.partition is empty")
         index = choosePartition(net)
         if(index == 0) #no place for new hybrid

@@ -506,6 +506,27 @@ function extractQuartet!(net::HybridNetwork, quartet::Vector{Quartet})
     end
 end
 
+# function to extract a quartet from a Quartet object
+# it calls the previous extractQuartet
+# returns qnet (check: maybe not needed later) and assigns
+# quartet.qnet = qnet
+function extractQuartet!(net::HybridNetwork, quartet::Quartet)
+    list = Node[]
+    for q in quartet.taxon
+        tax_in_net = findfirst(n -> n.name == q, net.node)
+        tax_in_net != nothing || error("taxon $(q) not in network")
+        push!(list, net.node[tax_in_net])
+    end
+    qnet = extractQuartet(net,list)
+    @debug "EXTRACT: extracted quartet $(quartet.taxon)"
+    redundantCycle!(qnet) #removes no leaves, cleans external edges
+    updateHasEdge!(qnet,net)
+    parameters!(qnet,net)
+    qnet.quartetTaxon = quartet.taxon
+    quartet.qnet = qnet
+    #return qnet
+end
+
 extractQuartet!(net::HybridNetwork, d::DataCF) = extractQuartet!(net, d.quartet)
 
 # function to check if there are potential redundant cycles in net
@@ -1326,7 +1347,7 @@ function topologyQpseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
         error("starting topology not a level 1 network")
     end
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
-    all((q->(q.qnet.numTaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
+    all((q->(q.qnet.numtaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
     Threads.@threads for q in d.quartet
         if (q.sampled)
             if verbose println("computing expCF for quartet $(q.taxon)") # to stdout
