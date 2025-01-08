@@ -17,13 +17,13 @@ we can optimize parameters on the true network
 (the one originally used to simulate the data):
 
 ```@setup fixednetworkoptim
-using PhyloNetworks, SNaQ
+using PhyloNetworks, SNaQ, DataFrames
 using Logging # to suppress info messages below
 baselogger = global_logger()
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readtableCF(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
+raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)))
 ```
 
 ```@repl fixednetworkoptim

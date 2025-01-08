@@ -61,7 +61,7 @@ in which 2 individuals are from the same species, the following functions
 should be used:
 
 ```@repl multialleles
-df_ind = tablequartetCF(countquartetsintrees(genetrees, showprogressbar=false)...); # no mapping: CFs across individuals
+df_ind = DataFrame(tablequartetCF(countquartetsintrees(genetrees, showprogressbar=false)...)); # no mapping: CFs across individuals
 first(df_ind, 4) # to see the first 4 rows
 CSV.write("tableCF_individuals.csv", df_ind);  # to save to a file
 df_sp = mapallelesCFtable(mappingfile, "tableCF_individuals.csv");
