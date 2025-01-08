@@ -1,10 +1,15 @@
+using Pkg
+Pkg.develop(PackageSpec(path = joinpath(@__DIR__, "..")))
+Pkg.instantiate()
+
+
 using SNaQ, PhyloNetworks
 using Documenter
 
 # Interlink with PhyloNetworks
 using DocumenterInterLinks
 links = InterLinks(
-    "PhyloNetworks" => "https://juliaphylo.github.io/PhyloNetworks.jl/stable/objects.inv"
+    "PhyloNetworks" => "https://juliaphylo.github.io/PhyloNetworks.jl/stable/"
 )
 
 # NOTE: default loading of PhyloNetworks in all docstring examples
@@ -44,6 +49,7 @@ makedocs(;
             "Internals" => "lib/internals.md",
         ]
     ],
+    plugins = [links]
 )
 
 deploydocs(;
