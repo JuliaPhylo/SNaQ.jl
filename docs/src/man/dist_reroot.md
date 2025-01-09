@@ -3,7 +3,7 @@ using PhyloNetworks, SNaQ, DataFrames
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)))
+raxmlCF = tablequartetCF(raxmltrees)
 astralfile = joinpath(exampledir,"astral.tre")
 astraltree = readmultinewick(astralfile)[102] # 102th tree = last tree here
 net0 = readnewick(joinpath(exampledir,"net0.out"))

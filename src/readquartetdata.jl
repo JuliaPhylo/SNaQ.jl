@@ -16,6 +16,8 @@ writeExpCF(d::DataCF) = writeExpCF(d.quartet)
 """
     tablequartetCF(vector of Quartet objects)
     tablequartetCF(DataCF)
+    tablequartetCF(gene trees)
+    tablequartetCF(gene tree file)
 
 Build a NamedTuple containing observed quartet concordance factors,
 with the fields named:
@@ -59,6 +61,11 @@ function tablequartetCF(quartets::Array{Quartet,1})
     return nt
 end
 tablequartetCF(d::DataCF) = tablequartetCF(d.quartet)
+
+function tablequartetCF(gts::AbstractVector{HybridNetwork})
+    return readtableCF(DataFrame(tablequartetCF(countquartetsintrees(gts, showprogressbar=false)...)))
+end
+tablequartetCF(gtfile::AbstractString) = tablequartetCF(readmultinewick(gtfile))
 
 
 
