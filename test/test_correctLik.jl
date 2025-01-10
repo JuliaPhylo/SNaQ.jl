@@ -145,11 +145,12 @@ end
   for n in [n1, n2, n3]
     for e in n.edge
       e.length = -1.
+      e.gamma = -1.
     end
   end
+  @test loglik(n3) > 0.0
   @test writenewick(n1, round=true)==writenewick(n2, round=true)
   @test writenewick(n3, round=true)==writenewick(n2, round=true)
-  @test loglik(n3) > 0.0
   rm("snaq.out")
   rm("snaq.networks")
   rm("snaq.log") # .log and .err should be git-ignored, but still
