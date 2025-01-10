@@ -23,7 +23,7 @@ baselogger = global_logger()
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = tablequartetCF(raxmltrees)
+raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)))
 ```
 
 ```@repl fixednetworkoptim
