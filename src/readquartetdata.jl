@@ -16,6 +16,8 @@ writeExpCF(d::DataCF) = writeExpCF(d.quartet)
 """
     tablequartetCF(vector of Quartet objects)
     tablequartetCF(DataCF)
+    tablequartetCF(gene trees)
+    tablequartetCF(gene tree file)
 
 Build a NamedTuple containing observed quartet concordance factors,
 with the fields named:
@@ -59,6 +61,11 @@ function tablequartetCF(quartets::Array{Quartet,1})
     return nt
 end
 tablequartetCF(d::DataCF) = tablequartetCF(d.quartet)
+
+function tablequartetCF(gts::AbstractVector{HybridNetwork})
+    return readtableCF(DataFrame(tablequartetCF(countquartetsintrees(gts, showprogressbar=false)...)))
+end
+tablequartetCF(gtfile::AbstractString) = tablequartetCF(readmultinewick(gtfile))
 
 
 
@@ -458,7 +465,7 @@ update the `.obsCF` values of the quartets based on the trees, but returns nothi
 
 Warning: all these functions need input trees (without any reticulations: h=0).
 
-See also: [`countquartetsintrees`](@ref), which uses a faster algorithm,
+See also: [`PhyloNetworks.countquartetsintrees`](@extref), which uses a faster algorithm,
 processing each input tree only once.
 `calculateObsCFAll_noDataCF!` processes each input tree `# quartet` times.
 """
@@ -556,7 +563,7 @@ Optional arguments (defaults):
 Uses [`calculateObsCFAll!`](@ref), which implements a slow algorithm.
 
 See also:
-[`countquartetsintrees`](@ref), which uses a much faster algorithm;
+[`PhyloNetworks.countquartetsintrees`](@extref), which uses a much faster algorithm;
 [`readtrees2CF`](@ref), which is basically a re-naming of `readInputData`, and
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
@@ -692,7 +699,7 @@ Optional arguments include:
 - `nexus`: if true, it assumes the gene trees are written in nexus file (default: false)
 
 See also:
-[`countquartetsintrees`](@ref), which uses a much faster algorithm;
+[`PhyloNetworks.countquartetsintrees`](@extref), which uses a much faster algorithm;
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
 function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,

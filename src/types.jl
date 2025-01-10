@@ -208,7 +208,7 @@ type that saves the information on a given 4-taxon subset. It contains the follo
 - `qnet`: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
   emphasize that the expCF depend on a specific network, not the data
 
-see also: [`QuartetT`](@ref) for quartet with data of user-defined type `T`,
+see also: [`PhyloNetworks.QuartetT`](@extref) for quartet with data of user-defined type `T`,
 using a mapping between quartet indices and quartet taxa.
 """
 mutable struct Quartet <: AQuartet

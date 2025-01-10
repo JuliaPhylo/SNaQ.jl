@@ -60,8 +60,11 @@ module SNaQ
         readsnaqnetwork,
         topologymaxQpseudolik!,
         topologyQpseudolik!,
-        bootsnaq
-        
+        bootsnaq,
+        # functions to access relevant object variables
+        loglik,
+        loglik!
+
 
     include("types.jl")
     include("addHybrid_snaq.jl")
