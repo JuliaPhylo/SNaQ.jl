@@ -62,11 +62,6 @@ function tablequartetCF(quartets::Array{Quartet,1})
 end
 tablequartetCF(d::DataCF) = tablequartetCF(d.quartet)
 
-function tablequartetCF(gts::AbstractVector{HybridNetwork})
-    return readtableCF(DataFrame(tablequartetCF(countquartetsintrees(gts, showprogressbar=false)...)))
-end
-tablequartetCF(gtfile::AbstractString) = tablequartetCF(readmultinewick(gtfile))
-
 
 
 
