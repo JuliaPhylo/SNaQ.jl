@@ -1,4 +1,4 @@
-# deploy documentation locally
+# Deploy documentation locally
 
 These notes need to be updated once all packages are registered.
 
@@ -22,4 +22,20 @@ In julia, but inside docs:
 using Pkg
 Pkg.add(PackageSpec(url="https://github.com/JuliaPhylo/PhyloTraits.jl", rev="dev01"))
 Pkg.add(PackageSpec(name="PhyloPlots", rev="dev11"))
+```
+
+# Run doctests 
+
+To run just the doctests, from the base directory:
+
+```shell
+julia --project=docs/ docs/run-doctest.jl
+```
+
+or if finer control is needed for dependencies, doctests can be run interactively while in the base directory:
+
+```shell
+pkg> activate ./docs
+# do what you need to do to update dependencies / dev packages
+julia> include("./docs/run-doctest.jl")
 ```
