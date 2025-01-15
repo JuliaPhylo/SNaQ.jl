@@ -174,7 +174,7 @@ T=readnewicklevel1("startNetwork.txt")
 Here `startNetwork.txt` is a hypothetical file: replace this by
 the name of a file that contains your network of interest.
 
-## Getting a network
+## Estimating a network
 
 After we have [Inputs for SNaQ](@ref), we can estimate the network using the
 input data `raxmlCF` and starting from tree (or network) `astraltree`.
@@ -190,7 +190,8 @@ Part of the screen output shows this:
 
 This parenthetical (extended Newick) description is not very
 human-friendly, so we use [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl) to plot the tree
-(more about plotting networks below: [Network visualization](@ref) ).
+(more about plotting networks can be found in the PhyloNetworks guide [Network Visualization](@extref) 
+and in [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl) documentation).
 
 ```@example snaqplot
 using PhyloPlots
@@ -230,6 +231,18 @@ nothing # hide
 This network has A as a hybrid, 80.4% sister to B,
 and 19.6% sister to E (which is otherwise sister to O).
 C & D are sister to each other.
+
+Note that SNaQ infers an unrooted semi-directed network; 
+the lack of rooting is depicted visually with a trifurcationon on the leftmost side of the plot.
+The direction of hybrid edges can be inferred,
+but the direction of tree edges cannot be inferred.
+To obtain a representative visualization,
+it is best to root the network first, using one or more outgroup.
+PhyloNetworks has a guide on [Re-rooting trees and networks](@ref) for this.
+If your outgroup conflicts with the direction of reticulations
+in the estimated network, see the section
+[Candidate networks compatible with a known outgroup](@ref).
+
 We can also check the output files created by `snaq!`:
 ```julia
 less("net1.err") # would provide info about errors, if any
@@ -259,12 +272,18 @@ writenewick(net1, "bestnet_h1.tre") # writes to file: creates or overwrites file
 rm("bestnet_h1.tre") # hide
 ```
 
-We can go on and let the network have up to 2 or 3 hybrid nodes:
+From a set of candidate networks, one might simply need to score of each network
+to pick the best. Here, the score is the negative log pseudo-likelihood, and the
+lower the better. See the section to get the score of [Candidate networks](@ref).
+
+### `hmax` and choosing the number of hybridizations
+
+We change the `hmax` argument to change the search space to let the network have up to 2 or 3 hybrid nodes:
 ```julia
 net2 = snaq!(net1,raxmlCF, hmax=2, filename="net2", seed=3456)
 net3 = snaq!(net0,raxmlCF, hmax=3, filename="net3", seed=4567)
 ```
-and plot them (they are identical and they both have a single reticulation):
+and plot them (the optimized networks are identical and they both have a single reticulation):
 ```@example snaqplot
 R"svg(name('snaqplot_net23.svg'), width=7, height=3)" # hide
 using RCall                  # to be able to tweak our plot within R
@@ -288,132 +307,6 @@ and this output for net3 (again, only 1 hybrid found):
 
     MaxNet is (D,C,((O,(E,#H7:::0.19558839257941849):0.3135243301652981):0.6640664138384673,(B,(A)#H7:::0.8044116074205815):10.0):10.0);
     with -loglik 28.315067218909626
-
-## Parallel computations
-
-For network estimation, multiple runs can done in parallel.
-For example, if your machine has 4 or more processors (or cores),
-you can tell julia to use 4 processors by starting julia with `julia -p 4`,
-or by starting julia the usual way (`julia`) and then adding processors with:
-
-```julia
-using Distributed
-addprocs(4)
-```
-
-If we load a package (`using SNaQ`) before adding processors,
-then we need to re-load it again so that all processors have access to it:
-
-```julia
-@everywhere using PhyloNetworks, SNaQ
-```
-
-After that, running any of the `snaq!(...)` command will use
-different cores for different runs, as processors become available.
-Fewer details are printed to the log file when multiple cores
-are used in parallel.
-
-When running `bootsnaq`, the analysis of each bootstrap replicate
-will use multiple cores to parallelize separate runs of that particular
-bootstrap replicate. You may parallelize things further by running
-`bootsnaq` multiple times (on separate machines for instance), each time
-for a small subset of bootstrap replicates, and with a different seed each time.
-
-We may tell julia to add more processors than our machine has,
-but we will not receive any performance benefits.
-At any time during the julia session, `nworkers()` tells us how many
-worker processors julia has access to.
-
-Below is an example of how to use a cluster, to run many independent
-`snaq!` searches in parallel on a cluster running the
-[slurm](https://slurm.schedmd.com) job manager
-(other managers would require a different, but similar submit file).
-This example uses 2 files:
-1. a julia script file, to do many runs of `snaq!` in parallel,
-   asking for many cores (default: 10 runs, asking for 10 cores).
-   This julia script can take arguments: the maximum allowed
-   number of hybridizations `hmax`, and the number of runs
-   (to run 50 runs instead of 10, say).
-2. a submit file, to launch the julia script.
-
-**First**: the example julia script, below, is assumed (by the submit file)
-to be called `runSNaQ.jl`. It uses a starting tree that
-is assumed to be available in a file named `astraltree.tre`, but that
-could be modified
-(to use a network with h=1 to start the search with hmax=2 for instance).
-It also assumes that the quartet concordance factor data are in file
-`tableCF_speciesNames.csv`. Again, this file name should be adjusted.
-To run this julia script for 50 runs and hmax=3, do `julia runSNaQ.jl 3 50`.
-
-```julia
-#!/usr/bin/env julia
-
-# file "runSNaQ.jl". run in the shell like this in general:
-# julia runSNaQ.jl hvalue nruns
-# example for h=2 and default 10 runs:
-# julia runSNaQ.jl 2
-# or example for h=3 and 50 runs:
-# julia runSNaQ.jl 3 50
-
-length(ARGS) > 0 ||
-    error("need 1 or 2 arguments: # reticulations (h) and # runs (optional, 10 by default)")
-h = parse(Int, ARGS[1])
-nruns = 10
-if length(ARGS) > 1
-    nruns = parse(Int, ARGS[2])
-end
-outputfile = string("net", h, "_", nruns, "runs") # example: "net2_10runs"
-seed = 1234 + h # change as desired! Best to have it different for different h
-@info "will run SNaQ with h=$h, # of runs=$nruns, seed=$seed, output will go to: $outputfile"
-
-using Distributed
-addprocs(nruns)
-@everywhere using SNaQ
-net0 = readnewick("astraltree.tre");
-using DataFrames, CSV
-df_sp = CSV.read("tableCF_speciesNames.csv", DataFrame; pool=false);
-d_sp = readtableCF!(df_sp);
-net = snaq!(net0, d_sp, hmax=h, filename=outputfile, seed=seed, runs=nruns)
-```
-
-When julia is called on a script, whatever comes after "julia scriptname"
-is given to julia in an array of values. This array is called `ARGS`.
-So if we call a script like this: `julia runSNaQ.jl 2`
-then the script will know the arguments through `ARGS`,
-which would contain a single element, `"2"`.
-This first element is just a string, at this stage. We want to use it as a number,
-so we ask julia to parse the string into an integer.
-
-**Second**: we need a "submit" file to ask a job scheduler like
-[slurm](https://slurm.schedmd.com) to submit our julia script to a cluster.
-In the submit file below, the first 5 lines set things up for slurm.
-They are most likely to be specific to your cluster.
-The main idea here is to use a slurm "array" from 0 to 3, to run our
-julia script multiple times, 4 times actually: from hmax=0 to hmax=3.
-Each would do 30 runs
-(and each would be allocated 30 cores in the submit script below).
-Then log out of the cluster and go for coffee.
-
-```bash
-#!/bin/bash
-#SBATCH -o path/to/slurm/log/file/runsnaq_slurm%a.log
-#SBATCH -J runsnaq
-#SBATCH --array=0-3
-#SBATCH -c 30
-## --array: to run multiple instances of this script,
-##          one for each value in the array.
-##          1 instance = 1 task
-## -J job name
-## -c number of cores (CPUs) per task
-
-echo "slurm task ID = $SLURM_ARRAY_TASK_ID used as hmax"
-echo "start of SNaQ parallel runs on $(hostname)"
-# finally: launch the julia script, using Julia executable appropriate for slurm, with full paths:
-/workspace/software/bin/julia --history-file=no -- runSNaQ.jl $SLURM_ARRAY_TASK_ID 30 > net${SLURM_ARRAY_TASK_ID}_30runs.screenlog 2>&1
-echo "end of SNaQ run ..."
-```
-
-## Choosing the number of hybridizations
 
 Each network has a `loglik` attribute, which is its pseudo deviance:
 a multiple of the negative log-likelihood up to a constant (the constant is
@@ -440,98 +333,4 @@ package such as [Gadfly](http://gadflyjl.org/stable/) or
 using Gadfly
 plot(x=collect(0:3), y=scores, Geom.point, Geom.line)
 ```
-(btw, cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia)
-
-## Network visualization
-
-To visualize the estimated network, we can use the companion package
-[PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl).
-In the example below, julia creates and sends the plot to R
-via [RCall](https://github.com/JuliaInterop/RCall.jl),
-so we can tweak the plot in various ways via commands sent to R.
-To save the plot in a file: we first tell R to create an image file,
-then we send the plot of the network,
-then we tell R to wrap up and save its image file.
-
-```@example snaqplot
-using PhyloPlots # to visualize networks
-using RCall      # to send additional commands to R like this: R"..."
-imagefilename = "../assets/figures/snaqplot_net1_2.svg"
-R"svg"(imagefilename, width=4, height=3) # starts image file
-R"par"(mar=[0,0,0,0]) # to reduce margins (no margins at all here)
-plot(net1, showgamma=true, showedgenumber=true); # network is plotted & sent to file
-R"dev.off()"; # wrap up and save image file
-nothing # hide
-```
-![net1_2](../assets/figures/snaqplot_net1_2.svg)
-
-The plot function has many options, to annotate nodes and edges. In the
-example above, hybrid edges were annotated with their γ inheritance values
-(in blue: light blue for the minor edge with γ<0.5, and dark blue for the
-major edge with γ>0.5), and edges were annotated with their internal numbers.
-
-Type `?` to switch to the help mode
-of Julia, then type the name of the function, here `plot`.
-Below are two visualizations.
-The first uses the default style (`:fulltree`) and modified edge colors.
-The second uses the `:majortree` style.
-That style doesn't have an arrow by default for minor hybrid edges,
-but we can ask for one by specifying a positive arrow length.
-```@example snaqplot
-R"svg(name('snaqplot_net1_3.svg'), width=7, height=3)" # hide
-R"par"(mar=[0,0,0,0]) # hide
-R"layout(matrix(1:2,1,2))";
-plot(net1, showedgelength=true, minorhybridedgecolor="tan");
-plot(net1, style=:majortree, arrowlen=0.07);
-R"dev.off()"; # hide
-nothing # hide
-```
-![net1_3](../assets/figures/snaqplot_net1_3.svg)
-
-Edge lengths are shown, too. They were estimated in coalescent units:
-number of generations / effective population size.
-Some edge lengths are not identifiable, hence not shown.
-
-Below is another example, where space was added between the network and
-the taxon names via the `tipoffset` option.
-Also, edge colors were changed, and the nodes numbers are shown (used internally)
-
-```@example snaqplot
-R"svg(name('snaqplot_net1_4.svg'), width=4, height=3)" # hide
-R"par"(mar=[0,0,0,0]) # hide
-plot(net1, tipoffset=0.5, shownodenumber=true, edgecolor="tomato4",
-     minorhybridedgecolor="skyblue", majorhybridedgecolor="tan");
-R"dev.off()"; # hide
-nothing # hide
-```
-![net1_4](../assets/figures/snaqplot_net1_4.svg)
-
-## Re-rooting networks
-
-SNaQ infers an unrooted semi-directed network.
-The direction of hybrid edges can be inferred,
-but the direction of tree edges cannot be inferred.
-To obtain a representative visualization,
-it is best to root the network first, using one or more outgroup.
-PhyloNetworks has a guide on [Re-rooting trees and networks](@ref) for this.
-If your outgroup conflicts with the direction of reticulations
-in the estimated network, see the section
-[Candidate networks compatible with a known outgroup](@ref).
-
-## Candidate network evaluation
-
-From a set of candidate networks, one might simply need to score of each network
-to pick the best. Here, the score is the negative log pseudo-likelihood, and the
-lower the better. See the section to get the score of [Candidate networks](@ref).
-
-## SNaQ error reporting
-
-Please report any bugs and errors by opening an
-[issue](https://github.com/juliaphylo/SNaQ.jl/issues/new).
-The easiest way to provide information on the error is by checking the
-`.err` file, which will show the number of runs that
-failed and the corresponding seed to replicate the run.
-In case of an error, the `.err` file might look like:
-`Total errors: 1 in seeds [4545]`.
-This file and any information that will help replicating the error
-will be immensely helpful to fix the error/bug.
+(Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia)

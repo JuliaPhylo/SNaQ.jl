@@ -36,11 +36,13 @@ makedocs(;
         "Manual" => [
             "Installation" => "man/installation.md",
             "TICR pipeline" => "man/ticr_howtogetQuartetCFs.md",
-            "Network estimation" => "man/snaq_plot.md",
+            "Network estimation" => "man/snaq_est.md",
             "Candidate networks" => "man/fixednetworkoptim.md",
             "Extract expected CFs" => "man/expectedCFs.md",
             "Bootstrap" => "man/bootstrap.md",
+            "Parallel computation" => "man/parallelcomputation.md",
             "Multiple alleles" => "man/multiplealleles.md",
+            "Error reporting" => "man/error_reporting.md"
         ],
         "Library" => [
             "Public" => "lib/public.md",

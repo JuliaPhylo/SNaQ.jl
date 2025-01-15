@@ -12,7 +12,7 @@ The score being optimized is a pseudo-deviance, i.e.
 a multiple of the negative log pseudo-likelihood up to an additive constant
 (the lower the better; a pseudo-deviance of 0 corresponds to a perfect fit).
 
-Following our example in [Getting a network](@ref),
+Following our example in [Estimating a network](@ref),
 we can optimize parameters on the true network
 (the one originally used to simulate the data):
 
@@ -181,3 +181,4 @@ R"dev.off()"; # hide
 nothing # hide
 ```
 ![othernets after reroot](../assets/figures/fixednetworkoptim_othernets2.svg)
+
