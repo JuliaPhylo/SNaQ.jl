@@ -559,7 +559,7 @@ Uses [`calculateObsCFAll!`](@ref), which implements a slow algorithm.
 
 See also:
 [`PhyloNetworks.countquartetsintrees`](@extref), which uses a much faster algorithm;
-[`readtrees2CF`](@ref), which is basically a re-naming of `readInputData`, and
+[`readtrees2CF`](@ref), which is an exported and user-friendly re-naming of `readInputData`, and
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
 function readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
@@ -672,9 +672,6 @@ function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integ
     return d
 end
 
-
-
-# rename the function readInputData to make it more user-friendly
 """
     readtrees2CF(treefile)
     readtrees2CF(vector of trees)

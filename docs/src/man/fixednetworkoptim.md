@@ -1,4 +1,4 @@
-# Candidate Networks
+# Candidate networks
 
 ## Optimizing parameters for a given network
 
@@ -12,7 +12,7 @@ The score being optimized is a pseudo-deviance, i.e.
 a multiple of the negative log pseudo-likelihood up to an additive constant
 (the lower the better; a pseudo-deviance of 0 corresponds to a perfect fit).
 
-Following our example in [Getting a Network](@ref),
+Following our example in [Getting a network](@ref),
 we can optimize parameters on the true network
 (the one originally used to simulate the data):
 
@@ -74,8 +74,8 @@ given network is of level 1 (cycles don't overlap).
 ## Candidate networks compatible with a known outgroup
 
 If the network was estimated via `snaq!`, it might turn out to be impossible
-to root our estimated network with a known outgroup (see section
-[What if the root conflicts with the direction of a reticulation?](@ref).)
+to root our estimated network with a known outgroup (PhyloNetworks documentation discusses root mismatches here:
+[Does the root conflict with the direction of a reticulation?](@extref).)
 At this time, `snaq!` does not impose any rooting constraint on the network:
 the search for the lowest score considers all level-1 networks, including those
 that are incompatible with a known outgroup.
@@ -91,7 +91,7 @@ and that can be re-rooted with our known root position, then this modified netwo
 is a better candidate than the network with the best score.
 
 Below is what the `net1.networks` file looks like, after performing
-the analysis in the section [Network Estimation](@ref).
+the analysis in the section [Network estimation](@ref).
 Scroll to the right to see the scores.
 
     (C,D,((O,(E,#H7:::0.19558838614943078):0.31352437658618976):0.6640664399202987,(B,(A)#H7:::0.8044116138505693):10.0):10.0);, with -loglik 28.31506721890958 (best network found, remaining sorted by log-pseudolik; the smaller, the better)
@@ -142,8 +142,8 @@ nothing # hide
 Now imagine that our outgroup is taxon A.
 - best network: we would get a "RootMismatch" error if we tried to set
   the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
-  (see section
-  [What if the root conflicts with the direction of a reticulation?](@ref)).
+  (see the PhyloNetworks guide 
+  [Does the root conflict with the direction of a reticulation?](@ref)).
   But we could root the best network on the major parent edge to A, edge 10
   (rooted network on the left below).
 - For the second best network in our list, there are 2 ways to root it

@@ -7,7 +7,7 @@ raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinew
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 ```
 
-# Extract Expected CFs
+# Extract expected CFs
 
 A good way to visualize the "goodness-of-fit" of a given estimated network to the data
 is to plot the observed CF versus the expected CF. If the network is a good fit, then the dots

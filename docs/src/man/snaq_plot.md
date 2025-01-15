@@ -16,16 +16,167 @@ loglik!(net1, 28.31506721890958)
 loglik!(net2, 28.31506721890957)
 loglik!(net3, 28.315067218909626)
 ```
-# Getting a Network
-
-## Network Estimation
+# Network estimation
 
 SNaQ implements the statistical inference method in
 [Solís-Lemus & Ané 2016](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896).
 The procedure involves a numerical optimization of branch lengths and inheritance
 probabilities and a heuristic search in the space of phylogenetic networks.
 
-After [Input for SNaQ](@ref), we can estimate the network using the
+We suggest that you create a special directory for running these examples,
+where input files can be downloaded and where output files will be
+created (with estimated networks for instance). Enter this directory
+and run Julia from there.
+
+## Inputs for SNaQ 
+
+SNaQ uses has two main inputs for estimating phylogenetic networks: concordance factors (CFs) and a starting tree (or network).
+
+### concordance factors
+
+Concordance factors denote frequency of each quartet topology 
+present among the gene trees, which can be obtained using
+[MrBayes](http://mrbayes.sourceforge.net) or
+[RAxML](http://sco.h-its.org/exelixis/software.html) for example. 
+
+This [pipeline](https://github.com/nstenz/TICR) can be used to obtain the table of
+quartet CF needed as input for SNaQ
+(see also the [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki/TICR:-from-alignments-to-quartet-concordance-factors) and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
+It starts from the sequence alignments,
+runs MrBayes and then BUCKy (both parallelized), producing the
+table of estimated CFs and their credibility intervals.
+Additional details on this [TICR pipeline](@ref)
+describe how to insert data at various stages (e.g. after running MrBayes on each locus).
+
+#### CFs from gene trees 
+
+Suppose you have a file with a list of gene trees in parenthetical
+format called `raxmltrees.tre`.
+You can access the example file of input trees
+[here](https://github.com/juliaphylo/SNaQ/blob/main/examples/raxmltrees.tre)
+or
+[here](https://raw.githubusercontent.com/juliaphylo/SNaQ/main/examples/raxmltrees.tre)
+for easier download.
+
+Do not copy-paste into a "smart" text-editor. Instead, save the file
+directly into your working directory using "save link as" or "download linked file as".
+This file contains 30 gene trees, each in parenthetical format on 6 taxa
+like this (with rounded branch lengths):
+
+`(E:0.038,((A:0.014,B:0.010):0.010,(C:0.008,D:0.002):0.010):0.025,O:0.078);`
+
+If `raxmltrees.tre` is in your working directory, you can
+read in all gene trees and directly summarize them by a list
+of quartet CFs (proportion of input trees with a given quartet):
+```@repl qcf
+using PhyloNetworks,SNaQ
+raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
+raxmlCF = readtrees2CF(raxmltrees) # read in the file and produce a "DataCF" object
+```
+
+In this table, each 4-taxon set is listed in one row.
+The 3 "CF" columns gives the proportion of genes that has
+each of the 3 possible trees on these 4 taxa.
+
+When there are many more taxa, the number of quartets
+might be very large and we might want to use a subset to speed things up.
+Here, if we wanted to use a random sample of 10 quartets
+instead of all quartets, we could do:
+
+`raxmlCF = readtrees2CF(raxmltrees, whichQ="rand", numQ=10, CFfile="tableCF10.txt")`
+
+Be careful to use a numQ value smaller than the total number of possible
+4-taxon subsets, which is *n choose 4* on *n* taxa (e.g. 15 on 6 taxa).
+To get a predictable random sample, you may set the seed with
+`using Random; Random.seed!(12321)`
+(for instance) prior to sampling the quartets as above.
+When we want to get *all* quartet CFs, 
+the `readtrees2CF` is *much* slower than the PhyloNetworks function `countquartetsintrees`
+to read in trees and calculate the quartet CFs observed in the trees.
+But for a small sample of quartets,
+then `readtrees2CF` is available.
+
+Additionally, providing a file name for the optional argument `CFile`
+ saves the quartet CFs to file for later use.
+
+#### reading CFs directly from file 
+
+If we already have a table of quartet concordance factors (CFs)
+saved as a table in this format
+
+| Taxon1 | Taxon2 | Taxon3 | Taxon4 | CF12_34 | CF13_24 | CF14_23
+|:-------|:-------|:-------|:-------|:--------|:--------|:-------
+| D      | A| E | O|   0.565 |       0.0903 |       0.3447
+| ...    |  |   |  |         |              |       ...
+
+then we could read it in one step using the`readtableCF` function.
+
+Concordance factors (CF), i.e. gene tree frequencies, for each
+4-taxon subset can be obtained from [BUCKy](http://www.stat.wisc.edu/~ane/bucky/)
+to account for gene tree uncertainty.
+
+An example file comes with the package, available
+[here](https://github.com/juliaphylo/SNaQ/blob/main/examples/buckyCF.csv)
+or
+[here](https://raw.githubusercontent.com/juliaphylo/SNaQ/main/examples/buckyCF.csv).
+
+```@repl qcf
+buckyCFfile = joinpath(dirname(pathof(SNaQ)), "..","examples","buckyCF.csv");
+buckyCF = readtableCF(buckyCFfile)
+```
+The same thing could be done in 2 steps:
+first to read the file and convert it to a 'DataFrame' object,
+and then to convert this DataFrame into a DataCF object.
+```@repl qcf
+using CSV, DataFrames
+dat = CSV.read(buckyCFfile, DataFrame);
+first(dat, 6) # to see the first 6 rows
+buckyCF = readtableCF(dat)
+tablequartetCF(buckyCF)
+```
+In the input file, columns need to be in the right order:
+with the first 4 columns giving the names of the taxa in each 4-taxon set.
+The CF values are assumed to be in columns named "CF12_34", etc.,
+or else in columns 5,6,7.
+If available, a column named "ngenes" will be taken to have the
+the number of genes for each 4-taxon subset.
+
+### starting tree
+
+The other input for SNaQ is a starting tree (or network) to be used as a starting point in optimization.
+
+
+If we have a tree for the data set at hand,
+it can be used as a starting point for the optimization.
+From our gene trees, we estimated a species tree with
+[ASTRAL](https://github.com/smirarab/ASTRAL/blob/master/astral-tutorial.md).
+This tree comes with the package in file `astral.tre`
+[here](https://github.com/juliaphylo/SNaQ/blob/main/examples/astral.tre).
+This file has 102 trees: 100 bootstrap species trees,
+followed by their greedy consensus,
+followed by the best tree on the original data.
+It's this last tree that we are most interested in.
+We can read it with
+```@example qcf
+astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
+astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
+```
+
+To start its search, SNaQ will need a network of "level 1".
+All trees and all networks with 1 hybridization are of level 1.
+To make sure that a network with 2 or more hybridizations is of level 1,
+we can read it in with
+`readnewicklevel1` (which also unroots the tree, resolves polytomies,
+replaces missing branch lengths by 1 for starting values etc.):
+```julia
+T=readnewicklevel1("startNetwork.txt")
+```
+Here `startNetwork.txt` is a hypothetical file: replace this by
+the name of a file that contains your network of interest.
+
+## Getting a network
+
+After we have [Inputs for SNaQ](@ref), we can estimate the network using the
 input data `raxmlCF` and starting from tree (or network) `astraltree`.
 We first impose the constraint of at most 0 hybrid node,
 that is, we ask for a tree.
@@ -38,8 +189,8 @@ Part of the screen output shows this:
     with -loglik 53.53150526187732
 
 This parenthetical (extended Newick) description is not very
-human-friendly, so we plot the tree
-(more about plotting networks below: [Network Visualization](@ref) ).
+human-friendly, so we use [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl) to plot the tree
+(more about plotting networks below: [Network visualization](@ref) ).
 
 ```@example snaqplot
 using PhyloPlots
@@ -138,7 +289,7 @@ and this output for net3 (again, only 1 hybrid found):
     MaxNet is (D,C,((O,(E,#H7:::0.19558839257941849):0.3135243301652981):0.6640664138384673,(B,(A)#H7:::0.8044116074205815):10.0):10.0);
     with -loglik 28.315067218909626
 
-## parallel computations
+## Parallel computations
 
 For network estimation, multiple runs can done in parallel.
 For example, if your machine has 4 or more processors (or cores),
@@ -262,7 +413,7 @@ echo "start of SNaQ parallel runs on $(hostname)"
 echo "end of SNaQ run ..."
 ```
 
-## choosing the number of hybridizations
+## Choosing the number of hybridizations
 
 Each network has a `loglik` attribute, which is its pseudo deviance:
 a multiple of the negative log-likelihood up to a constant (the constant is
@@ -291,7 +442,7 @@ plot(x=collect(0:3), y=scores, Geom.point, Geom.line)
 ```
 (btw, cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia)
 
-## Network Visualization
+## Network visualization
 
 To visualize the estimated network, we can use the companion package
 [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl).
@@ -362,16 +513,16 @@ The direction of hybrid edges can be inferred,
 but the direction of tree edges cannot be inferred.
 To obtain a representative visualization,
 it is best to root the network first, using one or more outgroup.
-Go to [Re-rooting trees and networks](@ref) for this.
+PhyloNetworks has a guide on [Re-rooting trees and networks](@ref) for this.
 If your outgroup conflicts with the direction of reticulations
-in the estimated network, see section
+in the estimated network, see the section
 [Candidate networks compatible with a known outgroup](@ref).
 
-## Candidate Network Evaluation
+## Candidate network evaluation
 
 From a set of candidate networks, one might simply need to score of each network
 to pick the best. Here, the score is the negative log pseudo-likelihood, and the
-lower the better. See the section to get the score of [Candidate Networks](@ref).
+lower the better. See the section to get the score of [Candidate networks](@ref).
 
 ## SNaQ error reporting
 

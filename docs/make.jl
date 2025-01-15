@@ -35,14 +35,12 @@ makedocs(;
         "Home" => "index.md",
         "Manual" => [
             "Installation" => "man/installation.md",
-            "Input Data for SNaQ" => "man/inputdata.md",
             "TICR pipeline" => "man/ticr_howtogetQuartetCFs.md",
-            "Network estimation and display" => "man/snaq_plot.md",
-            "Network comparison and manipulation" => "man/dist_reroot.md",
-            "Candidate Networks" => "man/fixednetworkoptim.md",
-            "Extract Expected CFs" => "man/expectedCFs.md",
+            "Network estimation" => "man/snaq_plot.md",
+            "Candidate networks" => "man/fixednetworkoptim.md",
+            "Extract expected CFs" => "man/expectedCFs.md",
             "Bootstrap" => "man/bootstrap.md",
-            "Multiple Alleles" => "man/multiplealleles.md",
+            "Multiple alleles" => "man/multiplealleles.md",
         ],
         "Library" => [
             "Public" => "lib/public.md",

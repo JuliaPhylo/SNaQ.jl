@@ -80,7 +80,7 @@ followed by the name of a function (or type) to get more details about it.
 We show here small examples on how to get more
 info on an object, what's its type, and how to manipulate objects.
 For example, let's take an object `raxmlCF` created from reading in some data
-(see [Input for SNaQ](@ref)):
+(see [Inputs for SNaQ](@ref)):
 
 ```@repl install
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
