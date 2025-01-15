@@ -13,7 +13,7 @@ loglik!(net1, 28.31506721890958)
 ```
 # Comparing and manipulating networks
 
-Examples below follow those in [Getting a Network](@ref).
+Examples below follow those in [Estimating a network](@ref).
 
 ## Comparing networks / trees
 
