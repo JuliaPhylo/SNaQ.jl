@@ -26,7 +26,15 @@ end
 # aux function to make a hybrid edge tree edge
 # used in deleteLeaf
 # input: edge and hybrid node it pointed to
-function makeEdgeTree!(edge::Edge, node::Node)
+# update_identifiable:  variable added b/c when a `switchMajorTree!` move happens,
+#                       a tree edge is converted to a hybrid edge and a hybrid edge
+#                       is converted to a tree edge. this function performs the
+#                       former operation, so when `isEdgeIdentifiable` is called,
+#                       the hybrid node that `edge` points to will appear to only
+#                       have ONE hybrid edge attached to it instead of two, because
+#                       the second edge is about to be set as a hybrid in the next
+#                       line of code.
+function makeEdgeTree!(edge::Edge, node::Node; update_identifiable::Bool=true)
     edge.hybrid || error("cannot make edge $(edge.number) tree because it is tree already")
     node.hybrid || error("need the hybrid node at which edge $(edge.number) is pointing to, node $(node.number) is tree node")
     @debug "we make edge $(edge.number) a tree edge, but it will still point to hybrid node $(node.number)"
@@ -42,7 +50,9 @@ function makeEdgeTree!(edge::Edge, node::Node)
         end
     end
     hasHybEdge!(other, hyb)
-    istIdentifiable!(edge, isEdgeIdentifiable(edge))
+    if update_identifiable
+        istIdentifiable!(edge, isEdgeIdentifiable(edge))
+    end
 end
 
 # function to delete internal nodes until there is no

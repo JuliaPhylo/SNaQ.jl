@@ -726,8 +726,9 @@ function switchMajorTree!(major::Edge, tree::Edge, node::Node)
     @debug "switch major $(major.number) tree $(tree.number), node $(node.number)"
     g = major.gamma #needed because changed inside makeEdgeTree
     cycle = inCycle(major) #needed because changed inside makeEdgeTree
-    makeEdgeTree!(major,node)
+    makeEdgeTree!(major,node,update_identifiable=false)
     makeEdgeHybrid!(tree,node,g)
+    istIdentifiable!(major, isEdgeIdentifiable(major))
     inCycle!(tree, cycle)
     inCycle!(major, -1)
 end
