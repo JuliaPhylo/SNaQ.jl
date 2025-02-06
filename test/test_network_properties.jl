@@ -31,9 +31,9 @@ end
 end
 
 @testset "is_galled_network" begin
-    @test !is_galled_network(net1)
-    @test is_galled_network(net2)
-    @test is_galled_network(net3)
-    @test !is_galled_network(net4)
+    @test !PhyloNetworks.isgalled(net1)
+    @test PhyloNetworks.isgalled(net2)
+    @test PhyloNetworks.isgalled(net3)
+    @test !PhyloNetworks.isgalled(net4)
 end
 

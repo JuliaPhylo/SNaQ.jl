@@ -1,4 +1,5 @@
-using Graphs, PhyloNetworks
+# using Graphs, PhyloNetworks
+using PhyloNetworks
 
 # snaq!(tre0, df, restriction_set(max_level=3, require_galled_tree=true))
 
@@ -19,8 +20,11 @@ function restriction_set(; max_level::Real=Inf, require_galled_tree::Bool=false,
 end
 
 restrict_maximum_level(level::Int) = (net) -> get_network_level(net) <= level
-restrict_galled_tree() = (net) -> is_galled_tree(net)
-restrict_galled_network() = (net) -> is_galled_network(net)
+restrict_galled_network() = (net) -> PhyloNetworks.isgalled(net)
+restrict_galled_tree() = (net) -> get_network_level(net) <= 1
+restrict_rooted_tree_child() = (net) -> PhyloNetworks.istreechild(net)[1]
+restrict_weakly_tree_child() = (net) -> PhyloNetworks.istreechild(net)[2]
+restrict_strongly_tree_child() = (net) -> PhyloNetworks.istreechild(net)[3]
 
 
 function meets_constraints(net::HybridNetwork, constraints::Vector{Function})
@@ -31,88 +35,19 @@ function meets_constraints(net::HybridNetwork, constraints::Vector{Function})
 end
 
 
-"""
-Converts the tree/network `net` into a SimpleGraph to leverage already
-implemented biconnected component algorithms in Graphs.jl.
-"""
-function Graph(net::HybridNetwork)
-    graph = SimpleGraph(net.numnodes)
-    nodemap = Dict{Node, Int64}(node => idx for (idx, node) in enumerate(net.node))
-    for edge in net.edge
-        enode1 = edge.node[1]
-        enode2 = edge.node[2]
-        if haskey(nodemap, enode1) && haskey(nodemap, enode2)
-            add_edge!(graph, nodemap[enode1], nodemap[enode2])
-        end
-    end
-
-    return graph
-end
-
-
-
 function get_network_level(net::HybridNetwork)
-   
-    G = Graph(net)
-    bi_comp = biconnected_components(G)
-    max_level = 0
-    
+    bi_comp = [comp for comp in biconnectedcomponents(net) if length(comp) > 1]
+    max_level = 1
     for component in bi_comp
-        component = unique(reduce(vcat, [[edge.dst, edge.src] for edge in component]))
-        iter_level = 0
-        for node in component
-            if net.node[node].hybrid iter_level += 1 end
+        hybrids_seen = [];
+        for edge in component
+            child = getchild(edge)
+            if child.hybrid && !(child in hybrids_seen)
+                push!(hybrids_seen, child)
+            end
         end
-        max_level = max(max_level, iter_level)
+        max_level = max(max_level, length(hybrids_seen))
     end
-
     return max_level
-
 end
-
-
-function is_galled_tree(net::HybridNetwork)
-
-    G = Graph(net)
-    bi_comp = [comp for comp in biconnected_components(G) if length(comp) > 1]
-
-    v_counts = Dict{Int, Int}()
-    for component in bi_comp
-        component = reduce(vcat, [[edge.dst, edge.src] for edge in component])
-        for node in component
-            if !haskey(v_counts, node)
-                v_counts[node] = 1
-            else
-                v_counts[node] += 1
-                if v_counts[node] > 2 return false end
-            end
-        end
-    end
-    return true
-
-end
-
-
-function is_galled_network(net::HybridNetwork)
-
-    G = Graph(net)
-    bi_comp = [comp for comp in biconnected_components(G) if length(comp) > 1]
-
-    v_counts = Dict{Int, Int}()
-    for component in bi_comp
-        component = reduce(vcat, [[edge.dst, edge.src] for edge in component])
-        for node in component
-            if net.node[node].hybrid
-                if !haskey(v_counts, node)
-                    v_counts[node] = 1
-                else
-                    v_counts[node] += 1
-                    if v_counts[node] > 2 return false end
-                end
-            end
-        end
-    end
-    return true
-
-end
-
+is_galled_tree(net::HybridNetwork) = get_network_level(net) <= 1
