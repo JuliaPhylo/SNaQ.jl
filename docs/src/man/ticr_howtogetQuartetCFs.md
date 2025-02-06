@@ -259,4 +259,4 @@ open("CFtable.csv","w") do f_out
 end # closes "CFtable.csv" safely
 ```
 When this is done, we will have a file `CFtable.csv` containing the
-quartet concordance factors, to give to SNaQ as input :smiley:
+quartet concordance factors, to give to SNaQ as input.

@@ -45,6 +45,7 @@ const fRelBL = 1e-12
 const fAbsBL = 1e-10
 const xRelBL = 1e-10
 const xAbsBL = 1e-10
+const qAbs = 1e-4
 # ---------------------- branch length optimization ---------------------------------
 
 # function to get the branch lengths/gammas to optimize for a given network
@@ -365,7 +366,6 @@ function optBL!(
     (ftolRel > 0 && ftolAbs > 0 && xtolAbs > 0 && xtolRel > 0) || error("tolerances have to be positive, ftol (rel,abs), xtol (rel,abs): $([ftolRel, ftolAbs, xtolRel, xtolAbs])")
     if verbose println("OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)");
     else @debug        "OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)"; end
-    @info "A"
     parameters!(net); # branches/gammas to optimize: ht(net), numht(net)
     @info "B"
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
@@ -433,7 +433,7 @@ optBL!(net::HybridNetwork, d::DataCF, ftolRel::Float64, ftolAbs::Float64, xtolRe
 
 # rename optBL for a more user-friendly name
 """
-    topologyMaxQPseudolik!(
+    topologymaxQpseudolik!(
         net::HybridNetwork,
         d::DataCF;
         verbose = true,
@@ -466,14 +466,14 @@ for example 1e-12 for `ftolRel`, and 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`
 to match those in [`snaq!`](@ref).
 
 To further optimize branch lengths and γs, another strategy is the run the
-`topologyMaxQPseudolik!` multiple times, because each time the edge parameters
+`topologymaxQpseudolik!` multiple times, because each time the edge parameters
 in the network are improved, and re-starting a search from a good place leads
 to finding even better edge parameter values. If `snaq!` finds a better score
 for the given network topology, then using this strategy (effectively used by
 `snaq!` when optimizing edge parameters at each trial) and using stringent
 tolerances should eliminate the difference.
 """
-function topologyMaxQPseudolik!(
+function topologymaxQpseudolik!(
     net::HybridNetwork,
     d::DataCF;
     verbose::Bool=false,
@@ -502,7 +502,7 @@ function topologyMaxQPseudolik!(
     end
     if(!isempty(d.repSpecies))
       expandLeaves!(d.repSpecies, net)
-      net = readnewick_level1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
+      net = readnewicklevel1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
     end
     optBL!(net, d, verbose, ftolRel, ftolAbs, xtolRel,xtolAbs)
     if(numBad(net) > 0) # to keep gammaz info in parenthetical description of bad diamond I
@@ -920,7 +920,7 @@ function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Boo
             moveDownLevel!(currT)
             @debug begin
                 printedges(currT)
-                printPartitions(currT)
+                printpartitions(currT)
                 #printnodes(currT)
                 writenewick_level1(currT,true)
             end
@@ -1359,7 +1359,7 @@ function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::F
     newT = deepcopy(currT)
     @debug begin
         printedges(newT)
-        printPartitions(newT)
+        printpartitions(newT)
         println("++++")
         writenewick_level1(newT,true)
     end
@@ -1419,7 +1419,7 @@ function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::F
                 end
                 @debug begin
                     printedges(newT)
-                    printPartitions(newT)
+                    printpartitions(newT)
                     #printnodes(newT)
                     println("++++")
                     println(writenewick_level1(newT,true))
@@ -1462,7 +1462,7 @@ function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::F
     writelog && printCounts(movescount,movesgamma,logfile)
     @debug begin
         printedges(newT)
-        printPartitions(newT)
+        printpartitions(newT)
         printnodes(newT)
         writenewick_level1(newT,true) ## this changes non-identifiable BLs in newT to -1
     end
@@ -1745,7 +1745,6 @@ function optTopRuns!(currT0::HybridNetwork, restrictions::Function, liktolAbs::F
     else
         error("all runs failed")
     end
-
     ## need to do this before setting BL to -1
     if (writelog && !isTree(maxNet)) ## only do networks file if maxNet is not tree
         println("best network and networks with different hybrid/gene flow directions printed to .networks file")
@@ -2005,8 +2004,8 @@ At the end, branch lengths and γ's are optimized on the last "best" network
 with different and very thorough tolerance parameters:
 1e-12 for `ftolRel`, 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`.
 
-See also: [`topologyMaxQPseudolik!`](@ref) to optimize parameters on a fixed topology,
-and [`topologyQPseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
+See also: [`topologymaxQpseudolik!`](@ref) to optimize parameters on a fixed topology,
+and [`topologyQpseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
 of a fixed topology with fixed parameters.
 
 Reference:  
@@ -2047,6 +2046,8 @@ function snaq!(
     # yes, need to check that everything is ok because it could have been cleaned and then modified
     tmp1, tmp2 = taxadiff(d,currT0)
     length(tmp1)==0 || error("these taxa appear in one or more quartets, but not in the starting topology: $tmp1")
+    seed != 0 && Threads.nthreads() > 1 && @warn("You are running snaq! with $(Threads.nthreads()) threads but are trying to use a set-seed. Results are not reproducible when multiple threads are used.")
+
     if length(tmp2)>0
         s = "these taxa will be deleted from the starting topology, they have no quartet CF data:\n"
         for tax in tmp2 s *= " $tax"; end
@@ -2071,7 +2072,7 @@ function snaq!(
     # for the case of multiple alleles: expand into two leaves quartets like sp1 sp1 sp2 sp3.
     if !isempty(d.repSpecies)
         expandLeaves!(d.repSpecies,startnet)
-        startnet = readnewick_level1(writenewick_level1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
+        startnet = readnewicklevel1(writenewick_level1(startnet)) # dirty fix to multiple alleles problem with expandLeaves
     end
     # check for uninformative quartets, if qinfTest == true
     # these are defined as quartets where observed CFs are all within qinfTol

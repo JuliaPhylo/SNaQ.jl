@@ -1373,10 +1373,10 @@ push!(qvec,Quartet(1,["13","9","1","6"],[0.5,0.4,0.1]));
 push!(qvec,Quartet(1,["13","1","15","14"],[0.5,0.4,0.1]));
 
 dpre = DataCF(qvec);
-net = readnewick_level1("(15,(1,((14,(#H1,(((12,13),(11,#H3)),(7,((10)#H3,(8,9)))))),((((2,3))#H2,(6,(5,(#H2,4)))))#H1)));");
+net = readnewicklevel1("(15,(1,((14,(#H1,(((12,13),(11,#H3)),(7,((10)#H3,(8,9)))))),((((2,3))#H2,(6,(5,(#H2,4)))))#H1)));");
 extractQuartet!(net,dpre)
 df = writeExpCF(dpre.quartet)
 
-d = readTableCF!(df)
+d = readtableCF!(df)
 val = optBL!(net,d, .1,.1,.1,.1)
 @test val ≈ 0.0 atol=1e-12 # || error("not correct likelihood with perfect data")

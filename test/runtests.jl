@@ -1,3 +1,6 @@
+if Threads.nthreads() == 1 error("Tests must be run with >1 thread.") end
+
+
 using SNaQ
 using PhyloNetworks
 using Random
@@ -18,7 +21,7 @@ import SNaQ: checkNet,
     writeExpCF, writenewick_level1, descData,
     addHybridizationUpdate!, deleteHybridizationUpdate!,
     cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!, nchoose1234, QuartetT,undirectedOtherNetworks,hybridatnode!,
+    updatePartition!, optBL!,undirectedOtherNetworks,hybridatnode!,
     # field getters
     istIdentifiable, fromBadDiamondI, inCycle, hasHybEdge,
     isBadDiamondI, isBadDiamondII, isExtBadTriangle, isVeryBadTriangle,
@@ -37,39 +40,44 @@ import PhyloNetworks:
     Node,
     setNode!,setEdge!,
     approxEq,
-    searchHybridNode,searchHybridEdge,
-    ladderpartition,pushHybrid!
+    searchHybridNode,
+    pushHybrid!
+
+@testset "Code quality (Aqua.jl)" begin
+    Aqua.test_all(SNaQ;
+    ambiguities = (broken = false),
+    persistent_tasks = false,
+    deps_compat = false)
+end
 
 
-
-
-# @testset "Code quality (Aqua.jl)" begin
-#     Aqua.test_all(SNaQ;
-#     ambiguities = (broken = false),
-#     persistent_tasks = false,
-#     deps_compat = false)
-# end
+function runtestfile(testfile::String)
+    originalstdout = stdout
+    originalstderr = stderr
+    include(testfile)
+    redirect_stdout(originalstdout)
+    redirect_stderr(originalstderr)
+end
 
 
 SNaQ.setCHECKNET(true)
 @testset "SNaQ.jl" begin
-    include("test_5taxon_readTopology.jl")
-    include("test_add2hyb.jl")
-    include("test_badDiamII.jl")
-    include("test_bootstrap.jl") 
-    include("test_calculateExpCF.jl")
-    include("test_calculateExpCF2.jl")
-    include("test_correctLik.jl")
-    include("test_deleteHybridizationUpdate.jl")
-    include("test_multipleAlleles.jl")
-    include("test_optBLparts.jl")
-    include("test_parameters.jl")
-    include("test_partition.jl")
-    include("test_partition2.jl")
-    include("test_perfectData.jl")
-    include("test_readInputData.jl")
-    include("test_hasEdge.jl")
-    include("test_undirectedOtherNetworks.jl")
-
+    runtestfile("test_5taxon_readTopology.jl")
+    runtestfile("test_add2hyb.jl")
+    runtestfile("test_badDiamII.jl")
+    runtestfile("test_bootstrap.jl") 
+    runtestfile("test_calculateExpCF.jl")
+    runtestfile("test_calculateExpCF2.jl")
+    runtestfile("test_correctLik.jl")
+    runtestfile("test_deleteHybridizationUpdate.jl")
+    runtestfile("test_multipleAlleles.jl")
+    runtestfile("test_optBLparts.jl")
+    runtestfile("test_parameters.jl")
+    runtestfile("test_partition.jl")
+    runtestfile("test_partition2.jl")
+    runtestfile("test_perfectData.jl")
+    runtestfile("test_readInputData.jl")
+    runtestfile("test_hasEdge.jl")
+    runtestfile("test_undirectedOtherNetworks.jl")
 end
 

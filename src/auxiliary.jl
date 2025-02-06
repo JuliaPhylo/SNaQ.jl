@@ -264,7 +264,7 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
                         cycleNum = [h.number]
                         getDescendants!(getOtherNode(e,n),e,desc,cycleNum)
                         if(checkPartition && !isPartitionInNet(net,desc,cycleNum))
-                            printPartitions(net)
+                            printpartitions(net)
                             error("partition with cycle $(cycleNum) and edges $([e.number for e in desc]) not found in net.partition")
                         end
                     end
@@ -316,7 +316,7 @@ checkNet(net::HybridNetwork) = checkNet(net, false)
 function printEverything(net::HybridNetwork)
     printedges(net)
     printnodes(net)
-    printPartitions(net)
+    printpartitions(net)
     println("$(writenewick_level1(net))")
 end
 

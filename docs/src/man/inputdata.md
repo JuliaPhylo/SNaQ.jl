@@ -82,10 +82,10 @@ To read in all gene trees and directly summarize them by a list
 of quartet CFs (proportion of input trees with a given quartet):
 ```@repl qcf
 q,t = countquartetsintrees(genetrees); # read in trees, calculate quartet CFs
-df = writeTableCF(q,t)   # data frame with observed CFs: gene frequencies
+df = tablequartetCF(q,t)   # data frame with observed CFs: gene frequencies
 using CSV
 CSV.write("tableCF.csv", df); # to save the data frame to a file
-raxmlCF = readTableCF("tableCF.csv") # read in the file and produces a "DataCF" object
+raxmlCF = readtableCF("tableCF.csv") # read in the file and produces a "DataCF" object
 rm("tableCF.csv") # hide
 ```
 `less("tableCF.csv")` lets you see the content of the newly created
@@ -104,17 +104,17 @@ might be very large and we might want to use a subset to speed things up.
 Here, if we wanted to use a random sample of 10 quartets
 instead of all quartets, we could do:
 
-`raxmlCF = readTrees2CF(raxmltrees, whichQ="rand", numQ=10, CFfile="tableCF10.txt")`
+`raxmlCF = readtrees2CF(raxmltrees, whichQ="rand", numQ=10, CFfile="tableCF10.txt")`
 
 Be careful to use a numQ value smaller than the total number of possible
 4-taxon subsets, which is *n choose 4* on *n* taxa (e.g. 15 on 6 taxa).
 To get a predictable random sample, you may set the seed with
 `using Random; Random.seed!(12321)`
 (for instance) prior to sampling the quartets as above.
-The `readTrees2CF` is *much* slower than the function `countquartetsintrees`
+The `readtrees2CF` is *much* slower than the function `countquartetsintrees`
 to read in trees and calculate the quartet CFs observed in the trees,
 when we want to get *all* quartet CFs. But for a small sample of quartets,
-then `readTrees2CF` is available.
+then `readtrees2CF` is available.
 
 ## Tutorial data: quartet CFs
 
@@ -126,7 +126,7 @@ in a file `buckyCF.csv` in this format
 | D      | A| E | O|   0.565 |       0.0903 |       0.3447
 | ...    |  |   |  |         |              |       ...
 
-we would read it in one step like this: `readTableCF("buckyCF.csv")`.
+we would read it in one step like this: `readtableCF("buckyCF.csv")`.
 An example file comes with the package, available
 [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/buckyCF.csv)
 or
@@ -134,7 +134,7 @@ or
 
 ```@repl qcf
 buckyCFfile = joinpath(dirname(pathof(SNaQ)), "..","examples","buckyCF.csv");
-buckyCF = readTableCF(buckyCFfile)
+buckyCF = readtableCF(buckyCFfile)
 ```
 The same thing could be done in 2 steps:
 first to read the file and convert it to a 'DataFrame' object,
@@ -143,8 +143,8 @@ and then to convert this DataFrame into a DataCF object.
 using CSV, DataFrames
 dat = CSV.read(buckyCFfile, DataFrame);
 first(dat, 6) # to see the first 6 rows
-buckyCF = readTableCF(dat)
-writeTableCF(buckyCF)
+buckyCF = readtableCF(dat)
+tablequartetCF(buckyCF)
 ```
 In the input file, columns need to be in the right order:
 with the first 4 columns giving the names of the taxa in each 4-taxon set.
@@ -181,10 +181,10 @@ To start its search, SNaQ will need a network of "level 1".
 All trees and all networks with 1 hybridization are of level 1.
 To make sure that a network with 2 or more hybridizations is of level 1,
 we can read it in with
-`readnewick_level1` (which also unroots the tree, resolves polytomies,
+`readnewicklevel1` (which also unroots the tree, resolves polytomies,
 replaces missing branch lengths by 1 for starting values etc.):
 ```julia
-T=readnewick_level1("startNetwork.txt")
+T=readnewicklevel1("startNetwork.txt")
 ```
 (here `startNetwork.txt` is a hypothetical file: replace this by
 the name of a file that contains your network of interest.)

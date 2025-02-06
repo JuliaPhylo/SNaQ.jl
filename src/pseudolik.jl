@@ -527,6 +527,27 @@ function extractQuartet!(net::HybridNetwork, quartet::Vector{Quartet})
     end
 end
 
+# function to extract a quartet from a Quartet object
+# it calls the previous extractQuartet
+# returns qnet (check: maybe not needed later) and assigns
+# quartet.qnet = qnet
+function extractQuartet!(net::HybridNetwork, quartet::Quartet)
+    list = Node[]
+    for q in quartet.taxon
+        tax_in_net = findfirst(n -> n.name == q, net.node)
+        tax_in_net != nothing || error("taxon $(q) not in network")
+        push!(list, net.node[tax_in_net])
+    end
+    qnet = extractQuartet(net,list)
+    @debug "EXTRACT: extracted quartet $(quartet.taxon)"
+    redundantCycle!(qnet) #removes no leaves, cleans external edges
+    updateHasEdge!(qnet,net)
+    parameters!(qnet,net)
+    qnet.quartetTaxon = quartet.taxon
+    quartet.qnet = qnet
+    #return qnet
+end
+
 extractQuartet!(net::HybridNetwork, d::DataCF) = extractQuartet!(net, d.quartet)
 
 # function to check if there are potential redundant cycles in net
@@ -1299,7 +1320,7 @@ end
 # warning: only updates expCF for quartet.qnet.changed=true
 function calculateExpCFAll!(data::DataCF, x::Vector{Float64},net::HybridNetwork)
     !all((q->(q.qnet.numtaxa != 0)), data.quartet) ? error("qnet in quartets on data are not correctly updated with extractQuartet") : nothing
-    #println("calculateExpCFAll in x: $(x) with net.ht $(net.ht)")
+    #println("calculateExpCFAll in x: $(x) with ht(net) $(ht(net))")
     Threads.@threads for q in data.quartet
         if (q.sampled)
             update!(q.qnet,x,net)
@@ -1315,7 +1336,7 @@ end
 
 # function to simply calculate the pseudolik of a given network
 """
-`topologyQPseudolik!(net::HybridNetwork, d::DataCF)`
+`topologyQpseudolik!(net::HybridNetwork, d::DataCF)`
 
 Calculate the quartet pseudo-deviance of a given network/tree for
 DataCF `d`. This is the negative log pseudo-likelihood,
@@ -1323,21 +1344,21 @@ up to an additive constant, such that a perfect fit corresponds to a deviance of
 
 Be careful if the net object does
 not have all internal branch lengths specified because then the
-pseudolikelihood will be meaningless. See [`topologyMaxQPseudolik!`](@ref) if you want branch lengths and numerical parameters optimized on the given network.
+pseudolikelihood will be meaningless. See [`topologymaxQpseudolik!`](@ref) if you want branch lengths and numerical parameters optimized on the given network.
 
 The loglik attribute of the network is updated, and `d` is updated with the expected
 concordance factors under the input network.
 """
-function topologyQPseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
+function topologyQpseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
     for ed in net0.edge
       !ed.hybrid || (ed.gamma >= 0.0) ||
-        error("hybrid edge has missing γ value. Cannot compute quartet pseudo-likelihood.\nTry `topologyMaxQPseudolik!` instead, to estimate these γ's.")
+        error("hybrid edge has missing γ value. Cannot compute quartet pseudo-likelihood.\nTry `topologymaxQpseudolik!` instead, to estimate these γ's.")
     end
     missingBL = any([e.length < 0.0 for e in net0.edge]) # at least one BL was missing
     net = readTopologyUpdate(writenewick_level1(net0))  # update level-1 attributes. Changes <0 BL into 1.0
     if(!isempty(d.repSpecies))
       expandLeaves!(d.repSpecies, net)
-      net = readnewick_level1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
+      net = readnewicklevel1(writenewick_level1(net)) # dirty fix to multiple alleles problem with expandLeaves
     end
     missingBL && any([(e.length == 1.0 && istIdentifiable(e)) for e in net.edge]) &&
       @warn "identifiable edges lengths were originally missing, so assigned default value of 1.0"
@@ -1347,7 +1368,7 @@ function topologyQPseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
         error("starting topology not a level 1 network")
     end
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
-    all((q->(q.qnet.numTaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
+    all((q->(q.qnet.numtaxa != 0)), d.quartet) || error("qnet in quartets on data are not correctly updated with extractQuartet")
     Threads.@threads for q in d.quartet
         if (q.sampled)
             if verbose println("computing expCF for quartet $(q.taxon)") # to stdout

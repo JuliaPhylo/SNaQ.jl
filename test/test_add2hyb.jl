@@ -2,7 +2,7 @@
 # claudia may 2015
 
 tree = "(((((((1,2),3),4),5),(6,7)),(8,9)),10);"
-currT0 = readnewick_level1(tree);
+currT0 = readnewicklevel1(tree);
 #printedges(currT0)
 besttree = deepcopy(currT0);
 
@@ -27,5 +27,5 @@ ed = PhyloNetworks.hybridEdges(hybrid)
 
 # did not recognize as bad diamond II
 tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
-net = readnewick_level1(tree);
+net = readnewicklevel1(tree);
 isBadDiamondII(net.node[10]) || error("does not recognize as bad diamond II")

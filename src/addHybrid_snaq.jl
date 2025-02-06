@@ -183,7 +183,7 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
                         inblack = true
                     else
                         inblack = false
-                        @goto outer
+                        @goto outer 
                     end
                 end
                 i += 2

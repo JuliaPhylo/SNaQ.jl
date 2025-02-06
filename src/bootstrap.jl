@@ -114,12 +114,12 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
 
     if inputastrees # allocate memory, to be re-used later
         newtrees = samplebootstrap_multiloci(data, row=1)
-        newd = readTrees2CF(newtrees, quartetfile=quartetfile, writeTab=false, writeSummary=false)
-        taxa = unionTaxa(newtrees)
+        newd = readtrees2CF(newtrees, quartetfile=quartetfile, writeTab=false, writeSummary=false)
+        taxa = tiplabels(newtrees)
     else
         newdf = sampleCFfromCI(data, -1) # column names check, newdf has obsCF in columns 5-7
         # seed=-1: deep copy only, no rand()
-        newd = readTableCF!(newdf, collect(1:7)) # allocate memory for DataCF object
+        newd = readtableCF!(newdf, collect(1:7)) # allocate memory for DataCF object
     end
     if runs1>0 && isTree(currT0) # get rough first estimate of branch lengths in startnet
         updateBL!(currT0, newd)
@@ -152,10 +152,10 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         print(str)
         if !inputastrees
             sampleCFfromCI!(newdf, seedsData[i])
-            readTableCF!(newd, newdf, [5,6,7])
+            readtableCF!(newd, newdf, [5,6,7])
         else
             samplebootstrap_multiloci!(newtrees, data, seed=seedsData[i])
-            calculateObsCFAll!(newd,taxa) # do not use readTrees2CF: to save memory and gc time
+            calculateObsCFAll!(newd,taxa) # do not use readtrees2CF: to save memory and gc time
         end
         if runs1>0
             str = "estimation, $runs1 run" * (runs1>1 ? "s" : "") * ": seed $(seeds[i])\n"
@@ -283,7 +283,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
     runs1 = runs - runs2                       # runs starting from startnet
 
     if runs1>0
-        startnet=readnewick_level1(writenewick_level1(startnet)) # does not modify startnet outside
+        startnet=readnewicklevel1(writenewick_level1(startnet)) # does not modify startnet outside
         flag = checkNet(startnet,true) # light checking only
         flag && error("starting topology suspected not level-1")
         try
@@ -298,7 +298,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
                 from the same network always, or else provide an other network "otherNet"
                 to start the optimization from this other network in pcrnet % of runs.""")
     if runs2 > 0
-        otherNet=readnewick_level1(writenewick_level1(otherNet))
+        otherNet=readnewicklevel1(writenewick_level1(otherNet))
         flag = checkNet(otherNet,true) # light checking only
         flag && error("starting topology 'otherNet' suspected not level-1")
         try

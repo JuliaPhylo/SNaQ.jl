@@ -17,18 +17,18 @@ we can optimize parameters on the true network
 (the one originally used to simulate the data):
 
 ```@setup fixednetworkoptim
-using PhyloNetworks, SNaQ
+using PhyloNetworks, SNaQ, DataFrames
 using Logging # to suppress info messages below
 baselogger = global_logger()
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readTableCF(writeTableCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...))
+raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)))
 ```
 
 ```@repl fixednetworkoptim
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
-net1alt = topologyMaxQPseudolik!(truenet, raxmlCF);
+net1alt = topologymaxQpseudolik!(truenet, raxmlCF);
 writenewick(net1alt, round=true)
 loglik(net1alt) # pseudo deviance actually: the lower the better
 ```
@@ -54,7 +54,7 @@ For a more thorough optimization, we should increase the requirements before
 the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
-net1par = topologyMaxQPseudolik!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
+net1par = topologymaxQpseudolik!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
 loglik(net1par) # pseudo deviance, actually: the lower the better
 ```
 
@@ -63,7 +63,7 @@ loglik(net1par) # pseudo deviance, actually: the lower the better
 For a network with given branch lengths and γ heritabilies,
 we can compute the pseudolikelihood (well, a pseudo-deviance) with:
 ```@repl fixednetworkoptim
-topologyQPseudolik!(truenet,raxmlCF);
+topologyQpseudolik!(truenet,raxmlCF);
 loglik(truenet) # again, pseudo deviance
 ```
 This function is not maximizing the pseudolikelihood, it is simply computing the

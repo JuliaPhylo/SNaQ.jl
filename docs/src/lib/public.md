@@ -1,8 +1,8 @@
-# public documentation
+# Public Documentation
 
 Documentation for `SNaQ`'s public (exported) interface.
 
-## functions & types
+## Functions & Types
 
 ```@autodocs
 Modules = [SNaQ]
@@ -10,7 +10,7 @@ Private = false
 Order   = [:function,:type]
 ```
 
-## index
+## Index
 
 ```@index
 Pages = ["public.md"]

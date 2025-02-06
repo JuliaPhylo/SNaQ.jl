@@ -31,7 +31,7 @@ and calculate the quartet CFs at the species level:
 genetreefile = joinpath(dirname(pathof(SNaQ)), "..","examples","genetrees_alleletips.tre");
 genetrees = readmultinewick(genetreefile);
 sort(tiplabels(genetrees[1])) # multiple tips in species S1
-df_sp = writeTableCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...)
+df_sp = tablequartetCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...)
 ```
 
 Now `df_sp` is a data frame containing the quartet concordance factors
@@ -47,8 +47,8 @@ It is safe to save this data frame, then use it for `snaq!` like this:
 
 ```@repl multialleles
 CSV.write("tableCF_species.csv", df_sp);   # to save the data frame to a file
-d_sp = readTableCF("tableCF_species.csv"); # to get a "DataCF" object for use in snaq!
-summarizeDataCF(d_sp)
+d_sp = readtableCF("tableCF_species.csv"); # to get a "DataCF" object for use in snaq!
+summarizedataCF(d_sp)
 ```
 
 ## within-species 4-taxon sets
@@ -61,18 +61,18 @@ in which 2 individuals are from the same species, the following functions
 should be used:
 
 ```@repl multialleles
-df_ind = writeTableCF(countquartetsintrees(genetrees, showprogressbar=false)...); # no mapping: CFs across individuals
+df_ind = DataFrame(tablequartetCF(genetrees)); # no mapping: CFs across individuals
 first(df_ind, 4) # to see the first 4 rows
 CSV.write("tableCF_individuals.csv", df_ind);  # to save to a file
-df_sp = mapAllelesCFtable(mappingfile, "tableCF_individuals.csv");
-d_sp = readTableCF!(df_sp, mergerows=true);
+df_sp = mapallelesCFtable(mappingfile, "tableCF_individuals.csv");
+d_sp = readtableCF!(df_sp, mergerows=true);
 ```
 where the mapping file can be a text (or `csv`) file with two columns
 named `allele` (or `individual`) and `species`, mapping each allele name to a species name.
 The data in `df_ind` is the table of concordance factors at the level of individuals.
 In other words, it lists CFs using one row for each set of 4 alleles/individuals.
 
-`mapAllelesCFtable` creates a new data frame `df_sp` of quartet concordance factors at the
+`mapallelesCFtable` creates a new data frame `df_sp` of quartet concordance factors at the
 species level: with the allele names replaced by the appropriate species names.
 
 **Warnings**:
@@ -95,7 +95,7 @@ which can be calculated by averaging the CFs of quartets of individuals
 from the associated species:
 
 ```@repl multialleles
-df_sp = writeTableCF(d_sp) # data frame, quartet CFs averaged across individuals of same species
+df_sp = tablequartetCF(d_sp) # data frame, quartet CFs averaged across individuals of same species
 CSV.write("CFtable_species.csv", df_sp); # save to file
 ```
 
@@ -136,7 +136,7 @@ function hasrep(row) # see if a row (4-taxon set) has a species name ending with
 end
 df_sp_reduced = filter(!hasrep, df_sp) # removes rows with repeated species
 CSV.write("CFtable_species_norep.csv", df_sp_reduced); # to save to file
-d_sp_reduced = readTableCF(df_sp_reduced) # DataCF object, for input to snaq!
+d_sp_reduced = readtableCF(df_sp_reduced) # DataCF object, for input to snaq!
 ```
 
 and now we can run `snaq!` on the reduced set of quartets without repeats,

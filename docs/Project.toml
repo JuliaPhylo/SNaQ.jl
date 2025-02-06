@@ -9,4 +9,4 @@ RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
 SNaQ = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
 
 [sources]
-PhyloNetworks = {rev = "dev", url = "https://github.com/JuliaPhylo/PhyloNetworks.jl"}
+PhyloTraits = {url = "https://github.com/JuliaPhylo/PhyloTraits.jl"}
