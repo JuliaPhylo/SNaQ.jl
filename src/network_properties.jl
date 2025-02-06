@@ -3,7 +3,8 @@ using PhyloNetworks
 
 # snaq!(tre0, df, restriction_set(max_level=3, require_galled_tree=true))
 
-function restriction_set(; max_level::Real=Inf, require_galled_tree::Bool=false, require_galled_network::Bool=false)
+function restriction_set(; max_level::Real=Inf, require_galled_tree::Bool=false, require_galled_network::Bool=false,
+    require_rooted_tree_child::Bool=false, require_weakly_tree_child::Bool=false, require_strongly_tree_child::Bool=false)
 
     restrictions = Vector{Function}()
     if max_level < Inf
@@ -15,6 +16,15 @@ function restriction_set(; max_level::Real=Inf, require_galled_tree::Bool=false,
     elseif require_galled_network
         push!(restrictions, restrict_galled_network())
     end
+
+    if require_rooted_tree_child
+        push!(restrictions, restrict_rooted_tree_child())
+    elseif require_weakly_tree_child
+        push!(restrictions, restrict_weakly_tree_child())
+    elseif require_strongly_tree_child
+        push!(restrictions, restrict_strongly_tree_child())
+    end
+
     return (net) -> all(F(net) for F in restrictions)
 
 end

@@ -1318,9 +1318,12 @@ function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::F
                       ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64, probQR::Float64,
                       verbose::Bool, closeN ::Bool, Nmov0::Vector{Int}, logfile::IO,
                       writelog::Bool)
-    println("probQR: ", probQR)
     global CHECKNET
+
+    println("probQR: ", probQR)
     @debug "OPT: begins optTopLevel with hmax $(hmax)"
+    
+    # Check to make sure input data is in the correct range
     liktolAbs > 0 || error("liktolAbs must be greater than zero: $(liktolAbs)")
     Nfail > 0 || error("Nfail must be greater than zero: $(Nfail)")
     isempty(Nmov0) || all(Nmov0 .>= 0) || error("Nmov must be non-negative zero: $(Nmov0)")
@@ -1330,11 +1333,14 @@ function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::F
     @debug begin printEverything(currT); "printed everything" end
     CHECKNET && checkNet(currT)
     count = 0
+    all((e->!(e.hybrid && inCycle(e) == -1)), currT.edge) || error("found hybrid edge with inCycle == -1")
 
+    # Variables to track algorithm progress
     movescount = zeros(Int,18) #1:6 number of times moved proposed, 7:12 number of times success move (no intersecting cycles, etc.), 13:18 accepted by loglik
     movesgamma = zeros(Int,13) #number of moves to fix gamma zero: proposed, successful, movesgamma[13]: total accepted by loglik
     movesfail = zeros(Int,6) #count of failed moves for current topology
-    
+    restriction_failures = 0
+
     failures = 0
     stillmoves = true
     if(isempty(Nmov0))
@@ -1342,82 +1348,123 @@ function optTopLevel!(currT::HybridNetwork, restrictions::Function, liktolAbs::F
     else
         Nmov = deepcopy(Nmov0)
     end
-    all((e->!(e.hybrid && inCycle(e) == -1)), currT.edge) || error("found hybrid edge with inCycle == -1")
+
+    # Optimize branch lengths for starting topology
     optBL!(currT,d,verbose,ftolRel, ftolAbs, xtolRel, xtolAbs)
     if(!isempty(d.repSpecies)) ## muliple alleles case
         afterOptBLAllMultipleAlleles!(currT, d, Nfail,closeN , ftolAbs, verbose,movesgamma,ftolRel,xtolRel,xtolAbs)
     else
         currT = afterOptBLAll!(currT, d, Nfail,closeN , liktolAbs, ftolAbs, verbose,movesgamma,ftolRel,xtolRel,xtolAbs) #needed return because of deepcopy inside
     end
+    
     absDiff = liktolAbs + 1
     newT = deepcopy(currT)
-    @debug begin
-        printedges(newT)
-        printpartitions(newT)
-        println("++++")
-        writenewick_level1(newT,true)
-    end
     writelog && write(logfile, "\nBegins heuristic optimization of network------\n")
     loopcount = 0
+    
+    @info "Initial topology: $(writenewick(newT, round=true))"
+    # Iteratively optimize the network topology
     while(absDiff > liktolAbs && failures < Nfail && loglik(currT) > liktolAbs && stillmoves) #stops if close to zero because of new deviance form of the pseudolik
+        # Garbage collect every 50 iterations
         if (loopcount % 50) == 0 GC.gc() end
+
+        # Check a condition needed for multiple alleles
         if CHECKNET && !isempty(d.repSpecies)
             checkTop4multAllele(currT) || error("currT is not good for multiple alleles")
         end
+
         count += 1
         @debug "--------- loglik_$(count) = $(round(loglik(currT), digits=6)) -----------"
         if isempty(Nmov0) #if empty, not set by user
             calculateNmov!(newT,Nmov)
         end
         @debug "will propose move with movesfail $(movesfail), Nmov $(Nmov)"
-        move = whichMove(newT,hmax,movesfail,Nmov)
         @debug "++++"
+
+        # Select the method for adjusting the network (move)
+        move = whichMove(newT,hmax,movesfail,Nmov)
         if move != :none
             if !isempty(d.repSpecies) # need the original newT in case the proposed top fails by multiple alleles condition
                 newT0 = deepcopy(newT)
             end
-            #probosedTop --> Will guide moves by quartet rank with probability probQR (which is by default 0, meaning targets of changes are random)
-            flag = proposedTop!(move,newT,restrictions, true, count,10, movescount,movesfail,!isempty(d.repSpecies), probQR, d) #N=10 because with 1 it never finds an edge for nni
-            if(flag) #no need else in general because newT always undone if failed, but needed for multiple alleles
+
+            # Change `newT` to be the next proposed topology
+            # `flag` is TRUE is move was successful, FALSE if not successful
+            flag = proposedTop!(move,newT,restrictions, true, count,10, movescount,movesfail,!isempty(d.repSpecies), probQR, d)
+            
+            # HERE: check that the set of restrictions are met. If so, continue as per usual.
+            #       If not, set `flag = false` so that the new topology gets thrown out
+            if !restrictions(newT)
+                restriction_failures += 1
+                @info "Proposed network denied because it does not meet the given restrictions.\n\t$(writenewick(newT))"
+                flag = false
+            end
+
+            # Some debug info while doing restricted search
+            if flag
+                #@info "Proposed topology treechild: $(istreechild(newT))"
+                oo = stdout
+                ee = stderr
+                redirect_stderr(devnull)
+                println("\t$(writenewick(newT, round=true))")
+                redirect_stderr(ee)
+            end
+
+            for H in newT.hybrid
+                if length(H.edge) != 3
+                    @info "$(writenewick(newT))"
+                    error("Hybrid does not have 3 attached edges")
+                elseif sum([E.hybrid for E in H.edge]) != 2
+                    @info "$(writenewick(newT))"
+                    error("Hybrid only has $(sum([E.hybrid for E in H.edge])) attached hybrid edges, not 3.")
+                end
+            end
+
+            if flag # no need else in general because newT always undone if failed, but needed for multiple alleles
                 accepted = false
+
+                # Check for a topological error
                 all((e->!(e.hybrid && inCycle(e) == -1)), newT.edge) || error("found hybrid edge with inCycle == -1")
+
+                # Debug messages
                 @debug "proposed new topology in step $(count) is ok to start optBL"
                 @debug begin printEverything(newT); "printed everything" end
                 CHECKNET && checkNet(newT)
+
+                # Optimize the branch length of this new topology
                 optBL!(newT,d,verbose,ftolRel, ftolAbs, xtolRel, xtolAbs)
                 @debug "OPT: comparing loglik(newT) $(loglik(newT)), loglik(currT) $(loglik(currT))"
-                if(loglik(newT) < loglik(currT) && abs(loglik(newT)-loglik(currT)) > liktolAbs) #newT better loglik: need to check for error or keeps jumping back and forth
+
+                # Check if the new topology is better
+                if loglik(newT) < loglik(currT) && abs(loglik(newT)-loglik(currT)) > liktolAbs
+                    # Update current likelihood
                     newloglik = loglik(newT)
+
+                    # Multiple allele stuff
                     if(!isempty(d.repSpecies)) ## multiple alleles
                         afterOptBLAllMultipleAlleles!(newT, d, Nfail,closeN , ftolAbs,verbose,movesgamma,ftolRel, xtolRel,xtolAbs)
                     else
                         newT = afterOptBLAll!(newT, d, Nfail,closeN , liktolAbs, ftolAbs,verbose,movesgamma,ftolRel, xtolRel,xtolAbs) #needed return because of deepcopy inside
                     end
+
+                    # Debug message
                     @debug "loglik before afterOptBL $(newloglik), loglik(newT) now $(loglik(newT)), loss in loglik by fixing gamma (gammaz)=0.0(1.0): $(newloglik>loglik(newT) ? 0 : abs(newloglik-loglik(newT)))"
                     accepted = true
                 else
                     accepted = false
                 end
-                if(accepted)
+
+                # Whether the change is accepted or not, update the variables that are tracking optimization progress
+                if accepted
                     absDiff = abs(loglik(newT) - loglik(currT))
-                    @debug "proposed new topology with better loglik in step $(count): oldloglik=$(round(loglik(currT), digits=3)), newloglik=$(round(loglik(newT), digits=3)), after $(failures) failures"
                     currT = deepcopy(newT)
                     failures = 0
                     movescount[move2int[move]+12] += 1
                     movesfail = zeros(Int,6) #count of failed moves for current topology
                 else
-                    @debug "rejected new topology with worse loglik in step $(count): currloglik=$(round(loglik(currT), digits=3)), newloglik=$(round(loglik(newT), digits=3)), with $(failures) failures"
                     failures += 1
                     movesfail[move2int[move]] += 1
                     newT = deepcopy(currT)
-                end
-                @debug begin
-                    printedges(newT)
-                    printpartitions(newT)
-                    #printnodes(newT)
-                    println("++++")
-                    println(writenewick_level1(newT,true))
-                    "ends step $(count) with absDiff $(accepted ? absDiff : 0.0) and failures $(failures)"
                 end
             else
                 if(!isempty(d.repSpecies))

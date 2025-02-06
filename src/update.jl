@@ -280,24 +280,24 @@ updateGammaz!(net::HybridNetwork, node::Node) = updateGammaz!(net, node, false)
 #function to check if edge should be identifiable
 #it is not only if followed by leaf, or if a newly converted tree edge
 function isEdgeIdentifiable(edge::Edge)
-    if(edge.hybrid)
+    if edge.hybrid
         node = edge.node[edge.ischild1 ? 1 : 2]
         #println("is edge $(edge.number) identifiable, node $(node.number)")
         node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
         major,minor,tree = hybridEdges(node)
         #println("major $(major.number), minor $(minor.number), tree $(tree.number)")
-        if(getOtherNode(tree,node).leaf)
+        if getOtherNode(tree,node).leaf
             return false
         else
             return true
         end
     else
-        if(reduce(&,[!edge.node[1].leaf,!edge.node[2].leaf]))
-            if(!edge.node[1].hybrid && !edge.node[2].hybrid && !fromBadDiamondI(edge))
+        if reduce(&,[!edge.node[1].leaf,!edge.node[2].leaf])
+            if !edge.node[1].hybrid && !edge.node[2].hybrid && !fromBadDiamondI(edge)
                 return true
-            elseif(edge.node[1].hybrid || edge.node[2].hybrid)
+            elseif edge.node[1].hybrid || edge.node[2].hybrid
                 ind = edge.node[1].hybrid ? 1 : 2
-                if(!isBadDiamondII(edge.node[ind]) && !isBadTriangle(edge.node[ind]))
+                if !isBadDiamondII(edge.node[ind]) && !isBadTriangle(edge.node[ind])
                     return true
                 else
                     return false
