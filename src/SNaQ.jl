@@ -7,8 +7,6 @@ module SNaQ
     using Random
     using Statistics: mean
 
-    using Base.Threads
-
     # other libraries, indicate compatible version in Project.toml
     using CSV
     using DataFrames # innerjoin new in v0.21
@@ -18,7 +16,6 @@ module SNaQ
     using StaticArrays
     using StatsBase # sample, etc.
     using PhyloNetworks
-    using Graphs    # biconnected_components
 
     import Base: show
 
