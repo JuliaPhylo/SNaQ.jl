@@ -138,7 +138,6 @@ end
              probQR = 0.75, propQuartets = 0.8)
   # redirect_stdout(originalstdout)
   rmprocs(workers())
-  @test abs(loglik(n1) - loglik(n2)) < 1e-8
   n3 = readsnaqnetwork("snaq.out")
   
   # propQuartets = 0.8 means that branch lengths may optimize to different values
@@ -149,8 +148,9 @@ end
     end
   end
   @test loglik(n3) > 0.0
-  @test writenewick(n1, round=true)==writenewick(n2, round=true)
-  @test writenewick(n3, round=true)==writenewick(n2, round=true)
+  # b/c of propQuartets the newicks will sometimes be different
+  @test hardwiredClusterDistance(n1, n2, false) == 0
+  @test hardwiredClusterDistance(n2, n3, false) == 0
   rm("snaq.out")
   rm("snaq.networks")
   rm("snaq.log") # .log and .err should be git-ignored, but still
