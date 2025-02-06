@@ -164,7 +164,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i);
                          "rootname set to $rootname"; end
-            net1 = optTopRuns!(currT0, liktolAbs, Nfail, newd, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0, runs1, outgroup,
+            net1 = optTopRuns!(currT0, restriction_set(), liktolAbs, Nfail, newd, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0, runs1, outgroup,
                                rootname,seeds[i],probST,probQR,propQuartets)
             if runs2==0
                 net = net1
@@ -177,7 +177,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i,"_startNet2");
                          "rootname set to $rootname"; end
-            net2 = optTopRuns!(bestNet, liktolAbs, Nfail, newd, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0, runs2, outgroup,
+            net2 = optTopRuns!(bestNet, restriction_set(), liktolAbs, Nfail, newd, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0, runs2, outgroup,
                                rootname,seedsOtherNet[i],probST,probQR,propQuartets)
             if runs1==0
                 net = net2

@@ -367,11 +367,8 @@ function optBL!(
     if verbose println("OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)");
     else @debug        "OPTBL: begin branch lengths and gammas optimization, ftolAbs $(ftolAbs), ftolRel $(ftolRel), xtolAbs $(xtolAbs), xtolRel $(xtolRel)"; end
     parameters!(net); # branches/gammas to optimize: ht(net), numht(net)
-    @info "B"
     extractQuartet!(net,d) # quartets are all updated: hasEdge, expCF, indexht
-    @info "C"
     nht = length(ht(net))
-    @info "D"
     numBad(net) >= 0 || error("network has negative number of bad hybrids")
     #opt = NLopt.Opt(numBad(net) == 0 ? :LN_BOBYQA : :LN_COBYLA,k) # :LD_MMA if use gradient, :LN_COBYLA for nonlinear/linear constrained optimization derivative-free, :LN_BOBYQA for bound constrained derivative-free
     opt = NLopt.Opt(:LN_BOBYQA,nht) # :LD_MMA if use gradient, :LN_COBYLA for nonlinear/linear constrained optimization derivative-free, :LN_BOBYQA for bound constrained derivative-free
@@ -384,7 +381,6 @@ function optBL!(
     NLopt.lower_bounds!(opt, zeros(nht))
     NLopt.upper_bounds!(opt,upper(net))
     count = 0
-    @info "E"
     function obj(x::Vector{Float64},g::Vector{Float64}) # added g::Vector{Float64} for gradient, ow error
         if(verbose) #|| numBad(net) > 0) #we want to see what happens with bad diamond I
             println("inside obj with x $(x)")
@@ -398,9 +394,7 @@ function optBL!(
         end
         return val
     end
-    @info "F"
     NLopt.min_objective!(opt,obj)
-    @info "G"
     ## if(numBad(net) == 1)
     ##     function inequalityGammaz(x::Vector{Float64},g::Vector{Float64})
     ##         val = calculateIneqGammaz(x,net,1,verbose)

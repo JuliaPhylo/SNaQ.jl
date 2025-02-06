@@ -119,6 +119,9 @@ end
 end
 
 @testset "snaq! in serial and in parallel w/ different probQR and propQuartets values" begin
+  # Clean up
+  for file in ["snaq.err", "snaq.log", "snaq.networks", "snaq.out"] if isfile(file) rm(file) end end
+
   global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
   @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
   # originalstdout = stdout
@@ -138,7 +141,6 @@ end
              probQR = 0.75, propQuartets = 0.8)
   # redirect_stdout(originalstdout)
   rmprocs(workers())
-  @test abs(loglik(n1) - loglik(n2)) < 1e-8
   n3 = readsnaqnetwork("snaq.out")
   
   # propQuartets = 0.8 means that branch lengths may optimize to different values
@@ -149,8 +151,9 @@ end
     end
   end
   @test loglik(n3) > 0.0
-  @test writenewick(n1, round=true)==writenewick(n2, round=true)
-  @test writenewick(n3, round=true)==writenewick(n2, round=true)
+  # b/c of propQuartets the newicks will sometimes be different
+  @test hardwiredClusterDistance(n1, n2, false) == 0
+  @test hardwiredClusterDistance(n2, n3, false) == 0
   rm("snaq.out")
   rm("snaq.networks")
   rm("snaq.log") # .log and .err should be git-ignored, but still

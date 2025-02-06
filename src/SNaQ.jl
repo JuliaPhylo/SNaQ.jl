@@ -64,8 +64,11 @@ module SNaQ
         loglik!,
         # Topological restrictions
         restrict_maximum_level,
-        require_galled_tree,
-        require_galled_network,
+        restrict_galled_tree,
+        restrict_galled_network,
+        restrict_rooted_tree_child,
+        restrict_weakly_tree_child,
+        restrict_strongly_tree_child,
         restriction_set
 
 
