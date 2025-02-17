@@ -4,7 +4,7 @@ using PhyloNetworks, SNaQ
 
 # Multiple alleles per species
 
-## between-species 4-taxon sets
+## Between-species 4-taxon sets
 
 The default setting for SNaQ considers that each allele in a gene tree corresponds
 to a taxon (a tip) in the network. If instead each allele/individual can be mapped confidently
@@ -51,7 +51,7 @@ d_sp = readtableCF("tableCF_species.csv"); # to get a "DataCF" object for use in
 summarizedataCF(d_sp)
 ```
 
-## within-species 4-taxon sets
+## Within-species 4-taxon sets
 
 Four-taxon sets involving 2 individuals per species can provide more
 information about the underlying network, including external branch
@@ -61,7 +61,8 @@ in which 2 individuals are from the same species, the following functions
 should be used:
 
 ```@repl multialleles
-df_ind = DataFrame(tablequartetCF(genetrees)); # no mapping: CFs across individuals
+q,t = countquartetsintrees(genetrees);
+df_ind = DataFrame(tablequartetCF(q,t)); # no mapping: CFs across individuals
 first(df_ind, 4) # to see the first 4 rows
 CSV.write("tableCF_individuals.csv", df_ind);  # to save to a file
 df_sp = mapallelesCFtable(mappingfile, "tableCF_individuals.csv");
@@ -95,7 +96,7 @@ which can be calculated by averaging the CFs of quartets of individuals
 from the associated species:
 
 ```@repl multialleles
-df_sp = tablequartetCF(d_sp) # data frame, quartet CFs averaged across individuals of same species
+df_sp = DataFrame(tablequartetCF(d_sp)) # data frame, quartet CFs averaged across individuals of same species
 CSV.write("CFtable_species.csv", df_sp); # save to file
 ```
 

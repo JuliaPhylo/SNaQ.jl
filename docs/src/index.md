@@ -1,22 +1,33 @@
 # SNaQ
 
 [SNaQ](https://github.com/JuliaPhylo/SNaQ.jl) is a [Julia](http://julialang.org)
-ements the SNaQ method by
+package that implements the SNaQ method by
 [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 to estimate a phylogenetic network from quartet concordance factors.
 See the [PhyloNetworks](https://github.com/JuliaPhylo/PhyloNetworks.jl)
 package, which SNaQ depends on, for background on phylogenetic networks
-and for how to get help.
+and for how to get help. 
+
+Join the PhyloNetworks google group for updates
+[here]
+(https://groups.google.com/forum/#!forum/phylonetworks-users/new).
+
+More information about the pre-processing steps to get the input data for SNaQ can be found in the [wiki]() and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/).
 
 ## References
-
-See them in
-[bibtex format](https://github.com/juliaphylo/SNaQ.jl/blob/master/CITATION.bib).
 
 For the SNaQ network inference method itself:
 - Claudia Solís-Lemus and Cécile Ané (2016).
   Inferring Phylogenetic Networks with Maximum Pseudolikelihood under Incomplete Lineage Sorting.
   PLoS Genetics 12(3):e1005896. [doi:10.1371/journal.pgen.1005896](https://doi.org/10.1371/journal.pgen.1005896)
+
+For PhyloNetworks package:
+- Claudia Solís-Lemus, Paul Bastide and Cécile Ané (2017). 
+  PhyloNetworks: a package for phylogenetic networks. Molecular Biology and Evolution 34(12):3292–3298. [doi:10.1093/molbev/msx235](https://academic.oup.com/mbe/article/34/12/3292/4103410)
+
+
+See the references in
+[bibtex format](https://github.com/juliaphylo/SNaQ.jl/blob/master/CITATION.bib).
 
 ## Manual
 

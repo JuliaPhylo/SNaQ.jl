@@ -43,7 +43,7 @@ nothing # hide
 ```
 ![truenet_opt](../assets/figures/truenet_opt.svg)
 
-We get a score of 29.941,
+We get a score of 29.786,
 which is comparable to the score of the SNaQ network (net1: 28.315),
 especially compared to the score of the best tree (net0: 53.532).
 This begs the question: is the true network within the "range" of uncertainty?
@@ -74,8 +74,7 @@ given network is of level 1 (cycles don't overlap).
 ## Candidate networks compatible with a known outgroup
 
 If the network was estimated via `snaq!`, it might turn out to be impossible
-to root our estimated network with a known outgroup (PhyloNetworks documentation discusses root mismatches here:
-[Does the root conflict with the direction of a reticulation?](@extref).)
+to root our estimated network with a known outgroup.
 At this time, `snaq!` does not impose any rooting constraint on the network:
 the search for the lowest score considers all level-1 networks, including those
 that are incompatible with a known outgroup.
@@ -143,7 +142,7 @@ Now imagine that our outgroup is taxon A.
 - best network: we would get a "RootMismatch" error if we tried to set
   the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
   (see the PhyloNetworks guide 
-  [Does the root conflict with the direction of a reticulation?](@ref)).
+  [Does the root conflict with the direction of a reticulation?](@extref)).
   But we could root the best network on the major parent edge to A, edge 10
   (rooted network on the left below).
 - For the second best network in our list, there are 2 ways to root it

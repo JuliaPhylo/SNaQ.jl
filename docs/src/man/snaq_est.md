@@ -32,21 +32,19 @@ and run Julia from there.
 
 SNaQ uses has two main inputs for estimating phylogenetic networks: concordance factors (CFs) and a starting tree (or network).
 
-### concordance factors
+### Concordance factors
 
 Concordance factors denote frequency of each quartet topology 
-present among the gene trees, which can be obtained using
+present among the gene trees, which can be estimated using
 [MrBayes](http://mrbayes.sourceforge.net) or
 [RAxML](http://sco.h-its.org/exelixis/software.html) for example. 
 
 This [pipeline](https://github.com/nstenz/TICR) can be used to obtain the table of
 quartet CF needed as input for SNaQ
-(see also the [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki/TICR:-from-alignments-to-quartet-concordance-factors) and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
+(see also the [wiki]() and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
 It starts from the sequence alignments,
 runs MrBayes and then BUCKy (both parallelized), producing the
 table of estimated CFs and their credibility intervals.
-Additional details on this [TICR pipeline](@ref)
-describe how to insert data at various stages (e.g. after running MrBayes on each locus).
 
 #### CFs from gene trees 
 
@@ -54,9 +52,9 @@ Suppose you have a file with a list of gene trees in parenthetical
 format called `raxmltrees.tre`.
 You can access the example file of input trees
 [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/raxmltrees.tre)
-or
+(or
 [here](https://raw.githubusercontent.com/juliaphylo/SNaQ/main/examples/raxmltrees.tre)
-for easier download.
+for easier download).
 
 Do not copy-paste into a "smart" text-editor. Instead, save the file
 directly into your working directory using "save link as" or "download linked file as".
@@ -74,7 +72,7 @@ raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 raxmlCF = readtrees2CF(raxmltrees) # read in the file and produce a "DataCF" object
 ```
 
-In this table, each 4-taxon set is listed in one row.
+In this table (`tableCF.txt`), each 4-taxon set is listed in one row.
 The 3 "CF" columns gives the proportion of genes that has
 each of the 3 possible trees on these 4 taxa.
 
@@ -85,21 +83,29 @@ instead of all quartets, we could do:
 
 `raxmlCF = readtrees2CF(raxmltrees, whichQ="rand", numQ=10, CFfile="tableCF10.txt")`
 
-Be careful to use a numQ value smaller than the total number of possible
+Be careful to use a `numQ` value smaller than the total number of possible
 4-taxon subsets, which is *n choose 4* on *n* taxa (e.g. 15 on 6 taxa).
 To get a predictable random sample, you may set the seed with
 `using Random; Random.seed!(12321)`
 (for instance) prior to sampling the quartets as above.
+Additionally, providing a file name for the optional argument `CFile` saves the quartet CFs to file for later use.
+
+#### CFs from large datasets
 When we want to get *all* quartet CFs, 
-the `readtrees2CF` is *much* slower than the PhyloNetworks function `countquartetsintrees`
-to read in trees and calculate the quartet CFs observed in the trees.
-But for a small sample of quartets,
-then `readtrees2CF` is available.
+the `readtrees2CF` is *much* slower than the PhyloNetworks function [`countquartetsintrees`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.countquartetsintrees)
+to read in trees and calculate the quartet CFs observed in the trees:
 
-Additionally, providing a file name for the optional argument `CFile`
- saves the quartet CFs to file for later use.
+```@repl qcf
+trees = readmultinewick(raxmltrees)
+q,t = countquartetsintrees(trees);
+nt = tablequartetCF(q,t); # named tuple
+using DataFrames
+df = DataFrame(nt, copycols=false); # convert to a data frame, without copying the column data
+show(df, allcols=true) # data frames are displayed much more nicely than named tuples
+```
 
-#### reading CFs directly from file 
+
+#### Reading CFs directly from file 
 
 If we already have a table of quartet concordance factors (CFs)
 saved as a table in this format
@@ -141,7 +147,7 @@ or else in columns 5,6,7.
 If available, a column named "ngenes" will be taken to have the
 the number of genes for each 4-taxon subset.
 
-### starting tree
+### Starting tree
 
 The other input for SNaQ is a starting tree (or network) to be used as a starting point in optimization.
 
@@ -162,8 +168,9 @@ astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
 astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
 ```
 
-To start its search, SNaQ will need a network of "level 1".
-All trees and all networks with 1 hybridization are of level 1.
+Instead of a starting tree (`astraltree` in this case), we can start the optimization 
+in SNaQ with a network, but this network needs to be "level-1".
+Note that all trees and all networks with 1 hybridization are of level 1.
 To make sure that a network with 2 or more hybridizations is of level 1,
 we can read it in with
 `readnewicklevel1` (which also unroots the tree, resolves polytomies,
@@ -179,7 +186,7 @@ the name of a file that contains your network of interest.
 After we have [Inputs for SNaQ](@ref), we can estimate the network using the
 input data `raxmlCF` and starting from tree (or network) `astraltree`.
 We first impose the constraint of at most 0 hybrid node,
-that is, we ask for a tree.
+that is, we estimate a tree.
 ```julia
 net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", seed=1234)
 ```
@@ -206,7 +213,8 @@ nothing # hide
 ![net0_1](../assets/figures/snaqplot_net0_1.svg)
 
 We can use this tree as a starting point to search for the best
-network allowing for at most `hmax=1` hybrid node (which is the default).
+network allowing for at most `hmax=1` hybridizations (which is the default if we do
+not specify a `hmax` value).
 ```julia
 net1 = snaq!(net0, raxmlCF, hmax=1, filename="net1", seed=2345)
 ```
@@ -238,7 +246,7 @@ The direction of hybrid edges can be inferred,
 but the direction of tree edges cannot be inferred.
 To obtain a representative visualization,
 it is best to root the network first, using one or more outgroup.
-PhyloNetworks has a guide on [Re-rooting trees and networks](@ref) for this.
+PhyloNetworks has a guide on [Re-rooting trees and networks](@extref) for this.
 If your outgroup conflicts with the direction of reticulations
 in the estimated network, see the section
 [Candidate networks compatible with a known outgroup](@ref).
@@ -252,7 +260,7 @@ less("net1.networks") # extra info
 when viewing these result files with `less`
 within Julia, use arrows to scroll down and type `q` to quit viewing the files.
 The file `net1.networks` contains a list of networks that are slight modifications
-of the best (estimated) network `net1`. The modifications changed the direction
+of the best (estimated) network `net1`. The modifications change the direction
 of one reticulation at a time, by moving the placement of one hybrid node to another
 node inside the same cycle.
 For each modified network, the pseudolikelihood score was calculated
@@ -273,10 +281,10 @@ rm("bestnet_h1.tre") # hide
 ```
 
 From a set of candidate networks, one might simply need to score of each network
-to pick the best. Here, the score is the negative log pseudo-likelihood, and the
+to pick the best. Here, the score is the negative log pseudo-deviance, and the
 lower the better. See the section to get the score of [Candidate networks](@ref).
 
-### `hmax` and choosing the number of hybridizations
+### Choosing the number of hybridizations (`hmax`)
 
 We change the `hmax` argument to change the search space to let the network have up to 2 or 3 hybrid nodes:
 ```julia
@@ -308,7 +316,7 @@ and this output for net3 (again, only 1 hybrid found):
     MaxNet is (D,C,((O,(E,#H7:::0.19558839257941849):0.3135243301652981):0.6640664138384673,(B,(A)#H7:::0.8044116074205815):10.0):10.0);
     with -loglik 28.315067218909626
 
-Each network has a `loglik` attribute, which is its pseudo deviance:
+Each network has a `loglik` attribute, which is its log pseudo deviance:
 a multiple of the negative log-likelihood up to a constant (the constant is
 such that the score is 0 if the network fits the data perfectly).
 The lower the better. We can plot these scores across hybrid values:
@@ -333,4 +341,4 @@ package such as [Gadfly](http://gadflyjl.org/stable/) or
 using Gadfly
 plot(x=collect(0:3), y=scores, Geom.point, Geom.line)
 ```
-(Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia)
+Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia.

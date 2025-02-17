@@ -22,9 +22,7 @@ do the following (which will update all of your packages):
 Pkg.update()
 ```
 It is important to update the package regularly as it is
-undergoing constant development. Join the google group for updates
-[here]
-(https://groups.google.com/forum/#!forum/phylonetworks-users/new).
+undergoing constant development.
 
 `Pkg.update()` will install the latest registered version, but there
 could be other improvements in the `main` branch of the
@@ -48,6 +46,7 @@ The SNaQ package has dependencies like
 [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl)
 has utilities to visualize networks, and for interoperability,
 such as to export networks to R (which can then be plotted via R).
+
 To install:
 
 ```julia
@@ -79,8 +78,9 @@ followed by the name of a function (or type) to get more details about it.
 
 We show here small examples on how to get more
 info on an object, what's its type, and how to manipulate objects.
-For example, let's take an object `raxmlCF` created from reading in some data
-(see [Inputs for SNaQ](@ref)):
+
+For example, let's take an object `raxmlCF` created from reading in some data in the form of gene trees
+(see more in [Inputs for SNaQ](@ref)):
 
 ```@repl install
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
