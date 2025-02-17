@@ -67,6 +67,5 @@ SNaQ.setCHECKNET(true)
     include("test_readInputData.jl")
     include("test_hasEdge.jl")
     include("test_undirectedOtherNetworks.jl")
-
 end
 
