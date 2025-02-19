@@ -2,9 +2,9 @@ import Base: getproperty, getfield, getindex, setproperty!
 
 
 # Edge getters/setters
-istIdentifiable(e::Edge) = e.boole1
-fromBadDiamondI(e::Edge) = e.boole2
-inCycle(e::Edge) = e.inte1
+istIdentifiable(e::Edge) = e.boole1 # true if the parameter t (length) for this edge is identifiable as part of a network
+fromBadDiamondI(e::Edge) = e.boole2 # true if the edge came from deleting a bad diamond I hybridization
+inCycle(e::Edge) = e.inte1 # = Hybrid node number if this edge is part of a cycle created by such hybrid node; -1 if not part of cycle. used to add new hybrid edge. updated after edge is part of a network
 
 istIdentifiable!(e::Edge, b::Bool) = (e.boole1 = b)
 fromBadDiamondI!(e::Edge, b::Bool) = (e.boole2 = b)
@@ -12,16 +12,16 @@ inCycle!(e::Edge, i::Int) = (e.inte1 = i)
 
 
 # Node getters/setters
-hasHybEdge(n::Node) = n.booln1
-isBadDiamondI(n::Node) = n.booln2
-isBadDiamondII(n::Node) = n.booln3
-isExtBadTriangle(n::Node) = n.booln4
-isVeryBadTriangle(n::Node) = n.booln5
-#isBadTriangle(n::Node) = n.booln6
-k(n::Node) = n.intn2
-typeHyb(n::Node) = n.int8n3
-inCycle(n::Node) = n.intn1
-gammaz(n::Node) = n.fvalue
+hasHybEdge(n::Node) = n.booln1 # is there a hybrid edge in edge? only needed when hybrid=false (tree node)
+isBadDiamondI(n::Node) = n.booln2 # for hybrid node, is it bad diamond case I, update in updateGammaz!
+isBadDiamondII(n::Node) = n.booln3 # for hybrid node, is it bad diamond case II, update in updateGammaz!
+isExtBadTriangle(n::Node) = n.booln4 # for hybrid node, is it extremely bad triangle, udpate in updateGammaz!
+isVeryBadTriangle(n::Node) = n.booln5 # for hybrid node, is it very bad triangle, udpate in updateGammaz!
+#isBadTriangle(n::Node) = n.booln6 # for hybrid node, is it bad triangle, udpate in updateGammaz!
+k(n::Node) = n.intn2 # num nodes in cycle, only stored in hybrid node, updated after node becomes part of network; default -1
+typeHyb(n::Node) = n.int8n3 # type of hybridization (1,2,3,4, or 5), needed for quartet network only. default -1
+inCycle(n::Node) = n.intn1 # = hybrid node if this node is part of a cycle created by such hybrid node, -1 if not part of cycle
+gammaz(n::Node) = n.fvalue # notes file for explanation. gammaz if tree node, gamma2z if hybrid node; updated after node is part of network with updateGammaz!
 
 hasHybEdge!(n::Node, b::Bool) = (n.booln1 = b)
 isBadDiamondI!(n::Node, b::Bool) = (n.booln2 = b)
@@ -40,14 +40,14 @@ gammaz!(n::Node, f::Real) = (n.fvalue = f)
 visited(h::HybridNetwork) = h.vec_bool
 edges_changed(h::HybridNetwork) = h.vec_edge
 nodes_changed(h::HybridNetwork) = h.vec_node
-ht(h::HybridNetwork) = h.vec_float
-numht(h::HybridNetwork) = h.vec_int2
-numBad(h::HybridNetwork) = h.intg1
-hasVeryBadTriangle(h::HybridNetwork) = h.boolg1
-index(h::HybridNetwork) = h.vec_int3
-loglik(h::HybridNetwork) = h.fscore
-blacklist(h::HybridNetwork) = h.vec_int4
-cleaned(h::HybridNetwork) = h.boolg2
+ht(h::HybridNetwork) = h.vec_float # vector of parameters to optimize
+numht(h::HybridNetwork) = h.vec_int2 # vector of number of the hybrid nodes and edges in ht e.g. [3,6,8,...], 2 hybrid nodes 3,6, and edge 8 is the 1st identifiable
+numBad(h::HybridNetwork) = h.intg1 # number of bad diamond I hybrid nodes, set as 0
+hasVeryBadTriangle(h::HybridNetwork) = h.boolg1 # true if the network has extremely/very bad triangles that should be ignored
+index(h::HybridNetwork) = h.vec_int3 #index in net.edge, net.node of elements in net.ht to make updating easy
+loglik(h::HybridNetwork) = h.fscore # value of the min -loglik after optBL
+blacklist(h::HybridNetwork) = h.vec_int4 # reusable array of integers, used in afterOptBL
+cleaned(h::HybridNetwork) = h.boolg2 # attribute to know if the network has been cleaned after readm default false
 
 visited!(h::HybridNetwork, v::BitVector) = visited!(h, Vector{Bool}(v))
 visited!(h::HybridNetwork, v::Array{Bool, 1}) = (h.vec_bool = v)
