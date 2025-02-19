@@ -177,7 +177,7 @@ readTopologyUpdate(file::AbstractString,verbose::Bool) = readTopologyUpdate(file
     readnewicklevel1(filename)
     readnewicklevel1(parenthetical format)
 
-Similarly to [`PhyloNetworks.readnewick`](): read a tree or network in parenthetical
+Similarly to [`PhyloNetworks.readnewick`](@extref): read a tree or network in parenthetical
 format, but this function enforces the necessary conditions for any
 starting topology in SNaQ: non-intersecting cycles, no polytomies,
 unrooted. It sets any missing branch length to 1.0,

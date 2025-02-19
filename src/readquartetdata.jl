@@ -229,7 +229,7 @@ Namely, in each tree/network
 - any missing γ's are set to (0.1, 0.9)
 and more (see [`readnewicklevel1`](@ref)).
 
-See [`PhyloNetworks.readmultinewick`]()
+See [`PhyloNetworks.readmultinewick`](@extref)
 to read multiple trees or networks with no modification.
 
 Output: array of HybridNetwork objects.

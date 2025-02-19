@@ -270,9 +270,9 @@ function updateParameters!(net::HybridNetwork, xmin::Vector{Float64})
 end
 
 # function to update the attribute loglik(net)
-function updateLik!(net::HybridNetwork, l::Float64)
-    loglik!(net, l)
-end
+#function updateLik!(net::HybridNetwork, l::Float64)
+#    loglik!(net, l)
+#end
 
 # function for the upper bound of ht
 function upper(net::HybridNetwork)
