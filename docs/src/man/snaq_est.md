@@ -70,6 +70,7 @@ of quartet CFs (proportion of input trees with a given quartet):
 using PhyloNetworks,SNaQ
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 raxmlCF = readtrees2CF(raxmltrees) # read in the file and produce a "DataCF" object
+
 ```
 
 In this table (`tableCF.txt`), each 4-taxon set is listed in one row.
@@ -185,7 +186,7 @@ the name of a file that contains your network of interest.
 
 After we have [Inputs for SNaQ](@ref), we can estimate the network using the
 input data `raxmlCF` and starting from tree (or network) `astraltree`.
-We first impose the constraint of at most 0 hybrid node,
+We first set `hmax=0` to impose the constraint of at most 0 hybrid node,
 that is, we estimate a tree.
 ```julia
 net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", seed=1234)
@@ -257,14 +258,26 @@ less("net1.err") # would provide info about errors, if any
 less("net1.out") # main output file with the estimated network from each run
 less("net1.networks") # extra info
 ```
+
+
 when viewing these result files with `less`
 within Julia, use arrows to scroll down and type `q` to quit viewing the files.
-The file `net1.networks` contains a list of networks that are slight modifications
+- The `.networks` file contains a list of networks that are slight modifications
 of the best (estimated) network `net1`. The modifications change the direction
 of one reticulation at a time, by moving the placement of one hybrid node to another
 node inside the same cycle.
 For each modified network, the pseudolikelihood score was calculated
 (the `loglik` or `-Ploglik` values give a pseudo deviance actually).
+
+- The `.out` file contains the best network among all runs, and the best
+  network per run, includes also the pseudolikelihood score and the
+  computation time.
+
+- The `.log` file contains a description of each run, convergence criterion, and seed information.
+
+- The `.err` file has seed information on runs that failed, empty when nothing failed. In the case of a failed run, 
+you could run the `snaqDebug` function on the same settings that caused the error (to help us debug).
+
 
 The function name `snaq!` ends with ! because it modifies the argument `raxmlCF`
 by including the expected CF. Type `?` then `snaq!` to get help on that function.
@@ -341,4 +354,33 @@ package such as [Gadfly](http://gadflyjl.org/stable/) or
 using Gadfly
 plot(x=collect(0:3), y=scores, Geom.point, Geom.line)
 ```
+
+Note that since SNaQ assumes level-1 networks (i.e., no intersecting cycles), it might not be possible to add more hybridizations
+to networks with few taxa: 
+
+![level1](../assets/level1.png)
+
+
 Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia.
+
+### Suggestions and best practices
+
+
+- For big datasets, do only one run (i.e., setting `runs=1`) first to get an idea of computing time:
+  ```julia
+  net1 = snaq!(net0,raxmlCF, hmax=3, filename="net3", runs=1)
+  ```
+- Increase the number of hybridizations sequentially:
+  `hmax=0,1,2,...`, and use the best network at `h-1` as starting
+  point to estimate the best network at `h`.
+- Whenever possible, do many independent runs (default `runs=10`)
+  to avoid getting stuck on local maxima.
+  We do not need to do all runs sequentially.
+  We can parallize by doing different runs on different cores (or computers).
+  If we are on a machine or on a cluster that has many different cores,
+  we can ask Julia to use these multiple cores, and `snaq!` will send
+  different runs to different cores, like we did earlier.
+- For long jobs, run as a script in the terminal: `julia runSNaQ.jl`,
+  arguments to the script are passed to Julia as a vector called `ARGS`.
+  See the example script `runSNaQ.jl` in the folder `data_results/scripts/`.
+  more on this topic in here: [Parallel computations](@ref)
