@@ -17,7 +17,7 @@ isBadDiamondI(n::Node) = n.booln2 # for hybrid node, is it bad diamond case I, u
 isBadDiamondII(n::Node) = n.booln3 # for hybrid node, is it bad diamond case II, update in updateGammaz!
 isExtBadTriangle(n::Node) = n.booln4 # for hybrid node, is it extremely bad triangle, udpate in updateGammaz!
 isVeryBadTriangle(n::Node) = n.booln5 # for hybrid node, is it very bad triangle, udpate in updateGammaz!
-#isBadTriangle(n::Node) = n.booln6 # for hybrid node, is it bad triangle, udpate in updateGammaz!
+isBadTriangle(n::Node) = n.booln6 # for hybrid node, is it bad triangle, udpate in updateGammaz!
 k(n::Node) = n.intn2 # num nodes in cycle, only stored in hybrid node, updated after node becomes part of network; default -1
 typeHyb(n::Node) = n.int8n3 # type of hybridization (1,2,3,4, or 5), needed for quartet network only. default -1
 inCycle(n::Node) = n.intn1 # = hybrid node if this node is part of a cycle created by such hybrid node, -1 if not part of cycle

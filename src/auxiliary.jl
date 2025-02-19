@@ -229,7 +229,7 @@ function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
         all(x->(x.gamma == 1.0 ? true : false),net.edge) || error("net is a tree, but not all edges have gamma 1.0")
     end
     for h in net.hybrid
-        if(isBadTriangle(h))
+        if(checkIsBadTriangle(h))
             @debug "hybrid $(h.number) is very bad triangle"
             hasVeryBadTriangle(net) || error("hybrid node $(h.number) is very bad triangle, but hasVeryBadTriangle(net) is $(hasVeryBadTriangle(net))")
             isVeryBadTriangle(h) || isExtBadTriangle(h) || error("hybrid node $(h.number) is very bad triangle but it does not know it")
@@ -321,7 +321,7 @@ function printEverything(net::HybridNetwork)
 end
 
 # function to check if a node is very or ext bad triangle
-function isBadTriangle(node::Node)
+function checkIsBadTriangle(node::Node)
     node.hybrid || return false #error("cannot check if node $(node.number) is very bad triangle because it is not hybrid")
     if(k(node) == 3)
         edgemaj, edgemin, treeedge = hybridEdges(node)
