@@ -1,7 +1,7 @@
 include("misc.jl")
 include("rNNI_validity.jl")
 
-using PhyloNetworks
+using PhyloNetworks, StatsBase
 const Node = PhyloNetworks.Node;
 const Edge = PhyloNetworks.Edge;
 
@@ -125,6 +125,47 @@ function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
 end
 
 
+"""
+Add a docstring later - I'm going on a walk 
+"""
+function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
+    (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
+    
+    r = rand()
+    if r < probs[1]
+        valid_stuvs = all_valid_rNNI1_nodes(N)
+        if length(valid_stuvs) == 0
+            p234 = probs[2] + probs[3] + probs[4]
+            return perform_random_rNNI!(N, [0, probs[2], probs[3], probs[4]] ./ p234)
+        end
+        s, t, u, v = sample(valid_stuvs)
+        return perform_rNNI1!(N, s, t, u, v)
+    elseif r < probs[1] + probs[2]
+        valid_stuvs = all_valid_rNNI2_nodes(N)
+        if length(valid_stuvs) == 0
+            p134 = probs[1] + probs[3] + probs[4]
+            return perform_random_rNNI!(N, [probs[1], 0, probs[3], probs[4]] ./ p134)
+        end
+        s, t, u, v = sample(valid_stuvs)
+        return perform_rNNI2!(N, s, t, u, v)
+    elseif r < probs[1] + probs[2] + probs[3]
+        valid_stuvs = all_valid_rNNI3_nodes(N)
+        if length(valid_stuvs) == 0
+            p124 = probs[1] + probs[2] + probs[4]
+            return perform_random_rNNI!(N, [probs[1], probs[2], 0, probs[4]] ./ p124)
+        end
+        s, t, u, v = sample(valid_stuvs)
+        return perform_rNNI3!(N, s, t, u, v)
+    else
+        valid_stuvs = all_valid_rNNI4_nodes(N)
+        if length(valid_stuvs) == 0
+            p123 = probs[1] + probs[2] + probs[3]
+            return perform_random_rNNI!(N, [probs[1], probs[2], probs[3], 0] ./ p123)
+        end
+        s, t, u, v = sample(valid_stuvs)
+        return perform_rNNI4!(N, s, t, u, v)
+    end
+end
 
 
 # EDGE attributes:

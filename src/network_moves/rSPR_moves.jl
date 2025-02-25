@@ -15,35 +15,29 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
 
     # 1. Split the x'y' arc, adding a new node z' (just z in Figure 6)
     edge_xprime_yprime = xprime.edge[findfirst(e -> yprime in e.node, xprime.edge)]
-    zprime, edge_xprime_zprime = breakedge!(N, edge_xprime_yprime)
+    zprime, edge_xprime_zprime = breakedge!(edge_xprime_yprime, N)
     zprime.name = z.name    # maintain original node naming - will be useful for debugging
+    @info z.edge
 
     # 2. Disconnect z from w and attach w to z'
-    edge_zw = getparentedge(w)
+    edge_zw = z.edge[findfirst(z_edge -> w in z_edge.node, z.edge)]
     replace!(edge_zw.node, z => zprime)
-    deleteat!(z.edge, findfirst(z_edge -> z_edge == edge_zw))
+    deleteat!(z.edge, findfirst(z_edge -> z_edge == edge_zw, z.edge))
     push!(zprime.edge, edge_zw)
+    @info z.edge
 
-    # 3. If we is case 2, we need to swap hybrid info before fusing
-    edge_xz = z.edge[findfirst(z_edge -> x in z_edge, z.edge)]
-    swap_edge_hybrid_info!(edge_xprime_zprime, edge_xz)
+    # 3. If this is case 2, we need to swap hybrid info before fusing
+    if which_case == 2
+        edge_xz = z.edge[findfirst(z_edge -> x in z_edge.node, z.edge)]
+        swap_edge_hybrid_info!(edge_xprime_zprime, edge_xz)
+        zprime.hybrid = true
+    end
+    @info z.edge
 
     # 4. Fuse across the now redundant node z
     z_idx = findfirst(j -> N.node[j] == z, 1:length(N.node))
     fuseedgesat!(z_idx, N)
+    @info z.edge
 end
-
-
-"""
-Helper function that:
-1. Detaches `gift_arc` from `donor_arc` and then
-2. fuses the now redundant node in `donor_arc`
-"""
-function disconnect_fuse_arc!(gift_arc::Tuple{Node, Node}, donor_arc::Tuple{Node, Node, Node})
-    intersecting_node = intersect(gift_arc, donor_arc)
-
-    # Disconnect the 
-end
-
 
 
