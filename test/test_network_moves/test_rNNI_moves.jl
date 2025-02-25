@@ -1,11 +1,6 @@
-using PhyloNetworks, Test
-using PhyloPlots
+using PhyloNetworks, Test, StatsBase, Random
 
-
-###############################################################
-# FIRST: TESTS THAT WHOSE OUTCOMES HAVE BEEN VERIFIED BY HAND #
-###############################################################
-
+#### Helper functions ####
 function reload_labelled_net()
     net = readnewick("((a,b)i1,((c,#H1)i6,(d,((e,f)i5)#H1)i3)i2);")
     semidirect_network!(net)
@@ -16,6 +11,9 @@ get_nodes(net::HybridNetwork, s::String, t::String, u::String, v::String) = [
     net.node[findfirst(node -> node.name == name, net.node)] for name in [s, t, u, v]
 ]
 
+###############################################################
+# FIRST: TESTS THAT WHOSE OUTCOMES HAVE BEEN VERIFIED BY HAND #
+###############################################################
 
 net = reload_labelled_net()
 s, t, u, v = get_nodes(net, "i6", "i4", "i2", "i3")
@@ -38,6 +36,12 @@ p_edges = [e for e in net.edge if getchild(e).hybrid]
 s, t, u, v = get_nodes(net, "d", "i6", "i3", "i4")
 perform_rNNI4!(net, s, t, u, v)
 @test writenewick(net) == "((c,#i3)i6,(((e,f)i5,d)i4)#i3,(a,b)i1)i2;"
+
+net = reload_labelled_net()
+p_edges = [e for e in net.edge if getchild(e).hybrid]
+s, t, u, v = get_nodes(net, "c", "i3", "i6", "i4")
+perform_rNNI4!(net, s, t, u, v)
+@test !is_valid_rNNI4(get_nodes(net, "i1", "i3", "i2", "i6")...)
 
 
 ##########################################################
@@ -141,3 +145,49 @@ end
 #######################################################################
 # THIRD: RUN A LOT OF NETWORK MOVES AND MAKE SURE THAT NOTHING BREAKS #
 #######################################################################
+
+net, net0, net1, net2 = nothing, nothing, nothing, nothing
+s, t, u, v = nothing, nothing, nothing, nothing
+net = reload_labelled_net()
+
+for rNNI_type = 1:4
+    for j = 1:100
+        prev_newick = writenewick(net)
+        valid_stuvs = all_valid_rNNI_nodes(net, rNNI_type)
+        if length(valid_stuvs) == 0
+            net = reload_labelled_net()
+            valid_stuvs = all_valid_rNNI_nodes(net, rNNI_type)
+        end
+        s, t, u, v = sample(valid_stuvs)
+
+        @test_nowarn perform_rNNI!(net, s, t, u, v, rNNI_type)
+        @test_nowarn writenewick(net)
+        @test prev_newick != writenewick(net)
+
+        if rNNI_type == 3 && all(getchild(H).leaf for H in net.hybrid)
+            # If this is the case, there are 0 valid rNNI(3) moves
+            # So, we reset the network
+            # (In the case of the current test network, that means
+            # we have to reset EVERYTIME...)
+            net = reload_labelled_net()
+        end
+    end
+end
+
+
+## THROWNS AN ERROR...
+Random.seed!(42)
+net = reload_labelled_net()
+for j = 1:1000
+    prev_newick = writenewick(net)
+    perform_random_rNNI!(net)
+    @test_nowarn writenewick(net)
+    @test prev_newick != writenewick(net)
+end
+
+
+
+
+
+
+
