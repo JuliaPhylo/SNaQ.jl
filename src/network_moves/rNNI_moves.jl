@@ -1,14 +1,8 @@
-include("misc.jl")
-include("rNNI_validity.jl")
-
 using PhyloNetworks, StatsBase
 const Node = PhyloNetworks.Node;
 const Edge = PhyloNetworks.Edge;
-
-
-
-
-
+include("misc.jl")
+include("rNNI_validity.jl")
 
 
 """
@@ -30,6 +24,7 @@ end
 
 function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI1(s, t, u, v) || error("Topological conditions for rNNI(1) not met.")
+    @info "MOVE: rNNI(1) - $((s.name, t.name, u.name, v.name))"
 
     # u: loses s as a child and gains t as a child
     # v: loses t as a child and gains s as a child
@@ -48,6 +43,7 @@ end
 
 function perform_rNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI2(s, t, u, v) || error("Topological conditions for rNNI(2) not met.")
+    @info "MOVE: rNNI(2) - $((s.name, t.name, u.name, v.name))"
 
     # s: loses u as a child and gains v as a child
     # t: loses v as a child and gains u as a child
@@ -69,6 +65,7 @@ end
 
 function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI3(s, t, u, v) || error("Topological conditions for rNNI(3) not met.")
+    @info "MOVE: rNNI(3) - $((s.name, t.name, u.name, v.name))"
 
     # s: loses u as a child and gains v as a child
     # t: loses v as a parent and gains u as a parent
@@ -99,6 +96,7 @@ end
 
 function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI4(s, t, u, v) || error("Topological conditions for rNNI(4) not met.")
+    @info "MOVE: rNNI(4) - $((s.name, t.name, u.name, v.name))"
 
     # t: loses v as a child and gains u as a child
     # s: loses u as a parent and gains v as a parent
@@ -128,7 +126,7 @@ end
 """
 Add a docstring later - I'm going on a walk 
 """
-function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
+function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.7, 0.1, 0.1, 0.1])
     (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
     
     r = rand()

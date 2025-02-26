@@ -13,6 +13,8 @@ is_valid_rNNI(s::Node, t::Node, u::Node, v::Node, type::Int) = type == 1 ? is_va
 
 
 function is_valid_rNNI1(s::Node, t::Node, u::Node, v::Node)
+    !v.hybrid || return false
+
     cu = getchildren(u)
     (s in cu && v in cu) || return false
 
@@ -28,6 +30,7 @@ function is_valid_rNNI2(s::Node, t::Node, u::Node, v::Node)
     v in getchildren(t) || return false
     u in getchildren(s) || return false
     v.hybrid || return false
+    !(t in getchildren(u)) || return false
     return true
 end
 
@@ -40,13 +43,31 @@ function is_valid_rNNI3(s::Node, t::Node, u::Node, v::Node)
     return true
 end
 
+# Basic visual relationships in Figure 4, but ALSO
+# `t` must NOT be a descendant of `u`
 function is_valid_rNNI4(s::Node, t::Node, u::Node, v::Node)
     v in getchildren(u) || return false
     v in getchildren(t) || return false
     s in getchildren(u) || return false
     length(getchildren(u)) == 2 || return false
     v.hybrid || return false
+    !is_descendant_of(u, t) || return false
+    !is_descendant_of(t, s) || return false
     return true
+end
+
+function is_descendant_of(descendant::Node, ancestor::Node)
+    queue = [ancestor]
+    while length(queue) > 0
+        curr = queue[length(queue)]
+        deleteat!(queue, length(queue))
+
+        curr == descendant && return true
+        for c in getchildren(curr)
+            push!(queue, c)
+        end
+    end
+    return false
 end
 
 
@@ -88,14 +109,16 @@ function all_valid_rNNI1_nodes(N::HybridNetwork)
     for u in valid_us
         children = getchildren(u)
 
-        if !children[1].leaf
+        if !children[1].leaf && !(children[2] in getchildren(children[1])) && !children[1].hybrid
             for t in getchildren(children[1])
+                children[2].hybrid && children[1] in getparents(children[2]) && continue
                 push!(stuv_combos, (children[2], t, u, children[1]))
             end
         end
 
-        if !children[2].leaf
+        if !children[2].leaf && !(children[1] in getchildren(children[2])) && !children[2].hybrid
             for t in getchildren(children[2])
+                children[1].hybrid && children[2] in getparents(children[1]) && continue
                 push!(stuv_combos, (children[1], t, u, children[2]))
             end
         end
@@ -163,18 +186,20 @@ function all_valid_rNNI4_nodes(N::HybridNetwork)
         p1_children = getchildren(parents[1])
         p2_children = getchildren(parents[2])
 
-        if length(p1_children) == 2
+        if length(p1_children) == 2 && !is_descendant_of(parents[1], parents[2])
             for s in p1_children
                 s != parents[2] || continue
                 s != v || continue
+                is_descendant_of(parents[2], s) && continue
                 push!(stuv_combos, (s, parents[2], parents[1], v))
             end
         end
 
-        if length(p2_children) == 2
+        if length(p2_children) == 2 && !is_descendant_of(parents[2], parents[1])
             for s in p2_children
                 s != parents[1] || continue
                 s != v || continue
+                is_descendant_of(parents[1], s) && continue
                 push!(stuv_combos, (s, parents[1], parents[2], v))
             end
         end
