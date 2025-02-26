@@ -141,6 +141,7 @@ function all_valid_rNNI3_nodes(N::HybridNetwork)
         v = getchild(u)
         ss = getparents(u)
         ss[1] != ss[2] || continue
+        
         for s in ss
             for t in getchildren(v)
                 push!(stuv_combos, (s, t, u, v))

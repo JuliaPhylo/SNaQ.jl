@@ -17,14 +17,12 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
     edge_xprime_yprime = xprime.edge[findfirst(e -> yprime in e.node, xprime.edge)]
     zprime, edge_xprime_zprime = breakedge!(edge_xprime_yprime, N)
     zprime.name = z.name    # maintain original node naming - will be useful for debugging
-    @info z.edge
 
     # 2. Disconnect z from w and attach w to z'
     edge_zw = z.edge[findfirst(z_edge -> w in z_edge.node, z.edge)]
     replace!(edge_zw.node, z => zprime)
     deleteat!(z.edge, findfirst(z_edge -> z_edge == edge_zw, z.edge))
     push!(zprime.edge, edge_zw)
-    @info z.edge
 
     # 3. If this is case 2, we need to swap hybrid info before fusing
     if which_case == 2
@@ -32,10 +30,11 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
         swap_edge_hybrid_info!(edge_xprime_zprime, edge_xz)
         zprime.hybrid = true
     end
-    @info z.edge
 
     # 4. Fuse across the now redundant node z
+    z.hybrid = false
     z_idx = findfirst(j -> N.node[j] == z, 1:length(N.node))
+    @info N.node[z_idx]
     fuseedgesat!(z_idx, N)
     @info z.edge
 end
