@@ -35,3 +35,16 @@ hardwiredClusterDistance(tre, opt_tre, false)
 
 PhyloPlots.plot(tre)
 PhyloPlots.plot(tre0)
+
+
+### hmax = 3 will probably give us plenty of fun, new errors to debug...
+tre = readnewick(joinpath(@__DIR__, "n1.netfile"));
+gts = simulatecoalescent(tre, 1000, 1);
+tre.isrooted = false;
+q, _ = countquartetsintrees(gts, showprogressbar=false);
+tre0 = readnewick(writenewick(tre));
+tre0.isrooted = false;
+perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);
+
+opt_tre, logPLs = search(tre0, q, 3; maxeval = 1000, maxequivPLs = 100)
+hardwiredClusterDistance(tre, opt_tre, false)

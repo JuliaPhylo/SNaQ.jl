@@ -35,6 +35,7 @@ function is_valid_rNNI2(s::Node, t::Node, u::Node, v::Node)
 end
 
 function is_valid_rNNI3(s::Node, t::Node, u::Node, v::Node)
+    !v.hybrid || return false
     t in getchildren(v) || return false
     u in getchildren(s) || return false
     v in getchildren(u) || return false
@@ -162,6 +163,7 @@ function all_valid_rNNI3_nodes(N::HybridNetwork)
     stuv_combos = [];
     for u in valid_us
         v = getchild(u)
+        v.hybrid && continue
         ss = getparents(u)
         ss[1] != ss[2] || continue
         

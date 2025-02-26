@@ -34,9 +34,7 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
     # 4. Fuse across the now redundant node z
     z.hybrid = false
     z_idx = findfirst(j -> N.node[j] == z, 1:length(N.node))
-    @info N.node[z_idx]
     fuseedgesat!(z_idx, N)
-    @info z.edge
 end
 
 
