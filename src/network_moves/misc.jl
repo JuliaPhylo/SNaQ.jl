@@ -25,6 +25,24 @@ function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
 end
 
 
+function is_descendant_of(descendant::Node, ancestor::Node)
+    queue = [ancestor]
+    iters = 0
+    while length(queue) > 0
+        curr = queue[length(queue)]
+        deleteat!(queue, length(queue))
+
+        curr == descendant && return true
+        for c in getchildren(curr)
+            push!(queue, c)
+        end
+        iters += 1
+        if iters % 10000 == 0 @info "descendant iters: $(iters)" end
+    end
+    return false
+end
+
+
 """
 Helper function that swaps all hybridization-related information between
     edges `e1` and `e2`. Used heavily in the network move functions to

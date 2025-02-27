@@ -1,6 +1,7 @@
 using PhyloNetworks, StatsBase
 const Node = PhyloNetworks.Node;
 const Edge = PhyloNetworks.Edge;
+include("misc.jl")
 
 """
 Checks whether rNNI move of type `type` ([see Figure 4 here](https://doi.org/10.1371/journal.pcbi.1005611))
@@ -55,20 +56,6 @@ function is_valid_rNNI4(s::Node, t::Node, u::Node, v::Node)
     !is_descendant_of(u, t) || return false
     !is_descendant_of(t, s) || return false
     return true
-end
-
-function is_descendant_of(descendant::Node, ancestor::Node)
-    queue = [ancestor]
-    while length(queue) > 0
-        curr = queue[length(queue)]
-        deleteat!(queue, length(queue))
-
-        curr == descendant && return true
-        for c in getchildren(curr)
-            push!(queue, c)
-        end
-    end
-    return false
 end
 
 

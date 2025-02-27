@@ -1,7 +1,7 @@
 using PhyloNetworks
-import PhyloNetworks: breakedge!, fuseedgesat!
+import PhyloNetworks: breakedge!, fuseedgesat!, removeHybrid!, pushHybrid!
 include("misc.jl")
-include("rNNI_validity.jl")
+include("rSPR_validity.jl")
 
 
 """
@@ -29,12 +29,28 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
         edge_xz = z.edge[findfirst(z_edge -> x in z_edge.node, z.edge)]
         swap_edge_hybrid_info!(edge_xprime_zprime, edge_xz)
         zprime.hybrid = true
+        pushHybrid!(N, zprime)
     end
 
-    # 4. Fuse across the now redundant node z
-    z.hybrid = false
+    # 4. Fuse across the now redundant node `z`
+    #    also, manually change the properties of the edges `z` is attached to
+    #    so that they are no longer hybrid edges
+    if z.hybrid
+        PhyloNetworks.removeHybrid!(N, z)   # does not remove node, only updates N.hybrid and N.numhybrids
+        z.hybrid = false
+
+        for E in z.edge
+            E.hybrid = false
+            E.gamma = -1.0
+        end
+    end
+
     z_idx = findfirst(j -> N.node[j] == z, 1:length(N.node))
     fuseedgesat!(z_idx, N)
+
+        
+
+    !(z in N.hybrid) || error("z still in net.hybrid after being fused??")
 end
 
 

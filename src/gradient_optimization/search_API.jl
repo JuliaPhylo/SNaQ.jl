@@ -1,4 +1,8 @@
 using PhyloNetworks
+include("../network_moves/add_remove_retic.jl")
+include("../network_moves/rNNI_moves.jl")
+include("../network_moves/rSPR_moves.jl")
+include("../network_moves/move_origin_target.jl")
 
 
 function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::Int=100)
@@ -22,13 +26,23 @@ function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::I
         
         # 2. Check for identifiability
 
+
         # 3. Optimize branch lengths
+        @info "\tgather quartets"
         q_eqns, _ = find_quartet_equations(Nprime)
+        @info "\toptimizing BLs"
         optimize_bls!(Nprime, q_eqns, q)
+        @info "\tdone optimizing BLs"
+
+        max_gamma = -1.0
+        for H in Nprime.hybrid
+            max_gamma = max(max_gamma, max(getparentedge(H).gamma, getparentedgeminor(H).gamma))
+        end
+        min_BL = minimum(E.length for E in N.edge if !(E.hybrid && !E.ismajor))
+        println("maxγ: $(round(max_gamma, digits = 2)) - minBL: $(round(min_BL, digits=4))")
 
         # 4. Compute logPL
         Nprime_logPL = compute_logPL(q_eqns, Nprime.edge, q)
-        println("\t\t$(Nprime_logPL)")
         push!(prop_Ns, Nprime)
 
         # 5. Accept / reject
@@ -64,11 +78,47 @@ Takes network `N` and modifies it with topological moves to generate a new propo
 """
 function propose_topology(N::HybridNetwork, hmax::Int)::HybridNetwork
 
-    if N.numhybrids < hmax && rand() < 0.20
+    # If any gammas are 0.0001 or 0.9999, propose removing that gamma
+    bad_H = nothing
+    for H in N.hybrid
+        if getparentedgeminor(H).gamma <= 0.0001
+            bad_H = H
+            break
+        end
+    end
+
+    if bad_H !== nothing
+        @info "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
+        Nprime = deepcopy(N)
+        remove_hybrid!(bad_H, N)
+        return Nprime
+    end
+
+    if N.numhybrids < hmax && rand() < 0.50
         @debug "MOVE: add_random_hybrid!"
         Nprime = deepcopy(N)
         add_random_hybrid!(Nprime)
         return Nprime
+    end
+
+    if N.numhybrids > 0 && rand() < 0.50
+        try
+            if rand() < 0.5
+                Nprime = deepcopy(N)
+                @info "move_random_reticulate_origin!"
+                move_random_reticulate_origin!(Nprime)
+                return Nprime
+            else
+                Nprime = deepcopy(N)
+                @info "move_random_reticulate_target!"
+                @info writenewick(Nprime, round=true)
+                move_random_reticulate_target!(Nprime)
+                @info writenewick(Nprime, round=true)
+                return Nprime
+            end
+        catch
+            # Only catches if there were 0 valid moves for whichever above was chosen
+        end
     end
 
     @debug "MOVE: perform_random_rNNI!"

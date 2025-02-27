@@ -13,7 +13,8 @@ function optimize_bls!(net::HybridNetwork, quartet_eqns, observed_CFs; return_lo
 
     opt = Opt(NLopt.LD_LBFGS, narg)
     opt.lower_bounds = [(j <= ngamma) ? 0.0001 : 0.0001 for j=1:narg]
-    opt.upper_bounds = [(j <= ngamma) ? 0.5 : 15.0 for j = 1:narg]
+    opt.upper_bounds = [(j <= ngamma) ? 0.9999 : 15.0 for j = 1:narg]
+    opt.maxeval = 250
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, idxobjmap, quartet_eqns, observed_CFs, optmap))
     (minf, minx, ret) = NLopt.optimize(opt, fill(0.5, narg))
 
@@ -29,8 +30,15 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, N, idx_to_obj_map,
     for j = 1:length(X)
         obj::Union{PN.Edge, PN.Node} = idx_to_obj_map[j]
         if typeof(obj) <: PN.Node
-            getparentedge(obj).gamma = 1-X[j]
-            getparentedgeminor(obj).gamma = X[j]
+            E_major = getparentedge(obj)
+            E_minor = getparentedgeminor(obj)
+            E_major.gamma = 1-X[j]
+            E_minor.gamma = X[j]
+
+            if 1-X[j] < 0.5
+                E_major.ismajor = false
+                E_minor.ismajor = true
+            end
         else
             obj.length = X[j]
         end
