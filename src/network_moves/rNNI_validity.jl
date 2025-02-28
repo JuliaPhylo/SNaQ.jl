@@ -32,6 +32,7 @@ function is_valid_rNNI2(s::Node, t::Node, u::Node, v::Node)
     u in getchildren(s) || return false
     v.hybrid || return false
     !(t in getchildren(u)) || return false
+    !is_descendant_of(s, v) || return false
     return true
 end
 
