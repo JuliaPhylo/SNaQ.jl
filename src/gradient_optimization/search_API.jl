@@ -121,9 +121,27 @@ function propose_topology(N::HybridNetwork, hmax::Int)::HybridNetwork
         end
     end
 
-    @debug "MOVE: perform_random_rNNI!"
-    Nprime = deepcopy(N)
-    perform_random_rNNI!(Nprime)
-    return Nprime
+    if N.numhybrids == 0 || rand() < 0.33
+
+        @debug "MOVE: perform_random_rNNI!"
+        Nprime = deepcopy(N)
+        perform_random_rNNI!(Nprime)
+        return Nprime
+
+    elseif rand() < 0.50
+
+        @debug "MOVE: move_random_reticulate_origin!"
+        Nprime = deepcopy(N)
+        move_random_reticulate_origin!(Nprime)
+        return Nprime
+
+    else
+
+        @debug "MOVE: move_random_reticulate_target!"
+        Nprime = deepcopy(N)
+        move_random_reticulate_target!(Nprime)
+        return Nprime
+
+    end
 
 end

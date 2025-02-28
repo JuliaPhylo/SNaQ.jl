@@ -129,12 +129,14 @@ function all_valid_rNNI2_nodes(N::HybridNetwork)
         
         if length(p1_parents) >= 1
             for gpa in p1_parents
+                !is_descendant_of(gpa, v) || continue
                 push!(stuv_combos, (gpa, parents[2], parents[1], v))
             end
         end
 
         if length(p2_parents) >= 1
             for gpa in p2_parents
+                !is_descendant_of(gpa, v) || continue
                 push!(stuv_combos, (gpa, parents[1], parents[2], v))
             end
         end
