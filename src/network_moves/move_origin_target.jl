@@ -1,4 +1,5 @@
 using PhyloNetworks
+import PhyloNetworks: getOtherNode
 
 
 """
@@ -8,8 +9,16 @@ function move_reticulate_origin!(hybrid::Node, new_origin::Edge, N::HybridNetwor
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
     w = hybrid
     z = getparent(getparentedgeminor(hybrid))
-    y = getchildren(z)[1] == hybrid ? getchildren(z)[2] : getchildren(z)[1]
-    x = getparent(z)
+    x, y = nothing, nothing
+
+    if length(getparents(z)) > 0
+        y = getchildren(z)[1] == hybrid ? getchildren(z)[2] : getchildren(z)[1]
+        x = getparent(z)
+    else
+        # z is the "root" at the moment - but we ignore this notion
+        # because the network is semi-directed
+        x, y = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
+    end 
 
     xprime = getparent(new_origin)
     yprime = getchild(new_origin)
@@ -36,14 +45,20 @@ end
 function is_valid_move_reticulate_origin(hybrid::Node, new_origin::Edge, N::HybridNetwork)
     hybrid.hybrid || return false
     z = getparent(getparentedgeminor(hybrid))
-    length(getparents(z)) > 0 || return false
-    y = getchildren(z)[1] == hybrid ? getchildren(z)[2] : getchildren(z)[1]
-    x = getparent(z)
-
+    length(z.edge) == 3 || error("Node with only $(length(z.edge)) attached edges...")
     xprime = getparent(new_origin)
     yprime = getchild(new_origin)
 
-    return is_valid_rSPR(hybrid, x, y, z, xprime, yprime)
+    if length(getparents(z)) > 0
+        y = getchildren(z)[1] == hybrid ? getchildren(z)[2] : getchildren(z)[1]
+        x = getparent(z)
+        return is_valid_rSPR(hybrid, x, y, z, xprime, yprime)
+    else
+        # z is the "root" at the moment - but we ignore this notion
+        # because the network is semi-directed
+        x, y = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
+        return is_valid_rSPR(hybrid, x, y, z, xprime, yprime)
+    end 
 end
 
 

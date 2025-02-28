@@ -3,6 +3,7 @@ include("../../src/network_moves/rNNI_moves.jl")
 include("../../src/network_moves/rSPR_moves.jl")
 include("../../src/gradient_optimization/opt_API.jl")
 include("../../src/gradient_optimization/search_API.jl")
+ENV["JULIA_DEBUG"] = Main
 
 ### Network example
 net, gts = readnewick(joinpath(@__DIR__, "n1.netfile")), readmultinewick(joinpath(@__DIR__, "n1_10kgts.treefile")); net.isrooted = false;
@@ -11,8 +12,14 @@ df = readtableCF(DataFrame(tablequartetCF(q, t)));
 tre0 = readnewick(writenewick(gts[1]));
 perform_random_rNNI!(tre0);
 
-opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 10000, maxequivPLs = 500)
+opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 10000, maxequivPLs = 1000, seed=43)
 hardwiredClusterDistance(net, opt_net, false)
+
+nets = [search(gts[j], q, net.numhybrids; maxeval=10000, maxequivPLs=100, seed=rand(Int))[1] for j = 1:20];
+max_net_PL, max_net_idx = findmax(compute_logPL(net[1], q) for net in nets)
+max_net = nets[max_net_idx][1]
+hardwiredClusterDistance(max_net, net, false)
+
 
 snaq_rt = @elapsed snaq_net = snaq!(tre0, df, hmax=net.numhybrids, runs=1);
 hardwiredClusterDistance(net, snaq_net, false)

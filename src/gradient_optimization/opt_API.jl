@@ -50,7 +50,7 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, N, idx_to_obj_map,
         total_loss += iter_oCF.data[2] * log(compute_eCF(eqns2, N.edge))
         total_loss += iter_oCF.data[3] * log(compute_eCF(eqns3, N.edge))
     end
-    grad .= compute_gradient(q_eqns, N.edge, opt_map, obsCFs)
+    grad .= compute_gradient(q_eqns, N.edge, opt_map, obsCFs; use_cache=true)
     return total_loss
 end
 

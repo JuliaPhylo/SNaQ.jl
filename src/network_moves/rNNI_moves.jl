@@ -126,7 +126,7 @@ end
 """
 Add a docstring later - I'm going on a walk 
 """
-function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.7, 0.1, 0.1, 0.1])
+function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.9, 0.1/3, 0.1/3, 0.1/3])
     (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
     
     r = rand()

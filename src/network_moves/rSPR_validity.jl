@@ -18,7 +18,7 @@ function is_valid_rSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime:
     length(unique([w, x, y, z, xprime, yprime])) == 6 || return false
 
     if z.hybrid !(is_descendant_of(w, yprime)) || return false end
-    if !z.hybrid !(is_descendant_of(xprime, w)) || return false end
+    if !z.hybrid && w.hybrid !(is_descendant_of(xprime, w)) || return false end
 
     # Must be valid, then
     return true

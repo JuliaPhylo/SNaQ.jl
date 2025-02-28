@@ -1,12 +1,13 @@
-using PhyloNetworks
+using PhyloNetworks, Random
 include("../network_moves/add_remove_retic.jl")
 include("../network_moves/rNNI_moves.jl")
 include("../network_moves/rSPR_moves.jl")
 include("../network_moves/move_origin_target.jl")
 
 
-function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::Int=100)
+function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::Int=100, seed::Int=42)
 
+    Random.seed!(seed)
     N = deepcopy(N);
     if N.isrooted
         semidirect_network!(N)
@@ -50,7 +51,7 @@ function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::I
             error("Nprime_logPL = $(Nprime_logPL)")
         end
 
-        if Nprime_logPL > logPLs[j-1]
+        if Nprime_logPL - logPLs[j-1] > 1e-4
             N = Nprime
             logPLs[j] = Nprime_logPL
             unchanged_iters = 0
@@ -89,27 +90,35 @@ function propose_topology(N::HybridNetwork, hmax::Int)::HybridNetwork
 
     if bad_H !== nothing
         @info "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
-        Nprime = deepcopy(N)
+        Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
         remove_hybrid!(bad_H, N)
         return Nprime
     end
 
     if N.numhybrids < hmax && rand() < 0.50
         @debug "MOVE: add_random_hybrid!"
-        Nprime = deepcopy(N)
+        Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
         add_random_hybrid!(Nprime)
         return Nprime
     end
 
-    if N.numhybrids > 0 && rand() < 0.50
+    if N.numhybrids == 0 && rand() < 0.33
+
+        @debug "MOVE: perform_random_rNNI!"
+        Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
+        perform_random_rNNI!(Nprime)
+        return Nprime
+    
+    else
+
         try
             if rand() < 0.5
-                Nprime = deepcopy(N)
+                Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
                 @info "move_random_reticulate_origin!"
                 move_random_reticulate_origin!(Nprime)
                 return Nprime
             else
-                Nprime = deepcopy(N)
+                Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
                 @info "move_random_reticulate_target!"
                 @info writenewick(Nprime, round=true)
                 move_random_reticulate_target!(Nprime)
@@ -121,27 +130,9 @@ function propose_topology(N::HybridNetwork, hmax::Int)::HybridNetwork
         end
     end
 
-    if N.numhybrids == 0 || rand() < 0.33
-
-        @debug "MOVE: perform_random_rNNI!"
-        Nprime = deepcopy(N)
-        perform_random_rNNI!(Nprime)
-        return Nprime
-
-    elseif rand() < 0.50
-
-        @debug "MOVE: move_random_reticulate_origin!"
-        Nprime = deepcopy(N)
-        move_random_reticulate_origin!(Nprime)
-        return Nprime
-
-    else
-
-        @debug "MOVE: move_random_reticulate_target!"
-        Nprime = deepcopy(N)
-        move_random_reticulate_target!(Nprime)
-        return Nprime
-
-    end
+    @debug "MOVE: perform_random_rNNI!"
+    Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
+    perform_random_rNNI!(Nprime)
+    return Nprime
 
 end
