@@ -2,10 +2,12 @@ using Graphs    # for finding what edges contribute to internal edges; could rem
 using Combinatorics # for n choose 4, should definitely be removed later
 
 
-struct eCFContribution
+mutable struct eCFContribution
     hyb_edges::Vector{Int}
     internal_edges::Vector{Int}
     from_displayed_major::Bool
+    cached_eCF::Float64
+    eCFContribution(he, ie, fr) = new(he, ie, fr, 0.0)
 end
 
 function find_quartet_equations(net::HybridNetwork)

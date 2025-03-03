@@ -8,14 +8,14 @@ function compute_logPL(net::HybridNetwork, obsCFs)
     return compute_logPL(quartet_eqns, net.edge, obsCFs)
 end
 
-function compute_logPL(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}, edges::AbstractVector{PN.Edge}, oCFs)
+function compute_logPL(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}, edges::AbstractVector{PN.Edge}, oCFs; use_cache::Bool=false)
     total_logPL = 0.0
     for (iter_eCF_eqns, iter_oCFs) in zip(quartet_eqns, oCFs)
         for (eqns, oCF) in zip(iter_eCF_eqns, iter_oCFs.data[1:3])
             if oCF == 0
                 total_logPL += 0.0
             else
-                eCF = compute_eCF(eqns, edges)
+                eCF = compute_eCF(eqns, edges; use_cache=use_cache)
                 total_logPL += 100 * oCF * log(eCF / oCF)
             end
         end
@@ -23,45 +23,49 @@ function compute_logPL(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{
     return total_logPL
 end
 
-function compute_eCFs(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}, edges::AbstractVector{PN.Edge})
+function compute_eCFs(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}, edges::AbstractVector{PN.Edge}; use_cache::Bool=false)
     eCFs = Array{Vector{Float64}}(undef, length(quartet_eqns))
     for (j, (eCF12_34_eqns, eCF13_24_eqns, eCF14_23_eqns)) in enumerate(quartet_eqns)
         eCFs[j] = [
-            compute_eCF(eCF12_34_eqns, edges),
-            compute_eCF(eCF13_24_eqns, edges),
-            compute_eCF(eCF14_23_eqns, edges)
+            compute_eCF(eCF12_34_eqns, edges; use_cache=use_cache),
+            compute_eCF(eCF13_24_eqns, edges; use_cache=use_cache),
+            compute_eCF(eCF14_23_eqns, edges; use_cache=use_cache)
         ]
     end
     return eCFs
 end
 
-function compute_eCF(quartet_eqns::Vector{eCFContribution}, edges::AbstractVector{PN.Edge})
+function compute_eCF(quartet_eqns::Vector{eCFContribution}, edges::AbstractVector{PN.Edge}; use_cache::Bool=false)
     total_eCF = 0.0
     for eqn in quartet_eqns
-        total_eCF += compute_partial_eCF(eqn, edges)
+        total_eCF += compute_partial_eCF(eqn, edges; use_cache=use_cache)
     end
     return total_eCF
 end
 
-function compute_partial_eCF(eqn::eCFContribution, edges::AbstractVector{PN.Edge})
+function compute_partial_eCF(eqn::eCFContribution, edges::AbstractVector{PN.Edge}; use_cache::Bool=false)
+    use_cache && return eqn.cached_eCF
+
     exp_portion = (eqn.from_displayed_major) ? 1 - 2/3*exp(-sum(edges[e_idx].length for e_idx in eqn.internal_edges)) : 1/3*exp(-sum(edges[e_idx].length for e_idx in eqn.internal_edges))
     gamma_prod = (length(eqn.hyb_edges) == 0) ? 1 : prod(edges[e_idx].gamma for e_idx in eqn.hyb_edges)
-    return gamma_prod * exp_portion
+    eqn.cached_eCF = gamma_prod * exp_portion
+
+    return eqn.cached_eCF
 end
 
-function compute_gradient(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}, edges::AbstractVector{PN.Edge}, edge_and_hybrid_to_idx_map::Dict, oCFs)
+function compute_gradient(quartet_eqns::Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}, edges::AbstractVector{PN.Edge}, edge_and_hybrid_to_idx_map::Dict, oCFs; use_cache::Bool=true)
     grad = fill(0.0, length(edge_and_hybrid_to_idx_map))
     for ((eqns1, eqns2, eqns3), iter_oCFs) in zip(quartet_eqns, oCFs)
-        add_gradient_contributions!(eqns1, iter_oCFs.data[1], edges, edge_and_hybrid_to_idx_map, grad)
-        add_gradient_contributions!(eqns2, iter_oCFs.data[2], edges, edge_and_hybrid_to_idx_map, grad)
-        add_gradient_contributions!(eqns3, iter_oCFs.data[3], edges, edge_and_hybrid_to_idx_map, grad)
+        add_gradient_contributions!(eqns1, iter_oCFs.data[1], edges, edge_and_hybrid_to_idx_map, grad; use_cache=use_cache)
+        add_gradient_contributions!(eqns2, iter_oCFs.data[2], edges, edge_and_hybrid_to_idx_map, grad; use_cache=use_cache)
+        add_gradient_contributions!(eqns3, iter_oCFs.data[3], edges, edge_and_hybrid_to_idx_map, grad; use_cache=use_cache)
     end
     return grad
 end
 
-function add_gradient_contributions!(eqns::Vector{eCFContribution}, oCF, edges::AbstractVector{PN.Edge}, edge_and_hybrid_to_idx_map::Dict, grad::AbstractArray{Float64})
+function add_gradient_contributions!(eqns::Vector{eCFContribution}, oCF, edges::AbstractVector{PN.Edge}, edge_and_hybrid_to_idx_map::Dict, grad::AbstractArray{Float64}; use_cache::Bool=true)
     
-    eCF = compute_eCF(eqns, edges)
+    eCF = compute_eCF(eqns, edges; use_cache=use_cache)
     
     # Compute gradient w.r.t. each branch length
     eCF_branch_prime = compute_eCF_branch_derivative(eqns, edges, oCF)
@@ -81,10 +85,10 @@ function add_gradient_contributions!(eqns::Vector{eCFContribution}, oCF, edges::
     end
 end
 
-function compute_eCF_gamma_derivative(eqns::Vector{eCFContribution}, edges::AbstractVector{PN.Edge}, oCF, H_idx::Int)
+function compute_eCF_gamma_derivative(eqns::Vector{eCFContribution}, edges::AbstractVector{PN.Edge}, oCF, H_idx::Int; use_cache::Bool=true)
     total_deriv = 0.0
     for eqn in eqns
-        partial_eCF = compute_partial_eCF(eqn, edges)
+        partial_eCF = compute_partial_eCF(eqn, edges; use_cache=use_cache)
         eqn_has_edge = H_idx in eqn.hyb_edges
         denom = eqn_has_edge ? edges[H_idx].gamma : 1-edges[H_idx].gamma
         mult_neg_one = edges[H_idx].ismajor == eqn_has_edge

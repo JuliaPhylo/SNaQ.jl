@@ -15,8 +15,14 @@ df = readtableCF(DataFrame(tablequartetCF(q, t)));
 tre0 = readnewick(writenewick(gts[1]));
 perform_random_rNNI!(tre0);
 
-opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 1000, maxequivPLs = 100)
+opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 10000, maxequivPLs = 1000, seed=43)
 hardwiredClusterDistance(net, opt_net, false)
+
+nets = [search(gts[j], q, net.numhybrids; maxeval=10000, maxequivPLs=100, seed=rand(Int))[1] for j = 1:20];
+max_net_PL, max_net_idx = findmax(compute_logPL(net[1], q) for net in nets)
+max_net = nets[max_net_idx][1]
+hardwiredClusterDistance(max_net, net, false)
+
 
 snaq_rt = @elapsed snaq_net = snaq!(tre0, df, hmax=net.numhybrids, runs=1);
 hardwiredClusterDistance(net, snaq_net, false)
