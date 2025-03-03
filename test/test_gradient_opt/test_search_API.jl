@@ -3,6 +3,10 @@ include("../../src/network_moves/rNNI_moves.jl")
 include("../../src/network_moves/rSPR_moves.jl")
 include("../../src/gradient_optimization/opt_API.jl")
 include("../../src/gradient_optimization/search_API.jl")
+ENV["JULIA_DEBUG"] = Main
+
+using PhyloCoalSimulations, PhyloPlots
+
 
 ### Network example
 net, gts = readnewick(joinpath(@__DIR__, "n1.netfile")), readmultinewick(joinpath(@__DIR__, "n1_10kgts.treefile")); net.isrooted = false;
@@ -28,7 +32,7 @@ PhyloPlots.plot(opt_net);
 
 
 ### Tree example
-tre = readnewick(joinpath(@__DIR__, "n1.netfile"));
+tre = readnewick(joinpath(@__DIR__, "n1.netfile")); tre = majortree(tre);
 gts = simulatecoalescent(tre, 1000, 1);
 tre.isrooted = false;
 q, _ = countquartetsintrees(gts, showprogressbar=false);
@@ -52,5 +56,21 @@ tre0 = readnewick(writenewick(tre));
 tre0.isrooted = false;
 perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);
 
-opt_tre, logPLs = search(tre0, q, 3; maxeval = 1000, maxequivPLs = 100)
+opt_tre, logPLs = search(tre0, q, 3; maxeval = 10000, maxequivPLs = 10000)
 hardwiredClusterDistance(tre, opt_tre, false)
+PhyloPlots.plot(tre);
+PhyloPlots.plot(opt_tre);
+
+
+
+### in-place modification
+net = readnewick(joinpath(@__DIR__, "n1.netfile"));
+net.isrooted = false;
+
+mod_net = readnewick(writenewick(net));
+mod_net.isrooted = false;
+
+for _ = 1:100_000
+    propose_topology!(mod_net, 6)
+end
+hardwiredClusterDistance(net, mod_net, false)
