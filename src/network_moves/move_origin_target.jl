@@ -6,6 +6,8 @@ Moves the origin of `hybrid` - equivalent to an rSPR move.
 """
 function move_reticulate_origin!(hybrid::Node, new_origin::Edge, N::HybridNetwork)
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
+    @debug "move_reticulate_origin!: ($(hybrid.name), $(getparent(new_origin).name) --> $(getchild(new_origin).name))"
+    
     w = hybrid
     z = getparent(getparentedgeminor(hybrid))
     y = getchildren(z)[1] == hybrid ? getchildren(z)[2] : getchildren(z)[1]
@@ -49,6 +51,8 @@ end
 
 function move_reticulate_target!(hybrid::Node, new_target::Edge, N::HybridNetwork)
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
+    @debug "move_reticulate_target!: ($(hybrid.name), $(getparent(new_target).name) --> $(getchild(new_target).name))"
+
     x = getparent(getparentedge(hybrid))
     w = getparent(getparentedgeminor(hybrid))
     y = getchild(hybrid)

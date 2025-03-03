@@ -46,9 +46,15 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
     end
 
     z_idx = findfirst(j -> N.node[j] == z, 1:length(N.node))
-    fuseedgesat!(z_idx, N)
+    fuseedge = fuseedgesat!(z_idx, N)
+    if getchild(fuseedge).hybrid
+        other_hyb_edge = [e for e in getchild(fuseedge).edge if e.hybrid && e != fuseedge && getchild(e) == getchild(fuseedge)][1]
+        fuseedge.hybrid = true
+        fuseedge.gamma = 1 - other_hyb_edge.gamma
 
-        
+        fuseedge.ismajor = fuseedge.gamma > 0.5
+        other_hyb_edge.ismajor = other_hyb_edge.gamma >= 0.5
+    end
 
     !(z in N.hybrid) || error("z still in net.hybrid after being fused??")
 end

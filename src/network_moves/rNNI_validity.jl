@@ -31,7 +31,7 @@ function is_valid_rNNI2(s::Node, t::Node, u::Node, v::Node)
     v in getchildren(t) || return false
     u in getchildren(s) || return false
     v.hybrid || return false
-    !(t in getchildren(u)) || return false
+    !is_descendant_of(t, u) || return false
     return true
 end
 
@@ -126,13 +126,13 @@ function all_valid_rNNI2_nodes(N::HybridNetwork)
         p1_parents = getparents(parents[1])
         p2_parents = getparents(parents[2])
         
-        if length(p1_parents) >= 1
+        if length(p1_parents) >= 1 && !is_descendant_of(parents[2], parents[1])
             for gpa in p1_parents
                 push!(stuv_combos, (gpa, parents[2], parents[1], v))
             end
         end
 
-        if length(p2_parents) >= 1
+        if length(p2_parents) >= 1 && !is_descendant_of(parents[1], parents[2])
             for gpa in p2_parents
                 push!(stuv_combos, (gpa, parents[1], parents[2], v))
             end
