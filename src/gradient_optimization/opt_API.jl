@@ -14,7 +14,7 @@ function optimize_bls!(net::HybridNetwork, quartet_eqns, observed_CFs; return_lo
     opt = Opt(NLopt.LD_LBFGS, narg)
     opt.lower_bounds = [(j <= ngamma) ? 0.0001 : 0.0001 for j=1:narg]
     opt.upper_bounds = [(j <= ngamma) ? 0.9999 : 15.0 for j = 1:narg]
-    opt.maxeval = 250
+    opt.maxeval = 75
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, idxobjmap, quartet_eqns, observed_CFs, optmap))
     (minf, minx, ret) = NLopt.optimize(opt, fill(0.5, narg))
 
