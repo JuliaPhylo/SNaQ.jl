@@ -3,6 +3,7 @@ include("../network_moves/add_remove_retic.jl")
 include("../network_moves/rNNI_moves.jl")
 include("../network_moves/rSPR_moves.jl")
 include("../network_moves/move_origin_target.jl")
+include("../network_properties/network_properties.jl")
 
 
 API_WARNED = false
@@ -40,7 +41,9 @@ end
 """
 API NOT FINALIZED
 """
-function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::Int=100)
+function search(N::HybridNetwork, q, hmax::Int;
+    restrictions::Function=no_restrictions(),
+    maxeval::Int=500, maxequivPLs::Int=100)
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
 
@@ -50,7 +53,6 @@ function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::I
         API_WARNED = true
     end
 
-    Random.seed!(seed)
     N = deepcopy(N);
     if N.isrooted
         semidirect_network!(N)
@@ -77,8 +79,15 @@ function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::I
         # 3. 2-cycles are NOT ALLOWED
         shrink2cycles!(Nprime);
 
+        # 4. Immediately throw away networks that don't meet restrictions
+        if !restrictions(Nprime)
+            @debug "Nprime does not meet restrictions - skipping."
+            logPLs[j] = logPLs[j-1]
+            continue
+        end
+
         # 3. Optimize branch lengths
-        @debug "\tgather quartets"
+        @debug "\tgathering quartets"
         q_eqns, _ = find_quartet_equations(Nprime)
         @debug "\toptimizing BLs"
         optimize_bls!(Nprime, q_eqns, q)
@@ -121,7 +130,6 @@ function search(N::HybridNetwork, q, hmax::Int; maxeval::Int=500, maxequivPLs::I
     return N, logPLs
 
 end
-
 
 
 """

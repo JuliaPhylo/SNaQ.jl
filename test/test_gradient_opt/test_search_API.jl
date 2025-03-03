@@ -4,6 +4,7 @@ include("../../src/network_moves/rSPR_moves.jl")
 include("../../src/gradient_optimization/opt_API.jl")
 include("../../src/gradient_optimization/search_API.jl")
 ENV["JULIA_DEBUG"] = Main
+ENV["JULIA_DEBUG"] = nothing
 
 using PhyloCoalSimulations, PhyloPlots
 
@@ -80,3 +81,17 @@ for _ = 1:100_000
     propose_topology!(mod_net, 6)
 end
 hardwiredClusterDistance(net, mod_net, false)
+
+
+
+
+### Only tree-child networks while searching
+net, gts = readnewick(joinpath(@__DIR__, "n1.netfile")), readmultinewick(joinpath(@__DIR__, "n1_10kgts.treefile")); net.isrooted = false;
+q, t = countquartetsintrees(gts, showprogressbar=false);
+df = readtableCF(DataFrame(tablequartetCF(q, t)));
+tre0 = readnewick(writenewick(gts[1]));
+perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);
+
+R = restriction_set(; require_strongly_tree_child = true, require_galled_network = true)
+opt_net, logPLs = search(tre0, q, net.numhybrids; restrictions=R, maxeval = 2000, maxequivPLs = 250)
+hardwiredClusterDistance(opt_net, net, false)
