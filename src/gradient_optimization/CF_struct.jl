@@ -12,7 +12,6 @@ function find_quartet_equations(net::HybridNetwork)
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
-    # getroot(net).edge[1].length == 0.0 || error("need root edge 1 to be length 0.0 to meet running assumption")
 
     t = sort(tipLabels(net))
     t_combos = combinations(t, 4)
