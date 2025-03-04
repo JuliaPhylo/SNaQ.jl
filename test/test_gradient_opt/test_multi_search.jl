@@ -21,9 +21,11 @@ true_logPL = compute_logPL(net, q)
 
 
 # Correct h
-best_net, est_nets, logPLs = multi_search(tre0, q, 1; runs=10, maxeval=1000, maxequivPLs=100)
+opt_rt = @elapsed best_net, est_nets, logPLs = multi_search(deepcopy(gts[1]), q, 1; runs=20, maxeval=10000, maxequivPLs=500)
 @info [hardwiredClusterDistance(n, net, false) for n in est_nets]
 
+snaq_rt = @elapsed snaq_net = snaq!(gts[1], df, hmax=1, runs=10)
+@info hardwiredClusterDistance(snaq_net, net, false)
 
 # Progressive h
 best_nets = [];

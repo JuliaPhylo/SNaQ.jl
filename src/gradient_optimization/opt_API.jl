@@ -9,7 +9,7 @@ function optimize_bls!(net::HybridNetwork, quartet_eqns, observed_CFs; return_lo
     ngamma = net.numhybrids
     optmap, idxobjmap = generate_optimization_map(net)
 
-    objective(fill(0.5, narg), fill(0.5, narg), net, idxobjmap, quartet_eqns, observed_CFs, optmap)
+    #objective(fill(0.5, narg), fill(0.5, narg), net, idxobjmap, quartet_eqns, observed_CFs, optmap)
 
     opt = Opt(NLopt.LD_LBFGS, narg)
     opt.lower_bounds = [(j <= ngamma) ? 0.0001 : 0.0001 for j=1:narg]

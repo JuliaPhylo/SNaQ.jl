@@ -11,13 +11,13 @@ Only implementing (1)-(4) WITHOUT (*) versions for now.
 """
 function perform_rNNI!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node, type::Int)
     if type == 1
-        perform_rNNI1!(N, s, t, u, v)
+        return perform_rNNI1!(N, s, t, u, v)
     elseif type == 2
-        perform_rNNI2!(N, s, t, u, v)
+        return perform_rNNI2!(N, s, t, u, v)
     elseif type == 3
-        perform_rNNI3!(N, s, t, u, v)
+        return perform_rNNI3!(N, s, t, u, v)
     elseif type == 4
-        perform_rNNI4!(N, s, t, u, v)
+        return perform_rNNI4!(N, s, t, u, v)
     end
 end
 
@@ -38,12 +38,14 @@ function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     # Swap the hybridization-related info of these edges. That way, if either
     # `s` or `t` are hybrids, they maintain their status
     swap_edge_hybrid_info!(edge_su, edge_tv)
+    return 1
 end
 
 
 function perform_rNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI2(s, t, u, v) || error("Topological conditions for rNNI(2) not met.")
     @debug "MOVE: rNNI(2) - $((s.name, t.name, u.name, v.name))"
+    @info "RNNI(2)"
 
     # s: loses u as a child and gains v as a child
     # t: loses v as a child and gains u as a child
@@ -60,12 +62,14 @@ function perform_rNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     # Swap the hybridization-related info of these edges. That way, if
     # `u` is a hybrid, it maintains its status, and `v` maintains its status as a hybrid
     swap_edge_hybrid_info!(edge_su, edge_tv)
+    return 2
 end
 
 
 function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI3(s, t, u, v) || error("Topological conditions for rNNI(3) not met.")
     @debug "MOVE: rNNI(3) - $((s.name, t.name, u.name, v.name))"
+    @info "RNNI(3)"
 
     # s: loses u as a child and gains v as a child
     # t: loses v as a parent and gains u as a parent
@@ -91,12 +95,14 @@ function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     u.hybrid = false
     v.hybrid = true
     replace!(N.hybrid, u => v)
+    return 3
 end
 
 
 function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI4(s, t, u, v) || error("Topological conditions for rNNI(4) not met.")
     @debug "MOVE: rNNI(4) - $((s.name, t.name, u.name, v.name))"
+    @info "RNNI(4)"
 
     # t: loses v as a child and gains u as a child
     # s: loses u as a parent and gains v as a parent
@@ -120,6 +126,7 @@ function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     u.hybrid = true
     v.hybrid = false
     replace!(N.hybrid, v => u)
+    return 4
 end
 
 

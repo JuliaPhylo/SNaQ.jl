@@ -3,6 +3,7 @@ include("../network_moves/add_remove_retic.jl")
 include("../network_moves/rNNI_moves.jl")
 include("../network_moves/rSPR_moves.jl")
 include("../network_moves/move_origin_target.jl")
+include("../network_moves/identifiability_moves.jl")
 include("../network_properties/network_properties.jl")
 
 
@@ -53,7 +54,7 @@ function search(N::HybridNetwork, q, hmax::Int;
         API_WARNED = true
     end
 
-    N = deepcopy(N);
+    N = readnewick(writenewick(N));
     if N.isrooted
         semidirect_network!(N)
         N.isrooted = false
@@ -64,22 +65,27 @@ function search(N::HybridNetwork, q, hmax::Int;
     prop_Ns = [N];
     unchanged_iters = 0
 
+    moves_proposed = zeros(9)
+    moves_accepted = zeros(9)
+
     for j = 2:maxeval
         print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))    ")
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
         Nprime = readnewick(writenewick(N));
-        propose_topology!(Nprime, hmax)
+        move_proposed = propose_topology!(Nprime, hmax)
+        moves_proposed[move_proposed] += 1
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
         # 2. Check for identifiability
         @debug "Proposed network level: $(getlevel(Nprime))"
-
-        # 3. 2-cycles are NOT ALLOWED
+        removedegree2nodes!(Nprime);
+        shrink3cycles!(Nprime);
         shrink2cycles!(Nprime);
+        shrink_bad_diamonds!(Nprime);
 
-        # 4. Immediately throw away networks that don't meet restrictions
+        # 3. Immediately throw away networks that don't meet restrictions
         if !restrictions(Nprime)
             @debug "Nprime does not meet restrictions - skipping."
             logPLs[j] = logPLs[j-1]
@@ -113,6 +119,7 @@ function search(N::HybridNetwork, q, hmax::Int;
             N = Nprime
             logPLs[j] = Nprime_logPL
             unchanged_iters = 0
+            moves_accepted[move_proposed] += 1
         else
             logPLs[j] = logPLs[j-1]
             unchanged_iters += 1
@@ -125,7 +132,7 @@ function search(N::HybridNetwork, q, hmax::Int;
             break
         end
     end
-    println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
+    # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
 
     return N, logPLs
 
@@ -149,21 +156,20 @@ function propose_topology!(N::HybridNetwork, hmax::Int)
     if bad_H !== nothing
         @debug "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
         remove_hybrid!(bad_H, N)
-        return
+        return 1
     end
 
-    if N.numhybrids < hmax && rand() < 0.50
+    if N.numhybrids < hmax && rand() < 0.75
         @debug "MOVE: add_random_hybrid!"
         add_random_hybrid!(N)
-        return
+        return 2
     end
 
     if N.numhybrids == 0 && rand() < 0.33
 
         @debug "MOVE: perform_random_rNNI!"
         Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
-        perform_random_rNNI!(Nprime)
-        return Nprime
+        return 2 + perform_random_rNNI!(Nprime)
     
     else
 
@@ -171,13 +177,13 @@ function propose_topology!(N::HybridNetwork, hmax::Int)
             if rand() < 0.5
                 @debug "move_random_reticulate_origin!"
                 move_random_reticulate_origin!(N)
-                return
+                return 7
             else
                 @debug "move_random_reticulate_target!"
                 @debug writenewick(N, round=true)
                 move_random_reticulate_target!(N)
                 @debug writenewick(N, round=true)
-                return
+                return 8
             end
         catch
             # Only catches if there were 0 valid moves for whichever above was chosen
@@ -185,8 +191,7 @@ function propose_topology!(N::HybridNetwork, hmax::Int)
     end
 
     @debug "MOVE: perform_random_rNNI!"
-    perform_random_rNNI!(N)
-    return
+    return 2 + perform_random_rNNI!(N)
 
 end
 
