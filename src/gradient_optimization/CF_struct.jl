@@ -1,3 +1,6 @@
+const PN = PhyloNetworks;
+const Node = PN.Node;
+const Edge = PN.Edge;
 using Graphs    # for finding what edges contribute to internal edges; could remove at some point
 using Combinatorics # for n choose 4, should definitely be removed later
 
@@ -74,118 +77,106 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:Abstrac
         end
     end
 
+    # If the quartet has 0 hybrids we can just skip forward,
+    # otherwise we need to perform more complicated recursive work
+    if net.numhybrids == 0
+        return get_treelike_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
+    else
+        return get_reticulate_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
+    end
+end
+
+
+"""
+Assuming that `net` is already tree-like (0 hybrids), get its quartet equations.
+"""
+function get_treelike_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, edge_number_to_idx_map::Dict{Int, Int})
+    # iterate over the 2^H displayed trees
+    G, W = Graph(net; withweights=true, minoredgeweight=Inf)
+    for idx in eachindex(W) W[idx] = (W[idx] == Inf) ? Inf : 1.0 end
+    node_to_idx = Dict{PN.Node, Int}(node => j for (j, node) in enumerate(net.node))                                            # these two dicts used later for
+    edge_to_graph_idxs = Dict{PN.Edge,Tuple{Int,Int}}(e => (node_to_idx[e.node[1]], node_to_idx[e.node[2]]) for e in net.edge)  # easier graph weight adjustment
+    
+    # Find which edges form the internal edge of the quartet
+    taxa1_node_idx = findfirst(n -> n.leaf && n.name == taxa[1], net.node)
+    taxa2_node_idx = findfirst(n -> n.leaf && n.name == taxa[2], net.node)
+    taxa3_node_idx = findfirst(n -> n.leaf && n.name == taxa[3], net.node)
+    taxa4_node_idx = findfirst(n -> n.leaf && n.name == taxa[4], net.node)
+
+    path_12 = a_star(G, taxa1_node_idx, taxa2_node_idx, W)
+    path_34 = a_star(G, taxa3_node_idx, taxa4_node_idx, W)
+    path_13 = a_star(G, taxa1_node_idx, taxa3_node_idx, W)
+    path_24 = a_star(G, taxa2_node_idx, taxa4_node_idx, W)
+
+    # edges here have direction, but we don't want them to, so we set (src,dst) = (minidx,maxidx) so the direction is effectively removed
+    for path in [path_12, path_34, path_13, path_24]
+        for (j, edge) in enumerate(path)
+            path[j] = Graphs.SimpleEdge(min(edge.src, edge.dst), max(edge.src, edge.dst))
+        end
+    end
+
     # these will be our return values
     eCF12_34 = Vector{eCFContribution}()
     eCF13_24 = Vector{eCFContribution}()
     eCF14_23 = Vector{eCFContribution}()
 
-    # iterate over the 2^H displayed trees
-    G, W = Graph(net; withweights=true, minoredgeweight=Inf)
-    for idx in eachindex(W) W[idx] = (W[idx] == Inf) ? Inf : 1.0 end
-    H = net.hybrid
-    node_to_idx = Dict{PN.Node, Int}(node => j for (j, node) in enumerate(net.node))                            # these two dicts used later for
-    edge_to_graph_idxs = Dict{PN.Edge,Tuple{Int,Int}}(e => (node_to_idx[e.node[1]], node_to_idx[e.node[2]]) for e in net.edge) # easier graph weight adjustment
-    H_edge_idx = Dict{PN.Edge, Int}(edge => j for (j, edge) in enumerate(net.edge) if edge.hybrid)  # maps each hybrid edge to its index
-    H_minor_allowed = falses(length(H)) # each index corresponds to a hybrid in H
-                                        # if the index is true, we are traversing the displayed
-                                        # network that uses that hybrid's MAJOR parent,
-                                        # else the one that uses that hybrid's MINOR parent
-    
-    for iter = 1:(2^length(H))
-        if iter != 1 incr_bitvec!(H_minor_allowed) end
-        
-        # Enable/disable hybrid edges according to the BitVector
-        currently_enabled_edges = Array{PN.Edge}(undef, length(H))
-        for H_idx in 1:length(H)
-            major_node1_idx, major_node2_idx = edge_to_graph_idxs[getparentedge(H[H_idx])]
-            minor_node1_idx, minor_node2_idx = edge_to_graph_idxs[getparentedgeminor(H[H_idx])]
-            if H_minor_allowed[H_idx]
-                W[major_node1_idx, major_node2_idx] = W[major_node2_idx, major_node1_idx] = Inf
-                W[minor_node1_idx, minor_node2_idx] = W[minor_node2_idx, minor_node1_idx] = 1.0
-                currently_enabled_edges[H_idx] = getparentedgeminor(H[H_idx])
-            else
-                W[major_node1_idx, major_node2_idx] = W[major_node2_idx, major_node1_idx] = 1.0
-                W[minor_node1_idx, minor_node2_idx] = W[minor_node2_idx, minor_node1_idx] = Inf
-                currently_enabled_edges[H_idx] = getparentedge(H[H_idx])
-            end
-        end
+    if length(intersect(path_12, path_34)) == 0
+        internal_graph_edges = intersect(path_13, path_24)    # 12|34 is displayed, so these paths must cross ONLY on the displayed edge portion
+        internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
 
-        # Find which edges form the internal edge of the quartet
-        taxa1_node_idx = findfirst(n -> n.leaf && n.name == taxa[1], net.node)
-        taxa2_node_idx = findfirst(n -> n.leaf && n.name == taxa[2], net.node)
-        taxa3_node_idx = findfirst(n -> n.leaf && n.name == taxa[3], net.node)
-        taxa4_node_idx = findfirst(n -> n.leaf && n.name == taxa[4], net.node)
+        push!(eCF12_34, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            true
+        ))
+        push!(eCF13_24, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            false
+        ))
+        push!(eCF14_23, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            false
+        ))
+    elseif length(intersect(path_13, path_24)) == 0
+        internal_graph_edges = intersect(path_12, path_34)    # 13|24 is displayed, so these paths must cross ONLY on the displayed edge portion
+        internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
 
-        path_12 = a_star(G, taxa1_node_idx, taxa2_node_idx, W)
-        path_34 = a_star(G, taxa3_node_idx, taxa4_node_idx, W)
-        path_13 = a_star(G, taxa1_node_idx, taxa3_node_idx, W)
-        path_24 = a_star(G, taxa2_node_idx, taxa4_node_idx, W)
+        push!(eCF12_34, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            false
+        ))
+        push!(eCF13_24, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            true
+        ))
+        push!(eCF14_23, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            false
+        ))
+    else
+        internal_graph_edges = intersect(path_12, path_34)    # 14|23 is displayed, so these paths must cross ONLY on the displayed edge portion
+        internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
 
-        # edges here have direction, but we don't want them to, so we set (src,dst) = (minidx,maxidx) so the direction is effectively removed
-        for path in [path_12, path_34, path_13, path_24]
-            for (j, edge) in enumerate(path)
-                path[j] = Graphs.SimpleEdge(min(edge.src, edge.dst), max(edge.src, edge.dst))
-            end
-        end
-
-        if length(intersect(path_12, path_34)) == 0
-            internal_graph_edges = intersect(path_13, path_24)    # 12|34 is displayed, so these paths must cross ONLY on the displayed edge portion
-            internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
-
-            push!(eCF12_34, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                true
-            ))
-            push!(eCF13_24, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                false
-            ))
-            push!(eCF14_23, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                false
-            ))
-        elseif length(intersect(path_13, path_24)) == 0
-            internal_graph_edges = intersect(path_12, path_34)    # 13|24 is displayed, so these paths must cross ONLY on the displayed edge portion
-            internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
-
-            push!(eCF12_34, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                false
-            ))
-            push!(eCF13_24, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                true
-            ))
-            push!(eCF14_23, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                false
-            ))
-        else
-            internal_graph_edges = intersect(path_12, path_34)    # 14|23 is displayed, so these paths must cross ONLY on the displayed edge portion
-            internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
-
-            push!(eCF12_34, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                false
-            ))
-            push!(eCF13_24, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                false
-            ))
-            push!(eCF14_23, eCFContribution(
-                [edge_number_to_idx_map[E.number] for E in currently_enabled_edges],
-                [edge_number_to_idx_map[E.number] for E in internal_net_edges],
-                true
-            ))
-        end
+        push!(eCF12_34, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            false
+        ))
+        push!(eCF13_24, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            false
+        ))
+        push!(eCF14_23, eCFContribution(
+            [],
+            [edge_number_to_idx_map[E.number] for E in internal_net_edges],
+            true
+        ))
     end
     
     return eCF12_34, eCF13_24, eCF14_23
