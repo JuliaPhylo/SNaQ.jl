@@ -202,28 +202,31 @@ end
 Computes the derivative of the expected CF defined by `blocks` with respect to (wrt) either (a) an edge length
 if `wrt` is of type `Edge`, or (b) a gamma value if `wrt` is of type `Node`.
 """
-function compute_eCF_derivative(blocks::AbstractArray{<:AbstractArray{<:Block}}, eCF_type::Int, wrt::Union{Node,Edge}, parameters::AbstractArray{<:Real}, α::Real)
-    @warn "This function should likely be written the way the old one was so that we skip redundant work."
+function compute_block_derivs(blocks::AbstractArray{<:AbstractArray{<:Block}}, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)
     
-    deriv::Float64 = 0.0
+    derivs = zeros(length(parameters))
     for block_vec in blocks
-        if !any(has_parameter(block, wrt) for block in block_vec) continue end 
-        vec_deriv::Float64 = 1.0
-        for block in block_vec
-            if !has_parameter(block, wrt)
-                vec_deriv *= compute_block_value(block, parameters, eCF_type, α)
-            else
-                vec_deriv += compute_eCF_derivative(block, parameters, eCF_type, α)
-            end
-        end
+        block_values = [compute_block_value(block, parameters, eCF_type, α) for block in block_vec]
+        block_derivs = [compute_block_deriv(block, parameters, eCF_type, α) for block in block_vec]
 
-        # If the parameter we are taking the derivative w.r.t. is not here, don't add to the derivative.
-        deriv += vec_deriv
+        for param_idx = 1:length(parameters)
+            deriv_summand::Float64 = 0.0
+            deriv_coef::Float64 = 0.0
+            for (block_idx, block) in enumerate(block_vec)
+                if has_parameter(block, param_idx)
+                    deriv_coef = block_derivs[block_idx]
+                else
+                    deriv_summand += block_values[block_idx]
+                end
+            end
+            derivs[param_idx] += deriv_coef * deriv_summand
+        end
     end
-    return deriv
+    return derivs
+    
 end
 
-function compute_eCF_derivative(block::Block, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)
+function compute_block_deriv(block::Block, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)
     if typeof(block) <: SimpleTreelikeBlock
         return compute_block_deriv(block, parameters, eCF_type)
     elseif typeof(block) <: TwoTaxaHybridSplitBlock
