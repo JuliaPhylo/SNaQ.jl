@@ -69,7 +69,7 @@ function search(N::HybridNetwork, q, hmax::Int;
     moves_accepted = zeros(9)
 
     for j = 2:maxeval
-        print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))    ")
+        print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))          ($(j)/$(maxeval))                 ")
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
@@ -94,7 +94,7 @@ function search(N::HybridNetwork, q, hmax::Int;
 
         # 3. Optimize branch lengths
         @debug "\tgathering quartets"
-        q_eqns, _ = find_quartet_equations(Nprime)
+        q_eqns, _, Nprime_params, _ = find_quartet_equations(Nprime)
         @debug "\toptimizing BLs"
         optimize_bls!(Nprime, q_eqns, q)
         @debug "\tdone optimizing BLs"
@@ -107,7 +107,7 @@ function search(N::HybridNetwork, q, hmax::Int;
         @debug "maxγ: $(round(max_gamma, digits = 2)) - minBL: $(round(min_BL, digits=4))"
 
         # 4. Compute logPL
-        Nprime_logPL = compute_logPL(q_eqns, Nprime.edge, q)
+        Nprime_logPL = compute_logPL(q_eqns, Nprime_params, q, Inf)
         push!(prop_Ns, Nprime)
 
         # 5. Accept / reject

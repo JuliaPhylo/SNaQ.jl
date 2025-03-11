@@ -8,29 +8,29 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
 
     ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
     # @info "BLOB BEFORE: $(writenewick(net, round=true))"
-    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
-    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
-    entryindex = indexin(entry, net.vec_node)
-    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
-    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
-    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
-        # yes if: 1 single exit adjacent to a leaf
-        length(exitnodes[ib]) != 1 && return false
-        ch = getchildren(exitnodes[ib][1])
-        return length(ch) == 1 && ch[1].leaf
-    end
-    for ib in reverse(bloborder)
-        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
-        for he in bcc[ib]
-            he.ismajor && continue
-            # deletion of a hybrid can hide the deletion of another: check that he is still in net
-            any(e -> e===he, net.edge) || continue
-            # delete minor hybrid edge with options unroot=true: to make sure the
-            # root remains of degree 3+, in case a degree-2 blob starts at the root
-            # simplify=true: bc external blob
-            PN.deletehybridedge!(net,he, false,true,false,true,false)
-        end
-    end
+    # bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
+    # entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
+    # entryindex = indexin(entry, net.vec_node)
+    # exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
+    # bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
+    # function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
+    #     # yes if: 1 single exit adjacent to a leaf
+    #     length(exitnodes[ib]) != 1 && return false
+    #     ch = getchildren(exitnodes[ib][1])
+    #     return length(ch) == 1 && ch[1].leaf
+    # end
+    # for ib in reverse(bloborder)
+    #     isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
+    #     for he in bcc[ib]
+    #         he.ismajor && continue
+    #         # deletion of a hybrid can hide the deletion of another: check that he is still in net
+    #         any(e -> e===he, net.edge) || continue
+    #         # delete minor hybrid edge with options unroot=true: to make sure the
+    #         # root remains of degree 3+, in case a degree-2 blob starts at the root
+    #         # simplify=true: bc external blob
+    #         PN.deletehybridedge!(net,he, false,true,false,true,false)
+    #     end
+    # end
     # @info "BLOB AFTER: $(writenewick(net, round=true))"
     ######################################################################
 
@@ -97,8 +97,8 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         # @info "DIV_MINOR: $(writenewick(div_minor, round=true))"
         return RecursiveCFEquation(
             false, [], 0, findfirst(h -> h == lowest_H, net.hybrid), [
-                get_reticulate_4taxa_quartet_equations(div_minor, taxa, parameter_map),
-                get_reticulate_4taxa_quartet_equations(div_major, taxa, parameter_map)
+                get_4taxa_quartet_equations(div_minor, taxa, parameter_map),
+                get_4taxa_quartet_equations(div_major, taxa, parameter_map)
             ]
         )
 
@@ -221,16 +221,16 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
             length(int_edges) > 0, [parameter_map[int_e.number] for int_e in int_edges],
             which_quartet, findfirst(h -> h == lowest_H, net.hybrid),
             [
-                get_reticulate_4taxa_quartet_equations(div1, taxa, parameter_map),
-                get_reticulate_4taxa_quartet_equations(div2, taxa, parameter_map),
-                get_reticulate_4taxa_quartet_equations(div3, taxa, parameter_map),
-                get_reticulate_4taxa_quartet_equations(div4, taxa, parameter_map)
+                get_4taxa_quartet_equations(div1, taxa, parameter_map),
+                get_4taxa_quartet_equations(div2, taxa, parameter_map),
+                get_4taxa_quartet_equations(div3, taxa, parameter_map),
+                get_4taxa_quartet_equations(div4, taxa, parameter_map)
             ]
         )
     else    # n_below_H is 3 or 4
         # 3 or 4 leaves below this hybrid, so it has no effect on eCFs!
         PN.deletehybridedge!(net, getparentedgeminor(lowest_H), false, true, false, true, false)    # params taken from blob deleting code
-        return get_reticulate_4taxa_quartet_equations(net, taxa, parameter_map)
+        return get_4taxa_quartet_equations(net, taxa, parameter_map)
     end
 
 end
@@ -359,3 +359,151 @@ function get_leaves_below_lowest_hybrid(H::Node)
     return leaves
 end
 
+
+function find_quartet_equations(net::HybridNetwork)
+    all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
+    all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
+    all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
+
+    t = sort(tipLabels(net))
+    t_combos = combinations(t, 4)
+    #quartet_eqns = Array{QEqn}(undef, numq)
+
+    param_map = Dict{Int, Int}()
+    params = Array{Float64}(undef, length(net.hybrid) + length(net.edge))
+    max_ID = net.numedges
+
+    for (j, obj) in enumerate(vcat(net.hybrid, net.edge))
+        obj.number = max_ID + j
+        param_map[obj.number] = j
+        params[j] = (typeof(obj) <: Node) ? getparentedgeminor(obj).gamma : obj.length
+    end
+
+    blocks = Array{Vector{Vector{Block}}}(undef, length(t_combos), 3)
+    quartet_taxa = Array{Vector{String}}(undef, length(t_combos))
+
+    # Probably need to attach the taxanumbers index to quartet_eqns
+    ts = [1,2,3,4]
+    for j = 1:length(t_combos)
+        recur_eqns = find_quartet_equations_4taxa(net, t[ts], param_map)
+        blocks[j, 1], blocks[j, 2], blocks[j, 3] = get_blocks_from_recursive(recur_eqns)
+        quartet_taxa[j] = t[ts]
+
+        ind = findfirst(x -> x>1, diff(ts))
+        if ind === nothing ind = 4; end
+        ts[ind] += 1
+        for j in 1:(ind-1)
+            ts[j] = j
+        end
+    end
+
+    return blocks, param_map, params, t, quartet_taxa
+end
+
+
+function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, edge_number_to_idx_map::Dict{Int, Int})
+    net = deepcopy(net)
+    
+    # remove all taxa other than those in `taxa`
+    for t in sort(tipLabels(net))
+        t in taxa && continue
+        PhyloNetworks.deleteleaf!(net, t, simplify=false, unroot=false, nofuse=true)
+    end
+
+    # find and delete degree-2 blobs along external edges
+    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
+    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
+    entryindex = indexin(entry, net.vec_node)
+    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
+    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
+    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
+        # yes if: 1 single exit adjacent to a leaf
+        length(exitnodes[ib]) != 1 && return false
+        ch = getchildren(exitnodes[ib][1])
+        return length(ch) == 1 && ch[1].leaf
+    end
+    for ib in reverse(bloborder)
+        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
+        for he in bcc[ib]
+            he.ismajor && continue
+            # deletion of a hybrid can hide the deletion of another: check that he is still in net
+            any(e -> e===he, net.edge) || continue
+            # delete minor hybrid edge with options unroot=true: to make sure the
+            # root remains of degree 3+, in case a degree-2 blob starts at the root
+            # simplify=true: bc external blob
+            PN.deletehybridedge!(net,he, false,true,false,true,false)
+        end
+    end
+
+    return get_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
+end
+
+
+function compute_logPL(N::HybridNetwork, obsCFs)::Float64
+    eqns, _, params, _ = find_quartet_equations(N)
+    total_loss = 0.0
+    for j = 1:size(eqns)[1]
+        for k = 1:3
+            # Loss function
+            total_loss += obsCFs[j].data[k] * log(compute_eCF(eqns[j, k], params, k, Inf) / obsCFs[j].data[k])
+        end
+    end
+    return total_loss
+end
+
+
+
+function from_graph_to_net_edges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})
+    net_edges = Array{PN.Edge}(undef, length(internal_graph_edges))
+    for (E_idx, E) in enumerate(internal_graph_edges)
+        nodei = net.node[E.src]
+        nodej = net.node[E.dst]
+        edgeij = nodei.edge[findfirst(e -> nodej in e.node, nodei.edge)]
+        net_edges[E_idx] = edgeij
+    end
+    return net_edges
+end
+
+
+"""
+Function taken from InPhyNet.jl
+
+Converts the tree/network `net` into a SimpleGraph to leverage already
+implemented pathfinding algorithms.
+
+# Arguments
+- includeminoredges (default=true): if true, the entire network is translated to a graph.
+      Otherwise, only tree-like edges (other than those in `alwaysinclude`) are retained.
+- alwaysinclude (default=nothing): edges that should always be included in the graph,
+      regardless of the value of `includeminoredges`
+- withweights (default=false): return a set of weights corresponding to branch lengths as well
+"""
+function Graph(net::HybridNetwork; withweights::Bool=false, minoredgeweight::Float64=1.)
+    graph = SimpleGraph(net.numnodes)
+    weights = Matrix{Float64}(undef, net.numnodes, net.numnodes)
+    weights .= Inf
+    nodemap = Dict{Node, Int64}(node => idx for (idx, node) in enumerate(net.node))
+    for edge in net.edge
+        enode1 = edge.node[1]
+        enode2 = edge.node[2]
+        if haskey(nodemap, enode1) && haskey(nodemap, enode2)
+            add_edge!(graph, nodemap[enode1], nodemap[enode2])
+            if withweights
+                weight = 1
+                if edge.hybrid && !edge.ismajor
+                    weight = minoredgeweight
+                elseif edge.length == -1.
+                    weight = 1
+                end
+                
+                weights[nodemap[enode1], nodemap[enode2]] =
+                    weights[nodemap[enode2], nodemap[enode1]] = weight
+            end
+        end
+    end
+
+    if withweights
+        return graph, weights
+    end
+    return graph
+end

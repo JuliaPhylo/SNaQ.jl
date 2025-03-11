@@ -1,12 +1,15 @@
 using NLopt
 include("misc.jl")
 include("CF_struct.jl")
+include("CF_blocks.jl")
+include("CF_recursive_blocks.jl")
+include("CF_equations.jl")
 include("CF_math.jl")
 
 
 
 
-function optimize_bls!(net::HybridNetwork, quartet_eqns, observed_CFs; return_logPL::Bool=false, α::Real=Inf)
+function optimize_bls!(net::HybridNetwork, blocks, observed_CFs; return_logPL::Bool=false, α::Real=Inf)
 
     narg = length(net.hybrid) + length(net.edge)
     param_map = Dict{Int, Int}()
@@ -31,8 +34,6 @@ function optimize_bls!(net::HybridNetwork, quartet_eqns, observed_CFs; return_lo
             UB[j] = 15.0
         end
     end
-
-    blocks, _ = find_quartet_equations(net)
 
     opt = Opt(NLopt.LD_LBFGS, narg)
     opt.lower_bounds = LB
@@ -69,11 +70,23 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork
         for k = 1:3
             # Loss function
             iter_eCF = compute_eCF(blocks[j,k], X, k, α)
-            total_loss += obsCFs[j].data[k] * log(iter_eCF)
+            total_loss += obsCFs[j].data[k] * log(iter_eCF / obsCFs[j].data[k])
 
             # Gradient
             block_derivs = compute_block_derivs(blocks[j,k], X, k, α)
-            grad .+= block_derivs .* block_derivs .* obsCFs[j].data[k] ./ iter_eCF
+            grad .+= block_derivs .* block_derivs ./ iter_eCF
+        end
+    end
+    return total_loss
+end
+
+
+function compute_logPL(blocks::AbstractMatrix{<:AbstractArray{<:AbstractArray{<:Block}}}, params::AbstractArray{<:Real}, obsCFs, α::Real)::Float64
+    total_loss::Float64 = 0.0
+    for j = 1:size(blocks)[1]
+        for k = 1:3
+            # Loss function
+            total_loss += obsCFs[j].data[k] * log(compute_eCF(blocks[j,k], params, k, α) / obsCFs[j].data[k])
         end
     end
     return total_loss

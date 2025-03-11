@@ -1,4 +1,6 @@
 using PhyloNetworks
+const Edge = PhyloNetworks.Edge;
+const Node = PhyloNetworks.Node;
 import PhyloNetworks: addhybridedge!, directionalconflict, deletehybridedge!
 
 
