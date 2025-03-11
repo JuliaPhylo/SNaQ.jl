@@ -1,21 +1,71 @@
 include("CF_struct.jl")
 include("CF_blocks.jl")
 include("CF_recursive_blocks.jl")
-using Graphs
+using PhyloNetworks, Graphs
 
 
-function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, edge_number_to_idx_map::Dict{Int, Int})
+function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int})
 
+    ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
+    # @info "BLOB BEFORE: $(writenewick(net, round=true))"
+    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
+    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
+    entryindex = indexin(entry, net.vec_node)
+    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
+    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
+    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
+        # yes if: 1 single exit adjacent to a leaf
+        length(exitnodes[ib]) != 1 && return false
+        ch = getchildren(exitnodes[ib][1])
+        return length(ch) == 1 && ch[1].leaf
+    end
+    for ib in reverse(bloborder)
+        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
+        for he in bcc[ib]
+            he.ismajor && continue
+            # deletion of a hybrid can hide the deletion of another: check that he is still in net
+            any(e -> e===he, net.edge) || continue
+            # delete minor hybrid edge with options unroot=true: to make sure the
+            # root remains of degree 3+, in case a degree-2 blob starts at the root
+            # simplify=true: bc external blob
+            PN.deletehybridedge!(net,he, false,true,false,true,false)
+        end
+    end
+    # @info "BLOB AFTER: $(writenewick(net, round=true))"
+    ######################################################################
+
+
+    # If no hybrids remain, this case is simple
     if net.numhybrids == 0
-        quartet_type, int_edges = get_quartet_type_and_internal_edges(net, taxa, edge_number_to_idx_map)
+        quartet_type, int_edges = get_quartet_type_and_internal_edges(net, taxa, parameter_map)
         return RecursiveCFEquation(
-            true, int_edges, quartet_type, nothing, Vector{RecursiveCFEquation}([])
+            true, [parameter_map[int_e.number] for int_e in int_edges], quartet_type, -1,
+            Vector{RecursiveCFEquation}([])
         )
     end
 
+    # Special case: we may still have hybrids, but 3+ leaves share a parent
+    for L in net.leaf[[1, 2]]
+        p_leaf = getparent(L)
+        p_leaf_ch = getchildren(p_leaf)
+        if length(p_leaf_ch) > 2 && sum(ch.leaf for ch in p_leaf_ch) > 2
+            return RecursiveCFEquation(
+                true, [], 1, -1, Vector{RecursiveCFEquation}([])
+            )
+        end
+    end
+
+
     # If >= 1 hybrids, we need to keep recursing
     lowest_H = get_lowest_hybrid(net)
-    if n_leaves_below_lowest_hybrid(lowest_H) == 1
+    n_below_H = n_leaves_below_lowest_hybrid(lowest_H)
+    if n_below_H == 1 && getparent(getparentedge(lowest_H)) != getparent(getparentedgeminor(lowest_H))
+        # If there is only 1 leaf below this retic && the minor and major parents are the same,
+        # we can just default to the final `else` case here and delete `lowest_H` b/c it has
+        # no effect on eCFs
+
+
+        # @info "2 - Following hybrid $(lowest_H.name)"
 
         # Remove the minor edge and all of its references in this copy
         div_major = deepcopy(net)
@@ -35,37 +85,51 @@ function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector
         div_minor_H = div_minor.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_minor.hybrid)]
         E_minor = getparentedgeminor(div_minor_H)
         E_major = getparentedge(div_minor_H)
-        for node in E_minor.node
-            node.edge = [e for e in node.edge if e != E_minor]
+        for node in E_major.node
+            node.edge = [e for e in node.edge if e != E_major]
         end
-        PN.deleteEdge!(div_minor, E_minor; part=false)
+        PN.deleteEdge!(div_minor, E_major; part=false)
         PN.removeHybrid!(div_minor, getchild(E_major))   # only removes its references - does not delete the node
-        E_major.hybrid = false
-        getchild(E_major).hybrid = false
+        E_minor.hybrid = false
+        getchild(E_minor).hybrid = false
 
+        # @info "DIV_MAJOR: $(writenewick(div_major, round=true))"
+        # @info "DIV_MINOR: $(writenewick(div_minor, round=true))"
         return RecursiveCFEquation(
-            false, [], 0, lowest_H, [
-                get_reticulate_4taxa_quartet_equations(div_minor, taxa, edge_number_to_idx_map),
-                get_reticulate_4taxa_quartet_equations(div_major, taxa, edge_number_to_idx_map)
+            false, [], 0, findfirst(h -> h == lowest_H, net.hybrid), [
+                get_reticulate_4taxa_quartet_equations(div_minor, taxa, parameter_map),
+                get_reticulate_4taxa_quartet_equations(div_major, taxa, parameter_map)
             ]
         )
 
-    else
-        error("Implemented 2/4 cases where there are 2 leaves below hybrid so far - need to implement remaining 2 cases.")
+    elseif n_below_H == 2
+        # @info "4 - Following hybrid $(lowest_H.name)"
+        #error("Implemented 2/4 cases where there are 2 leaves below hybrid so far - need to implement remaining 2 cases.")
+
+        # @info net
         int_edges = get_internal_edges_below_lowest_hybrid(lowest_H)
         leaves_below_H = get_leaves_below_lowest_hybrid(lowest_H)
+        leaf_names = sort([leaves_below_H[1].name, leaves_below_H[2].name])
 
-        # Both take minor:
-        # 1. remove internal edges (don't fuse - we need 
-        #    edges to still map to the original net)
-        # 2. remove major retic edge
-        # 3. H and its retics are no longer hybrids
-        # 4. each leaf below H is now child to H
+        #### DEBUG STUFF##########################################################################
+        # for (j, node) in enumerate(net.node)
+        #     if node.name == ""
+        #         node.name = "int$(j)"
+        #     end
+        # end
+        # @info writenewick(net)
+        # for E in int_edges
+        #     @info "($(getparent(E).name), $(getchild(E).name))"
+        # end
+        ##########################################################################################
+
+        ######## Both taxa take the minor edge ########
         div1 = deepcopy(net)
-        div1_int_edges = div1.edge[[findfirst(div1_edge -> div1_edge.number == int_edge.number, div1.edge) for int_edge in int_edges]]
         div1_H = div1.hybrid[findfirst(div1_H -> div1_H.number == lowest_H.number && div1_H.name == lowest_H.name, div1.hybrid)]
         E_minor = getparentedgeminor(div1_H)
         E_major = getparentedge(div1_H)
+
+        # 1. detach major edge, remove the hybrid status of the hybrid node
         for node in E_major.node
             node.edge = [e for e in node.edge if e != E_major]
         end
@@ -75,19 +139,18 @@ function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector
         E_minor.ismajor = true
         getchild(E_minor).hybrid = false
 
+        # 2. for each of the 2 leaves, add a new leaf in the new location (under minor edge),
+        #    and delete the original leaf immediately after. PhyloNetworks takes care of
+        #    removing extraneous edges for us in the `PN.deleteleaf!` function.
         for L in leaves_below_H
-            new_leaf = PN.addleaf!(div1, getchild(div1_H), "__$(L.name)", 0.0)
+            new_leaf = PN.addleaf!(div1, div1_H, "__$(L.name)", 0.0)
             PN.deleteleaf!(div1, L.name; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
             new_leaf.name = L.name
         end
 
-        # Both take major
-        # 1. remove internal edges
-        # 2. remove minor retic edge
-        # 3. H and its retics are no longer hybrids
-        # 4. each leaf below H is now child to H
+        ######## Both taxa take the major edge ########
+        # Same steps as above but for major instead of minor
         div2 = deepcopy(net)
-        div2_int_edges = div2.edge[[findfirst(div2_edge -> div2_edge.number == int_edge.number, div2.edge) for int_edge in int_edges]]
         div2_H = div2.hybrid[findfirst(div2_H -> div2_H.number == lowest_H.number && div2_H.name == lowest_H.name, div2.hybrid)]
         E_minor = getparentedgeminor(div2_H)
         E_major = getparentedge(div2_H)
@@ -100,13 +163,53 @@ function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector
         getchild(E_major).hybrid = false
 
         for L in leaves_below_H
-            new_leaf = PN.addleaf!(div2, getchild(div2_H), "__$(L.name)", 0.0)
+            new_leaf = PN.addleaf!(div2, div2_H, "__$(L.name)", 0.0)
             PN.deleteleaf!(div2, L.name; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
             new_leaf.name = L.name
         end
 
-        @error "Only implemented 2/4 parental tree splits for test - still need last 2"
-        leaf_names = sort([leaves_below_H[1].name, leaves_below_H[2].name])
+
+        # Lower taxa takes minor, higher takes major
+        div3 = deepcopy(net)
+        div3_H = div3.hybrid[findfirst(div3_H -> div3_H.number == lowest_H.number && div3_H.name == lowest_H.name, div3.hybrid)]
+        E_minor = getparentedgeminor(div3_H)
+        E_major = getparentedge(div3_H)
+
+        # 1. add new version of lower leaf under minor retic's parent,
+        #    then immediately delete the original leaf - PhyloNetworks
+        #    takes care of net cleanup for us
+        new_leaf::Node = PN.addleaf!(div3, getparent(E_minor), "__$(leaf_names[1])", 0.0)
+        PN.deleteleaf!(div3, leaf_names[1]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        new_leaf.name = leaf_names[1]
+
+        # 2. vice versa
+        new_leaf = PN.addleaf!(div3, getparent(E_major), "__$(leaf_names[2])", 0.0)
+        PN.deleteleaf!(div3, leaf_names[2]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        new_leaf.name = leaf_names[2]
+
+        # Lower taxa takes major, higher takes minor
+        div4 = deepcopy(net)
+        div4_H = div4.hybrid[findfirst(div4_H -> div4_H.number == lowest_H.number && div4_H.name == lowest_H.name, div4.hybrid)]
+        E_minor = getparentedgeminor(div4_H)
+        E_major = getparentedge(div4_H)
+
+        # 1. (same as above but flipped)
+        new_leaf = PN.addleaf!(div4, getparent(E_major), "__$(leaf_names[1])", 0.0)
+        PN.deleteleaf!(div4, leaf_names[1]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        new_leaf.name = leaf_names[1]
+
+        # 2. (same as above but flipped)
+        new_leaf = PN.addleaf!(div4, getparent(E_minor), "__$(leaf_names[2])", 0.0)
+        PN.deleteleaf!(div4, leaf_names[2]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        new_leaf.name = leaf_names[2]
+
+        # @info div1
+        # @info "DIV1: $(writenewick(div1, round=true))"
+        # @info "DIV2: $(writenewick(div2, round=true))"
+        # @info "DIV3: $(writenewick(div3, round=true))"
+        # @info "DIV4: $(writenewick(div4, round=true))"
+
+
         which_quartet = leaf_names[1] == taxa[1] ? (
             leaf_names[2] == taxa[2] ? 1 :
             leaf_names[2] == taxa[3] ? 2 : 3
@@ -115,22 +218,25 @@ function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector
             leaf_names[2] == taxa[3] ? 3 : 2
         ) : 1
         return RecursiveCFEquation(
-            length(int_edges) > 0, int_edges, which_quartet, lowest_H, [
-                get_reticulate_4taxa_quartet_equations(div1, taxa, edge_number_to_idx_map),
-                get_reticulate_4taxa_quartet_equations(div2, taxa, edge_number_to_idx_map)
+            length(int_edges) > 0, [parameter_map[int_e.number] for int_e in int_edges],
+            which_quartet, findfirst(h -> h == lowest_H, net.hybrid),
+            [
+                get_reticulate_4taxa_quartet_equations(div1, taxa, parameter_map),
+                get_reticulate_4taxa_quartet_equations(div2, taxa, parameter_map),
+                get_reticulate_4taxa_quartet_equations(div3, taxa, parameter_map),
+                get_reticulate_4taxa_quartet_equations(div4, taxa, parameter_map)
             ]
         )
-
-
-        # Lower taxa takes minor, higher takes major
-
-
+    else    # n_below_H is 3 or 4
+        # 3 or 4 leaves below this hybrid, so it has no effect on eCFs!
+        PN.deletehybridedge!(net, getparentedgeminor(lowest_H), false, true, false, true, false)    # params taken from blob deleting code
+        return get_reticulate_4taxa_quartet_equations(net, taxa, parameter_map)
     end
 
 end
 
 
-function get_quartet_type_and_internal_edges(net::HybridNetwork, taxa::Vector{<:AbstractString}, edge_number_to_idx_map::Dict{Int, Int})
+function get_quartet_type_and_internal_edges(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int})
     # iterate over the 2^H displayed trees
     G, W = Graph(net; withweights=true, minoredgeweight=Inf)
     for idx in eachindex(W) W[idx] = (W[idx] == Inf) ? Inf : 1.0 end
@@ -201,18 +307,24 @@ end
 
 """
 Gets the number of leaves in a quarnet below the lowest hybrid in the quarnet.
-Assumes that reticulations on external edges are removed.
+Assumes that reticulations on external edges are removed. HOWEVER there may
+still be more than 2 leaves below a hybrid.
 """
 function n_leaves_below_lowest_hybrid(H::Node)
-    c = getchildren(H)
-    while length(c) == 1
-        if c[1].leaf
-            return 1
+    queue = getchildren(H)
+    leaves_found::Int = 0
+    while length(queue) > 0
+        curr = queue[length(queue)]
+        deleteat!(queue, length(queue))
+        if curr.leaf
+            leaves_found += 1
         else
-            c = getchildren(c[1])
+            for c in getchildren(curr)
+                push!(queue, c)
+            end
         end
     end
-    return 2
+    return leaves_found
 end
 
 
@@ -226,7 +338,6 @@ function get_internal_edges_below_lowest_hybrid(H::Node)
         push!(internal_edges, getparentedge(c[1]))
         c = getchildren(c[1])
     end
-    push!(internal_edges, getparentedge(c[1]))
     return internal_edges
 end
 

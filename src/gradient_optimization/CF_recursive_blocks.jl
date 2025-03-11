@@ -2,9 +2,9 @@
 
 mutable struct RecursiveCFEquation
     can_coalesce_here::Bool
-    coal_edges::AbstractArray{Edge}
+    coal_edges::AbstractArray{Int}
     which_coal::Int     # 0 = NA, 1 = ab|cd, 2 = ac|bd, 3 = ad|bc
-    division_H::Union{Nothing,Node}    # links to the hybrid node corresponding to γ
+    division_H::Int     # hybrid index in `net.hybrid`; -1 means not set
     divisions::AbstractArray{RecursiveCFEquation}
 end
 
@@ -23,7 +23,7 @@ end
 
 function get_blocks_from_recursive_recur!(eqn::RecursiveCFEquation, final_blocks::Vector{Vector{<:Block}}, contributing_blocks::Vector{<:Block}, which_quartet::Int)
     
-    if eqn.division_H === nothing
+    if eqn.division_H == -1
         
         bl = SimpleTreelikeBlock(eqn.coal_edges, eqn.which_coal)
         push!(contributing_blocks, bl)
@@ -38,7 +38,7 @@ function get_blocks_from_recursive_recur!(eqn::RecursiveCFEquation, final_blocks
         failed_early_block = FailedEarlyCoalescenceBlock(eqn.coal_edges)
         for division_idx = 1:4
             iter_bl = TwoTaxaHybridSplitBlock(eqn.division_H, division_idx)
-            get_blocks_from_recursive_recur!(eqn.divisions[division_idx], final_blocks, [contributing_blocks; iter_bl; failed_early_block])
+            get_blocks_from_recursive_recur!(eqn.divisions[division_idx], final_blocks, [contributing_blocks; iter_bl; failed_early_block], which_quartet)
         end
 
     else    # length(eqn.divisions) == 2
