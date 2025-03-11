@@ -22,14 +22,16 @@ function find_quartet_equations(net::HybridNetwork)
     t = sort(tipLabels(net))
     t_combos = combinations(t, 4)
     #quartet_eqns = Array{QEqn}(undef, numq)
-    quartet_eqns = Array{Tuple{Vector{eCFContribution},Vector{eCFContribution},Vector{eCFContribution}}}(undef, length(t_combos))
+
+    blocks = Array{Vector{Vector{Block}}}(undef, length(t_combos), 3)
     edge_number_to_idx_map = Dict{Int, Int}(e.number => j for (j, e) in enumerate(net.edge))
     quartet_taxa = Array{Vector{String}}(undef, length(t_combos))
 
     # Probably need to attach the taxanumbers index to quartet_eqns
     ts = [1,2,3,4]
     for j = 1:length(t_combos)
-        quartet_eqns[j] = find_quartet_equations_4taxa(net, t[ts], edge_number_to_idx_map)
+        recur_eqns = find_quartet_equations_4taxa(net, t[ts], edge_number_to_idx_map)
+        blocks[j, 1], blocks[j, 2], blocks[j, 3] = get_blocks_from_recursive(recur_eqns)
         quartet_taxa[j] = t[ts]
 
         ind = findfirst(x -> x>1, diff(ts))
@@ -40,7 +42,7 @@ function find_quartet_equations(net::HybridNetwork)
         end
     end
 
-    return quartet_eqns, t, quartet_taxa
+    return blocks, t, quartet_taxa
 end
 
 
@@ -78,13 +80,7 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:Abstrac
         end
     end
 
-    # If the quartet has 0 hybrids we can just skip forward,
-    # otherwise we need to perform more complicated recursive work
-    if net.numhybrids == 0
-        return get_treelike_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
-    else
-        return get_reticulate_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
-    end
+    return get_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
 end
 
 
