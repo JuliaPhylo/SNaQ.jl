@@ -4,7 +4,7 @@ include("CF_recursive_blocks.jl")
 using PhyloNetworks, Graphs
 
 
-function get_reticulate_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int})
+function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int})
 
     ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
     # @info "BLOB BEFORE: $(writenewick(net, round=true))"
