@@ -21,7 +21,7 @@ To get help, check
 
 - the latest [SNaQ documentation](https://juliaphylo.github.io/SNaQ.jl/dev)
 - the latest [PhyloNetworks documentation](https://juliaphylo.github.io/PhyloNetworks.jl/dev)
-- a [wiki]() for a step-by-step tutorial with background on networks
+- [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/) with a step-by-step tutorial from multi-locus sequences to necessary input for SNaQ
 - [tutorial](https://solislemuslab.github.io/snaq-tutorial/) for snaq estimation (2023 workshop)
 - the [google group](https://groups.google.com/forum/#!forum/phylonetworks-users)
   for common questions. Join the group to post/email your questions,
@@ -44,4 +44,4 @@ See [`CITATION.bib`](CITATION.bib) for the relevant reference(s).
 
 > [!NOTE]
 > Much of this package was formerly part of PhyloNetworks v0.16.4 (and prior).
-> PhyloNetworks v0.17 will be stripped of functions implementing the SNaQ method.
+> PhyloNetworks v0.17, v1.0 (and later) will be stripped of functions implementing the SNaQ method.
