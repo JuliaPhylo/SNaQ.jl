@@ -18,7 +18,7 @@ loglik!(net3, 28.315067218909626)
 ```
 # Network estimation
 
-SNaQ implements the statistical inference method in
+SNaQ (v1.0) implements the statistical inference method in
 [Solís-Lemus & Ané 2016](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896).
 The procedure involves a numerical optimization of branch lengths and inheritance
 probabilities and a heuristic search in the space of phylogenetic networks.
@@ -27,6 +27,9 @@ We suggest that you create a special directory for running these examples,
 where input files can be downloaded and where output files will be
 created (with estimated networks for instance). Enter this directory
 and run Julia from there.
+
+
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## Inputs for SNaQ 
 
@@ -384,3 +387,6 @@ Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia)
   arguments to the script are passed to Julia as a vector called `ARGS`.
   See the example script `runSNaQ.jl` in the folder `data_results/scripts/`.
   more on this topic in here: [Parallel computations](@ref)
+
+
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)

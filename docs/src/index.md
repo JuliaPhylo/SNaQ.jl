@@ -12,7 +12,10 @@ Join the PhyloNetworks google group for updates
 [here]
 (https://groups.google.com/forum/#!forum/phylonetworks-users/new).
 
-More information about the pre-processing steps to get the input data for SNaQ can be found in the [wiki]() and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/).
+More information about the pre-processing steps to get the input data for SNaQ can be found in [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/) and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/).
+
+
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## References
 

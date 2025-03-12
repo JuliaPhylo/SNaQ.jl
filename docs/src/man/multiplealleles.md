@@ -4,6 +4,8 @@ using PhyloNetworks, SNaQ
 
 # Multiple alleles per species
 
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+
 ## Between-species 4-taxon sets
 
 The default setting for SNaQ considers that each allele in a gene tree corresponds
