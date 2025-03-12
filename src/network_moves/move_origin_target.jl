@@ -1,5 +1,51 @@
 using PhyloNetworks
+using StatsBase
 import PhyloNetworks: getOtherNode
+
+
+"""
+Selects a random edge that is very near the origin of `hybrid` to perform
+the [`move_reticulate_origin`](@ref) move on.
+"""
+function move_random_reticulate_origin_local!(hybrid::Node, N::HybridNetwork)
+    hybrid.hybrid || error("`hybrid` is not a hybrid node...")
+
+    minor_edge = getparentedgeminor(hybrid)
+    origin = getparent(minor_edge)
+
+    candidate_edges = reduce(vcat, [[next_edge for next_edge in getOtherNode(e, origin).edge if next_edge != e] for e in origin.edge if e != minor_edge])
+
+    for j in sample(1:length(candidate_edges), length(candidate_edges), replace=false)
+        is_valid_move_reticulate_origin(hybrid, candidate_edges[j], N) && return move_reticulate_origin!(hybrid, candidate_edges[j], N)
+    end
+
+    error("No valid local reticulation origin moves found.")
+end
+
+
+"""
+Selects a random edge that is very near the node `hybrid` to perform
+the [`move_reticulate_target`](@ref) move on.
+"""
+function move_random_reticulate_target_local!(hybrid::Node, N::HybridNetwork)
+    hybrid.hybrid || error("`hybrid` is not a hybrid node...")
+
+    major_parent = getparent(getparentedge(hybrid))
+    candidate_edges = [e for e in major_parent.edge if e != getparentedge(hybrid)]
+    
+    hyb_children = getchildren(hybrid)
+    hyb_children = (length(hyb_children) == 1) ? getchildren(hyb_children[1]) : hyb_children
+    for child in hyb_children
+        push!(candidate_edges, getparentedge(child))
+    end
+    @info candidate_edges
+
+    for j in sample(1:length(candidate_edges), length(candidate_edges), replace=false)
+        is_valid_move_reticulate_target(hybrid, candidate_edges[j], N) && return move_reticulate_target!(hybrid, candidate_edges[j], N)
+    end
+    
+    error("No valid local reticulation target moves found.")
+end
 
 
 """

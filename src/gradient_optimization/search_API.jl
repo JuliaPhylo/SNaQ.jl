@@ -69,7 +69,7 @@ function search(N::HybridNetwork, q, hmax::Int;
     moves_accepted = zeros(9)
 
     for j = 2:maxeval
-        print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))          ($(j)/$(maxeval))                 ")
+        # print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))          ($(j)/$(maxeval))                 ")
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
@@ -81,9 +81,9 @@ function search(N::HybridNetwork, q, hmax::Int;
         # 2. Check for identifiability
         @debug "Proposed network level: $(getlevel(Nprime))"
         removedegree2nodes!(Nprime);
-        shrink3cycles!(Nprime);
+        # shrink3cycles!(Nprime);
         shrink2cycles!(Nprime);
-        shrink_bad_diamonds!(Nprime);
+        # shrink_bad_diamonds!(Nprime);
 
         # 3. Immediately throw away networks that don't meet restrictions
         if !restrictions(Nprime)
@@ -97,14 +97,20 @@ function search(N::HybridNetwork, q, hmax::Int;
         q_eqns, _, Nprime_params, _ = find_quartet_equations(Nprime)
         @debug "\toptimizing BLs"
         optimize_bls!(Nprime, q_eqns, q)
-        @debug "\tdone optimizing BLs"
+        @debug "Optimized network: $(writenewick(Nprime, round=true))"
 
-        max_gamma = -1.0
-        for H in Nprime.hybrid
-            max_gamma = max(max_gamma, max(getparentedge(H).gamma, getparentedgeminor(H).gamma))
+        # 4. Remove hybrids with γ ≈ 0
+        bad_H = nothing
+        for H in N.hybrid
+            if getparentedgeminor(H).gamma <= 0.001
+                bad_H = H
+                break
+            end
         end
-        min_BL = minimum(E.length for E in N.edge if !(E.hybrid && !E.ismajor))
-        @debug "maxγ: $(round(max_gamma, digits = 2)) - minBL: $(round(min_BL, digits=4))"
+        if bad_H !== nothing
+            @debug "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
+            remove_hybrid!(bad_H, N)
+        end
 
         # 4. Compute logPL
         Nprime_logPL = compute_logPL(q_eqns, Nprime_params, q, Inf)
@@ -115,7 +121,7 @@ function search(N::HybridNetwork, q, hmax::Int;
             error("Nprime_logPL = $(Nprime_logPL)")
         end
 
-        if Nprime_logPL - logPLs[j-1] > 1e-4
+        if Nprime_logPL - logPLs[j-1] > 1e-8
             N = Nprime
             logPLs[j] = Nprime_logPL
             unchanged_iters = 0
@@ -133,6 +139,8 @@ function search(N::HybridNetwork, q, hmax::Int;
         end
     end
     # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
+    @info moves_proposed
+    @info moves_accepted
 
     return N, logPLs
 
@@ -144,45 +152,29 @@ Takes network `N` and modifies it with topological moves to generate a new propo
 """
 function propose_topology!(N::HybridNetwork, hmax::Int)
 
-    # If any gammas are 0.0001 or 0.9999, propose removing that gamma
-    bad_H = nothing
-    for H in N.hybrid
-        if getparentedgeminor(H).gamma <= 0.0001
-            bad_H = H
-            break
-        end
-    end
-
-    if bad_H !== nothing
-        @debug "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
-        remove_hybrid!(bad_H, N)
-        return 1
-    end
-
     if N.numhybrids < hmax && rand() < 0.75
         @debug "MOVE: add_random_hybrid!"
         add_random_hybrid!(N)
         return 2
     end
 
-    if N.numhybrids == 0 && rand() < 0.33
+    if rand() < 0.5
 
         @debug "MOVE: perform_random_rNNI!"
-        Nprime = readnewick(writenewick(N)); Nprime.isrooted = false
-        return 2 + perform_random_rNNI!(Nprime)
+        return 2 + perform_random_rNNI!(N)
     
     else
 
         try
             if rand() < 0.5
                 @debug "move_random_reticulate_origin!"
-                move_random_reticulate_origin!(N)
+                # move_random_reticulate_origin!(N)
+                move_random_reticulate_origin_local!(sample(N.hybrid), N)
                 return 7
             else
                 @debug "move_random_reticulate_target!"
-                @debug writenewick(N, round=true)
-                move_random_reticulate_target!(N)
-                @debug writenewick(N, round=true)
+                # move_random_reticulate_target!(N)
+                move_random_reticulate_target_local!(sample(N.hybrid), N)
                 return 8
             end
         catch

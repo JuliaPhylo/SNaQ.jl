@@ -15,7 +15,9 @@ function is_valid_rSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime:
     yprime in getchildren(xprime) || return false
 
     # all 6 nodes are unique
-    length(unique([w, x, y, z, xprime, yprime])) == 6 || return false
+    if length(unique([w, x, y, z, xprime, yprime])) != 6
+        (length(unique([w, x, y, z, xprime, yprime])) == 5 && (y == xprime || x == xprime)) || return false
+    end
 
     if z.hybrid !(is_descendant_of(w, yprime)) || return false end
     if !z.hybrid && w.hybrid !(is_descendant_of(xprime, w)) || return false end

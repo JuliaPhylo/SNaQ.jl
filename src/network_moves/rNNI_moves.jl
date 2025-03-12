@@ -45,7 +45,6 @@ end
 function perform_rNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI2(s, t, u, v) || error("Topological conditions for rNNI(2) not met.")
     @debug "MOVE: rNNI(2) - $((s.name, t.name, u.name, v.name))"
-    @info "RNNI(2)"
 
     # s: loses u as a child and gains v as a child
     # t: loses v as a child and gains u as a child
@@ -69,7 +68,6 @@ end
 function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI3(s, t, u, v) || error("Topological conditions for rNNI(3) not met.")
     @debug "MOVE: rNNI(3) - $((s.name, t.name, u.name, v.name))"
-    @info "RNNI(3)"
 
     # s: loses u as a child and gains v as a child
     # t: loses v as a parent and gains u as a parent
@@ -94,6 +92,7 @@ function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     swap_edge_hybrid_info!(edge_u, edge_uv)
     u.hybrid = false
     v.hybrid = true
+    v.name = v.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" : v.name[1] == "H" ? v.name : "H$(v.name)"
     replace!(N.hybrid, u => v)
     return 3
 end
@@ -102,7 +101,6 @@ end
 function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     is_valid_rNNI4(s, t, u, v) || error("Topological conditions for rNNI(4) not met.")
     @debug "MOVE: rNNI(4) - $((s.name, t.name, u.name, v.name))"
-    @info "RNNI(4)"
 
     # t: loses v as a child and gains u as a child
     # s: loses u as a parent and gains v as a parent
@@ -125,6 +123,7 @@ function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     swap_edge_hybrid_info!(edge_u, edge_uv)
     u.hybrid = true
     v.hybrid = false
+    u.name = u.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" : u.name[1] == "H" ? u.name : "H$(u.name)"
     replace!(N.hybrid, v => u)
     return 4
 end
@@ -133,7 +132,7 @@ end
 """
 Add a docstring later - I'm going on a walk 
 """
-function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.9, 0.1/3, 0.1/3, 0.1/3])
+function perform_random_rNNI!(N::HybridNetwork, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
     (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
     
     r = rand()

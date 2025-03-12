@@ -35,7 +35,7 @@ function compute_block_value(block::EarlyCoalescenceBlock, params::AbstractArray
 end
 
 function compute_block_deriv(block::EarlyCoalescenceBlock, params::AbstractArray{<:Real})::Float64
-    return exp(-sum(params[e] for e in block.coal_edges)) 
+    return exp(-sum(params[e] for e in block.coal_edges))
 end
 
 has_parameter(block::EarlyCoalescenceBlock, j::Int) = j in block.coal_edges
@@ -199,27 +199,44 @@ end
 
 
 """
-Computes the derivative of the expected CF defined by `blocks` with respect to (wrt) either (a) an edge length
-if `wrt` is of type `Edge`, or (b) a gamma value if `wrt` is of type `Node`.
+Computes the derivative of the expected CF defined by `blocks` with respect to all parameters.
 """
 function compute_block_derivs(blocks::AbstractArray{<:AbstractArray{<:Block}}, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)
     
+    block_values = fill(NaN, maximum(length(bv) for bv in blocks))
+    block_derivs = fill(NaN, maximum(length(bv) for bv in blocks))
+
     derivs = zeros(length(parameters))
     for block_vec in blocks
-        block_values = [compute_block_value(block, parameters, eCF_type, α) for block in block_vec]
-        block_derivs = [compute_block_deriv(block, parameters, eCF_type, α) for block in block_vec]
+        block_values .= NaN
+        block_derivs .= NaN
 
         for param_idx = 1:length(parameters)
-            deriv_summand::Float64 = 0.0
-            deriv_coef::Float64 = 0.0
-            for (block_idx, block) in enumerate(block_vec)
-                if has_parameter(block, param_idx)
-                    deriv_coef = block_derivs[block_idx]
-                else
-                    deriv_summand += block_values[block_idx]
+            blocks_have_param::Bool = false
+            for bl in block_vec
+                if has_parameter(bl, param_idx)
+                    blocks_have_param = true
+                    break
                 end
             end
-            derivs[param_idx] += deriv_coef * deriv_summand
+            blocks_have_param || continue
+            
+            param_deriv::Float64 = 1.0
+            has_param::Bool = false
+            for (block_idx, block) in enumerate(block_vec)
+                if has_parameter(block, param_idx)
+                    if block_derivs[block_idx] === NaN
+                        block_derivs[block_idx] = compute_block_deriv(block, parameters, eCF_type, α)
+                    end
+                    param_deriv *= block_derivs[block_idx]
+                else
+                    if block_values[block_idx] === NaN
+                        block_values[block_idx] = compute_block_value(block, parameters, eCF_type, α)
+                    end
+                    param_deriv *= block_values[block_idx]
+                end
+            end
+            derivs[param_idx] += has_param ? param_deriv : 0.0
         end
     end
     return derivs

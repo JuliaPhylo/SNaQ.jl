@@ -4,7 +4,7 @@ include("CF_recursive_blocks.jl")
 using PhyloNetworks, Graphs
 
 
-function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int})
+function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)
 
     ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
     # @info "BLOB BEFORE: $(writenewick(net, round=true))"
@@ -369,15 +369,7 @@ function find_quartet_equations(net::HybridNetwork)
     t_combos = combinations(t, 4)
     #quartet_eqns = Array{QEqn}(undef, numq)
 
-    param_map = Dict{Int, Int}()
-    params = Array{Float64}(undef, length(net.hybrid) + length(net.edge))
-    max_ID = net.numedges
-
-    for (j, obj) in enumerate(vcat(net.hybrid, net.edge))
-        obj.number = max_ID + j
-        param_map[obj.number] = j
-        params[j] = (typeof(obj) <: Node) ? getparentedgeminor(obj).gamma : obj.length
-    end
+    narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
     blocks = Array{Vector{Vector{Block}}}(undef, length(t_combos), 3)
     quartet_taxa = Array{Vector{String}}(undef, length(t_combos))
@@ -397,11 +389,11 @@ function find_quartet_equations(net::HybridNetwork)
         end
     end
 
-    return blocks, param_map, params, t, quartet_taxa
+    return blocks, param_map, params, idx_obj_map, t, quartet_taxa
 end
 
 
-function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, edge_number_to_idx_map::Dict{Int, Int})
+function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)
     net = deepcopy(net)
     
     # remove all taxa other than those in `taxa`
@@ -435,7 +427,7 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:Abstrac
         end
     end
 
-    return get_4taxa_quartet_equations(net, taxa, edge_number_to_idx_map)
+    return get_4taxa_quartet_equations(net, taxa, parameter_map, α)
 end
 
 
