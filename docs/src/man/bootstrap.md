@@ -25,8 +25,8 @@ Here, the input is a text file that lists all the bootstrap files (one per gene)
 We demonstrate this second option here.
 
 The names of all our bootstrap files are listed in "BSlistfiles".
-(ASTRAL can use the same file to do its own bootstrap, see the
-[wiki]().
+(ASTRAL can use the same file to do its own bootstrap, see
+[PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/notebooks/Gene-Trees-RAxML.html)).
 
 The function [`readmultinewick_files`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readmultinewick_files-Tuple{AbstractString}) (from PhyloNetworks)
 can read this list of file names, then
