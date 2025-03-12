@@ -39,9 +39,9 @@ present among the gene trees, which can be estimated using
 [MrBayes](http://mrbayes.sourceforge.net) or
 [RAxML](http://sco.h-its.org/exelixis/software.html) for example. 
 
-This [pipeline](https://github.com/nstenz/TICR) can be used to obtain the table of
+This [pipeline](https://juliaphylo.github.io/PhyloUtilities/) can be used to obtain the table of
 quartet CF needed as input for SNaQ
-(see also the [wiki]() and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
+(see also the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
 It starts from the sequence alignments,
 runs MrBayes and then BUCKy (both parallelized), producing the
 table of estimated CFs and their credibility intervals.
