@@ -1,13 +1,29 @@
 # SNaQ: Maximum pseudolikelihood estimation of species network <img src="docs/src/snaq.png" align=right title="SNaQ logo" width=262.5 height=111>
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaPhylo.github.io/SNaQ.jl/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaPhylo.github.io/SNaQ.jl/dev/)
-[![Build Status](https://github.com/JuliaPhylo/SNaQ.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/JuliaPhylo/SNaQ.jl/actions/workflows/CI.yml?query=branch%3Amaster)
-[![Coverage](https://codecov.io/gh/JuliaPhylo/SNaQ.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaPhylo/SNaQ.jl)
-[![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
-[![ColPrac: Contributor's Guide on Collaborative Practices for Community Packages](https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet)](https://github.com/SciML/ColPrac)
-[![PkgEval](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/S/SNaQ.svg)](https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/S/SNaQ.html)
-[![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
+|**Documentation**| **Build Status** | **Code Coverage**   | **Style Guide** |
+|:---------------:|:----------------:|:-------------------:|:----------------|
+|[![stable][docs-stable-img]][docs-stable-url] [![dev][docs-dev-img]][docs-dev-url] | [![build][build-img]][build-url] [![PkgEval][pgkeval-img]][pgkeval-url] [![aqua][aqua-img]][aqua-url] | [![coverage][codecov-img]][codecov-url] | [![Code Style: Blue][style-img]][style-url] [![collaborative][colprac-img]][colprac-url]
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://JuliaPhylo.github.io/SNaQ.jl/stable/
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://JuliaPhylo.github.io/SNaQ.jl/dev/
+
+[build-img]: https://github.com/JuliaPhylo/SNaQ.jl/actions/workflows/CI.yml/badge.svg?branch=main
+[build-url]: https://github.com/JuliaPhylo/SNaQ.jl/actions/workflows/CI.yml?query=branch%3Amain
+[pgkeval-img]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/S/SNaQ.svg
+[pgkeval-url]: https://JuliaCI.github.io/NanosoldierReports/pkgeval_badges/S/SNaQ.html
+[aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
+[aqua-url]: https://github.com/JuliaTesting/Aqua.jl
+
+[codecov-img]: https://codecov.io/gh/JuliaPhylo/SNaQ.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaPhylo/SNaQ.jl
+
+[style-img]: https://img.shields.io/badge/code%20style-blue-4495d1.svg
+[style-url]: https://github.com/invenia/BlueStyle
+<!-- ColPrac: Contributor's Guide on Collaborative Practices for Community Packages -->
+[colprac-img]: https://img.shields.io/badge/ColPrac-Contributor's%20Guide-blueviolet
+[colprac-url]: https://github.com/SciML/ColPrac
 
 ## Overview
 
@@ -23,7 +39,7 @@ To get help, check
 - the latest [PhyloNetworks documentation](https://juliaphylo.github.io/PhyloNetworks.jl/dev)
 - [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/) with a step-by-step tutorial from multi-locus sequences to necessary input for SNaQ
 - [tutorial](https://solislemuslab.github.io/snaq-tutorial/) for snaq estimation (2023 workshop)
-- the [google group](https://groups.google.com/forum/#!forum/phylonetworks-users)
+- the [JuliaPhylo google group](https://groups.google.com/forum/#!forum/juliaphylo-users)
   for common questions. Join the group to post/email your questions,
   or to receive information on new versions, bugs fixed, etc.
 
