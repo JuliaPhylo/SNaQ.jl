@@ -4,12 +4,11 @@ include("CF_struct.jl")
 include("CF_blocks.jl")
 include("CF_recursive_blocks.jl")
 include("CF_equations.jl")
-include("CF_math.jl")
 
 
 
 
-function optimize_bls!(net::HybridNetwork, blocks, observed_CFs; return_logPL::Bool=false, α::Real=Inf)
+function optimize_bls!(net::HybridNetwork, blocks, observed_CFs, α::Real=Inf; return_logPL::Bool=false)
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net)
 
@@ -18,8 +17,8 @@ function optimize_bls!(net::HybridNetwork, blocks, observed_CFs; return_logPL::B
     opt.maxeval = 25
     opt.ftol_rel = 1e-6
     opt.ftol_abs = 1e-6
-    opt.xtol_rel = 1e-6
-    opt.xtol_abs = 1e-6
+    opt.xtol_rel = 1e-3
+    opt.xtol_abs = 1e-3
 
     opt.initial_step = init_steps
     opt.lower_bounds = LB
@@ -52,24 +51,29 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork
     end
 
     fill!(grad, 0.0)
-    total_loss::Float64 = 0.0
-    iter_eCF::Float64 = 0.0
-    for j = 1:size(blocks)[1]
-        for k = 1:3
-            # Loss function
-            iter_eCF = compute_eCF(blocks[j,k], X, k, α)
-            iter_eCF = max(iter_eCF, 1e-9)
+    total_loss::Float64 = compute_loss_and_gradient!(blocks, X, grad, obsCFs, α)
 
-            if obsCFs[j].data[k] > 0
-                # if obsCF is about 0, skip this (i.e. add 0)
-                total_loss += obsCFs[j].data[k] * log(iter_eCF / obsCFs[j].data[k])
-            end
 
-            # Gradient
-            block_derivs = compute_block_derivs(blocks[j,k], X, k, α)
-            grad .+= obsCFs[j].data[k] .* block_derivs ./ iter_eCF
-        end
-    end
+    # total_loss::Float64 = 0.0
+    # iter_eCF::Float64 = 0.0
+    # iter_derivs::Array{Float64} = zeros(length(X))
+    # for j = 1:size(blocks)[1]
+    #     for k = 1:3
+    #         fill!(iter_derivs, 0.0)
+
+    #         # Loss function
+    #         iter_eCF = compute_block_eCF_and_gradient!(blocks[j, k], X, iter_derivs, k, α)
+    #         iter_eCF = max(iter_eCF, 1e-9)
+
+    #         if obsCFs[j].data[k] > 0
+    #             # if obsCF is about 0, skip this (i.e. add 0)
+    #             total_loss += obsCFs[j].data[k] * log(iter_eCF / obsCFs[j].data[k])
+    #         end
+
+    #         # Gradient
+    #         grad .+= obsCFs[j].data[k] .* iter_derivs ./ iter_eCF
+    #     end
+    # end
     return total_loss
 end
 

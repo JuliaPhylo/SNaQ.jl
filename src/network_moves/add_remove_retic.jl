@@ -1,7 +1,10 @@
 using PhyloNetworks
+import PhyloNetworks: addhybridedge!, directionalconflict, deletehybridedge!
+import StatsBase: sample
+
 const Edge = PhyloNetworks.Edge;
 const Node = PhyloNetworks.Node;
-import PhyloNetworks: addhybridedge!, directionalconflict, deletehybridedge!
+
 
 
 """

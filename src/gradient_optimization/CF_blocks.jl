@@ -21,8 +21,7 @@ function compute_block_deriv(block::DualGammaBlock, params::AbstractArray{<:Real
     return block.major ? -1 : 1
 end
 
-has_parameter(block::DualGammaBlock, j::Int) = block.H == j
-
+@inline params_contained(block::DualGammaBlock) = [block.H]
 
 ############ EARLY COALESCENCE BLOCK ############
 
@@ -38,7 +37,7 @@ function compute_block_deriv(block::EarlyCoalescenceBlock, params::AbstractArray
     return exp(-sum(params[e] for e in block.coal_edges))
 end
 
-has_parameter(block::EarlyCoalescenceBlock, j::Int) = j in block.coal_edges
+@inline params_contained(block::EarlyCoalescenceBlock) = block.coal_edges
 
 
 ############ FAILED EARLY COALESCENCE BLOCK ############
@@ -55,7 +54,7 @@ function compute_block_deriv(block::FailedEarlyCoalescenceBlock, params::Abstrac
     return -exp(-sum(params[e] for e in block.coal_edges))
 end
 
-has_parameter(block::FailedEarlyCoalescenceBlock, j::Int) = j in block.coal_edges
+@inline params_contained(block::FailedEarlyCoalescenceBlock) = block.coal_edges
 
 
 ############ TWO TAXA HYBRID SPLIT BLOCK ############
@@ -142,7 +141,7 @@ function compute_block_deriv_wrt_γ(block::TwoTaxaHybridSplitBlock, params::Abst
     error("Found impossible block type: $(block.type) (α = $(α))")
 end
 
-has_parameter(block::TwoTaxaHybridSplitBlock, j::Int) = block.H == j
+@inline params_contained(block::TwoTaxaHybridSplitBlock) = [block.H]
 
 
 ############ SIMPLE TREELIKE BLOCK ############
@@ -166,27 +165,28 @@ function compute_block_deriv(block::SimpleTreelikeBlock, params::AbstractArray{<
     return (block.which_coal == for_quartet) ? 2/3 * exp_sum : -1/3 * exp_sum
 end
 
-has_parameter(block::SimpleTreelikeBlock, j::Int) = j in block.internal_edges
+@inline params_contained(block::SimpleTreelikeBlock) = block.internal_edges
 
 
-"""
-Computes the expected concordance factor that is defined by the list of multiplicative blocks in `blocks`.
+############ BLOCK PRODUCT ############
 
-`eCF_type` corresponds to which displayed quartet this eCF defines. I.e., `eCF_type=1` corresponds to ab|cd,
-`2` corresponds to ac|bd, and `3` corresponds to ad|bc.
-"""
-function compute_eCF(blocks::AbstractArray{<:AbstractArray{<:Block}}, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)::Float64
-    eCF::Float64 = 0.0
-    for block_vec in blocks
-        vec_product::Float64 = 1.0
-        for block in block_vec
-            vec_product *= compute_block_value(block, parameters, eCF_type, α)
-        end
-        eCF += vec_product
+# This struct serves 1 purpose:
+# To reduce the number of calls being made to `has_parameter` -- this
+# function ALONE is taking up upwards of 20% of the `optimize_bls!` runtime!
+struct BlockProduct
+    blocks::AbstractArray{<:Block}
+    relevant_parameters::AbstractArray{<:Int}   # array of param idxs that appear in this block product
+
+    function BlockProduct(blocks::AbstractArray{<:Block})
+        length(blocks) == 0 && new(blocks, [])
+        new(blocks, union(reduce(vcat, params_contained(bl) for bl in blocks)))
     end
-    return eCF
 end
 
+
+"""
+Computes the value of a given block.
+"""
 function compute_block_value(block::T, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real) where T <: Block
     if typeof(block) <: SimpleTreelikeBlock
         return compute_block_value(block, parameters, eCF_type)
@@ -199,50 +199,10 @@ end
 
 
 """
-Computes the derivative of the expected CF defined by `blocks` with respect to all parameters.
+Computes the derivative of a given block w.r.t. its parameters. Given that we are not taking
+derivatives w.r.t. α, each block's derivative does not depend on the parameter it is taken
+with respect to (so long as the block has the parameter of interest)
 """
-function compute_block_derivs(blocks::AbstractArray{<:AbstractArray{<:Block}}, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)
-    
-    block_values = fill(NaN, maximum(length(bv) for bv in blocks))
-    block_derivs = fill(NaN, maximum(length(bv) for bv in blocks))
-
-    derivs = zeros(length(parameters))
-    for block_vec in blocks
-        block_values .= NaN
-        block_derivs .= NaN
-
-        for param_idx = 1:length(parameters)
-            blocks_have_param::Bool = false
-            for bl in block_vec
-                if has_parameter(bl, param_idx)
-                    blocks_have_param = true
-                    break
-                end
-            end
-            blocks_have_param || continue
-            
-            param_deriv::Float64 = 1.0
-            has_param::Bool = false
-            for (block_idx, block) in enumerate(block_vec)
-                if has_parameter(block, param_idx)
-                    if block_derivs[block_idx] === NaN
-                        block_derivs[block_idx] = compute_block_deriv(block, parameters, eCF_type, α)
-                    end
-                    param_deriv *= block_derivs[block_idx]
-                else
-                    if block_values[block_idx] === NaN
-                        block_values[block_idx] = compute_block_value(block, parameters, eCF_type, α)
-                    end
-                    param_deriv *= block_values[block_idx]
-                end
-            end
-            derivs[param_idx] += has_param ? param_deriv : 0.0
-        end
-    end
-    return derivs
-    
-end
-
 function compute_block_deriv(block::Block, parameters::AbstractArray{<:Real}, eCF_type::Int, α::Real)
     if typeof(block) <: SimpleTreelikeBlock
         return compute_block_deriv(block, parameters, eCF_type)
@@ -251,6 +211,68 @@ function compute_block_deriv(block::Block, parameters::AbstractArray{<:Real}, eC
     else
         return compute_block_deriv(block, parameters)
     end
+end
+
+
+function comp_all(bl, p)
+    eCFs::Matrix{Float64} = zeros(size(bl))
+    g = zeros(length(p))
+    for j = 1:size(bl)[1]
+        for k = 1:3
+            compute_block_eCF_and_gradient!(bl[j,k], p, g, k, Inf)
+        end
+    end
+    return nothing
+end
+
+
+"""
+Computes the eCF and derivatives of a block at the same time to reduce redundant computations.
+"""
+function compute_block_eCF_and_gradient!(blocks::AbstractArray{<:AbstractArray{<:Block}}, parameters::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, eCF_type::Int, α::Real)
+    
+    block_values = fill(NaN, maximum(length(bv) for bv in blocks))
+    block_derivs = fill(NaN, maximum(length(bv) for bv in blocks))
+    
+    eCF::Float64 = 0.0
+    for block_prod in blocks
+        block_derivs .= NaN
+
+        # eCF computation
+        vec_product::Float64 = 1.0
+        for (block_idx, block) in enumerate(block_prod)
+            block_values[block_idx] = compute_block_value(block, parameters, eCF_type, α)
+            vec_product *= block_values[block_idx]
+        end
+        eCF += vec_product
+
+        # gradient computation
+        for param_idx = 1:length(parameters)
+            blocks_have_param::Bool = false
+            for bl in block_prod
+                if has_parameter(bl, param_idx)
+                    blocks_have_param = true
+                    break
+                end
+            end
+            blocks_have_param || continue
+            
+            param_deriv::Float64 = 1.0
+            for (block_idx, block) in enumerate(block_prod)
+                if has_parameter(block, param_idx)
+                    if block_derivs[block_idx] === NaN
+                        block_derivs[block_idx] = compute_block_deriv(block, parameters, eCF_type, α)
+                    end
+                    param_deriv *= block_derivs[block_idx]
+                else
+                    # These will not be NaN -- computed for the eCF calculation
+                    param_deriv *= block_values[block_idx]
+                end
+            end
+            gradient_storage[param_idx] += param_deriv
+        end
+    end
+    return eCF
 end
 
 

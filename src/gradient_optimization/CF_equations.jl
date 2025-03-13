@@ -34,7 +34,6 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
     # @info "BLOB AFTER: $(writenewick(net, round=true))"
     ######################################################################
 
-
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
         quartet_type, int_edges = get_quartet_type_and_internal_edges(net, taxa, parameter_map)
@@ -91,14 +90,17 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         PN.deleteEdge!(div_minor, E_major; part=false)
         PN.removeHybrid!(div_minor, getchild(E_major))   # only removes its references - does not delete the node
         E_minor.hybrid = false
+        E_minor.ismajor = true
         getchild(E_minor).hybrid = false
 
         # @info "DIV_MAJOR: $(writenewick(div_major, round=true))"
         # @info "DIV_MINOR: $(writenewick(div_minor, round=true))"
+        r1 = get_4taxa_quartet_equations(div_minor, taxa, parameter_map)
+        r2 = get_4taxa_quartet_equations(div_major, taxa, parameter_map)
+        # @info "$(parameter_map[lowest_H.number]) -> $([eqn.division_H for eqn in [r1, r2]])"
         return RecursiveCFEquation(
-            false, [], 0, findfirst(h -> h == lowest_H, net.hybrid), [
-                get_4taxa_quartet_equations(div_minor, taxa, parameter_map),
-                get_4taxa_quartet_equations(div_major, taxa, parameter_map)
+            false, [], 0, parameter_map[lowest_H.number], [
+                r1, r2
             ]
         )
 
@@ -202,13 +204,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         new_leaf = PN.addleaf!(div4, getparent(E_minor), "__$(leaf_names[2])", 0.0)
         PN.deleteleaf!(div4, leaf_names[2]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
         new_leaf.name = leaf_names[2]
-
-        # @info div1
-        # @info "DIV1: $(writenewick(div1, round=true))"
-        # @info "DIV2: $(writenewick(div2, round=true))"
-        # @info "DIV3: $(writenewick(div3, round=true))"
-        # @info "DIV4: $(writenewick(div4, round=true))"
-
+        
 
         which_quartet = leaf_names[1] == taxa[1] ? (
             leaf_names[2] == taxa[2] ? 1 :
@@ -217,15 +213,16 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         leaf_names[1] == taxa[2] ? (
             leaf_names[2] == taxa[3] ? 3 : 2
         ) : 1
+        recurrences = Array{RecursiveCFEquation}(undef, 4)
+        recurrences[1] = get_4taxa_quartet_equations(div1, taxa, parameter_map)
+        recurrences[2] = get_4taxa_quartet_equations(div2, taxa, parameter_map)
+        recurrences[3] = get_4taxa_quartet_equations(div3, taxa, parameter_map)
+        recurrences[4] = get_4taxa_quartet_equations(div4, taxa, parameter_map)
+        # @info "$(parameter_map[lowest_H.number]) -> $([eqn.division_H for eqn in recurrences])"
+
         return RecursiveCFEquation(
             length(int_edges) > 0, [parameter_map[int_e.number] for int_e in int_edges],
-            which_quartet, findfirst(h -> h == lowest_H, net.hybrid),
-            [
-                get_4taxa_quartet_equations(div1, taxa, parameter_map),
-                get_4taxa_quartet_equations(div2, taxa, parameter_map),
-                get_4taxa_quartet_equations(div3, taxa, parameter_map),
-                get_4taxa_quartet_equations(div4, taxa, parameter_map)
-            ]
+            which_quartet, parameter_map[lowest_H.number], recurrences
         )
     else    # n_below_H is 3 or 4
         # 3 or 4 leaves below this hybrid, so it has no effect on eCFs!
@@ -371,14 +368,15 @@ function find_quartet_equations(net::HybridNetwork)
 
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
-    blocks = Array{Vector{Vector{Block}}}(undef, length(t_combos), 3)
+    # blocks = Array{Vector{Vector{<:Block}}}(undef, length(t_combos), 3)
+    recur_eqns = Array{RecursiveCFEquation}(undef, length(t_combos))
     quartet_taxa = Array{Vector{String}}(undef, length(t_combos))
 
     # Probably need to attach the taxanumbers index to quartet_eqns
     ts = [1,2,3,4]
     for j = 1:length(t_combos)
-        recur_eqns = find_quartet_equations_4taxa(net, t[ts], param_map)
-        blocks[j, 1], blocks[j, 2], blocks[j, 3] = get_blocks_from_recursive(recur_eqns)
+        recur_eqns[j] = find_quartet_equations_4taxa(net, t[ts], param_map)
+        # blocks[j, 1], blocks[j, 2], blocks[j, 3] = get_blocks_from_recursive(recur_eqns)
         quartet_taxa[j] = t[ts]
 
         ind = findfirst(x -> x>1, diff(ts))
@@ -389,7 +387,8 @@ function find_quartet_equations(net::HybridNetwork)
         end
     end
 
-    return blocks, param_map, params, idx_obj_map, t, quartet_taxa
+    # return blocks, param_map, params, idx_obj_map, t, quartet_taxa
+    return recur_eqns, param_map, params, idx_obj_map, t, quartet_taxa
 end
 
 
