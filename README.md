@@ -38,10 +38,14 @@ To get help, check
 - the latest [SNaQ documentation](https://juliaphylo.github.io/SNaQ.jl/dev)
 - the latest [PhyloNetworks documentation](https://juliaphylo.github.io/PhyloNetworks.jl/dev)
 - [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/) with a step-by-step tutorial from multi-locus sequences to necessary input for SNaQ
-- [tutorial](https://solislemuslab.github.io/snaq-tutorial/) for snaq estimation (2023 workshop)
+- [tutorial](https://solislemuslab.github.io/snaq-tutorial/) for SNaQ estimation
+  (from a 2023 workshop)
 - the [JuliaPhylo google group](https://groups.google.com/forum/#!forum/juliaphylo-users)
   for common questions. Join the group to post/email your questions,
   or to receive information on new versions, bugs fixed, etc.
+- search for answers in
+  [github issues](https://github.com/JuliaPhylo/SNaQ.jl/issues) and
+  post a new issue to post a question or a report potential bugs.
 
 ## Citing
 
@@ -52,7 +56,7 @@ For the SNaQ method in particular, please cite
   12(3):e1005896.
   [doi:10.1371/journal.pgen.1005896](https://doi.org/10.1371/journal.pgen.1005896)
 
-For PhyloNetworks package, please cite:
+For the PhyloNetworks package, please cite:
 - Claudia Solís-Lemus, Paul Bastide and Cécile Ané (2017). 
   PhyloNetworks: a package for phylogenetic networks. Molecular Biology and Evolution 34(12):3292–3298. [doi:10.1093/molbev/msx235](https://academic.oup.com/mbe/article/34/12/3292/4103410)
 
@@ -60,4 +64,5 @@ See [`CITATION.bib`](CITATION.bib) for the relevant reference(s).
 
 > [!NOTE]
 > Much of this package was formerly part of PhyloNetworks v0.16.4 (and prior).
-> PhyloNetworks v0.17, v1.0 (and later) will be stripped of functions implementing the SNaQ method.
+> PhyloNetworks v0.17, v1.0 and later have been stripped of functions
+> implementing the SNaQ method.
