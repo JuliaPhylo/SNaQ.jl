@@ -27,7 +27,7 @@ function optimize_bls!(net::HybridNetwork, blocks, observed_CFs, α::Real=Inf; r
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, blocks, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, fill(0.1, narg))
 
-    return minx, ret
+    return minf
 end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 

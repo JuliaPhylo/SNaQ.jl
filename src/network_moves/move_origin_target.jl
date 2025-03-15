@@ -38,7 +38,6 @@ function move_random_reticulate_target_local!(hybrid::Node, N::HybridNetwork)
     for child in hyb_children
         push!(candidate_edges, getparentedge(child))
     end
-    @info candidate_edges
 
     for j in sample(1:length(candidate_edges), length(candidate_edges), replace=false)
         is_valid_move_reticulate_target(hybrid, candidate_edges[j], N) && return move_reticulate_target!(hybrid, candidate_edges[j], N)

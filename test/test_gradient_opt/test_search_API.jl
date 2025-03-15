@@ -1,3 +1,6 @@
+using Revise
+
+
 using PhyloNetworks, Plots, SNaQ, DataFrames
 include("../../src/network_moves/rNNI_moves.jl")
 include("../../src/network_moves/rSPR_moves.jl")
@@ -11,26 +14,26 @@ using PhyloCoalSimulations, PhyloPlots
 
 ### Network example
 net, gts = readnewick(joinpath(@__DIR__, "n1.netfile")), readmultinewick(joinpath(@__DIR__, "n1_10kgts.treefile")); net.isrooted = false;
-
-
-rootonedge!(net, getroot(net).edge[1])
-gts = simulatecoalescent(net, 10000, 1);
-semidirect_network!(net);
-
-
 q, t = countquartetsintrees(gts, showprogressbar=false);
 df = readtableCF(DataFrame(tablequartetCF(q, t)));
+snaq_net = SNaQ.readnewicklevel1(writenewick(net))
+
+compute_logPL(net, q; use_cache=false), topologyQpseudolik!(snaq_net, df)
+
+qeqns, eqnt, qt = find_quartet_equations(net);
+eCFs = [(compute_eCF(eqns[1], net.edge), compute_eCF(eqns[2], net.edge), compute_eCF(eqns[3], net.edge)) for eqns in qeqns];
+
+
 tre0 = readnewick(writenewick(gts[1]));
 perform_random_rNNI!(tre0);
 
-opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 1000, maxequivPLs = 150)
+opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 10000, maxequivPLs = 1000)
 hardwiredClusterDistance(net, opt_net, false)
 
-nets = [search(gts[j], q, net.numhybrids; maxeval=10000, maxequivPLs=75)[1] for j = 1:20];
-max_net_PL, max_net_idx = findmax(compute_logPL(net, q) for net in nets)
-max_net = nets[max_net_idx]
+nets = [search(gts[j], q, net.numhybrids; maxeval=10000, maxequivPLs=100, seed=rand(Int))[1] for j = 1:20];
+max_net_PL, max_net_idx = findmax(compute_logPL(net[1], q) for net in nets)
+max_net = nets[max_net_idx][1]
 hardwiredClusterDistance(max_net, net, false)
-
 
 
 snaq_rt = @elapsed snaq_net = snaq!(tre0, df, hmax=net.numhybrids, runs=1);

@@ -44,7 +44,8 @@ API NOT FINALIZED
 """
 function search(N::HybridNetwork, q, hmax::Int;
     restrictions::Function=no_restrictions(),
-    maxeval::Int=500, maxequivPLs::Int=100)
+    α::Real=Inf,
+    maxeval::Int=1500, maxequivPLs::Int=200)
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
 
@@ -61,7 +62,7 @@ function search(N::HybridNetwork, q, hmax::Int;
     end
 
     logPLs = Array{Float64}(undef, maxeval)
-    logPLs[1] = compute_logPL(N, q);
+    logPLs[1] = compute_loss(N, q, α);
     prop_Ns = [N];
     unchanged_iters = 0
 
@@ -96,7 +97,7 @@ function search(N::HybridNetwork, q, hmax::Int;
         @debug "\tgathering quartets"
         q_eqns, _, Nprime_params, _ = find_quartet_equations(Nprime)
         @debug "\toptimizing BLs"
-        optimize_bls!(Nprime, q_eqns, q)
+        Nprime_logPL = optimize_bls!(Nprime, q_eqns, q)
         @debug "Optimized network: $(writenewick(Nprime, round=true))"
 
         # 4. Remove hybrids with γ ≈ 0
@@ -113,7 +114,6 @@ function search(N::HybridNetwork, q, hmax::Int;
         end
 
         # 4. Compute logPL
-        Nprime_logPL = compute_logPL(q_eqns, Nprime_params, q, Inf)
         push!(prop_Ns, Nprime)
 
         # 5. Accept / reject
@@ -139,8 +139,8 @@ function search(N::HybridNetwork, q, hmax::Int;
         end
     end
     # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
-    @info moves_proposed
-    @info moves_accepted
+    # @info moves_proposed
+    # @info moves_accepted
 
     return N, logPLs
 

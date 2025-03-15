@@ -54,6 +54,12 @@ function get_blocks_from_recursive_recur!(eqn::RecursiveCFEquation, final_blocks
 end
 
 
+function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
+    eqns, _, params, _, _, _ = find_quartet_equations(N)
+    return compute_loss_and_gradient!(eqns, params, zeros(length(params)), q, α)
+end
+
+
 """
 Computes expected concordance factors and gradients by recursively passing through `eqns`.
 """
