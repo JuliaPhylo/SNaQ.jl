@@ -56,13 +56,11 @@ function search(N::HybridNetwork, q, hmax::Int;
     end
 
     N = readnewick(writenewick(N));
-    if N.isrooted
-        semidirect_network!(N)
-        N.isrooted = false
-    end
+    semidirect_network!(N)
 
     logPLs = Array{Float64}(undef, maxeval)
-    logPLs[1] = compute_loss(N, q, α);
+    N_qdata, _, N_params, _ = find_quartet_equations(N);
+    logPLs[1] = compute_loss(N_qdata, N_params, q, α);
     prop_Ns = [N];
     unchanged_iters = 0
 
@@ -74,8 +72,8 @@ function search(N::HybridNetwork, q, hmax::Int;
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
-        Nprime = readnewick(writenewick(N));
-        move_proposed = propose_topology!(Nprime, hmax)
+        Nprime = deepcopy(N);
+        move_proposed = propose_topology(Nprime, hmax)
         moves_proposed[move_proposed] += 1
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
@@ -95,9 +93,9 @@ function search(N::HybridNetwork, q, hmax::Int;
 
         # 3. Optimize branch lengths
         @debug "\tgathering quartets"
-        q_eqns, _, Nprime_params, _ = find_quartet_equations(Nprime)
+        Nprime_qdata, _ = find_quartet_equations(Nprime);
         @debug "\toptimizing BLs"
-        Nprime_logPL = optimize_bls!(Nprime, q_eqns, q)
+        Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata, q)
         @debug "Optimized network: $(writenewick(Nprime, round=true))"
 
         # 4. Remove hybrids with γ ≈ 0
@@ -117,7 +115,7 @@ function search(N::HybridNetwork, q, hmax::Int;
         push!(prop_Ns, Nprime)
 
         # 5. Accept / reject
-        if Nprime_logPL == NaN || abs(Nprime_logPL) < 1e-100
+        if Nprime_logPL === NaN || abs(Nprime_logPL) < 1e-100
             error("Nprime_logPL = $(Nprime_logPL)")
         end
 
@@ -139,8 +137,8 @@ function search(N::HybridNetwork, q, hmax::Int;
         end
     end
     # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
-    # @info moves_proposed
-    # @info moves_accepted
+    @info moves_proposed
+    @info moves_accepted
 
     return N, logPLs
 
@@ -149,8 +147,9 @@ end
 
 """
 Takes network `N` and modifies it with topological moves to generate a new proposal network.
+Also updates `Nprime_eqns` in-place to hold the equations of the newly proposed network.
 """
-function propose_topology!(N::HybridNetwork, hmax::Int)
+function propose_topology(N::HybridNetwork, hmax::Int)
 
     if N.numhybrids < hmax && rand() < 0.75
         @debug "MOVE: add_random_hybrid!"

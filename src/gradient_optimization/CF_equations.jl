@@ -2,9 +2,10 @@ include("CF_struct.jl")
 include("CF_blocks.jl")
 include("CF_recursive_blocks.jl")
 using PhyloNetworks, Graphs
+const PN = PhyloNetworks;
 
 
-function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)
+function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)::RecursiveCFEquation
 
     ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
     # @info "BLOB BEFORE: $(writenewick(net, round=true))"
@@ -71,12 +72,20 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         div_major_H = div_major.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_major.hybrid)]
         E_minor = getparentedgeminor(div_major_H)
         E_major = getparentedge(div_major_H)
+        minor_parent = getparent(E_minor)
         for node in E_minor.node
             node.edge = [e for e in node.edge if e != E_minor]
         end
         PN.deleteEdge!(div_major, E_minor; part=false)
         PN.removeHybrid!(div_major, getchild(E_major))
+        if length(getchildren(minor_parent)) == 0
+            minor_parent.leaf = true
+            push!(div_major.leaf, minor_parent)
+            PN.deleteleaf!(div_major, minor_parent; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+            minor_parent.leaf = false
+        end
         E_major.hybrid = false
+        E_major.ismajor = true
         getchild(E_major).hybrid = false
 
         # Remove the major edge and all of its references in this copy
@@ -84,16 +93,23 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         div_minor_H = div_minor.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_minor.hybrid)]
         E_minor = getparentedgeminor(div_minor_H)
         E_major = getparentedge(div_minor_H)
+        major_parent = getparent(E_major)
         for node in E_major.node
             node.edge = [e for e in node.edge if e != E_major]
         end
         PN.deleteEdge!(div_minor, E_major; part=false)
         PN.removeHybrid!(div_minor, getchild(E_major))   # only removes its references - does not delete the node
+        if length(getchildren(major_parent)) == 0
+            major_parent.leaf = true
+            push!(div_major.leaf, major_parent)
+            PN.deleteleaf!(div_major, major_parent; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+            major_parent.leaf = false
+        end
         E_minor.hybrid = false
         E_minor.ismajor = true
         getchild(E_minor).hybrid = false
 
-        # @info "DIV_MAJOR: $(writenewick(div_major, round=true))"
+        # @info "DIV_MAJOR AFTER: $(writenewick(div_major, round=true))"
         # @info "DIV_MINOR: $(writenewick(div_minor, round=true))"
         r1 = get_4taxa_quartet_equations(div_minor, taxa, parameter_map)
         r2 = get_4taxa_quartet_equations(div_major, taxa, parameter_map)
@@ -357,7 +373,7 @@ function get_leaves_below_lowest_hybrid(H::Node)
 end
 
 
-function find_quartet_equations(net::HybridNetwork)
+function find_quartet_equations(net::HybridNetwork, recur_eqns::Array{QuartetData}=Vector{QuartetData}([]))
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
@@ -368,31 +384,83 @@ function find_quartet_equations(net::HybridNetwork)
 
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
-    # blocks = Array{Vector{Vector{<:Block}}}(undef, length(t_combos), 3)
-    recur_eqns = Array{RecursiveCFEquation}(undef, length(t_combos))
-    quartet_taxa = Array{Vector{String}}(undef, length(t_combos))
+    if length(recur_eqns) == 0
+        recur_eqns = Array{QuartetData}(undef, length(t_combos))
+    end
 
     # Probably need to attach the taxanumbers index to quartet_eqns
     ts = [1,2,3,4]
     for j = 1:length(t_combos)
-        recur_eqns[j] = find_quartet_equations_4taxa(net, t[ts], param_map)
-        # blocks[j, 1], blocks[j, 2], blocks[j, 3] = get_blocks_from_recursive(recur_eqns)
-        quartet_taxa[j] = t[ts]
+        # reduced_net = get_reduced_net(reduced_nets, Set{String}(t[ts]), t)
+        # recur_eqns[j] = find_quartet_equations_4taxa(reduced_net, t[ts], param_map)
+        recur_eqns[j] = find_quartet_equations_4taxa(net, t[ts], param_map)     # 625ms, 287MiB
 
-        ind = findfirst(x -> x>1, diff(ts))
-        if ind === nothing ind = 4; end
-        ts[ind] += 1
-        for j in 1:(ind-1)
-            ts[j] = j
-        end
+        incr_taxa_idx!(ts)
     end
 
-    # return blocks, param_map, params, idx_obj_map, t, quartet_taxa
-    return recur_eqns, param_map, params, idx_obj_map, t, quartet_taxa
+    return recur_eqns, param_map, params, idx_obj_map, t
 end
 
 
-function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)
+"""
+Helper function to increment the 4-taxa index within `find_quartet_equations`.
+"""
+function incr_taxa_idx!(ts::Vector{Int})
+    ind = findfirst(x -> x>1, diff(ts))
+    if ind === nothing ind = 4; end
+    ts[ind] += 1
+    for j in 1:(ind-1)
+        ts[j] = j
+    end
+end
+
+
+"""
+Dynamic programming approach to iteratively reducing the initial hybrid network down to quarnets.
+"""
+function get_reduced_net(reduced_nets::Dict{Set{String}, HybridNetwork}, taxa::Set{String}, all_taxa::Vector{String})::HybridNetwork
+    haskey(reduced_nets, taxa) && return reduced_nets[taxa]
+
+    next_taxa::String = all_taxa[findfirst(t -> !(t in taxa), all_taxa)]
+    push!(taxa, next_taxa)
+    parent_net::HybridNetwork = get_reduced_net(reduced_nets, taxa, all_taxa)
+    
+    net::HybridNetwork = deepcopy(parent_net)
+    PN.deleteleaf!(net, next_taxa, simplify=false, unroot=false, nofuse=true)
+    delete!(taxa, next_taxa)
+    net.numtaxa == length(taxa) || error("$(net.numtaxa) != $(length(taxa))")
+
+    # find and delete degree-2 blobs along external edges
+    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
+    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
+    entryindex = indexin(entry, net.vec_node)
+    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
+    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
+    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
+        # yes if: 1 single exit adjacent to a leaf
+        length(exitnodes[ib]) != 1 && return false
+        ch = getchildren(exitnodes[ib][1])
+        return length(ch) == 1 && ch[1].leaf
+    end
+    for ib in reverse(bloborder)
+        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
+        for he in bcc[ib]
+            he.ismajor && continue
+            # deletion of a hybrid can hide the deletion of another: check that he is still in net
+            any(e -> e===he, net.edge) || continue
+            # delete minor hybrid edge with options unroot=true: to make sure the
+            # root remains of degree 3+, in case a degree-2 blob starts at the root
+            # simplify=true: bc external blob
+            PN.deletehybridedge!(net,he, false,true,false,true,false)
+        end
+    end
+    reduced_nets[deepcopy(taxa)] = net
+
+    return net
+end
+
+
+function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)::QuartetData
     net = deepcopy(net)
     
     # remove all taxa other than those in `taxa`
@@ -426,7 +494,12 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:Abstrac
         end
     end
 
-    return get_4taxa_quartet_equations(net, taxa, parameter_map, α)
+    return QuartetData(
+        get_4taxa_quartet_equations(net, taxa, parameter_map, α),
+        [parameter_map[obj.number] for obj in vcat(net.edge, net.hybrid)
+            if haskey(parameter_map, obj.number)],
+        taxa
+    )
 end
 
 

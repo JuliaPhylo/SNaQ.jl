@@ -19,11 +19,11 @@ TODO: remove (3) - it's just here for easier debugging
 
 A struct that contains:
 1. The initial `RecrusiveCFEquation` struct from which the loss & gradient can be calculated
-2. A list of parameters (stored as indexed from 1 to $k$ where $k$ is the total number of parameters
-    optimized during branch length optimization in `optimize_bls!`) that are relevant to this quarnet.
-    This INCLUDES edges that DO NOT contribute to the quarnet's expected CF but that do **inscribe**
-    the quarnet into its original network--i.e., if such a network were removed from the network,
-    the quarnet's expected CF would change.
+2. A list of "internal" parameters (stored as indexed from 1 to `k` where `k` is the total number of
+    parameters optimized during branch length optimization in `optimize_bls!`) that are relevant to
+    this quarnet. This INCLUDES edges that DO NOT contribute to the quarnet's expected CF, but that
+    ARE internal edges w/in the network as a whole and DO **inscribe** the quarnet in the network.
+    I.e., if one of these edges was removed or re-directed, this quarnet's eCF would change.
 3. The set of taxa that these equations relate to.
 """
 mutable struct QuartetData
@@ -31,10 +31,13 @@ mutable struct QuartetData
     relevant_params::AbstractArray{Int}
     q_taxa::Vector{String}
 end
+contains_parameter(qdata::QuartetData, param_idxs::AbstractVector{Int})::Bool = any(
+    obj_idx -> obj_idx in qdata.relevant_params, param_idxs
+)
 
 
-function compute_eCF(q::RecursiveCFEquation, params::Vector{<:Real})
-    return compute_eCF_and_gradient_recur!(q, params, zeros(length(params), 3), falses(length(params)), Inf)
+function compute_eCF(qdata::QuartetData, params::Vector{<:Real})
+    return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), Inf)
 end
 
 
@@ -43,29 +46,29 @@ Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet
 factor data `q` under Dirichlet parameter `α`.
 """
 function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
-    eqns, _, params, _, _, _ = find_quartet_equations(N)
-    return compute_loss(eqns, params, q, α)
+    qdata, _, params, _, _, _ = find_quartet_equations(N)
+    return compute_loss(qdata, params, q, α)
 end
-function compute_loss(eqns::Vector{RecursiveCFEquation}, params::AbstractVector{<:Real}, q, α::Real=Inf)::Float64
-    return compute_loss_and_gradient!(eqns, params, zeros(length(params)), q, α)
+function compute_loss(qdata::Vector{QuartetData}, params::AbstractVector{<:Real}, q, α::Real=Inf)::Float64
+    return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
 end
 
 
 """
-Computes expected concordance factors and gradients by recursively passing through `eqns`.
+Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-function compute_loss_and_gradient!(eqns::Vector{RecursiveCFEquation}, params::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, q, α::Real=Inf)::Float64
+function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, q, α::Real=Inf)::Float64
 
     bv::BitVector = falses(length(params))
     iter_grad::Array{Float64} = zeros(length(params), 3)
     fill!(gradient_storage, 0.0)
 
     total_loss::Float64 = 0.0
-    for j = 1:length(eqns)
+    for j = 1:length(qdata)
         fill!(iter_grad, 0.0)
         bv .= false
 
-        eCF1, eCF2 = compute_eCF_and_gradient_recur!(eqns[j], params, iter_grad, bv, α)
+        eCF1, eCF2 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α)
         eCF3 = 1 - eCF1 - eCF2
 
         eCF1 = max(eCF1, 1e-9)

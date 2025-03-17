@@ -22,6 +22,12 @@ function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
         end
         all(length(e.node) == 2 for e in N.edge) || error("Found edge with ≠2 attached nodes.")
     end
+
+    max_ID = N.numhybrids + N.numedges
+    for (j, obj) in enumerate(vcat(N.hybrid, N.edge))
+        obj.number = max_ID + j
+    end
+        
 end
 
 

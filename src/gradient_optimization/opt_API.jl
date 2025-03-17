@@ -82,18 +82,22 @@ function gather_optimization_info(net::HybridNetwork)
 
     param_map = Dict{Int, Int}()
     idx_obj_map = Dict{Int, Union{Node, Edge}}()
+    relevant_objs = Vector{Union{Node,Edge}}()
     max_ID = net.numedges
     param_idx = 1
 
     for obj in vcat(net.hybrid, net.edge)
         if typeof(obj) <: Edge && getchild(obj).leaf continue end
-
-        obj.number = max_ID + param_idx
-        param_map[obj.number] = param_idx
-        idx_obj_map[param_idx] = obj
-        param_idx += 1
+        push!(relevant_objs, obj)
     end
-    
+
+    relevant_objs = relevant_objs[sortperm([obj.number for obj in relevant_objs])]
+    for obj in relevant_objs
+        haskey(param_map, obj.number) && error("Duplicate edge/hybrid numbers ($(obj.number))")
+        param_map[obj.number] = length(param_map) + 1
+        idx_obj_map[length(param_map)] = obj
+    end
+
     params = gather_params(net, param_map)
     narg = length(param_map)
     LB = Array{Float64}(undef, narg)
@@ -121,10 +125,9 @@ end
 
 function gather_params(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Float64}
     params = zeros(length(param_map))
-    param_idx = 1
     for obj in vcat(net.hybrid, net.edge)
         if haskey(param_map, obj.number)
-            params[param_idx] = typeof(obj) <: Node ? getparentedgeminor(obj).gamma : obj.length
+            params[param_map[obj.number]] = typeof(obj) <: Node ? getparentedgeminor(obj).gamma : obj.length
         end
     end
     return params
