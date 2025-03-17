@@ -1,5 +1,10 @@
 
 
+
+"""
+The key struct used in computing -log pseudo-likelihood and gradients
+when optimizing branch lengths.
+"""
 mutable struct RecursiveCFEquation
     can_coalesce_here::Bool
     coal_edges::AbstractArray{Int}
@@ -9,53 +14,39 @@ mutable struct RecursiveCFEquation
 end
 
 
-function get_blocks_from_recursive(eqn::RecursiveCFEquation)
-    final_blocks_ab_cd = Vector{Vector{<:Block}}()
-    final_blocks_ac_bd = Vector{Vector{<:Block}}()
-    final_blocks_ad_bc = Vector{Vector{<:Block}}()
-    
-    get_blocks_from_recursive_recur!(eqn, final_blocks_ab_cd, Vector{Block}(), 1)
-    get_blocks_from_recursive_recur!(eqn, final_blocks_ac_bd, Vector{Block}(), 2)
-    get_blocks_from_recursive_recur!(eqn, final_blocks_ad_bc, Vector{Block}(), 3)
+"""
+TODO: remove (3) - it's just here for easier debugging
 
-    return final_blocks_ab_cd, final_blocks_ac_bd, final_blocks_ad_bc
-end
-
-function get_blocks_from_recursive_recur!(eqn::RecursiveCFEquation, final_blocks::Vector{Vector{<:Block}}, contributing_blocks::BlockProduct, which_quartet::Int)
-    
-    if eqn.division_H == -1
-        
-        bl = SimpleTreelikeBlock(eqn.coal_edges, eqn.which_coal)
-        contributing_blocks = BlockProduct(contributing_blocks, bl)
-        push!(final_blocks, contributing_blocks)
-    
-    elseif length(eqn.divisions) == 4
-
-        if eqn.can_coalesce_here && eqn.which_coal == which_quartet
-            push!(final_blocks, BlockProduct([contributing_blocks; EarlyCoalescenceBlock(eqn.coal_edges)]))
-        end
-
-        failed_early_block = FailedEarlyCoalescenceBlock(eqn.coal_edges)
-        for division_idx = 1:4
-            iter_bl = TwoTaxaHybridSplitBlock(eqn.division_H, division_idx)
-            get_blocks_from_recursive_recur!(eqn.divisions[division_idx], final_blocks, [contributing_blocks; iter_bl; failed_early_block], which_quartet)
-        end
-
-    else    # length(eqn.divisions) == 2
-
-        !eqn.can_coalesce_here || error("Can coalesce w/ 2 divisions??")
-        for division_idx = 1:2
-            iter_bl = DualGammaBlock(eqn.division_H, division_idx == 2)
-            get_blocks_from_recursive_recur!(eqn.divisions[division_idx], final_blocks, [contributing_blocks; iter_bl], which_quartet)
-        end
-
-    end
-        
+A struct that contains:
+1. The initial `RecrusiveCFEquation` struct from which the loss & gradient can be calculated
+2. A list of parameters (stored as indexed from 1 to $k$ where $k$ is the total number of parameters
+    optimized during branch length optimization in `optimize_bls!`) that are relevant to this quarnet.
+    This INCLUDES edges that DO NOT contribute to the quarnet's expected CF but that do **inscribe**
+    the quarnet into its original network--i.e., if such a network were removed from the network,
+    the quarnet's expected CF would change.
+3. The set of taxa that these equations relate to.
+"""
+mutable struct QuartetData
+    eqn::RecursiveCFEquation
+    relevant_params::AbstractArray{Int}
+    q_taxa::Vector{String}
 end
 
 
+function compute_eCF(q::RecursiveCFEquation, params::Vector{<:Real})
+    return compute_eCF_and_gradient_recur!(q, params, zeros(length(params), 3), falses(length(params)), Inf)
+end
+
+
+"""
+Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet concordance
+factor data `q` under Dirichlet parameter `α`.
+"""
 function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
     eqns, _, params, _, _, _ = find_quartet_equations(N)
+    return compute_loss(eqns, params, q, α)
+end
+function compute_loss(eqns::Vector{RecursiveCFEquation}, params::AbstractVector{<:Real}, q, α::Real=Inf)::Float64
     return compute_loss_and_gradient!(eqns, params, zeros(length(params)), q, α)
 end
 
