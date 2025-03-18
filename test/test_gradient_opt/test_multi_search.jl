@@ -16,7 +16,7 @@ q, t = countquartetsintrees(gts, showprogressbar=false);
 df = readtableCF(DataFrame(tablequartetCF(q, t)));
 tre0 = readnewick(writenewick(gts[1]));
 #perform_random_rNNI!(tre0);
-true_logPL = compute_loss(net, q)
+true_logPL = compute_loss(net, q)   # -0.006968661910628324
 #############
 
 

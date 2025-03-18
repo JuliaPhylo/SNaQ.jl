@@ -61,14 +61,13 @@ Computes expected concordance factors and gradients by recursively passing throu
 """
 function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, q, α::Real=Inf)::Float64
 
-    bv::BitVector = falses(length(params))
-    iter_grad::Array{Float64} = zeros(length(params), 3)
+    thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
+    total_loss = Threads.Atomic{Float64}(0.0)
 
-    total_loss::Float64 = 0.0
-    for j = 1:length(qdata)
-        fill!(iter_grad, 0.0)
-        bv .= false
+    Threads.@threads for j = 1:length(qdata)
+        iter_grad::Array{Float64} = zeros(length(params), 3)
+        bv::BitVector = falses(length(params))
 
         eCF1, eCF2 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α)
         eCF3 = 1 - eCF1 - eCF2
@@ -77,21 +76,22 @@ function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Abstract
         eCF2 = max(eCF2, 1e-9)
         eCF3 = max(eCF3, 1e-9)
 
-        total_loss += (q[j].data[1] > 0) ? q[j].data[1] * log(eCF1 / q[j].data[1]) : 0.0
-        total_loss += (q[j].data[2] > 0) ? q[j].data[2] * log(eCF2 / q[j].data[2]) : 0.0
-        total_loss += (q[j].data[3] > 0) ? q[j].data[3] * log(eCF3 / q[j].data[3]) : 0.0
+        total_loss_incr::Float64 = 
+            ((q[j].data[1] > 0) ? q[j].data[1] * log(eCF1 / q[j].data[1]) : 0.0) +
+            ((q[j].data[2] > 0) ? q[j].data[2] * log(eCF2 / q[j].data[2]) : 0.0) +
+            ((q[j].data[3] > 0) ? q[j].data[3] * log(eCF3 / q[j].data[3]) : 0.0)
+        Threads.atomic_add!(total_loss, total_loss_incr)
 
-        gradient_storage .+= q[j].data[1] .* iter_grad[:, 1] ./ eCF1
-        gradient_storage .+= q[j].data[2] .* iter_grad[:, 2] ./ eCF2
-        gradient_storage .+= q[j].data[3] .* iter_grad[:, 3] ./ eCF3
-
-        # @info iter_grad[1,:]
-        # @info round.([eCF1, eCF2, eCF3], digits=4)
-        # @info round.(q[j].data[1:3], digits=4)
-        # @info gradient_storage    # looking for 0.03319137891190929 on first iter in [1]
-        #                           # 0.3143518750118932 on second iter in [1]
+        gradient_incr::Array{Float64} =
+            q[j].data[1] .* iter_grad[:, 1] ./ eCF1 +
+            q[j].data[2] .* iter_grad[:, 2] ./ eCF2 +
+            q[j].data[3] .* iter_grad[:, 3] ./ eCF3
+        
+        lock(thread_lock) do
+            gradient_storage .+= gradient_incr
+        end
     end
-    return total_loss
+    return total_loss[]
 
 end
 
@@ -107,10 +107,6 @@ function compute_eCF_and_gradient_recur!(
     α::Real,
     running_gradient::Array{Float64}=ones(length(params), 3))::Tuple{Float64, Float64}
 
-    # println("------------------------------------------------------------------------")
-    # @info eqn
-    # @info gradient_storage
-
     if eqn.division_H == -1
 
         # Simple treelike block
@@ -122,12 +118,14 @@ function compute_eCF_and_gradient_recur!(
                 # we need to take the derivative
                 for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 2/3*exp_sum : -1/3*exp_sum)
+                    !isnan(gradient_storage[param_idx, k]) || error("NaN: 1")
                 end
             elseif params_seen[param_idx]
                 # don't need to take the derivative, but we do need to
                 # multiple the eCF value onto the gradient
                 for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 1-2/3*exp_sum : 1/3*exp_sum)
+                    !isnan(gradient_storage[param_idx, k]) || error("NaN: 2\n$(eqn.which_coal), $(k)\n$(exp_sum)")
                 end
             end
         end
@@ -162,9 +160,11 @@ function compute_eCF_and_gradient_recur!(
                     # calculate the derivative
                     !params_seen[param_idx] || error("Already seen this param??")
                     gradient_storage[param_idx, eqn.which_coal] += running_gradient[param_idx, eqn.which_coal] .* early_coal_exp_sum
+                    !isnan(gradient_storage[param_idx, eqn.which_coal]) || error("NaN: 3\n$(early_coal_exp_sum)\n$(running_gradient[param_idx,eqn.which_coal])")
                     params_seen[param_idx] = true
                 elseif params_seen[param_idx]
                     gradient_storage[param_idx, eqn.which_coal] += running_gradient[param_idx, eqn.which_coal] .* (1 - early_coal_exp_sum)
+                    !isnan(gradient_storage[param_idx, eqn.which_coal]) || error("NaN: 4")
                 end
             end
         end
@@ -176,7 +176,8 @@ function compute_eCF_and_gradient_recur!(
         for division_idx = 1:4
             split_grad = quad_split_probability_gradient(division_idx, γ, α)
             split_prob = quad_split_probability(division_idx, γ, α)
-            
+            prev_gamma_grad = running_gradient[eqn.division_H, :]   # store here in case `split_grad` is 0.0
+
             # apply running gradient changes
             for param_idx = 1:length(params)
                 if param_idx == eqn.division_H
@@ -197,7 +198,7 @@ function compute_eCF_and_gradient_recur!(
             end
             for param_idx = 1:length(params)
                 if param_idx == eqn.division_H
-                    running_gradient[eqn.division_H, :] ./= split_grad
+                    running_gradient[eqn.division_H, :] .= prev_gamma_grad
                 else
                     running_gradient[param_idx, :] ./= split_prob
                 end

@@ -385,13 +385,21 @@ function find_quartet_equations(net::HybridNetwork)
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
     # Probably need to attach the taxanumbers index to quartet_eqns
-    ts = [1,2,3,4]
-    for j = 1:length(t_combos)
-        # reduced_net = get_reduced_net(reduced_nets, Set{String}(t[ts]), t)
-        # recur_eqns[j] = find_quartet_equations_4taxa(reduced_net, t[ts], param_map)
-        recur_eqns[j] = find_quartet_equations_4taxa(net, t[ts], param_map)     # 625ms, 287MiB
-
-        incr_taxa_idx!(ts)
+    thread_lock::ReentrantLock = ReentrantLock()
+    iter_idx::Int = 1
+    ts::Vector{Int} = Vector{Int}([1,2,3,4])
+    iter_taxa::Vector{String} = String[]
+    Threads.@threads for _ = 1:length(t_combos)
+        # Grab this thread's set of taxa and increment `ts` for the next thread
+        this_iter::Int = 0
+        local iter_taxa
+        lock(thread_lock) do
+            this_iter = iter_idx
+            iter_taxa = t[ts]
+            incr_taxa_idx!(ts)
+            iter_idx += 1
+        end
+        recur_eqns[this_iter] = find_quartet_equations_4taxa(net, iter_taxa, param_map)     # 625ms, 287MiB
     end
 
     return recur_eqns, param_map, params, idx_obj_map, t
