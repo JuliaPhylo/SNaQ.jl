@@ -45,22 +45,34 @@ end
 
 
 
-times = [];
-accs = [];
-max_equivs = [];
-max_eval = [];
-for maxequiv in [10, 50] # [10, 50, 100, 250]
-    for maxeval in [1, 3, 5, 10, 25, 50]
-        for _ = 1:10
-            push!(max_equivs, maxequiv)
-            opt_rt = @elapsed best_net, _ = multi_search(deepcopy(gts[1]), q, 1; runs=1, maxeval=10000, maxequivPLs=maxequiv)
-            push!(times, opt_rt)
-            push!(accs, hardwiredClusterDistance(best_net, net, false))
-        end
+using DataFrames, Gadfly, CSV
+df = DataFrame(
+    times=Float64[], accs=Int[], mean_accs=Float64[],
+    median_accs=Float64[], max_equivs=String[], max_evals=Int[]
+)
+
+
+nruns = 10
+for maxequiv in [1, 10, 50, 100, 500, 1000]
+    for maxeval in [1, 5, 10, 25, 50]
+        print("\rmaxPL=$(maxequiv), maxeval=$(maxeval)        ")
+
+        opt_rt = @elapsed best_net, all_nets, _ = multi_search(deepcopy(gts[1]), q, 1; runs=nruns, maxeval=10000, maxequivPLs=maxequiv, opt_maxeval=maxeval)
+        hwcds = [hardwiredClusterDistance(opt_net, net, false) for opt_net in all_nets]
+        
+        push!(df, [
+            opt_rt, hardwiredClusterDistance(best_net, net, false),
+            mean(hwcds), median(hwcds), "maxequivPLs=$(maxequiv)", maxeval
+        ])
+        CSV.write(joinpath(@__DIR__, "10run_param_perf.csv"), df)
+
+        #p = Gadfly.plot(df, x=:max_equivs, y=:times, color=:max_evals, Geom.point)
+        # stack_df = stack(df, [:times, :accs], variable_name="metric", value_name="value")
+        # p = Gadfly.plot(stack_df, x=:max_evals, y=:value, xgroup=:max_equivs, ygroup=:metric, Geom.subplot_grid(Geom.boxplot))
+        # display(p)
     end
 end
 
-using Plots
 
 
 

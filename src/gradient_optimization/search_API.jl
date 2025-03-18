@@ -45,7 +45,7 @@ API NOT FINALIZED
 function search(N::HybridNetwork, q, hmax::Int;
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
-    maxeval::Int=1500, maxequivPLs::Int=200)
+    maxeval::Int=1500, maxequivPLs::Int=200, opt_maxeval::Int=25)
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
 
@@ -95,7 +95,7 @@ function search(N::HybridNetwork, q, hmax::Int;
         @debug "\tgathering quartets"
         Nprime_qdata, _ = find_quartet_equations(Nprime);
         @debug "\toptimizing BLs"
-        Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata, q)
+        Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata, q; maxeval=opt_maxeval)
         @debug "Optimized network: $(writenewick(Nprime, round=true))"
 
         # 4. Remove hybrids with γ ≈ 0
