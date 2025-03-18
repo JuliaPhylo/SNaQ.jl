@@ -373,20 +373,16 @@ function get_leaves_below_lowest_hybrid(H::Node)
 end
 
 
-function find_quartet_equations(net::HybridNetwork, recur_eqns::Array{QuartetData}=Vector{QuartetData}([]))
+function find_quartet_equations(net::HybridNetwork)
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
 
     t = sort(tipLabels(net))
     t_combos = combinations(t, 4)
-    #quartet_eqns = Array{QEqn}(undef, numq)
+    recur_eqns = Array{QuartetData}(undef, length(t_combos))
 
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
-
-    if length(recur_eqns) == 0
-        recur_eqns = Array{QuartetData}(undef, length(t_combos))
-    end
 
     # Probably need to attach the taxanumbers index to quartet_eqns
     ts = [1,2,3,4]
@@ -461,12 +457,12 @@ end
 
 
 function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)::QuartetData
-    net = deepcopy(net)
-    
+    net = deepcopy(net) # deepcopy b/c we need edge numbers to stay the same
+
     # remove all taxa other than those in `taxa`
     for t in sort(tipLabels(net))
         t in taxa && continue
-        PhyloNetworks.deleteleaf!(net, t, simplify=false, unroot=false, nofuse=true)
+        PhyloNetworks.deleteleaf!(net, t; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
     end
 
     # find and delete degree-2 blobs along external edges

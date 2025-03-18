@@ -4,11 +4,12 @@ using PhyloNetworks;
 function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
     # Semi-directed network attribute that we are enforcing here:
     #   all non-leaf vertices have degree-3
-    length(getroot(N).edge) == 2 || error("Expected the root to have 2 attached edges.")
     sum([E.hybrid for E in getroot(N).edge]) <= 1 || error("Both root edges are hybrids.")
 
     # Fuse root edges and mark the network as no longer rooted
-    PhyloNetworks.fuseedgesat!(N.rooti, N, false)
+    if length(getroot(N).edge) == 2
+        PhyloNetworks.fuseedgesat!(N.rooti, N, false)
+    end
     N.isrooted = false
 
     if check_conditions
@@ -21,11 +22,6 @@ function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
             end
         end
         all(length(e.node) == 2 for e in N.edge) || error("Found edge with ≠2 attached nodes.")
-    end
-
-    max_ID = N.numhybrids + N.numedges
-    for (j, obj) in enumerate(vcat(N.hybrid, N.edge))
-        obj.number = max_ID + j
     end
         
 end

@@ -46,7 +46,9 @@ Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet
 factor data `q` under Dirichlet parameter `α`.
 """
 function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
-    qdata, _, params, _, _, _ = find_quartet_equations(N)
+    N = deepcopy(N)
+    semidirect_network!(N)
+    qdata, _, params, _, _ = find_quartet_equations(N)
     return compute_loss(qdata, params, q, α)
 end
 function compute_loss(qdata::Vector{QuartetData}, params::AbstractVector{<:Real}, q, α::Real=Inf)::Float64

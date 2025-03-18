@@ -72,8 +72,8 @@ function search(N::HybridNetwork, q, hmax::Int;
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
-        Nprime = deepcopy(N);
-        move_proposed = propose_topology(Nprime, hmax)
+        Nprime = readnewick(writenewick(N));
+        move_proposed = propose_topology!(Nprime, hmax)
         moves_proposed[move_proposed] += 1
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
@@ -137,8 +137,6 @@ function search(N::HybridNetwork, q, hmax::Int;
         end
     end
     # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
-    @info moves_proposed
-    @info moves_accepted
 
     return N, logPLs
 
@@ -149,9 +147,9 @@ end
 Takes network `N` and modifies it with topological moves to generate a new proposal network.
 Also updates `Nprime_eqns` in-place to hold the equations of the newly proposed network.
 """
-function propose_topology(N::HybridNetwork, hmax::Int)
+function propose_topology!(N::HybridNetwork, hmax::Int)
 
-    if N.numhybrids < hmax && rand() < 0.75
+    if N.numhybrids < hmax && rand() < 0.50
         @debug "MOVE: add_random_hybrid!"
         add_random_hybrid!(N)
         return 2

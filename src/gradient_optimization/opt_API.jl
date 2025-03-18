@@ -8,13 +8,13 @@ include("CF_equations.jl")
 
 
 
-function optimize_bls!(net::HybridNetwork, blocks, observed_CFs, α::Real=Inf; return_logPL::Bool=false)
+function optimize_bls!(net::HybridNetwork, blocks, observed_CFs, α::Real=Inf; return_logPL::Bool=false, maxeval::Int=25)
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net)
 
     opt = Opt(NLopt.LD_LBFGS, narg)
 
-    opt.maxeval = 25
+    opt.maxeval = maxeval
     opt.ftol_rel = 1e-6
     opt.ftol_abs = 1e-6
     opt.xtol_rel = 1e-3
@@ -82,20 +82,16 @@ function gather_optimization_info(net::HybridNetwork)
 
     param_map = Dict{Int, Int}()
     idx_obj_map = Dict{Int, Union{Node, Edge}}()
-    relevant_objs = Vector{Union{Node,Edge}}()
     max_ID = net.numedges
     param_idx = 1
 
     for obj in vcat(net.hybrid, net.edge)
         if typeof(obj) <: Edge && getchild(obj).leaf continue end
-        push!(relevant_objs, obj)
-    end
 
-    relevant_objs = relevant_objs[sortperm([obj.number for obj in relevant_objs])]
-    for obj in relevant_objs
-        haskey(param_map, obj.number) && error("Duplicate edge/hybrid numbers ($(obj.number))")
-        param_map[obj.number] = length(param_map) + 1
-        idx_obj_map[length(param_map)] = obj
+        obj.number = max_ID + param_idx
+        param_map[obj.number] = param_idx
+        idx_obj_map[param_idx] = obj
+        param_idx += 1
     end
 
     params = gather_params(net, param_map)
