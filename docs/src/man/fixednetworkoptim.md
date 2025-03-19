@@ -14,7 +14,11 @@ a multiple of the negative log pseudo-likelihood up to an additive constant
 
 Following our example in [Estimating a network](@ref),
 we can optimize parameters on the true network
-(the one originally used to simulate the data):
+(the one originally used to simulate the data). 
+Given a table of CFs and a network,
+the function [`topologymaxQpseudolik!`](@ref)
+returns the same network topology
+but with optimized branch lengths and inheritance values:
 
 ```@setup fixednetworkoptim
 using PhyloNetworks, SNaQ, DataFrames
@@ -50,7 +54,8 @@ This begs the question: is the true network within the "range" of uncertainty?
 We can run a [Bootstrap](@ref) analysis to measure uncertainty
 in our network inference.
 
-For a more thorough optimization, we should increase the requirements before
+For a more thorough optimization, we could change the arguments for the tolerances
+(`ftolRel` and `xtolAbs`) used to determine when the parameters are optimized and
 the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
@@ -73,7 +78,7 @@ given network is of level 1 (cycles don't overlap).
 
 ## Candidate networks compatible with a known outgroup
 
-If the network was estimated via `snaq!`, it might turn out to be impossible
+If the network was estimated via [`snaq!`](@ref), it might turn out to be impossible
 to root our estimated network with a known outgroup.
 At this time, `snaq!` does not impose any rooting constraint on the network:
 the search for the lowest score considers all level-1 networks, including those
@@ -81,7 +86,7 @@ that are incompatible with a known outgroup.
 (The monophyly of outgroups is not imposed either, like in many other methods.)
 
 If the estimated network cannot be rooted with the known outgroup,
-we can check the `.networks` output file.
+we can check the `.networks` output file for a possible alternative network.
 It has a list of networks that are slight modifications of the best network,
 where the modifications changed the direction of one reticulation at a time.
 For each modified network, the score was calculated. So if we find in this list
@@ -108,18 +113,19 @@ file = joinpath(dirname(pathof(SNaQ)), "..","examples","net1.networks");
 netlist = readmultinewick(file) # read the full list of networks in that file
 ```
 Next, we would like to extract the network scores from the file.
-Below is a one-liner to do this
-(we make Julia send a `sed` command to the shell --sorry, Mac or Linux for this.)
+Below is some code for doing this in julia
 ```@repl fixednetworkoptim
-scoresInString = read(`sed -E 's/.+with -loglik ([0-9]+.[0-9]+).+/\1/' $file`, String)
-scores = parse.(Float64, split(scoresInString))
+score_in_string = read(file, String); # read the file as a single string
+score_in_string = (x-> x[1]).(collect(eachmatch(r"with -loglik ([0-9]+.[0-9]+)",score_in_string))); # find all occurences of the loglik scores
+scores = parse.(Float64, score_in_string); # parse those matches into numbers
+
 # next: update the "loglik" of each network with the score read from the file
 for i in eachindex(netlist)
-   netlist[i].loglik = scores[i]
+   netlist[i].fscore = scores[i]
    println("net $i in the list: score = ",scores[i])
 end
 ```
-The first network in the list is the best network returned by `snaq!`.
+The first network in the list is the best network returned by [`snaq!`](@ref).
 We see that the second network has a score that's not too far, but the other networks
 have worse scores. The best network and its best modification (second network in the
 list) are shown below. We chose to show edge numbers, to use them later
@@ -139,7 +145,7 @@ nothing # hide
 ![othernets before reroot](../assets/figures/fixednetworkoptim_othernets1.svg)
 
 Now imagine that our outgroup is taxon A.
-- best network: we would get a "RootMismatch" error if we tried to set
+- best network: we would get a `RootMismatch` error if we tried to set
   the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
   (see the PhyloNetworks guide 
   [Does the root conflict with the direction of a reticulation?](@extref)).

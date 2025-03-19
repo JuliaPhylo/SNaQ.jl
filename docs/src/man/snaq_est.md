@@ -96,11 +96,11 @@ Additionally, providing a file name for the optional argument `CFile` saves the 
 
 #### CFs from large datasets
 When we want to get *all* quartet CFs, 
-the `readtrees2CF` is *much* slower than the PhyloNetworks function [`countquartetsintrees`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.countquartetsintrees)
+the [`readtrees2CF`](@ref) is *much* slower than the PhyloNetworks function [`PhyloNetworks.countquartetsintrees`](@extref)
 to read in trees and calculate the quartet CFs observed in the trees:
 
 ```@repl qcf
-trees = readmultinewick(raxmltrees)
+trees = readmultinewick(raxmltrees);
 q,t = countquartetsintrees(trees);
 nt = tablequartetCF(q,t); # named tuple
 using DataFrames
@@ -119,7 +119,7 @@ saved as a table in this format
 | D      | A| E | O|   0.565 |       0.0903 |       0.3447
 | ...    |  |   |  |         |              |       ...
 
-then we could read it in one step using the`readtableCF` function.
+then we could read it in one step using the [`readtableCF`](@ref) function.
 
 Concordance factors (CF), i.e. gene tree frequencies, for each
 4-taxon subset can be obtained from [BUCKy](http://www.stat.wisc.edu/~ane/bucky/)
@@ -135,8 +135,8 @@ buckyCFfile = joinpath(dirname(pathof(SNaQ)), "..","examples","buckyCF.csv");
 buckyCF = readtableCF(buckyCFfile)
 ```
 The same thing could be done in 2 steps:
-first to read the file and convert it to a 'DataFrame' object,
-and then to convert this DataFrame into a DataCF object.
+first to read the file and convert it to a `DataFrame` object from the [`DataFrames`](https://dataframes.juliadata.org/stable/) package
+and then to convert this `DataFrame` into a [`DataCF`](@ref) object.
 ```@repl qcf
 using CSV, DataFrames
 dat = CSV.read(buckyCFfile, DataFrame);
@@ -266,11 +266,11 @@ less("net1.networks") # extra info
 when viewing these result files with `less`
 within Julia, use arrows to scroll down and type `q` to quit viewing the files.
 - The `.networks` file contains a list of networks that are slight modifications
-of the best (estimated) network `net1`. The modifications change the direction
-of one reticulation at a time, by moving the placement of one hybrid node to another
-node inside the same cycle.
-For each modified network, the pseudolikelihood score was calculated
-(the `loglik` or `-Ploglik` values give a pseudo deviance actually).
+  of the best (estimated) network `net1`. The modifications change the direction
+  of one reticulation at a time, by moving the placement of one hybrid node to another
+  node inside the same cycle.
+  For each modified network, the pseudolikelihood score was calculated
+  (the `loglik` or `-Ploglik` values give a pseudo deviance actually).
 
 - The `.out` file contains the best network among all runs, and the best
   network per run, includes also the pseudolikelihood score and the
@@ -278,11 +278,10 @@ For each modified network, the pseudolikelihood score was calculated
 
 - The `.log` file contains a description of each run, convergence criterion, and seed information.
 
-- The `.err` file has seed information on runs that failed, empty when nothing failed. In the case of a failed run, 
-you could run the `snaqDebug` function on the same settings that caused the error (to help us debug).
+- The `.err` file has seed information on runs that failed, empty when nothing failed.
 
 
-The function name `snaq!` ends with ! because it modifies the argument `raxmlCF`
+The function name [`snaq!`](@ref) ends with ! because it modifies the argument `raxmlCF`
 by including the expected CF. Type `?` then `snaq!` to get help on that function.
 
 The main output file, here `net1.out` (or `snaq.out` by default) has the estimated
@@ -385,8 +384,9 @@ Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia)
   different runs to different cores, like we did earlier.
 - For long jobs, run as a script in the terminal: `julia runSNaQ.jl`,
   arguments to the script are passed to Julia as a vector called `ARGS`.
-  See the example script `runSNaQ.jl` in the folder `data_results/scripts/`.
-  more on this topic in here: [Parallel computations](@ref)
+  See the example script `runSNaQ.jl` in the `examples` folder of SNaQ,
+  or the file located [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/runSNaQ.jl).
+  More on this topic in here: [Parallel computations](@ref)
 
 
 > This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)

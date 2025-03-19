@@ -24,7 +24,7 @@ different cores for different runs, as processors become available.
 Fewer details are printed to the log file when multiple cores
 are used in parallel.
 
-When running `bootsnaq`, the analysis of each bootstrap replicate
+When running [`bootsnaq`](@ref), the analysis of each bootstrap replicate
 will use multiple cores to parallelize separate runs of that particular
 bootstrap replicate. You may parallelize things further by running
 `bootsnaq` multiple times (on separate machines for instance), each time
@@ -36,7 +36,7 @@ At any time during the julia session, `nworkers()` tells us how many
 worker processors julia has access to.
 
 Below is an example of how to use a cluster, to run many independent
-`snaq!` searches in parallel on a cluster running the
+[`snaq!`](@ref) searches in parallel on a cluster running the
 [slurm](https://slurm.schedmd.com) job manager
 (other managers would require a different, but similar submit file).
 This example uses 2 files:
@@ -47,7 +47,7 @@ This example uses 2 files:
    (to run 50 runs instead of 10, say).
 2. a submit file, to launch the julia script.
 
-**First**: the example julia script, below, is assumed (by the submit file)
+**First**: the example julia script, below or [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/runSNaQ.jl), is assumed (by the submit file)
 to be called `runSNaQ.jl`. It uses a starting tree that
 is assumed to be available in a file named `astraltree.tre`, but that
 could be modified
@@ -93,7 +93,7 @@ So if we call a script like this: `julia runSNaQ.jl 2`
 then the script will know the arguments through `ARGS`,
 which would contain a single element, `"2"`.
 This first element is just a string, at this stage. We want to use it as a number,
-so we ask julia to parse the string into an integer.
+so we need to ask julia to parse the string into an integer.
 
 **Second**: we need a "submit" file to ask a job scheduler like
 [slurm](https://slurm.schedmd.com) to submit our julia script to a cluster.
