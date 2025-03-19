@@ -27,14 +27,14 @@ end
 """
 Randomly selects pairs of edges to use with `add_hybrid!` until a valid pair is found.
 """
-function add_random_hybrid!(N::HybridNetwork)
+function add_random_hybrid!(N::HybridNetwork, rng::TaskLocalRNG)
 
     niter::Int = 0
     e1::Edge = N.edge[1]    # placeholders
     e2::Edge = N.edge[1]
 
     while niter < 1000
-        e1, e2 = sample(N.edge, 2, replace=false)
+        e1, e2 = sample(rng, N.edge, 2, replace=false)
         is_valid_add_hybrid(e1, e2, N) && return add_hybrid!(e1, e2, N)
         is_valid_add_hybrid(e2, e1, N) && return add_hybrid!(e2, e1, N)
     end

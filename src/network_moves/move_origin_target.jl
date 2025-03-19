@@ -7,7 +7,7 @@ import PhyloNetworks: getOtherNode
 Selects a random edge that is very near the origin of `hybrid` to perform
 the [`move_reticulate_origin`](@ref) move on.
 """
-function move_random_reticulate_origin_local!(hybrid::Node, N::HybridNetwork)
+function move_random_reticulate_origin_local!(hybrid::Node, N::HybridNetwork, rng::TaskLocalRNG)
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
 
     minor_edge = getparentedgeminor(hybrid)
@@ -15,7 +15,7 @@ function move_random_reticulate_origin_local!(hybrid::Node, N::HybridNetwork)
 
     candidate_edges = reduce(vcat, [[next_edge for next_edge in getOtherNode(e, origin).edge if next_edge != e] for e in origin.edge if e != minor_edge])
 
-    for j in sample(1:length(candidate_edges), length(candidate_edges), replace=false)
+    for j in sample(rng, 1:length(candidate_edges), length(candidate_edges), replace=false)
         is_valid_move_reticulate_origin(hybrid, candidate_edges[j], N) && return move_reticulate_origin!(hybrid, candidate_edges[j], N)
     end
 
@@ -27,7 +27,7 @@ end
 Selects a random edge that is very near the node `hybrid` to perform
 the [`move_reticulate_target`](@ref) move on.
 """
-function move_random_reticulate_target_local!(hybrid::Node, N::HybridNetwork)
+function move_random_reticulate_target_local!(hybrid::Node, N::HybridNetwork, rng::TaskLocalRNG)
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
 
     major_parent = getparent(getparentedge(hybrid))
@@ -39,7 +39,7 @@ function move_random_reticulate_target_local!(hybrid::Node, N::HybridNetwork)
         push!(candidate_edges, getparentedge(child))
     end
 
-    for j in sample(1:length(candidate_edges), length(candidate_edges), replace=false)
+    for j in sample(rng, 1:length(candidate_edges), length(candidate_edges), replace=false)
         is_valid_move_reticulate_target(hybrid, candidate_edges[j], N) && return move_reticulate_target!(hybrid, candidate_edges[j], N)
     end
     

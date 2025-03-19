@@ -1,4 +1,6 @@
-using PhyloNetworks, Random
+using PhyloNetworks, Random, Distributed
+include("CF_equations.jl")
+include("opt_API.jl")
 include("../network_moves/add_remove_retic.jl")
 include("../network_moves/rNNI_moves.jl")
 include("../network_moves/rSPR_moves.jl")
@@ -11,7 +13,7 @@ API_WARNED = false
 """
 API NOT FINALIZED
 """
-function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, kwargs...)
+function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=abs(rand(Int) % 100000), kwargs...)
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
 
     global API_WARNED
@@ -20,35 +22,54 @@ function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, kwargs...)
         API_WARNED = true
     end
 
+    # Prep data
     N = readnewick(writenewick(N)); N.isrooted = false;
-    perform_random_rNNI!(N, [1.0, 0.0, 0.0, 0.0])
 
-    # Results from runs
-    nets = Array{HybridNetwork}(undef, runs)
-    logPLs = Array{Float64}(undef, runs)
+    # Generate per-run seeds
+    Random.seed!(seed)
+    run_seeds = abs.(rand(Int, runs) .% 100000)
 
-    # Do the runs
+    # Do the runs distributed
+    nets_and_PLs = Distributed.pmap(1:runs) do j
+        return search(N, q, hmax; seed = run_seeds[j], kwargs...)
+    end
+
+    # Consolidate return data
+    all_nets = Array{HybridNetwork}(undef, runs)
+    all_logPLs = zeros(Float64, runs)
     for j = 1:runs
-        nets[j], all_logPLs = search(N, q, hmax; kwargs...)
-        logPLs[j] = all_logPLs[length(all_logPLs)]
+        all_nets[j], all_logPLs[j] = nets_and_PLs[j]
     end
 
     # Return
-    sort_idx = sortperm(logPLs, rev=true)
-    return nets[sort_idx[1]], nets[sort_idx], logPLs[sort_idx]
+    sort_idx = sortperm(all_logPLs, rev=true)
+    return all_nets[sort_idx[1]], all_nets[sort_idx], all_logPLs[sort_idx]
 end
 
 
 """
 API NOT FINALIZED
 """
-function search(N::HybridNetwork, q, hmax::Int;
+function search(
+    N::HybridNetwork, q, hmax::Int;
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
-    maxeval::Int=1500, maxequivPLs::Int=200, opt_maxeval::Int=25)
+    propQuartets::Real=1.0,
+    maxeval::Int=1500,
+    maxequivPLs::Int=200,
+    opt_maxeval::Int=25,
+    seed::Int=abs(rand(Int) % 100000)
+)
+    # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
+    1 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
+    0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
 
+    # Set the seed
+    rng = Random.seed!(seed)
+
+    # TODO: remove this once API finalized
     global API_WARNED
     if !API_WARNED
         @warn "API NOT YET FINALIZED"
@@ -57,11 +78,11 @@ function search(N::HybridNetwork, q, hmax::Int;
 
     N = readnewick(writenewick(N));
     semidirect_network!(N)
+    perform_random_rNNI!(N, rng)
 
     logPLs = Array{Float64}(undef, maxeval)
     N_qdata, _, N_params, _ = find_quartet_equations(N);
     logPLs[1] = compute_loss(N_qdata, N_params, q, α);
-    prop_Ns = [N];
     unchanged_iters = 0
 
     moves_proposed = zeros(9)
@@ -73,7 +94,7 @@ function search(N::HybridNetwork, q, hmax::Int;
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
         Nprime = readnewick(writenewick(N));
-        move_proposed = propose_topology!(Nprime, hmax)
+        move_proposed = propose_topology!(Nprime, hmax, rng)
         moves_proposed[move_proposed] += 1
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
@@ -111,9 +132,6 @@ function search(N::HybridNetwork, q, hmax::Int;
             remove_hybrid!(bad_H, N)
         end
 
-        # 4. Compute logPL
-        push!(prop_Ns, Nprime)
-
         # 5. Accept / reject
         if Nprime_logPL === NaN || abs(Nprime_logPL) < 1e-100
             error("Nprime_logPL = $(Nprime_logPL)")
@@ -138,7 +156,7 @@ function search(N::HybridNetwork, q, hmax::Int;
     end
     # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
 
-    return N, logPLs
+    return N, logPLs[length(logPLs)]
 
 end
 
@@ -147,31 +165,31 @@ end
 Takes network `N` and modifies it with topological moves to generate a new proposal network.
 Also updates `Nprime_eqns` in-place to hold the equations of the newly proposed network.
 """
-function propose_topology!(N::HybridNetwork, hmax::Int)
+function propose_topology!(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
 
-    if N.numhybrids < hmax && rand() < 0.50
+    if N.numhybrids < hmax && rand(rng) < 0.50
         @debug "MOVE: add_random_hybrid!"
-        add_random_hybrid!(N)
+        add_random_hybrid!(N, rng)
         return 2
     end
 
-    if rand() < 0.5
+    if rand(rng) < 0.5
 
         @debug "MOVE: perform_random_rNNI!"
-        return 2 + perform_random_rNNI!(N)
+        return 2 + perform_random_rNNI!(N, rng)
     
     else
 
         try
-            if rand() < 0.5
+            if rand(rng) < 0.5
                 @debug "move_random_reticulate_origin!"
                 # move_random_reticulate_origin!(N)
-                move_random_reticulate_origin_local!(sample(N.hybrid), N)
+                move_random_reticulate_origin_local!(sample(rng, N.hybrid), N, rng)
                 return 7
             else
                 @debug "move_random_reticulate_target!"
                 # move_random_reticulate_target!(N)
-                move_random_reticulate_target_local!(sample(N.hybrid), N)
+                move_random_reticulate_target_local!(sample(rng, N.hybrid), N, rng)
                 return 8
             end
         catch
@@ -180,7 +198,7 @@ function propose_topology!(N::HybridNetwork, hmax::Int)
     end
 
     @debug "MOVE: perform_random_rNNI!"
-    return 2 + perform_random_rNNI!(N)
+    return 2 + perform_random_rNNI!(N, rng)
 
 end
 
