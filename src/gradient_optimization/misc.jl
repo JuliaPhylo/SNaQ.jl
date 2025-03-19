@@ -37,3 +37,15 @@ function get_params(net::HybridNetwork)
     end
     return vals
 end
+
+
+"""
+Helper function that generates a `BitVector` with `n` indices where each
+entry has probability `p` of being `true`.
+
+We return a `BitVector` instead of `Array{Int}` or `Array{Bool}`, for
+example, because it leads to best performance when subsetting.
+"""
+sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::BitVector = rand(rng, Float64, n) .<= p
+
+
