@@ -17,11 +17,11 @@ end
 
 function generate_net(n::Int, h::Int, seed::Int=42)
     (n > 0 && h > 0) || error("n and h must be >0 (n=$(n), h=$(h))")
-    Random.seed!(seed)
+    rng = Random.seed!(seed)
 
     net = generate_tree(n, seed)
     for j = 1:h
-        add_random_hybrid!(net)
+        add_random_hybrid!(net, rng)
     end
     return net
 end
