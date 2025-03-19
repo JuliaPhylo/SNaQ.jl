@@ -7,8 +7,27 @@ include("CF_equations.jl")
 
 
 
+function optimize_topology!(Nprime::HybridNetwork, q, propQuartets::Real, opt_maxeval::Int, rng::TaskLocalRNG)
+    @debug "\tGather quartet equations."
+    Nprime_qdata, Nprime_param_map, _ = find_quartet_equations(Nprime);
 
-function optimize_bls!(net::HybridNetwork, blocks, observed_CFs, α::Real=Inf; return_logPL::Bool=false, maxeval::Int=25)
+    @debug "\tOptimizing branch lengths."
+    subq = sample_qindices(length(Nprime_qdata), propQuartets, rng)
+    Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata[subq], q[subq]; maxeval=opt_maxeval)
+
+    return Nprime_logPL, Nprime_qdata, gather_params(Nprime, Nprime_param_map)
+end
+
+
+
+function optimize_bls!(
+    net::HybridNetwork,
+    eqns::Array{QuartetData},
+    observed_CFs,
+    α::Real=Inf;
+    return_logPL::Bool=false,
+    maxeval::Int=25
+)
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net)
 
@@ -24,7 +43,7 @@ function optimize_bls!(net::HybridNetwork, blocks, observed_CFs, α::Real=Inf; r
     opt.lower_bounds = LB
     opt.upper_bounds = UB
 
-    NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, blocks, observed_CFs, idx_obj_map, α))
+    NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, fill(0.1, narg))
 
     return minf

@@ -55,7 +55,7 @@ function search(
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
-    maxeval::Int=1500,
+    maxeval::Int=1e8,
     maxequivPLs::Int=200,
     opt_maxeval::Int=25,
     seed::Int=abs(rand(Int) % 100000)
@@ -82,7 +82,8 @@ function search(
 
     logPLs = Array{Float64}(undef, maxeval)
     N_qdata, _, N_params, _ = find_quartet_equations(N);
-    logPLs[1] = compute_loss(N_qdata, N_params, q, α);
+    subq = sample_qindices(length(N_qdata), propQuartets, rng)
+    logPLs[1] = compute_loss(N_qdata[subq], N_params, q[subq], α);
     unchanged_iters = 0
 
     moves_proposed = zeros(9)
@@ -112,12 +113,9 @@ function search(
             continue
         end
 
-        # 3. Optimize branch lengths
-        @debug "\tgathering quartets"
-        Nprime_qdata, _ = find_quartet_equations(Nprime);
-        @debug "\toptimizing BLs"
-        Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata, q; maxeval=opt_maxeval)
-        @debug "Optimized network: $(writenewick(Nprime, round=true))"
+        # 3. Optimize branch lengths and compute logPL
+        Nprime_logPL, Nprime_qdata, Nprime_params =
+            optimize_topology!(Nprime, q, propQuartets, opt_maxeval, rng)
 
         # 4. Remove hybrids with γ ≈ 0
         bad_H = nothing
@@ -133,13 +131,19 @@ function search(
         end
 
         # 5. Accept / reject
-        if Nprime_logPL === NaN || abs(Nprime_logPL) < 1e-100
-            error("Nprime_logPL = $(Nprime_logPL)")
-        end
-
+        (Nprime_logPL === NaN || abs(Nprime_logPL) < eps()) && error("""
+            Nprime_logPL = $(Nprime_logPL)
+            $(writenewick(Nprime, round=true))
+            $(length(Nprime_qdata))
+            $(Nprime_params)
+        """)
         if Nprime_logPL - logPLs[j-1] > 1e-8
+            # Update current topology info
             N = Nprime
+            N_params = Nprime_params
             logPLs[j] = Nprime_logPL
+
+            # Update tracking vars
             unchanged_iters = 0
             moves_accepted[move_proposed] += 1
         else

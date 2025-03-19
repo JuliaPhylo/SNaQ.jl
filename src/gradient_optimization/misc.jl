@@ -46,6 +46,17 @@ entry has probability `p` of being `true`.
 We return a `BitVector` instead of `Array{Int}` or `Array{Bool}`, for
 example, because it leads to best performance when subsetting.
 """
-sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::BitVector = rand(rng, Float64, n) .<= p
+function sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::BitVector
+    # We take n*p quartets instead of randomly sampling with
+    # probability p so that we don't get any bad edge cases
+    np = ceil(Int, n*p)
+    np = max(np, min(n, 10))
+
+    bv = falses(n)
+    idxs = sample(rng, 1:n, np, replace=false)
+    bv[idxs] .= true
+    return bv
+end
+
 
 
