@@ -1,7 +1,8 @@
 # SNaQ
 
 [SNaQ](https://github.com/JuliaPhylo/SNaQ.jl) is a [Julia](http://julialang.org)
-package that implements the SNaQ method by
+package as a part of the [JuliaPhylo](https://juliaphylo.github.io/JuliaPhyloWebsite/) software ecosystem.
+ The package implements the SNaQ method by
 [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 to estimate a phylogenetic network from quartet concordance factors.
 See the [PhyloNetworks](https://github.com/JuliaPhylo/PhyloNetworks.jl)
@@ -10,7 +11,7 @@ and for how to get help.
 
 Join the PhyloNetworks google group for updates
 [here]
-(https://groups.google.com/forum/#!forum/phylonetworks-users/new).
+(https://groups.google.com/g/juliaphylo-users).
 
 More information about the pre-processing steps to get the input data for SNaQ can be found in [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/) and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/).
 
@@ -35,17 +36,19 @@ See the references in
 ## Manual
 
 ```@contents
-Pages = ["man/installation.md",
-         "man/ticr_howtogetQuartetCFs.md",
-         "man/snaq_est.md",
-         "man/fixednetworkoptim.md",
-         "man/expectedCFs.md",
-         "man/bootstrap.md",
-         "man/parallelcomputation.md",
-         "man/multiplealleles.md",
-         "man/error_reporting.md"]
-Depth = 1
+Pages = ["man\\installation.md",
+         "man\\ticr_howtogetQuartetCFs.md",
+         "man\\snaq_est.md",
+         "man\\fixednetworkoptim.md",
+         "man\\expectedCFs.md",
+         "man\\bootstrap.md",
+         "man\\parallelcomputation.md",
+         "man\\multiplealleles.md",
+         "man\\error_reporting.md"]
+Depth = 3
 ```
+
+## Library
 
 For help on individual functions, see the library:
 
