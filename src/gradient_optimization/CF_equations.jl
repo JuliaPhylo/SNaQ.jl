@@ -373,33 +373,52 @@ function get_leaves_below_lowest_hybrid(H::Node)
 end
 
 
-function find_quartet_equations(net::HybridNetwork)
+"""
+Gathers a vector of `QuartetData` objects that define the expected
+quartet concordance factors of `net`.
+"""
+find_quartet_equations(net::HybridNetwork) =
+    find_quartet_equations(net, collect(1:nchoose4taxa_length(net)))
+
+"""
+Gathers a vector of `QuartetData` objects that define the expected
+quartet concordance factors of `net`. `q_idxs` is a `Vector{Int}` that
+must be of length exactly (`net.numtaxa` choose 4). Each index of
+`q_idxs` corresponds to a quartet whose equation will be computed.
+"""
+function find_quartet_equations(net::HybridNetwork, sampled_quartets::Vector{Int})
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
 
+    # Relevant data to be returned
     t = sort(tipLabels(net))
-    t_combos = combinations(t, 4)
-    recur_eqns = Array{QuartetData}(undef, length(t_combos))
-
+    recur_eqns = Array{QuartetData}(undef, length(sampled_quartets))
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
-    # Probably need to attach the taxanumbers index to quartet_eqns
+    # Relevant loop vars
     thread_lock::ReentrantLock = ReentrantLock()
-    iter_idx::Int = 1
+    q_idx::Int = 0
+    t_idx::Int = 1
     ts::Vector{Int} = Vector{Int}([1,2,3,4])
-    iter_taxa::Vector{String} = String[]
-    Threads.@threads for _ = 1:length(t_combos)
-        # Grab this thread's set of taxa and increment `ts` for the next thread
-        this_iter::Int = 0
-        local iter_taxa
+
+    Threads.@threads for _ = 1:length(sampled_quartets)
+        # Define a local variable b/c using `q_idx` would lead to race conditions
+        this_iter_idx::Int = 0
+        iter_taxa::Vector{String} = String[]
+
         lock(thread_lock) do
-            this_iter = iter_idx
+            # Grab the taxa for this iteration and move forward the tickers
+            q_idx += 1
+            next_t_idx::Int = sampled_quartets[q_idx]
+            while t_idx < next_t_idx
+                incr_taxa_idx!(ts)
+                t_idx += 1
+            end
+            this_iter_idx = q_idx
             iter_taxa = t[ts]
-            incr_taxa_idx!(ts)
-            iter_idx += 1
         end
-        recur_eqns[this_iter] = find_quartet_equations_4taxa(net, iter_taxa, param_map)     # 625ms, 287MiB
+        recur_eqns[this_iter_idx] = find_quartet_equations_4taxa(net, iter_taxa, param_map)     # 625ms, 287MiB
     end
 
     return recur_eqns, param_map, params, idx_obj_map, t

@@ -1,4 +1,4 @@
-using PhyloNetworks, Plots, SNaQ, DataFrames, Random
+using PhyloNetworks, Plots, SNaQ, DataFrames, Random, Distributed
 include("../../src/network_moves/rNNI_moves.jl")
 include("../../src/network_moves/rSPR_moves.jl")
 include("../../src/gradient_optimization/opt_API.jl")
@@ -16,7 +16,7 @@ q, t = countquartetsintrees(gts, showprogressbar=false);
 df = readtableCF(DataFrame(tablequartetCF(q, t)));
 tre0 = readnewick(writenewick(gts[1]));
 #perform_random_rNNI!(tre0);
-true_logPL = compute_loss(net, q)   # -0.006968661910628324
+true_logPL = compute_loss(net, q)   # -0.00696866191062832
 #############
 
 
@@ -30,6 +30,20 @@ for_loop_rt = @elapsed for_loop_best, for_loop_nets, _ = multi_search(deepcopy(g
 pmap_rt = @elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; seed=0, runs=10, maxeval=10000, maxequivPLs=500)
 println([hardwiredClusterDistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
 
+
+@everywhere include("../../src/gradient_optimization/search_API.jl")
+
+@elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; propQuartets=0.5, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
+@elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; propQuartets=1.0, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
+
+
+println([hardwiredClusterDistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
+
+
+
+
+
+#[0, 0, 4, 4, 6, 6, 6, 8, 8, 8]
 
 # 3 proc, 4 thread:  31.31s
 # 3 proc, 1 thread:  73.44s

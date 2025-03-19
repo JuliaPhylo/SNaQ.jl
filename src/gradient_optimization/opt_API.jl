@@ -7,16 +7,27 @@ include("CF_equations.jl")
 
 
 
-function optimize_topology!(Nprime::HybridNetwork, q, propQuartets::Real, opt_maxeval::Int, rng::TaskLocalRNG)
-    @debug "\tGather quartet equations."
-    Nprime_qdata, Nprime_param_map, _ = find_quartet_equations(Nprime);
+function optimize_topology!(Nprime::HybridNetwork, q, propQuartets::Real, opt_maxeval::Int, rng::TaskLocalRNG, α::Real)
+    @debug "\tGathering quartet equations."
+    q_idxs = sample_qindices(Nprime, propQuartets, rng)
+    Nprime_qdata, Nprime_param_map, _ = find_quartet_equations(Nprime, q_idxs);
 
     @debug "\tOptimizing branch lengths."
-    subq = sample_qindices(length(Nprime_qdata), propQuartets, rng)
-    Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata[subq], q[subq]; maxeval=opt_maxeval)
+    Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata, q[q_idxs], α; maxeval=opt_maxeval)
 
-    return Nprime_logPL, Nprime_qdata, gather_params(Nprime, Nprime_param_map)
+    return Nprime_logPL
 end
+
+
+function compute_loss(N::HybridNetwork, q, propQuartets::Real, rng::TaskLocalRNG, α::Real)::Float64
+    @debug "\tGathering quartet equations."
+    q_idxs = sample_qindices(N, propQuartets, rng)
+    N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
+
+    @debug "\tComputing loss."
+    return compute_loss(N_qdata, N_params, q[q_idxs], α)
+end
+
 
 
 

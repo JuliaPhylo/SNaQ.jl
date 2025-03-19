@@ -40,22 +40,28 @@ end
 
 
 """
-Helper function that generates a `BitVector` with `n` indices where each
-entry has probability `p` of being `true`.
-
-We return a `BitVector` instead of `Array{Int}` or `Array{Bool}`, for
-example, because it leads to best performance when subsetting.
+Helper function that generates a `Vector{Int}` with `n` indices where each
+integer from 1 to `n` has probability `p` of appearing.
 """
-function sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::BitVector
+function sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::Vector{Int}
     # We take n*p quartets instead of randomly sampling with
     # probability p so that we don't get any bad edge cases
     np = ceil(Int, n*p)
     np = max(np, min(n, 10))
 
     bv = falses(n)
-    idxs = sample(rng, 1:n, np, replace=false)
-    bv[idxs] .= true
-    return bv
+    return sort(sample(rng, 1:n, np, replace=false))
+end
+sample_qindices(net::HybridNetwork, p::Real, rng::TaskLocalRNG)::Vector{Int} =
+    sample_qindices(nchoose4taxa_length(net), p, rng)
+
+
+"""
+Helper function that calculates how many quartet combinations exist.
+"""
+@inline function nchoose4taxa_length(net::HybridNetwork)::Int
+    n = net.numtaxa
+    return n * (n-1) * (n-2) * (n-3) ÷ 24
 end
 
 

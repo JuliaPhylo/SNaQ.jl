@@ -81,9 +81,7 @@ function search(
     perform_random_rNNI!(N, rng)
 
     logPLs = Array{Float64}(undef, maxeval)
-    N_qdata, _, N_params, _ = find_quartet_equations(N);
-    subq = sample_qindices(length(N_qdata), propQuartets, rng)
-    logPLs[1] = compute_loss(N_qdata[subq], N_params, q[subq], α);
+    logPLs[1] = compute_loss(N, q, propQuartets, rng, α)
     unchanged_iters = 0
 
     moves_proposed = zeros(9)
@@ -114,8 +112,7 @@ function search(
         end
 
         # 3. Optimize branch lengths and compute logPL
-        Nprime_logPL, Nprime_qdata, Nprime_params =
-            optimize_topology!(Nprime, q, propQuartets, opt_maxeval, rng)
+        Nprime_logPL = optimize_topology!(Nprime, q, propQuartets, opt_maxeval, rng, α)
 
         # 4. Remove hybrids with γ ≈ 0
         bad_H = nothing
@@ -134,13 +131,10 @@ function search(
         (Nprime_logPL === NaN || abs(Nprime_logPL) < eps()) && error("""
             Nprime_logPL = $(Nprime_logPL)
             $(writenewick(Nprime, round=true))
-            $(length(Nprime_qdata))
-            $(Nprime_params)
         """)
         if Nprime_logPL - logPLs[j-1] > 1e-8
             # Update current topology info
             N = Nprime
-            N_params = Nprime_params
             logPLs[j] = Nprime_logPL
 
             # Update tracking vars
