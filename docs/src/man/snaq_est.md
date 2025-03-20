@@ -50,9 +50,10 @@ to go from multiple sequence alignments
 to a table of quartet gene frequencies (concordance factors: CFs),
 through BUCKy (to integrate out gene tree uncertainty) or through RAxML
 (see also the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
-This pipeline starts from the sequence alignments and 
-runs MrBayes to estimate gene trees and then BUCKy (both parallelized), producing the
-table of estimated CFs and their credibility intervals.
+This pipeline uses sequence alignments
+in MrBayes to estimate gene trees,
+then BUCKy to produce the table of estimated CFs and their credibility intervals.
+Both steps in this pipeline are parallelized. 
 
 #### CFs from gene trees 
 

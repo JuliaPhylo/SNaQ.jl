@@ -49,7 +49,7 @@ can be read in a new session with
 a different file (perhaps after having re-rooted them with an
 outgroup), we could do this: `writeMultiTopology(bootnet, "bootstrapNets.tre")`.
 
-The example above creates for 10 bootstrap replicates,
+The example above creates 10 bootstrap replicates,
 which is definitely too few, to make the example run faster.
 We might also increase the number of optimization runs (`runs`)
 done for each bootstrap replicate. The following bootstrap was run with the
