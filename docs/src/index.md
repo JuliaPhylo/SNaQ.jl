@@ -37,7 +37,6 @@ See the references in
 
 ```@contents
 Pages = ["man\\installation.md",
-         "man\\ticr_howtogetQuartetCFs.md",
          "man\\snaq_est.md",
          "man\\fixednetworkoptim.md",
          "man\\expectedCFs.md",

@@ -57,7 +57,7 @@ summarizedataCF(d_sp)
 
 Four-taxon sets involving 2 individuals per species can provide more
 information about the underlying network, including external branch
-length in coalescent units. However, `snaq!` runs more slowly when
+length in coalescent units. However, [`snaq!`]()@ref) runs more slowly when
 using this extra information. To get quartet CFs from sets of 4 individuals
 in which 2 individuals are from the same species, the following functions
 should be used:
@@ -75,7 +75,7 @@ named `allele` (or `individual`) and `species`, mapping each allele name to a sp
 The data in `df_ind` is the table of concordance factors at the level of individuals.
 In other words, it lists CFs using one row for each set of 4 alleles/individuals.
 
-`mapallelesCFtable` creates a new data frame `df_sp` of quartet concordance factors at the
+Here [`mapallelesCFtable`](@ref) creates a new data frame `df_sp` of quartet concordance factors at the
 species level: with the allele names replaced by the appropriate species names.
 
 **Warnings**:
@@ -91,8 +91,8 @@ species level: with the allele names replaced by the appropriate species names.
 
 The last command modifies this data frame `df_sp` by deleting rows that are uninformative
 about between-species relationships, such as rows corresponding to 4 individuals from the
-same species. The output `d_sp` of this second command is an object of type `DataCF` at the
-species level, which can be used as input for networks estimation with `snaq!`.
+same species. The output `d_sp` of this second command is an object of type [`DataCF`](@ref) at the
+species level, which can be used as input for networks estimation with [`snaq!`](@ref).
 But before, it is safe to save the concordance factor of quartets of species,
 which can be calculated by averaging the CFs of quartets of individuals
 from the associated species:
@@ -114,7 +114,7 @@ the same species are included here, such as `a1,a2,b1,c1`.
 Also, the weighting of quartets is different. Here, genes with more alleles
 are given more weight.
 
-now we can run snaq:
+now we can run `snaq!`:
 
 ```julia
 net = snaq!(T_sp, d_sp);
