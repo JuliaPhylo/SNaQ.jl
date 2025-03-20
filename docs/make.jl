@@ -35,7 +35,6 @@ makedocs(;
         "Home" => "index.md",
         "Manual" => [
             "Installation" => "man/installation.md",
-            "TICR pipeline" => "man/ticr_howtogetQuartetCFs.md",
             "Network estimation" => "man/snaq_est.md",
             "Candidate networks" => "man/fixednetworkoptim.md",
             "Extract expected CFs" => "man/expectedCFs.md",

@@ -35,6 +35,8 @@ and run Julia from there.
 
 SNaQ uses has two main inputs for estimating phylogenetic networks: concordance factors (CFs) and a starting tree (or network).
 
+
+
 ### Concordance factors
 
 Concordance factors denote frequency of each quartet topology 
@@ -42,11 +44,14 @@ present among the gene trees, which can be estimated using
 [MrBayes](http://mrbayes.sourceforge.net) or
 [RAxML](http://sco.h-its.org/exelixis/software.html) for example. 
 
-This [pipeline](https://juliaphylo.github.io/PhyloUtilities/) can be used to obtain the table of
-quartet CF needed as input for SNaQ
+[PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/)
+has a step-by-step tutorial
+to go from multiple sequence alignments
+to a table of quartet gene frequencies (concordance factors: CFs),
+through BUCKy (to integrate out gene tree uncertainty) or through RAxML
 (see also the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
-It starts from the sequence alignments,
-runs MrBayes and then BUCKy (both parallelized), producing the
+This pipeline starts from the sequence alignments and 
+runs MrBayes to estimate gene trees and then BUCKy (both parallelized), producing the
 table of estimated CFs and their credibility intervals.
 
 #### CFs from gene trees 

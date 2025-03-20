@@ -12,7 +12,7 @@ There are two ways to do a bootstrap analysis.
 
 First, we can use a table of quartet CFs estimated with credibility intervals,
 such as if we used BUCKy.
-The [TICR pipeline]() outputs a CF table with extra columns for credibility
+The [TICR pipeline](https://juliaphylo.github.io/PhyloUtilities/) outputs a CF table with extra columns for credibility
 intervals. We could then read that table and get bootstrap networks like this,
 and tweak options as needed:
 
@@ -30,11 +30,11 @@ The names of all our bootstrap files are listed in "BSlistfiles".
 (ASTRAL can use the same file to do its own bootstrap, see
 [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/notebooks/Gene-Trees-RAxML.html)).
 
-The function [`readmultinewick_files`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.readmultinewick_files-Tuple{AbstractString}) (from PhyloNetworks)
+The `PhyloNetworks` function [`PhyloNetworks.readmultinewick_files`](@extref)
 can read this list of file names, then
 read each bootstrap file to get the bootstrap sample for each gene.
 We can use them to sample input gene trees at random, one per gene,
-and estimate a network from them. We ask the `bootsnaq` function
+and estimate a network from them. We ask the [`bootsnaq`](@ref) function
 to repeat this resampling of bootstrap gene trees several times.
 
 ```julia
@@ -49,7 +49,7 @@ can be read in a new session with
 a different file (perhaps after having re-rooted them with an
 outgroup), we could do this: `writeMultiTopology(bootnet, "bootstrapNets.tre")`.
 
-The example above asks for 10 bootstrap replicates,
+The example above creates for 10 bootstrap replicates,
 which is definitely too few, to make the example run faster.
 We might also increase the number of optimization runs (`runs`)
 done for each bootstrap replicate. The following bootstrap was run with the
@@ -71,4 +71,4 @@ Now that we have 100 bootstrap networks, we need to summarize
 what they have in common (highly supported features) and what they
 don't (areas of uncertainty).
 
-We will use the PhyloNetworks functions to quantify [Network support](@extref).
+We can use PhyloNetworks functions to quantify [Network support](@extref).
