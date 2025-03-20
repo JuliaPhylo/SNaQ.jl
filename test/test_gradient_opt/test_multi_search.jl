@@ -1,4 +1,4 @@
-using PhyloNetworks, Plots, SNaQ, DataFrames, Random, Distributed
+using PhyloNetworks, SNaQ, DataFrames, Random, Distributed
 include("../../src/network_moves/rNNI_moves.jl")
 include("../../src/network_moves/rSPR_moves.jl")
 include("../../src/gradient_optimization/opt_API.jl")
@@ -76,54 +76,6 @@ end
 
 
 
-
-
-using DataFrames, CSV
-df = CSV.read(joinpath(@__DIR__, "10run_param_perf.csv"), DataFrame)
-
-# This if CSV is empty
-# df = DataFrame(
-#     times=Float64[], accs=Int[], mean_accs=Float64[], median_accs=Float64[],
-#     max_equivs=Int[], max_evals=Int[], ntaxa=Int[], nhyb=Int[]
-# )
-
-
-include("../test_inplace_updates/misc.jl")
-nruns = 10
-while true
-    for ntaxa in [8, 10, 12, 15]
-        for nhyb in [1, 2, 3]
-            net = generate_net(ntaxa, nhyb, abs(rand(Int)))
-            rootonedge!(net, getroot(net).edge[1])
-            gts = simulatecoalescent(net, 1000, 1);
-            q, t = countquartetsintrees(gts; showprogressbar=false)
-            semidirect_network!(net)
-            println("n$(ntaxa)h$(nhyb)")
-
-            for maxequiv in [100, 500, 1000]
-                for maxeval in [10, 25, 50]
-                    print("\rmaxPL=$(maxequiv), maxeval=$(maxeval)        ")
-
-                    opt_rt = @elapsed best_net, all_nets, _ = multi_search(deepcopy(gts[1]), q, 1; runs=nruns, maxeval=10000, maxequivPLs=maxequiv, opt_maxeval=maxeval)
-                    hwcds = [hardwiredClusterDistance(opt_net, net, false) for opt_net in all_nets]
-                    
-                    push!(df, [
-                        opt_rt, hardwiredClusterDistance(best_net, net, false),
-                        mean(hwcds), median(hwcds), maxequiv,
-                        maxeval, ntaxa, nhyb
-                    ])
-                    CSV.write(joinpath(@__DIR__, "10run_param_perf.csv"), df)
-
-                    #p = Gadfly.plot(df, x=:max_equivs, y=:times, color=:max_evals, Geom.point)
-                    # stack_df = stack(df, [:times, :accs], variable_name="metric", value_name="value")
-                    # p = Gadfly.plot(stack_df, x=:max_evals, y=:value, xgroup=:max_equivs, ygroup=:metric, Geom.subplot_grid(Geom.boxplot))
-                    # display(p)
-                end
-            end
-            println("")
-        end
-    end
-end
 
 
 

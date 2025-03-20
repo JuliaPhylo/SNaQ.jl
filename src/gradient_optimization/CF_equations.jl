@@ -7,6 +7,7 @@ const PN = PhyloNetworks;
 
 function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)::RecursiveCFEquation
 
+    # @info "Entering with $(writenewick(net, round=true))\ntaxa=$(taxa)"
     ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
     # @info "BLOB BEFORE: $(writenewick(net, round=true))"
     # bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
@@ -88,6 +89,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         E_major.ismajor = true
         getchild(E_major).hybrid = false
 
+
         # Remove the major edge and all of its references in this copy
         div_minor = deepcopy(net)
         div_minor_H = div_minor.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_minor.hybrid)]
@@ -98,19 +100,22 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
             node.edge = [e for e in node.edge if e != E_major]
         end
         PN.deleteEdge!(div_minor, E_major; part=false)
-        PN.removeHybrid!(div_minor, getchild(E_major))   # only removes its references - does not delete the node
+        PN.removeHybrid!(div_minor, getchild(E_minor))   # only removes its references - does not delete the node
         if length(getchildren(major_parent)) == 0
             major_parent.leaf = true
-            push!(div_major.leaf, major_parent)
-            PN.deleteleaf!(div_major, major_parent; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+            push!(div_minor.leaf, major_parent)
+            PN.deleteleaf!(div_minor, major_parent; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
             major_parent.leaf = false
         end
         E_minor.hybrid = false
         E_minor.ismajor = true
         getchild(E_minor).hybrid = false
 
-        # @info "DIV_MAJOR AFTER: $(writenewick(div_major, round=true))"
-        # @info "DIV_MINOR: $(writenewick(div_minor, round=true))"
+
+        # dmajnew = writenewick(div_major, round=true)
+        # @info "DIV_MAJOR AFTER: $(dmajnew)"
+        # dminnew = writenewick(div_minor, round=true)
+        # @info "DIV_MINOR AFTER: $(dminnew)"
         r1 = get_4taxa_quartet_equations(div_minor, taxa, parameter_map)
         r2 = get_4taxa_quartet_equations(div_major, taxa, parameter_map)
         # @info "$(parameter_map[lowest_H.number]) -> $([eqn.division_H for eqn in [r1, r2]])"
@@ -147,24 +152,16 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         E_minor = getparentedgeminor(div1_H)
         E_major = getparentedge(div1_H)
 
-        # 1. detach major edge, remove the hybrid status of the hybrid node
-        for node in E_major.node
-            node.edge = [e for e in node.edge if e != E_major]
-        end
-        PN.deleteEdge!(div1, E_major; part=false)
-        PN.removeHybrid!(div1, getchild(E_minor))   # only removes its references - does not delete the node
-        E_minor.hybrid = false
-        E_minor.ismajor = true
-        getchild(E_minor).hybrid = false
-
-        # 2. for each of the 2 leaves, add a new leaf in the new location (under minor edge),
-        #    and delete the original leaf immediately after. PhyloNetworks takes care of
-        #    removing extraneous edges for us in the `PN.deleteleaf!` function.
+        # 1. Add placeholders for the new versions of the taxa
+        #    and remove the current versions
         for L in leaves_below_H
-            new_leaf = PN.addleaf!(div1, div1_H, "__$(L.name)", 0.0)
+            l = PN.addleaf!(div1, getchild(E_minor), "__$(L.name)", 0.0)
             PN.deleteleaf!(div1, L.name; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
-            new_leaf.name = L.name
+            l.name = L.name
         end
+
+        # 2. Delete hybrid edge - PhyloNetworks does all the clean up for us!
+        PN.deletehybridedge!(div1, E_major, true, false, false, true, true)
 
         ######## Both taxa take the major edge ########
         # Same steps as above but for major instead of minor
@@ -172,22 +169,20 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         div2_H = div2.hybrid[findfirst(div2_H -> div2_H.number == lowest_H.number && div2_H.name == lowest_H.name, div2.hybrid)]
         E_minor = getparentedgeminor(div2_H)
         E_major = getparentedge(div2_H)
-        for node in E_minor.node
-            node.edge = [e for e in node.edge if e != E_minor]
-        end
-        PN.deleteEdge!(div2, E_minor; part=false)
-        PN.removeHybrid!(div2, getchild(E_major))   # only removes its references - does not delete the node
-        E_major.hybrid = false
-        getchild(E_major).hybrid = false
 
+        # 1. Add placeholders for the new versions of the taxa
+        #    and remove the current versions
         for L in leaves_below_H
-            new_leaf = PN.addleaf!(div2, div2_H, "__$(L.name)", 0.0)
+            l = PN.addleaf!(div2, getchild(E_major), "__$(L.name)", 0.0)
             PN.deleteleaf!(div2, L.name; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
-            new_leaf.name = L.name
+            l.name = L.name
         end
 
+        # 2. Delete hybrid edge - PhyloNetworks does all the clean up for us!
+        PN.deletehybridedge!(div2, E_minor, true, false, false, true, true)
 
-        # Lower taxa takes minor, higher takes major
+
+        ######## Lower taxa takes minor, higher takes major ########
         div3 = deepcopy(net)
         div3_H = div3.hybrid[findfirst(div3_H -> div3_H.number == lowest_H.number && div3_H.name == lowest_H.name, div3.hybrid)]
         E_minor = getparentedgeminor(div3_H)
@@ -205,7 +200,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         PN.deleteleaf!(div3, leaf_names[2]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
         new_leaf.name = leaf_names[2]
 
-        # Lower taxa takes major, higher takes minor
+        ######## Lower taxa takes major, higher takes minor ########
         div4 = deepcopy(net)
         div4_H = div4.hybrid[findfirst(div4_H -> div4_H.number == lowest_H.number && div4_H.name == lowest_H.name, div4.hybrid)]
         E_minor = getparentedgeminor(div4_H)
@@ -222,6 +217,10 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         new_leaf.name = leaf_names[2]
         
 
+        # @info "div1: $(writenewick(div1, round=true))"
+        # @info "div2: $(writenewick(div2, round=true))"
+        # @info "div3: $(writenewick(div3, round=true))"
+        # @info "div4: $(writenewick(div4, round=true))"
         which_quartet = leaf_names[1] == taxa[1] ? (
             leaf_names[2] == taxa[2] ? 1 :
             leaf_names[2] == taxa[3] ? 2 : 3

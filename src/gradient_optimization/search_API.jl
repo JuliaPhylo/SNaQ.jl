@@ -23,7 +23,7 @@ function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=ab
     end
 
     # Prep data
-    N = readnewick(writenewick(N)); N.isrooted = false;
+    N = readnewick(writenewick(N));
 
     # Generate per-run seeds
     Random.seed!(seed)
@@ -55,7 +55,7 @@ function search(
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
-    maxeval::Int=1e8,
+    maxeval::Int=Int(1e8),
     maxequivPLs::Int=200,
     opt_maxeval::Int=25,
     seed::Int=abs(rand(Int) % 100000)

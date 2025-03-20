@@ -26,35 +26,35 @@ function generate_net(n::Int, h::Int, seed::Int=42)
     return net
 end
 
-function opt_benchmark(ntaxa::Int=15, nhyb::Int=3, seed::Int=42)
-    Random.seed!(seed)
-    net = generate_net(ntaxa, nhyb, seed)
-    gts = simulatecoalescent(net, 1000, 1);
-    q, t = countquartetsintrees(gts, showprogressbar=false);
-    blocks, _ = find_quartet_equations(net);
+# function opt_benchmark(ntaxa::Int=15, nhyb::Int=3, seed::Int=42)
+#     Random.seed!(seed)
+#     net = generate_net(ntaxa, nhyb, seed)
+#     gts = simulatecoalescent(net, 1000, 1);
+#     q, t = countquartetsintrees(gts, showprogressbar=false);
+#     blocks, _ = find_quartet_equations(net);
 
-    return @benchmark optimize_bls!(net, blocks, q)
-end
+#     return @benchmark optimize_bls!(net, blocks, q)
+# end
 
-function opt_profile(ntaxa::Int=15, nhyb::Int=3, seed::Int=42; nrep::Int=1)
-    Random.seed!(seed)
-    net = generate_net(ntaxa, nhyb, seed)
-    gts = simulatecoalescent(net, 1000, 1);
-    q, t = countquartetsintrees(gts, showprogressbar=false);
-    blocks, _ = find_quartet_equations(net);
+# function opt_profile(ntaxa::Int=15, nhyb::Int=3, seed::Int=42; nrep::Int=1)
+#     Random.seed!(seed)
+#     net = generate_net(ntaxa, nhyb, seed)
+#     gts = simulatecoalescent(net, 1000, 1);
+#     q, t = countquartetsintrees(gts, showprogressbar=false);
+#     blocks, _ = find_quartet_equations(net);
 
-    start_time = time()
-    @profview for _ = 1:nrep optimize_bls!(net, blocks, q) end
-    @info "Profiling took $(round(time() - start_time, digits=4)) seconds."
-end
+#     start_time = time()
+#     @profview for _ = 1:nrep optimize_bls!(net, blocks, q) end
+#     @info "Profiling took $(round(time() - start_time, digits=4)) seconds."
+# end
 
 
-function eqn_profile(ntaxa::Int=15, nhyb::Int=3, seed::Int=42; nrep::Int=1)
-    Random.seed!(42)
-    net = generate_net(ntaxa, nhyb, seed)
+# function eqn_profile(ntaxa::Int=15, nhyb::Int=3, seed::Int=42; nrep::Int=1)
+#     Random.seed!(42)
+#     net = generate_net(ntaxa, nhyb, seed)
 
-    start_time = time()
-    @profview for _ = 1:nrep find_quartet_equations(net) end
-    @info "Profiling took $(round(time() - start_time, digits=4)) seconds."
-end
+#     start_time = time()
+#     @profview for _ = 1:nrep find_quartet_equations(net) end
+#     @info "Profiling took $(round(time() - start_time, digits=4)) seconds."
+# end
 
