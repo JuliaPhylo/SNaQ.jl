@@ -152,14 +152,26 @@ Now imagine that our outgroup is taxon A.
   But we could root the best network on the major parent edge to A, edge 10
   (rooted network on the left below).
 - For the second best network in our list, there are 2 ways to root it
-  with A: on the external edge 8 to A (top right), or on its parent edge 10
-  These 2 options give quite different rooted versions
-  of the network, one of which requires the existence of an unsampled taxon,
-  sister to BOECD, that would have contributed to introgression into
-  an ancestor of E. The second rooted version says that an ancestor of
-  (or sister to) A contributed to the introgression into the ancestor of E.
-  A is an outgroup in both cases, but the second case is more parsimonious,
-  in the sense that it does not require the existence of an unsampled taxon.
+  with A.
+  These 2 options give quite different rooted versions of the network: 
+  1. On the external edge 8 to A (top right).   
+     This requires the existence of an unsampled taxon,
+     sister to BOECD, that would have contributed to introgression into
+     an ancestor of E.
+  2. On its parent edge 10 (bottom right).  
+     Although the second rooted version could also be explained with
+     an unsampled taxon sister to A that contributes to introgression, it is not explicitly required
+     in this case. 
+     Instead, an ancestor of A could have directly contributed to the
+     introgression into the ancestor of E. SNaQ does not 
+     distinguish between these possibilities. The MSCI model
+     implemented in [BPP](https://bpp.github.io/bpp-manual/bpp-4-manual/#the-msc-i-model)
+     attempts to test between different models of introgression (see [Flouri et al. 2022](https://doi.org/10.1093/molbev/msac246)).
+
+  A is an outgroup in both rootings, but the second case is more parsimonious,
+  in the sense that it does not outright require the existence of an unsampled
+  taxon.
+
 
 ```@example fixednetworkoptim
 R"svg(name('fixednetworkoptim_othernets2.svg'), width=7, height=7)" # hide
