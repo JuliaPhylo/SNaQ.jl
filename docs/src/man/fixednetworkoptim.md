@@ -166,7 +166,7 @@ Now imagine that our outgroup is taxon A.
      introgression into the ancestor of E. SNaQ does not 
      distinguish between these possibilities. The MSCI model
      implemented in [BPP](https://bpp.github.io/bpp-manual/bpp-4-manual/#the-msc-i-model)
-     attempts to test between different models of introgression (see [Flouri et al. 2022](https://doi.org/10.1093/molbev/msac246)).
+     attempts to test between different models of introgression (see [Flouri et al. 2019](https://doi.org/10.1093/molbev/msz296)).
 
   A is an outgroup in both rootings, but the second case is more parsimonious,
   in the sense that it does not outright require the existence of an unsampled
