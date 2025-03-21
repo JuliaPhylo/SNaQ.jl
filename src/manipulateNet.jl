@@ -180,7 +180,7 @@ end
 # does not call hybridatnode! but repeats its code: oops! violates DRY principle
 # nodeNumber should correspond to the number assigned by readnewicklevel1,
 # and the node numbers in `net` are irrelevant.
-"""
+#="""
     hybridatnode(net::HybridNetwork, nodeNumber::Integer)
 
 Move the hybrid node in a cycle to make node number `nodeNumber` a hybrid node
@@ -227,3 +227,4 @@ function hybridatnode(net0::HybridNetwork, nodeNumber::Integer)
     end
     return net
 end
+=#

@@ -38,6 +38,7 @@ function makeEdgeHybrid!(edge::Edge,node::Node,gamma::Float64; switchHyb=false::
     edge.containroot = false
 end
 
+#=
 # aux function to exchange who is the hybrid node
 # input: current hybrid, new hybrid
 # returns false if there is no need to updategammaz after
@@ -71,7 +72,7 @@ function exchangeHybridNode!(net::HybridNetwork, current::Node,new::Node)
     end
     return update
 end
-
+=#
 
 # function to change the direction of a hybrid edge
 # input: hybrid node, network, isminor=true: changes dir of minor edge

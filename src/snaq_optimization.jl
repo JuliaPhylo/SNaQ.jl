@@ -281,6 +281,7 @@ function upper(net::HybridNetwork)
                 ones(length(ht(net))-ntIdent-net.numhybrids+numBad(net)))
 end
 
+#=
 # function to calculate the inequality gammaz1+gammaz2 <= 1
 function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Integer, verbose::Bool)
     ntIdent = sum([istIdentifiable(e) ? 1 : 0 for e in net.edge])
@@ -292,6 +293,7 @@ function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Intege
     end
     hz[ind*2] + hz[ind*2-1] - 1
 end
+=#
 
 """
     optBL!(
