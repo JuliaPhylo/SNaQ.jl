@@ -82,11 +82,12 @@ function search(
     semidirect_network!(N)
 
     if rand(rng) < probST
-        perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng));
+        perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
     end
 
+    q_idxs = sample_qindices(N, propQuartets, rng)
     logPLs = Array{Float64}(undef, maxeval)
-    logPLs[1] = compute_loss(N, q, propQuartets, rng, α)
+    logPLs[1], N_eqns = compute_loss(N, q, q_idxs, propQuartets, rng, α)
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -94,8 +95,6 @@ function search(
     moves_accepted = zeros(10)
 
     for j = 2:maxeval
-        # print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))          ($(j)/$(maxeval))                 ")
-
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
         Nprime = readnewick(writenewick(N));
@@ -119,21 +118,11 @@ function search(
             continue
         end
 
-        # 3. Optimize branch lengths and compute logPL
-        Nprime_logPL = optimize_topology!(Nprime, q, propQuartets, opt_maxeval, rng, α)
-
-        # 4. Remove hybrids with γ ≈ 0
-        bad_H = nothing
-        for H in N.hybrid
-            if getparentedgeminor(H).gamma <= 0.001
-                bad_H = H
-                break
-            end
-        end
-        if bad_H !== nothing
-            @debug "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
-            remove_hybrid!(N, bad_H)
-        end
+        # 4. Optimize branch lengths and compute logPL
+        Nprime_logPL, Nprime_eqns = optimize_topology!(
+            Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
+            opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
+        )
 
         # 5. Accept / reject
         (Nprime_logPL === NaN || abs(Nprime_logPL) < eps()) && error("""
@@ -143,6 +132,7 @@ function search(
         if Nprime_logPL - logPLs[j-1] > 1e-8
             # Update current topology info
             N = Nprime
+            N_eqns = Nprime_eqns
             logPLs[j] = Nprime_logPL
 
             # Update tracking vars
@@ -153,6 +143,24 @@ function search(
             unchanged_iters += 1
         end
 
+        # 6. IF we chose Nprime (which is now N), remove hybrids with γ ≈ 0 from N
+        #    if we did not choose Nprime, no point in doing this work
+        if Nprime_logPL - logPLs[j-1] > 1e-8
+            bad_Hs = []
+            for H in N.hybrid
+                if getparentedgeminor(H).gamma <= 0.001
+                    bad_H = H
+                end
+            end
+            if length(bad_Hs) != 0
+                @debug "Found $(length(bad_Hs)) hybrids with γ=$(getparentedge(bad_H).gamma), removing them."
+                for H in bad_Hs
+                    remove_hybrid!(N, H)
+                end
+                N_eqns = find_quartet_equations(N, q_idxs)
+            end
+        end
+
         # Early stopping checks
         if unchanged_iters > maxequivPLs
             @debug "stopping early after $(j) iterations"
@@ -160,7 +168,6 @@ function search(
             break
         end
     end
-    # println("\rBest -logPL discovered: $(-round(logPLs[length(logPLs)], digits=2))")
 
     return N, logPLs[length(logPLs)]
 

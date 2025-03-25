@@ -4,28 +4,47 @@ include("CF_struct.jl")
 include("CF_blocks.jl")
 include("CF_recursive_blocks.jl")
 include("CF_equations.jl")
+include("inplace_updates.jl")
 
 
 
-function optimize_topology!(Nprime::HybridNetwork, q, propQuartets::Real, opt_maxeval::Int, rng::TaskLocalRNG, α::Real)
-    @debug "\tGathering quartet equations."
-    q_idxs = sample_qindices(Nprime, propQuartets, rng)
-    Nprime_qdata, Nprime_param_map, _ = find_quartet_equations(Nprime, q_idxs);
+
+function optimize_topology!(
+    Nprime::HybridNetwork,
+    old_eqns::Array{QuartetData},
+    move::Symbol,
+    params::Tuple,
+    q,
+    q_idxs::Vector{Int},
+    opt_maxeval::Int,
+    force_resample_all::Bool,
+    rng::TaskLocalRNG,
+    α::Real
+)
+
+    new_eqns = Array{QuartetData}(undef, length(old_eqns)) # placeholder
+    if !force_resample_all && can_update_inplace(move)
+        @debug "\tGathering updated quartet equations."
+        _, param_map, idxobjmap, _ = gather_optimization_info(Nprime, true)
+        update_quartet_equations!(old_eqns, new_eqns, Nprime, param_map, move, params, α)
+    else
+        @debug "\tGathering quartet equations."
+        new_eqns, _ = find_quartet_equations(Nprime, q_idxs);
+    end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_logPL = optimize_bls!(Nprime, Nprime_qdata, q[q_idxs], α; maxeval=opt_maxeval)
+    Nprime_logPL = optimize_bls!(Nprime, new_eqns, q[q_idxs], α; maxeval=opt_maxeval)
 
-    return Nprime_logPL
+    return Nprime_logPL, new_eqns
 end
 
 
-function compute_loss(N::HybridNetwork, q, propQuartets::Real, rng::TaskLocalRNG, α::Real)::Float64
+function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, propQuartets::Real, rng::TaskLocalRNG, α::Real)
     @debug "\tGathering quartet equations."
-    q_idxs = sample_qindices(N, propQuartets, rng)
     N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
 
     @debug "\tComputing loss."
-    return compute_loss(N_qdata, N_params, q[q_idxs], α)
+    return compute_loss(N_qdata, N_params, q[q_idxs], α), N_qdata
 end
 
 
@@ -86,17 +105,21 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork
 end
 
 
-function gather_optimization_info(net::HybridNetwork)
+function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
 
     param_map = Dict{Int, Int}()
     idx_obj_map = Dict{Int, Union{Node, Edge}}()
-    max_ID = net.numedges
+    uq_ID = net.numedges
     param_idx = 1
 
     for obj in vcat(net.hybrid, net.edge)
+        if change_numbers
+            obj.number = uq_ID
+            uq_ID += 1
+        end
         if typeof(obj) <: Edge && getchild(obj).leaf continue end
 
-        obj.number = max_ID + param_idx
+        haskey(param_map, obj.number) && error("Duplicate object number #$(obj.number).")
         param_map[obj.number] = param_idx
         idx_obj_map[param_idx] = obj
         param_idx += 1

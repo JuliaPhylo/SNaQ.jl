@@ -3,9 +3,41 @@
 using PhyloNetworks
 
 
+"""
+Helper function to quickly determine whether or not an in-place update
+exists for the move type `m`. Have this one function is cleaner and easier
+to update when future in-place moves are implemented than by relying
+on a bunch of `if` statements in various locations that might be missed.
+"""
+can_update_inplace(m::Symbol) = m in [:rNNI1]
+
+
+"""
+Given that the move `move` was applied to network `Nprime` on parameters `params`, this
+function updates `new_eqns` in-place with relevant changes to `old_eqns` where necessary.
+"""
+function update_quartet_equations!(
+    old_eqns::Array{QuartetData},
+    new_eqns::Array{QuartetData},
+    Nprime::HybridNetwork,
+    param_map::Dict{Int, Int},
+    move::Symbol,
+    params::Tuple,
+    α::Real
+)
+    if move == :rNNI1
+        apply_rNNI1_update!(Nprime, old_eqns, new_eqns, param_map, params[3], α)
+    elseif move == :rNNI2
+        apply_rNNI2_update!(Nprime, old_eqns, new_eqns, param_map, params..., α)
+    else
+        error("Only move that can be updated in place right now is rNNI1 (move = $(move))")
+    end
+end
+
+
 function apply_rNNI1_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, α::Real=Inf)
     relevant_params = params_below_u_rNNI1(u, param_map)
-    for j = 1:length(old_qdata)
+    Threads.@threads for j = 1:length(old_qdata)
         if recur_fxn_has_params(old_qdata[j].eqn, relevant_params)
             new_qdata[j] = find_quartet_equations_4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
         else
@@ -18,7 +50,7 @@ end
 function apply_rNNI2_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, α::Real=Inf)
     relevant_params = [u.edge[findfirst(e -> t in e.node, u.edge)], s.edge[findfirst(e -> v in e.node, s.edge)]]
     relevant_params = [param_map[e.number] for e in relevant_params]
-    for j = 1:length(old_qdata)
+    Threads.@threads for j = 1:length(old_qdata)
         if contains_parameter(old_qdata[j], relevant_params)
             new_qdata[j] = find_quartet_equations_4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
         else

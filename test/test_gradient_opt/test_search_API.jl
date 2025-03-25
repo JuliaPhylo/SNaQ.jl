@@ -17,17 +17,11 @@ net, gts = readnewick(joinpath(@__DIR__, "n1.netfile")), readmultinewick(joinpat
 q, t = countquartetsintrees(gts, showprogressbar=false);
 df = readtableCF(DataFrame(tablequartetCF(q, t)));
 snaq_net = SNaQ.readnewicklevel1(writenewick(net))
-
-compute_logPL(net, q; use_cache=false), topologyQpseudolik!(snaq_net, df)
-
-qeqns, eqnt, qt = find_quartet_equations(net);
-eCFs = [(compute_eCF(eqns[1], net.edge), compute_eCF(eqns[2], net.edge), compute_eCF(eqns[3], net.edge)) for eqns in qeqns];
-
-
 tre0 = readnewick(writenewick(gts[1]));
-perform_random_rNNI!(tre0);
+perform_rNNI1!(tre0, sample_rNNI_parameters(tre0, 1, Random.seed!(0))...);
 
-opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; maxeval = 10000, maxequivPLs = 1000)
+
+opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=2, maxeval = 10000, maxequivPLs = 1000)
 hardwiredClusterDistance(net, opt_net, false)
 
 nets = [search(gts[j], q, net.numhybrids; maxeval=10000, maxequivPLs=100, seed=rand(Int))[1] for j = 1:20];
