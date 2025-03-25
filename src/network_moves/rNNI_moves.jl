@@ -1,4 +1,4 @@
-using PhyloNetworks, StatsBase
+using PhyloNetworks, StatsBase, Random
 const Node = PhyloNetworks.Node;
 const Edge = PhyloNetworks.Edge;
 include("misc.jl")
@@ -136,9 +136,26 @@ end
 
 
 """
+Samples nodes `s,t,u,v` from `N` to perform the rNNI(X) move where X is given
+by the variable `type`.
+"""
+function sample_rNNI_parameters(N::HybridNetwork, type::Int, rng::TaskLocalRNG)
+    1 ≤ type ≤ 4 || error("`type` must be 1, 2, 3, or 4.")
+
+    valid_stuvs = type == 1 ? all_valid_rNNI1_nodes(N) :
+        type == 2 ? all_valid_rNNI2_nodes(N) :
+        type == 3 ? all_valid_rNNI3_nodes(N) :
+        all_valid_rNNI4_nodes(N)
+    
+    length(valid_stuvs) == 0 && return nothing
+    return sample(rng, valid_stuvs)
+end
+
+
+"""
 Add a docstring later - I'm going on a walk 
 """
-function perform_random_rNNI!(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
+function sample_random_rNNI(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
     (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
     
     r = rand()

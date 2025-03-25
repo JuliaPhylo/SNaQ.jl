@@ -4,53 +4,66 @@ import PhyloNetworks: getOtherNode
 
 
 """
-Selects a random edge that is very near the origin of `hybrid` to perform
-the [`move_reticulate_origin`](@ref) move on.
+Selects a random hybrid node and a random edge that is very near the origin of
+that hybrid to perform the `move_reticulate_origin` move on. Returns
+the selected parameters.
 """
-function move_random_reticulate_origin_local!(hybrid::Node, N::HybridNetwork, rng::TaskLocalRNG)
-    hybrid.hybrid || error("`hybrid` is not a hybrid node...")
+function sample_move_reticulate_origin_local_parameters(N::HybridNetwork, rng::TaskLocalRNG)
+    N.numhybrids > 0 || error("`N` must have at least 1 hybrid node.")
+    
+    # Cycle through each hybrid in a random order, that way if 1 hybrid
+    # does not have any valid moves, another might.
+    hyb_perm = randperm(rng, N.numhybrids)
+    for hybrid in N.hybrid[hyb_perm]
+        minor_edge = getparentedgeminor(hybrid)
+        origin = getparent(minor_edge)
 
-    minor_edge = getparentedgeminor(hybrid)
-    origin = getparent(minor_edge)
+        # Edges near `hybrid` that might be valid for the move
+        candidate_edges = reduce(vcat, [[next_edge for next_edge in getOtherNode(e, origin).edge if next_edge != e] for e in origin.edge if e != minor_edge])
 
-    candidate_edges = reduce(vcat, [[next_edge for next_edge in getOtherNode(e, origin).edge if next_edge != e] for e in origin.edge if e != minor_edge])
-
-    for j in sample(rng, 1:length(candidate_edges), length(candidate_edges), replace=false)
-        is_valid_move_reticulate_origin(hybrid, candidate_edges[j], N) && return move_reticulate_origin!(hybrid, candidate_edges[j], N)
+        for j in sample(rng, 1:length(candidate_edges), length(candidate_edges), replace=false)
+            is_valid_move_reticulate_origin(hybrid, candidate_edges[j], N) && return (hybrid, candidate_edges[j])
+        end
     end
 
-    error("No valid local reticulation origin moves found.")
+    return nothing
 end
 
 
 """
-Selects a random edge that is very near the node `hybrid` to perform
-the [`move_reticulate_target`](@ref) move on.
+Selects a random hybrid node and a random edge that is very near the origin of
+that hybrid to perform the `move_reticulate_target` move on. Returns
+the selected parameters.
 """
-function move_random_reticulate_target_local!(hybrid::Node, N::HybridNetwork, rng::TaskLocalRNG)
-    hybrid.hybrid || error("`hybrid` is not a hybrid node...")
+function sample_move_reticulate_target_local_parameters(N::HybridNetwork, rng::TaskLocalRNG)
+    N.numhybrids > 0 || error("`N` must have at least 1 hybrid node.")
 
-    major_parent = getparent(getparentedge(hybrid))
-    candidate_edges = [e for e in major_parent.edge if e != getparentedge(hybrid)]
-    
-    hyb_children = getchildren(hybrid)
-    hyb_children = (length(hyb_children) == 1) ? getchildren(hyb_children[1]) : hyb_children
-    for child in hyb_children
-        push!(candidate_edges, getparentedge(child))
-    end
+    # Cycle through each hybrid in a random order, that way if 1 hybrid
+    # does not have any valid moves, another might.
+    hyb_perm = randperm(rng, N.numhybrids)
+    for hybrid in N.hybrid[hyb_perm]
+        major_parent = getparent(getparentedge(hybrid))
+        candidate_edges = [e for e in major_parent.edge if e != getparentedge(hybrid)]
+        
+        hyb_children = getchildren(hybrid)
+        hyb_children = (length(hyb_children) == 1) ? getchildren(hyb_children[1]) : hyb_children
+        for child in hyb_children
+            push!(candidate_edges, getparentedge(child))
+        end
 
-    for j in sample(rng, 1:length(candidate_edges), length(candidate_edges), replace=false)
-        is_valid_move_reticulate_target(hybrid, candidate_edges[j], N) && return move_reticulate_target!(hybrid, candidate_edges[j], N)
+        for j in sample(rng, 1:length(candidate_edges), length(candidate_edges), replace=false)
+            is_valid_move_reticulate_target(hybrid, candidate_edges[j], N) && return (hybrid, candidate_edges[j])
+        end
     end
     
-    error("No valid local reticulation target moves found.")
+    return nothing
 end
 
 
 """
 Moves the origin of `hybrid` - equivalent to an rSPR move.
 """
-function move_reticulate_origin!(hybrid::Node, new_origin::Edge, N::HybridNetwork)
+function move_reticulate_origin!(N::HybridNetwork, hybrid::Node, new_origin::Edge)
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
     @debug "move_reticulate_origin!: ($(hybrid.name), $(getparent(new_origin).name) --> $(getchild(new_origin).name))"
     
@@ -74,19 +87,24 @@ function move_reticulate_origin!(hybrid::Node, new_origin::Edge, N::HybridNetwor
     return perform_rSPR!(N, w, x, y, z, xprime, yprime)
 end
 
-function move_random_reticulate_origin!(N::HybridNetwork)
-    random_H_order = sample(1:N.numhybrids, N.numhybrids, replace=false)
+
+"""
+Samples a random hybrid from `N` and a random edge in `N` from which to move
+the origin of the selected hybrid to.
+"""
+function sample_move_reticulate_origin_parameters(N::HybridNetwork, rng::TaskLocalRNG)
+    random_H_order = sample(rng, 1:N.numhybrids, N.numhybrids, replace=false)
 
     for H_idx in random_H_order
         H = N.hybrid[H_idx]
-        random_edge_order = sample(1:N.numedges, N.numedges, replace=false)
+        random_edge_order = sample(rng, 1:N.numedges, N.numedges, replace=false)
         for edge_idx in random_edge_order
             is_valid_move_reticulate_origin(H, N.edge[edge_idx], N) || continue
-            return move_reticulate_origin!(H, N.edge[edge_idx], N)
+            return (H, N.edge[edge_idx])
         end
     end
 
-    error("No valid `move_random_reticulate_origin!` moves.")
+    return nothing
 end
 
 function is_valid_move_reticulate_origin(hybrid::Node, new_origin::Edge, N::HybridNetwork)
@@ -109,7 +127,7 @@ function is_valid_move_reticulate_origin(hybrid::Node, new_origin::Edge, N::Hybr
 end
 
 
-function move_reticulate_target!(hybrid::Node, new_target::Edge, N::HybridNetwork)
+function move_reticulate_target!(N::HybridNetwork, hybrid::Node, new_target::Edge)
     hybrid.hybrid || error("`hybrid` is not a hybrid node...")
     @debug "move_reticulate_target!: ($(hybrid.name), $(getparent(new_target).name) --> $(getchild(new_target).name))"
 
@@ -124,19 +142,24 @@ function move_reticulate_target!(hybrid::Node, new_target::Edge, N::HybridNetwor
     return perform_rSPR!(N, w, x, y, hybrid, xprime, yprime)
 end
 
-function move_random_reticulate_target!(N::HybridNetwork)
-    random_H_order = sample(1:N.numhybrids, N.numhybrids, replace=false)
+
+"""
+Samples a random hybrid from `N` and a random edge in `N` from which to move
+the target of the selected hybrid to.
+"""
+function sample_move_reticulate_target_parameters(N::HybridNetwork, rng::TaskLocalRNG)
+    random_H_order = sample(rng, 1:N.numhybrids, N.numhybrids, replace=false)
 
     for H_idx in random_H_order
         H = N.hybrid[H_idx]
-        random_edge_order = sample(1:N.numedges, N.numedges, replace=false)
+        random_edge_order = sample(rng, 1:N.numedges, N.numedges, replace=false)
         for edge_idx in random_edge_order
             is_valid_move_reticulate_target(H, N.edge[edge_idx], N) || continue
-            return move_reticulate_target!(H, N.edge[edge_idx], N)
+            return (H, N.edge[edge_idx])
         end
     end
 
-    error("No valid `move_random_reticulate_target!` moves.")
+    return nothing
 end
 
 function is_valid_move_reticulate_target(hybrid::Node, new_target::Edge, N::HybridNetwork)

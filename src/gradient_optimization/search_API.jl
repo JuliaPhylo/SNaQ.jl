@@ -55,6 +55,7 @@ function search(
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
+    probST::Real=0.3,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=200,
     opt_maxeval::Int=25,
@@ -65,6 +66,7 @@ function search(
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
     1 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
+    0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
 
     # Set the seed
     rng = Random.seed!(seed)
@@ -78,14 +80,18 @@ function search(
 
     N = readnewick(writenewick(N));
     semidirect_network!(N)
-    perform_random_rNNI!(N, rng)
+
+    if rand(rng) < probST
+        perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng));
+    end
 
     logPLs = Array{Float64}(undef, maxeval)
     logPLs[1] = compute_loss(N, q, propQuartets, rng, α)
     unchanged_iters = 0
 
-    moves_proposed = zeros(9)
-    moves_accepted = zeros(9)
+    moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
+    moves_proposed = zeros(10)
+    moves_accepted = zeros(10)
 
     for j = 2:maxeval
         # print("\rCurrent best -logPL: $(-round(logPLs[j-1], digits=2))          ($(j)/$(maxeval))                 ")
@@ -93,11 +99,13 @@ function search(
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
         Nprime = readnewick(writenewick(N));
-        move_proposed = propose_topology!(Nprime, hmax, rng)
-        moves_proposed[move_proposed] += 1
+        prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
+        apply_move!(Nprime, prop_move, prop_params)
+        push!(moves_attempted, (prop_move, prop_params))
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
         # 2. Check for identifiability
+        # TODO: check for galled-TC identifiability
         @debug "Proposed network level: $(getlevel(Nprime))"
         removedegree2nodes!(Nprime);
         # shrink3cycles!(Nprime);
@@ -124,7 +132,7 @@ function search(
         end
         if bad_H !== nothing
             @debug "Found H with γ=$(getparentedge(bad_H).gamma), removing it."
-            remove_hybrid!(bad_H, N)
+            remove_hybrid!(N, bad_H)
         end
 
         # 5. Accept / reject
@@ -139,7 +147,7 @@ function search(
 
             # Update tracking vars
             unchanged_iters = 0
-            moves_accepted[move_proposed] += 1
+            moves_attempted = []
         else
             logPLs[j] = logPLs[j-1]
             unchanged_iters += 1
@@ -160,43 +168,113 @@ end
 
 
 """
-Takes network `N` and modifies it with topological moves to generate a new proposal network.
-Also updates `Nprime_eqns` in-place to hold the equations of the newly proposed network.
+Applies the move `move` on parameters `params` to network `N`.
 """
-function propose_topology!(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
-
-    if N.numhybrids < hmax && rand(rng) < 0.50
-        @debug "MOVE: add_random_hybrid!"
-        add_random_hybrid!(N, rng)
-        return 2
+function apply_move!(N::HybridNetwork, move::Symbol, params::Tuple)
+    if move == :add_hybrid
+        return add_hybrid!(N, params[1], params[2])
+    elseif move == :rNNI1
+        return perform_rNNI1!(N, params[1], params[2], params[3], params[4])
+    elseif move == :rNNI2
+        return perform_rNNI2!(N, params[1], params[2], params[3], params[4])
+    elseif move == :rNNI3
+        return perform_rNNI3!(N, params[1], params[2], params[3], params[4])
+    elseif move == :rNNI4
+        return perform_rNNI4!(N, params[1], params[2], params[3], params[4])
+    elseif move == :retic_origin || move == :retic_origin_local
+        return move_reticulate_origin!(N, params[1], params[2])
+    elseif move == :retic_target || move == :retic_target_local
+        return move_reticulate_target!(N, params[1], params[2])
     end
 
-    if rand(rng) < 0.5
+    error("Move \"$(move)\" not recognized.")
+end
 
-        @debug "MOVE: perform_random_rNNI!"
-        return 2 + perform_random_rNNI!(N, rng)
-    
-    else
 
-        try
-            if rand(rng) < 0.5
-                @debug "move_random_reticulate_origin!"
-                # move_random_reticulate_origin!(N)
-                move_random_reticulate_origin_local!(sample(rng, N.hybrid), N, rng)
-                return 7
-            else
-                @debug "move_random_reticulate_target!"
-                # move_random_reticulate_target!(N)
-                move_random_reticulate_target_local!(sample(rng, N.hybrid), N, rng)
-                return 8
-            end
-        catch
-            # Only catches if there were 0 valid moves for whichever above was chosen
+"""
+Randomly generates a move proposal from the function `sample_move_proposal`.
+Sometimes the move sampled in `sample_move_proposal` will not have any valid
+parameters, so this function repeatedly samples until a move with valid
+parameters is selected. Also, makes sure the proposed move is not present in
+`moves_attempted`, and appends the returned move to this vector.
+"""
+function generate_move_proposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)
+    retries::Int = 0
+    move, params = sample_move_proposal(N, hmax, rng)
+
+    while params === nothing || already_attempted(moves_attempted, move, params)
+        move, params = sample_move_proposal(N, hmax, rng)
+        retries += 1
+        if retries >= 1e6
+            error("Could not find any valid move proposals after 1e6 attempts.")
         end
     end
 
-    @debug "MOVE: perform_random_rNNI!"
-    return 2 + perform_random_rNNI!(N, rng)
+    return (move, params)
+end
+
+
+"""
+Helper function that determines whether the move `move` with parameters `params` has
+already been attempted (i.e. is stored in the vector `moves_attempted`).
+"""
+function already_attempted(moves_attempted::Vector, move::Symbol, params::Tuple)::Bool
+    for (amove, aparams) in moves_attempted
+        move == amove || continue
+        all_params_match::Bool = true
+        for (aparam, param) in zip(aparams, params)
+            if !(typeof(aparam) <: typeof(param))
+                all_params_match = false
+                break
+            end
+            if aparam.number != param.number || (typeof(aparam) <: Node && aparam.name != param.name)
+                all_params_match = false
+                break
+            end
+        end
+        all_params_match && return true
+        break
+    end
+    return false
+end
+
+
+"""
+Randomly samples a move to generate a new topology from `N`.
+"""
+function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
+
+    if N.numhybrids < hmax && rand(rng) < 0.50
+        @debug "SELECTED: add_random_hybrid!"
+        return (:add_hybrid, sample_add_hybrid_parameters(N, rng))
+    end
+
+    # If net has 0 hybrids, we can only do an NNI (SPRs are only
+    # set up for reticulate moves at the moment)
+    if N.numhybrids == 0
+        return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
+    end
+
+    r = rand(rng)
+    if r < 0.33
+        r = sample(rng, [1, 2, 3, 4])
+        move_symbol = [:rNNI1, :rNNI2, :rNNI3, :rNNI4][r]
+        return (move_symbol, sample_rNNI_parameters(N, r, rng))
+    else
+        r = sample(rng, [1, 2, 3, 4])   # 1 = move retic origin
+                                        # 2 = move retic target
+                                        # 3 = move retic origin local
+                                        # 4 = move retic target local
+        if r == 1
+            return (:retic_origin, sample_move_reticulate_origin_parameters(N, rng))
+        elseif r == 2
+            return (:retic_target, sample_move_reticulate_target_parameters(N, rng))
+        elseif r == 3
+            return (:retic_origin_local, sample_move_reticulate_origin_local_parameters(N, rng))
+        else
+            return (:retic_target_local, sample_move_reticulate_target_local_parameters(N, rng))
+        end
+    end
 
 end
 
