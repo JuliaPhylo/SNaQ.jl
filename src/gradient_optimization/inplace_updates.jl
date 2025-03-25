@@ -9,7 +9,7 @@ exists for the move type `m`. Have this one function is cleaner and easier
 to update when future in-place moves are implemented than by relying
 on a bunch of `if` statements in various locations that might be missed.
 """
-can_update_inplace(m::Symbol) = m in [:rNNI1]
+can_update_inplace(m::Symbol) = m in [:rNNI1, :rNNI2]
 
 
 """
