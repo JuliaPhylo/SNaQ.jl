@@ -281,19 +281,6 @@ function upper(net::HybridNetwork)
                 ones(length(ht(net))-ntIdent-net.numhybrids+numBad(net)))
 end
 
-#=
-# function to calculate the inequality gammaz1+gammaz2 <= 1
-function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Integer, verbose::Bool)
-    ntIdent = sum([istIdentifiable(e) ? 1 : 0 for e in net.edge])
-    hz = x[net.numhybrids - numBad(net) + ntIdent + 1 : length(x)]
-    if verbose # goes to stdout
-        println("enters calculateIneqGammaz with hz $(hz), and hz[ind*2] + hz[ind*2-1] - 1 = $(hz[ind*2] + hz[ind*2-1] - 1)")
-    else # goes to logger (if debug messages are turned on by user)
-        @debug "enters calculateIneqGammaz with hz $(hz), and hz[ind*2] + hz[ind*2-1] - 1 = $(hz[ind*2] + hz[ind*2-1] - 1)"
-    end
-    hz[ind*2] + hz[ind*2-1] - 1
-end
-=#
 
 """
     optBL!(
@@ -396,22 +383,6 @@ function optBL!(
         return val
     end
     NLopt.min_objective!(opt,obj)
-    ## if(numBad(net) == 1)
-    ##     function inequalityGammaz(x::Vector{Float64},g::Vector{Float64})
-    ##         val = calculateIneqGammaz(x,net,1,verbose)
-    ##         return val
-    ##     end
-    ##     NLopt.inequality_constraint!(opt,inequalityGammaz)
-    ## elseif(numBad(net) > 1)
-    ##     function inequalityGammaz(result::Vector{Float64},x::Vector{Float64},g::Matrix{Float64})
-    ##         i = 1
-    ##         while(i < numBad(net))
-    ##             result[i] = calculateIneqGammaz(x,net,i,verbose)
-    ##             i += 2
-    ##         end
-    ##     end
-    ##     NLopt.inequality_constraint!(opt,inequalityGammaz)
-    ## end
     if verbose println("OPTBL: starting point $(ht(net))")     # to stdout
     else @debug        "OPTBL: starting point $(ht(net))"; end # to logger if debug turned on by user
     fmin, xmin, ret = NLopt.optimize(opt,ht(net))

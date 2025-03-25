@@ -38,41 +38,6 @@ function makeEdgeHybrid!(edge::Edge,node::Node,gamma::Float64; switchHyb=false::
     edge.containroot = false
 end
 
-#=
-# aux function to exchange who is the hybrid node
-# input: current hybrid, new hybrid
-# returns false if there is no need to updategammaz after
-#         true if there is need to updategammaz after
-function exchangeHybridNode!(net::HybridNetwork, current::Node,new::Node)
-    (current.hybrid && !new.hybrid) || error("either current node $(current.number) is not hybrid: current.hybrid $(current.hybrid) or new node $(new.number) is already hybrid: new.hybrid $(new.hybrid)")
-    #println("find cycle for current node $(current.number)")
-    nocycle,edgesInCycle,nodesInCycle = identifyInCycle(net,current)
-    !nocycle || error("strange here: change direction on hybrid node $(current.number) that does not have a cycle to begin with")
-    #println("edges in cycle for node $(current.number) are $([e.number for e in edgesInCycle]) and nodes in cycle $([n.number for n in nodesInCycle])")
-    for e in edgesInCycle
-        inCycle!(e, new.number)
-    end
-    for n in nodesInCycle
-        inCycle!(n, new.number)
-    end
-    update = true
-    new.hybrid = true
-    k!(new, k(current))
-    removeHybrid!(net,current)
-    pushHybrid!(net,new)
-    current.hybrid = false
-    k!(current, k(current) + 1)
-    if(isBadDiamondI(current) || isBadDiamondII(current))
-        isBadDiamondI!(current, false)
-        isBadDiamondII!(current, false)
-        update = false
-    elseif(isBadTriangle(current))
-        isBadTriangle!(current, false)
-        update = true
-    end
-    return update
-end
-=#
 
 # function to change the direction of a hybrid edge
 # input: hybrid node, network, isminor=true: changes dir of minor edge
