@@ -118,14 +118,12 @@ function compute_eCF_and_gradient_recur!(
                 # we need to take the derivative
                 for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 2/3*exp_sum : -1/3*exp_sum)
-                    !isnan(gradient_storage[param_idx, k]) || error("NaN: 1")
                 end
             elseif params_seen[param_idx]
                 # don't need to take the derivative, but we do need to
                 # multiple the eCF value onto the gradient
                 for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 1-2/3*exp_sum : 1/3*exp_sum)
-                    !isnan(gradient_storage[param_idx, k]) || error("NaN: 2\n$(eqn.which_coal), $(k)\n$(exp_sum)")
                 end
             end
         end
@@ -160,11 +158,9 @@ function compute_eCF_and_gradient_recur!(
                     # calculate the derivative
                     !params_seen[param_idx] || error("Already seen this param??")
                     gradient_storage[param_idx, eqn.which_coal] += running_gradient[param_idx, eqn.which_coal] .* early_coal_exp_sum
-                    !isnan(gradient_storage[param_idx, eqn.which_coal]) || error("NaN: 3\n$(early_coal_exp_sum)\n$(running_gradient[param_idx,eqn.which_coal])")
                     params_seen[param_idx] = true
                 elseif params_seen[param_idx]
                     gradient_storage[param_idx, eqn.which_coal] += running_gradient[param_idx, eqn.which_coal] .* (1 - early_coal_exp_sum)
-                    !isnan(gradient_storage[param_idx, eqn.which_coal]) || error("NaN: 4")
                 end
             end
         end

@@ -1,43 +1,18 @@
 include("CF_struct.jl")
 include("CF_blocks.jl")
 include("CF_recursive_blocks.jl")
+include("misc.jl")
 using PhyloNetworks, Graphs
 const PN = PhyloNetworks;
 
 
 function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)::RecursiveCFEquation
 
-    # @info "Entering with $(writenewick(net, round=true))\ntaxa=$(taxa)"
-    ########## REMOVE DEGREE-2 BLOBS ALONG EXTERNAL EDGES ##########
-    # @info "BLOB BEFORE: $(writenewick(net, round=true))"
-    # bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
-    # entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
-    # entryindex = indexin(entry, net.vec_node)
-    # exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
-    # bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
-    # function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
-    #     # yes if: 1 single exit adjacent to a leaf
-    #     length(exitnodes[ib]) != 1 && return false
-    #     ch = getchildren(exitnodes[ib][1])
-    #     return length(ch) == 1 && ch[1].leaf
-    # end
-    # for ib in reverse(bloborder)
-    #     isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
-    #     for he in bcc[ib]
-    #         he.ismajor && continue
-    #         # deletion of a hybrid can hide the deletion of another: check that he is still in net
-    #         any(e -> e===he, net.edge) || continue
-    #         # delete minor hybrid edge with options unroot=true: to make sure the
-    #         # root remains of degree 3+, in case a degree-2 blob starts at the root
-    #         # simplify=true: bc external blob
-    #         PN.deletehybridedge!(net,he, false,true,false,true,false)
-    #     end
-    # end
-    # @info "BLOB AFTER: $(writenewick(net, round=true))"
-    ######################################################################
-
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
+        qdat = try_treelike_quartet(net, taxa, parameter_map)
+        qdat !== nothing && return qdat.eqn
+        
         quartet_type, int_edges = get_quartet_type_and_internal_edges(net, taxa, parameter_map)
         return RecursiveCFEquation(
             true, [parameter_map[int_e.number] for int_e in int_edges], quartet_type, -1,
@@ -69,7 +44,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         # @info "2 - Following hybrid $(lowest_H.name)"
 
         # Remove the minor edge and all of its references in this copy
-        div_major = deepcopy(net)
+        div_major = deepcopy_network(net)
         div_major_H = div_major.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_major.hybrid)]
         E_minor = getparentedgeminor(div_major_H)
         E_major = getparentedge(div_major_H)
@@ -91,7 +66,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
 
 
         # Remove the major edge and all of its references in this copy
-        div_minor = deepcopy(net)
+        div_minor = deepcopy_network(net)
         div_minor_H = div_minor.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_minor.hybrid)]
         E_minor = getparentedgeminor(div_minor_H)
         E_major = getparentedge(div_minor_H)
@@ -147,7 +122,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         ##########################################################################################
 
         ######## Both taxa take the minor edge ########
-        div1 = deepcopy(net)
+        div1 = deepcopy_network(net)
         div1_H = div1.hybrid[findfirst(div1_H -> div1_H.number == lowest_H.number && div1_H.name == lowest_H.name, div1.hybrid)]
         E_minor = getparentedgeminor(div1_H)
         E_major = getparentedge(div1_H)
@@ -155,8 +130,9 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         # 1. Add placeholders for the new versions of the taxa
         #    and remove the current versions
         for L in leaves_below_H
+            div1_L = div1.leaf[findfirst(dl -> dl.name == L.name, div1.leaf)]
             l = PN.addleaf!(div1, getchild(E_minor), "__$(L.name)", 0.0)
-            PN.deleteleaf!(div1, L.name; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+            PN.deleteleaf!(div1, div1_L; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
             l.name = L.name
         end
 
@@ -165,7 +141,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
 
         ######## Both taxa take the major edge ########
         # Same steps as above but for major instead of minor
-        div2 = deepcopy(net)
+        div2 = deepcopy_network(net)
         div2_H = div2.hybrid[findfirst(div2_H -> div2_H.number == lowest_H.number && div2_H.name == lowest_H.name, div2.hybrid)]
         E_minor = getparentedgeminor(div2_H)
         E_major = getparentedge(div2_H)
@@ -173,8 +149,9 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         # 1. Add placeholders for the new versions of the taxa
         #    and remove the current versions
         for L in leaves_below_H
+            div2_L = div2.leaf[findfirst(dl -> dl.name == L.name, div2.leaf)]
             l = PN.addleaf!(div2, getchild(E_major), "__$(L.name)", 0.0)
-            PN.deleteleaf!(div2, L.name; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+            PN.deleteleaf!(div2, div2_L; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
             l.name = L.name
         end
 
@@ -183,7 +160,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
 
 
         ######## Lower taxa takes minor, higher takes major ########
-        div3 = deepcopy(net)
+        div3 = deepcopy_network(net)
         div3_H = div3.hybrid[findfirst(div3_H -> div3_H.number == lowest_H.number && div3_H.name == lowest_H.name, div3.hybrid)]
         E_minor = getparentedgeminor(div3_H)
         E_major = getparentedge(div3_H)
@@ -192,28 +169,32 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         #    then immediately delete the original leaf - PhyloNetworks
         #    takes care of net cleanup for us
         new_leaf::Node = PN.addleaf!(div3, getparent(E_minor), "__$(leaf_names[1])", 0.0)
-        PN.deleteleaf!(div3, leaf_names[1]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        div3_L = div3.leaf[findfirst(dl -> dl.name == leaf_names[1], div3.leaf)]
+        PN.deleteleaf!(div3, div3_L; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
         new_leaf.name = leaf_names[1]
 
         # 2. vice versa
         new_leaf = PN.addleaf!(div3, getparent(E_major), "__$(leaf_names[2])", 0.0)
-        PN.deleteleaf!(div3, leaf_names[2]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        div3_L = div3.leaf[findfirst(dl -> dl.name == leaf_names[2], div3.leaf)]
+        PN.deleteleaf!(div3, div3_L; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
         new_leaf.name = leaf_names[2]
 
         ######## Lower taxa takes major, higher takes minor ########
-        div4 = deepcopy(net)
+        div4 = deepcopy_network(net)
         div4_H = div4.hybrid[findfirst(div4_H -> div4_H.number == lowest_H.number && div4_H.name == lowest_H.name, div4.hybrid)]
         E_minor = getparentedgeminor(div4_H)
         E_major = getparentedge(div4_H)
 
         # 1. (same as above but flipped)
         new_leaf = PN.addleaf!(div4, getparent(E_major), "__$(leaf_names[1])", 0.0)
-        PN.deleteleaf!(div4, leaf_names[1]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        div4_L = div4.leaf[findfirst(dl -> dl.name == leaf_names[1], div4.leaf)]
+        PN.deleteleaf!(div4, div4_L; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
         new_leaf.name = leaf_names[1]
 
         # 2. (same as above but flipped)
         new_leaf = PN.addleaf!(div4, getparent(E_minor), "__$(leaf_names[2])", 0.0)
-        PN.deleteleaf!(div4, leaf_names[2]; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
+        div4_L = div4.leaf[findfirst(dl -> dl.name == leaf_names[2], div4.leaf)]
+        PN.deleteleaf!(div4, div4_L; simplify=false, nofuse=true, multgammas=false, keeporiginalroot=true)
         new_leaf.name = leaf_names[2]
         
 
@@ -447,7 +428,7 @@ function get_reduced_net(reduced_nets::Dict{Set{String}, HybridNetwork}, taxa::S
     push!(taxa, next_taxa)
     parent_net::HybridNetwork = get_reduced_net(reduced_nets, taxa, all_taxa)
     
-    net::HybridNetwork = deepcopy(parent_net)
+    net::HybridNetwork = deepcopy_network(parent_net)
     PN.deleteleaf!(net, next_taxa, simplify=false, unroot=false, nofuse=true)
     delete!(taxa, next_taxa)
     net.numtaxa == length(taxa) || error("$(net.numtaxa) != $(length(taxa))")
@@ -483,12 +464,18 @@ end
 
 
 function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:AbstractString}, parameter_map::Dict{Int, Int}, α::Real=Inf)::QuartetData
-    net = deepcopy(net) # deepcopy b/c we need edge numbers to stay the same
+    # Let's see if the quartet is tree-like and easy first
+    qdat = try_treelike_quartet(net, taxa, parameter_map)
+    qdat !== nothing && return qdat
+
+    # Above attempt failed, so we have to do it the hard way.
+    net = deepcopy_network(net) # deepcopy b/c we need edge numbers to stay the same
 
     # remove all taxa other than those in `taxa`
     for t in sort(tipLabels(net))
         t in taxa && continue
-        PhyloNetworks.deleteleaf!(net, t; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
+        L = net.leaf[findfirst(l -> l.name == t, net.leaf)]
+        PhyloNetworks.deleteleaf!(net, L; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
     end
 
     # find and delete degree-2 blobs along external edges
@@ -522,6 +509,104 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:Abstrac
             if haskey(parameter_map, obj.number)],
         taxa
     )
+end
+
+
+"""
+Uses simple path-finding operations to try and find a tree-like quartet
+relationship between the 4 taxa in `taxa`. On successful finding of this
+quartet, the corresponding `QuartetData` object is returned. If a hybrid
+is encountered along a given path in this operation, `nothing` is
+returned instead.
+"""
+function try_treelike_quartet(net::HybridNetwork, taxa::Vector{String}, param_map::Dict{Int,Int})
+    a = net.leaf[findfirst(l -> l.name == taxa[1], net.leaf)]
+    b = net.leaf[findfirst(l -> l.name == taxa[2], net.leaf)]
+    c = net.leaf[findfirst(l -> l.name == taxa[3], net.leaf)]
+    d = net.leaf[findfirst(l -> l.name == taxa[4], net.leaf)]
+
+    path_ab = find_treelike_mrca_path(a, b)
+    path_ab === nothing && return nothing
+    path_cd = find_treelike_mrca_path(c, d)
+    path_cd === nothing && return nothing
+    path_ac = find_treelike_mrca_path(a, c)
+    path_ac === nothing && return nothing
+    path_bd = find_treelike_mrca_path(b, d)
+    path_bd === nothing && return nothing
+    
+    i_abcd = intersect(path_ab, path_cd)
+    i_acbd = intersect(path_ac, path_bd)
+
+    if length(i_abcd) == 0
+        coal_edges = [param_map[e.number] for e in i_acbd]
+        return QuartetData(
+            RecursiveCFEquation(true, coal_edges, 1, -1, []),
+            [param_map[e.number] for e in union(path_ac, path_bd) if haskey(param_map, e.number)],
+            [a.name, b.name, c.name, d.name]
+        )
+    elseif length(i_acbd) == 0
+        coal_edges = [param_map[e.number] for e in i_abcd]
+        return QuartetData(
+            RecursiveCFEquation(true, coal_edges, 2, -1, []),
+            [param_map[e.number] for e in union(path_ab, path_cd) if haskey(param_map, e.number)],
+            [a.name, b.name, c.name, d.name]
+        )
+    else
+        coal_edges = [param_map[e.number] for e in i_abcd]
+        return QuartetData(
+            RecursiveCFEquation(true, coal_edges, 3, -1, []),
+            [param_map[e.number] for e in union(path_ab, path_cd) if haskey(param_map, e.number)],
+            [a.name, b.name, c.name, d.name]
+        )
+    end
+end
+
+
+"""
+Finds the tree-like path of edges connecting nodes `a` and
+`b` to one another, assuming that they are in the same
+network. If they are connected by a strictly tree-like path
+then this path of edges is returned. Otherwise, `nothing`
+is returned.
+
+"""
+function find_treelike_mrca_path(a::Node, b::Node)
+    node_path_a::Vector{Node} = []
+    edge_path_a::Vector{Edge} = []
+    node_path_b::Vector{Node} = []
+    edge_path_b::Vector{Edge} = []
+
+    iter::Int = 0
+    while !(a in node_path_b) && !(b in node_path_a)
+        pa = getparents(a)
+        pb = getparents(b)
+
+        # If hybrid in path, return nothing
+        if length(pa) > 1 || length(pb) > 1
+            return nothing
+        end
+
+        if length(pa) == 1
+            push!(node_path_a, pa[1])
+            push!(edge_path_a, getparentedge(a))
+            a = pa[1]
+        end
+        if length(pb) == 1
+            push!(node_path_b, pb[1])
+            push!(edge_path_b, getparentedge(b))
+            b = pb[1]
+        end
+
+        iter += 1
+        iter < 1e5 || error("Looped $(iter) times!")
+    end
+
+
+    if a in node_path_b
+        return vcat(edge_path_a, edge_path_b[1:findfirst(bnode -> bnode == a, node_path_b)])
+    else
+        return vcat(edge_path_a[1:findfirst(anode -> anode == b, node_path_a)], edge_path_b)
+    end
 end
 
 
