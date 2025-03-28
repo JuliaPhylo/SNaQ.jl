@@ -29,17 +29,19 @@ function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
 
     # u: loses s as a child and gains t as a child
     # v: loses t as a child and gains s as a child
-    edge_su::Edge = s.edge[findfirst(e -> u in e.node, s.edge)]
-    edge_tv::Edge = t.edge[findfirst(e -> v in e.node, t.edge)]
+    su_idx::Int = findfirst(e -> u in e.node, s.edge)
+    tv_idx::Int = findfirst(e -> v in e.node, t.edge)
+    edge_su::Edge = s.edge[su_idx]
+    edge_tv::Edge = t.edge[tv_idx]
     replace!(edge_su.node, s => t)
     replace!(edge_tv.node, t => s)
     replace!(s.edge, edge_su => edge_tv)
     replace!(t.edge, edge_tv => edge_su)
-    edge_sv::Edge = s.edge[findfirst(e -> v in e.node, s.edge)]
+    #edge_sv::Edge = s.edge[findfirst(e -> v in e.node, s.edge)]
 
-    temp_number = edge_su.number
-    edge_su.number = edge_sv.number
-    edge_sv.number = temp_number
+    # temp_number = edge_su.number
+    # edge_su.number = edge_tv.number
+    # edge_tv.number = temp_number
 
     # Swap the hybridization-related info of these edges. That way, if either
     # `s` or `t` are hybrids, they maintain their status

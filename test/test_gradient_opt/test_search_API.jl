@@ -19,84 +19,69 @@ df = readtableCF(DataFrame(tablequartetCF(q, t)));
 snaq_net = SNaQ.readnewicklevel1(writenewick(net))
 tre0 = readnewick(writenewick(gts[1]));
 perform_rNNI1!(tre0, sample_rNNI_parameters(tre0, 1, Random.seed!(0))...);
+perform_rNNI1!(tre0, sample_rNNI_parameters(tre0, 1, Random.seed!(0))...);
+perform_rNNI1!(tre0, sample_rNNI_parameters(tre0, 1, Random.seed!(0))...);
+perform_rNNI1!(tre0, sample_rNNI_parameters(tre0, 1, Random.seed!(0))...);
 
 
-opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=2, maxeval = 10000, maxequivPLs = 1000)
+opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=4, maxequivPLs = 100)
 hardwiredClusterDistance(net, opt_net, false)
 
-nets = [search(gts[j], q, net.numhybrids; maxeval=10000, maxequivPLs=100, seed=rand(Int))[1] for j = 1:20];
-max_net_PL, max_net_idx = findmax(compute_logPL(net[1], q) for net in nets)
-max_net = nets[max_net_idx][1]
-hardwiredClusterDistance(max_net, net, false)
-
-
-snaq_rt = @elapsed snaq_net = snaq!(tre0, df, hmax=net.numhybrids, runs=1);
-hardwiredClusterDistance(net, snaq_net, false)
-
-
-compute_logPL(opt_net, q), compute_logPL(net, q)
-
-Plots.plot(1:length(logPLs), logPLs)
-
-PhyloPlots.plot(net);
-PhyloPlots.plot(opt_net);
 
 
 
-### Tree example
-tre = readnewick(joinpath(@__DIR__, "n1.netfile")); tre = majortree(tre);
-gts = simulatecoalescent(tre, 1000, 1);
-tre.isrooted = false;
-q, _ = countquartetsintrees(gts, showprogressbar=false);
-tre0 = readnewick(writenewick(tre));
-tre0.isrooted = false;
-perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);
-
-opt_tre, logPLs = search(tre0, q, tre.numhybrids; maxeval = 1000, maxequivPLs = 100)
-hardwiredClusterDistance(tre, opt_tre, false)
-
-PhyloPlots.plot(tre)
-PhyloPlots.plot(tre0)
-
-
-### hmax = 3 will probably give us plenty of fun, new errors to debug...
-tre = readnewick(joinpath(@__DIR__, "n1.netfile"));
-gts = simulatecoalescent(tre, 1000, 1);
-tre.isrooted = false;
-q, _ = countquartetsintrees(gts, showprogressbar=false);
-tre0 = readnewick(writenewick(tre));
-tre0.isrooted = false;
-perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);
-
-opt_tre, logPLs = search(tre0, q, 3; maxeval = 10000, maxequivPLs = 10000)
-hardwiredClusterDistance(tre, opt_tre, false)
-PhyloPlots.plot(tre);
-PhyloPlots.plot(opt_tre);
 
 
 
-### in-place modification
-net = readnewick(joinpath(@__DIR__, "n1.netfile"));
-net.isrooted = false;
+nprocs() < 5 && addprocs(5 - nprocs())
+@everywhere include("../../src/gradient_optimization/search_API.jl")
 
-mod_net = readnewick(writenewick(net));
-mod_net.isrooted = false;
 
-for _ = 1:100_000
-    propose_topology!(mod_net, 6)
+function split_search(nsplit, maxiter, seed, t0, q, hmax; kwargs...)
+
+    rng = Random.seed!(seed)
+    best_net = deepcopy_network(t0)
+    prev_PL = compute_loss(best_net, q)
+    for iter = 1:maxiter
+        seeds = rand(rng, Int, nsplit)
+        res = Distributed.pmap(1:nsplit) do j
+            opt_net, opt_PLs = search(best_net, q, net.numhybrids; seed=seeds[j], probST = 1.0)
+            return opt_net, opt_PLs
+        end
+        best_net = res[findmax(np -> np[2], res)[2]][1]
+        best_PL = findmax(np -> np[2], res)[1]
+
+        if prev_PL > best_PL
+            break
+        end
+        prev_PL = best_PL
+    end
+    return best_net, compute_loss(best_net, q)
+
 end
-hardwiredClusterDistance(net, mod_net, false)
 
 
 
 
-### Only tree-child networks while searching
-net, gts = readnewick(joinpath(@__DIR__, "n1.netfile")), readmultinewick(joinpath(@__DIR__, "n1_10kgts.treefile")); net.isrooted = false;
-q, t = countquartetsintrees(gts, showprogressbar=false);
-df = readtableCF(DataFrame(tablequartetCF(q, t)));
-tre0 = readnewick(writenewick(gts[1]));
-perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);perform_random_rNNI!(tre0);
+split_hwcds = [];
+split_rts = [];
+multi_hwcds = [];
+multi_rts = [];
+while true
+    print("j=$(length(split_hwcds)+1):\t")
+    j = sample(1:length(gts))
+    srt = @elapsed snet, sPL = split_search(nprocs(), 25, 100+length(split_hwcds), deepcopy(gts[j]), q, net.numhybrids; maxequivPLs=75, opt_maxeval=10)
+    push!(split_rts, srt)
+    push!(split_hwcds, hardwiredclusterdistance(snet, net, false))
+    print("split=($(round(srt, digits=2)), $(split_hwcds[length(split_hwcds)]))")
 
-R = restriction_set(; require_strongly_tree_child = true, require_galled_network = true)
-opt_net, logPLs = search(tre0, q, net.numhybrids; restrictions=R, maxeval = 2000, maxequivPLs = 250)
-hardwiredClusterDistance(opt_net, net, false)
+    mrt = @elapsed mnet, _ = multi_search(deepcopy(gts[j]), q, net.numhybrids; seed=100+length(split_hwcds), runs=nprocs(), maxequivPLs=1000, opt_maxeval=10)
+    push!(multi_rts, mrt)
+    push!(multi_hwcds, hardwiredclusterdistance(mnet, net, false))
+
+    println(", multi=($(round(mrt, digits=2)), $(multi_hwcds[length(multi_hwcds)]))")
+end
+
+snet, sPL = split_search(5, 25, 1, tre0, q, net.numhybrids; maxequivPLs = 50)
+hardwiredclusterdistance(snet, net, false)
+

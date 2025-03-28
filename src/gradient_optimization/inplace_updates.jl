@@ -38,7 +38,7 @@ end
 function apply_rNNI1_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, α::Real=Inf)
     relevant_params = params_below_u_rNNI1(u, param_map)
     Threads.@threads for j = 1:length(old_qdata)
-        if recur_fxn_has_params(old_qdata[j].eqn, relevant_params)
+        if length(old_qdata[j].eqn.divisions) > 0 || recur_fxn_has_params(old_qdata[j].eqn, relevant_params)
             new_qdata[j] = find_quartet_equations_4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
         else
             new_qdata[j] = old_qdata[j]

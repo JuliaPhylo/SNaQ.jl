@@ -60,3 +60,41 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
 end
 
 
+"""
+Samples a set of nodes randomly that are valid parameters for the
+`perform_rSPR!` function. Returns nothing if it fails to find a 
+valid set of parameters.
+"""
+function sample_rSPR_parameters(N::HybridNetwork, rng::TaskLocalRNG)
+    attempts::Int = 0
+    while true
+        attempts += 1
+        attempts < 1e5 || return nothing
+
+        # Sample x' and y'
+        xprime = sample(rng, N.node)
+        !xprime.leaf || continue
+        yprime = length(getchildren(xprime)) == 1 ? getchild(xprime) : sample(rng, getchildren(xprime))
+
+        # Sample z
+        z = sample(rng, N.node)
+        !z.leaf || continue
+
+        # Figure out remaining nodes from context
+        if z.hybrid
+            w = getparent(getparentedgeminor(z))
+            x = getparent(getparentedge(z))
+            y = getchild(z)
+            is_valid_rSPR(w, x, y, z, xprime, yprime) && return (w, x, y, z, xprime, yprime)
+        elseif length(getchildren(z)) == 2
+            w, y = getchildren(z)
+            x = getparent(z)
+            is_valid_rSPR(w, x, y, z, xprime, yprime) && return (w, x, y, z, xprime, yprime)
+        else
+            continue
+        end
+    end
+end
+
+
+

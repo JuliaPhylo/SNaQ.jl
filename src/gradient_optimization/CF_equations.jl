@@ -582,7 +582,7 @@ function find_treelike_mrca_path(a::Node, b::Node)
         pb = getparents(b)
 
         # If hybrid in path, return nothing
-        if length(pa) > 1 || length(pb) > 1
+        if length(pa) > 1 || length(pb) > 1 || (length(pa) == 1 && pa[1].hybrid) || (length(pb) == 1 && pb[1].hybrid)
             return nothing
         end
 

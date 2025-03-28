@@ -55,7 +55,6 @@ function optimize_bls!(
     eqns::Array{QuartetData},
     observed_CFs,
     α::Real=Inf;
-    return_logPL::Bool=false,
     maxeval::Int=25
 )
 
@@ -100,8 +99,7 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork
     end
 
     fill!(grad, 0.0)
-    total_loss::Float64 = compute_loss_and_gradient!(blocks, X, grad, obsCFs, α)
-    return total_loss
+    return compute_loss_and_gradient!(blocks, X, grad, obsCFs, α)
 end
 
 
@@ -112,11 +110,15 @@ function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
     uq_ID = net.numedges
     param_idx = 1
 
-    for obj in vcat(net.hybrid, net.edge)
-        if change_numbers
+    if change_numbers
+        for obj in vcat(net.hybrid, net.edge)
             obj.number = uq_ID
             uq_ID += 1
         end
+    end
+
+    order = sortperm([obj.number for obj in vcat(net.hybrid, net.edge)])
+    for obj in vcat(net.hybrid, net.edge)[order]
         if typeof(obj) <: Edge && getchild(obj).leaf continue end
 
         haskey(param_map, obj.number) && error("Duplicate object number #$(obj.number).")
@@ -188,13 +190,12 @@ function compute_logPL(blocks::AbstractMatrix{<:AbstractArray{<:AbstractArray{<:
 end
 
 
-function compute_eCFs(net::HybridNetwork)
-    blocks, _, params, _ = find_quartet_equations(net)
-    eCFs = zeros(size(blocks))
+function compute_eCFs(net::HybridNetwork, α::Real=Inf)
+    eqns, _, params, _ = find_quartet_equations(net)
+    eCFs = zeros(length(eqns), 3)
     for j = 1:size(eCFs)[1]
-        for k = 1:3
-            eCFs[j, k] = compute_eCF(blocks[j, k], params, k, Inf)
-        end
+        eCFs[j, 1], eCFs[j, 2] = compute_eCF(eqns[j], params, α)
+        eCFs[j, 3] = 1 - eCFs[j, 1] - eCFs[j, 2]
     end
     return eCFs
 end

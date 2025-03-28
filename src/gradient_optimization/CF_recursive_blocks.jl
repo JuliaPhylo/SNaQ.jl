@@ -36,8 +36,8 @@ contains_parameter(qdata::QuartetData, param_idxs::AbstractVector{Int})::Bool = 
 )
 
 
-function compute_eCF(qdata::QuartetData, params::Vector{<:Real})
-    return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), Inf)
+function compute_eCF(qdata::QuartetData, params::Vector{<:Real}, α::Real)
+    return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α)
 end
 
 

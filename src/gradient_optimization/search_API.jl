@@ -9,7 +9,6 @@ include("../network_moves/identifiability_moves.jl")
 include("../network_properties/network_properties.jl")
 
 
-API_WARNED = false
 """
 API NOT FINALIZED
 """
@@ -58,7 +57,7 @@ function search(
     probST::Real=0.3,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=200,
-    opt_maxeval::Int=25,
+    opt_maxeval::Int=10,
     seed::Int=abs(rand(Int) % 100000)
 )
     # Parameter enforcement
@@ -70,13 +69,6 @@ function search(
 
     # Set the seed
     rng = Random.seed!(seed)
-
-    # TODO: remove this once API finalized
-    global API_WARNED
-    if !API_WARNED
-        @warn "API NOT YET FINALIZED"
-        API_WARNED = true
-    end
 
     N = readnewick(writenewick(N));
     semidirect_network!(N)
@@ -123,6 +115,7 @@ function search(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
         )
+        compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
         (Nprime_logPL === NaN || abs(Nprime_logPL) < eps()) && error("""
@@ -153,6 +146,7 @@ function search(
                 end
             end
             if length(bad_Hs) != 0
+                @error "Removing bad H!"
                 @debug "Found $(length(bad_Hs)) hybrids with γ=$(getparentedge(bad_H).gamma), removing them."
                 for H in bad_Hs
                     remove_hybrid!(N, H)
@@ -179,19 +173,21 @@ Applies the move `move` on parameters `params` to network `N`.
 """
 function apply_move!(N::HybridNetwork, move::Symbol, params::Tuple)
     if move == :add_hybrid
-        return add_hybrid!(N, params[1], params[2])
+        return add_hybrid!(N, params...)
     elseif move == :rNNI1
-        return perform_rNNI1!(N, params[1], params[2], params[3], params[4])
+        return perform_rNNI1!(N, params...)
     elseif move == :rNNI2
-        return perform_rNNI2!(N, params[1], params[2], params[3], params[4])
+        return perform_rNNI2!(N, params...)
     elseif move == :rNNI3
-        return perform_rNNI3!(N, params[1], params[2], params[3], params[4])
+        return perform_rNNI3!(N, params...)
     elseif move == :rNNI4
-        return perform_rNNI4!(N, params[1], params[2], params[3], params[4])
+        return perform_rNNI4!(N, params...)
     elseif move == :retic_origin || move == :retic_origin_local
-        return move_reticulate_origin!(N, params[1], params[2])
+        return move_reticulate_origin!(N, params...)
     elseif move == :retic_target || move == :retic_target_local
-        return move_reticulate_target!(N, params[1], params[2])
+        return move_reticulate_target!(N, params...)
+    elseif move == :rSPR
+        return perform_rSPR!(N, params...)
     end
 
     error("Move \"$(move)\" not recognized.")
@@ -251,7 +247,7 @@ Randomly samples a move to generate a new topology from `N`.
 """
 function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
 
-    if N.numhybrids < hmax && rand(rng) < 0.50
+    if N.numhybrids < hmax && rand(rng) < 0.05
         @debug "SELECTED: add_random_hybrid!"
         return (:add_hybrid, sample_add_hybrid_parameters(N, rng))
     end
@@ -263,10 +259,12 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
     end
 
     r = rand(rng)
-    if r < 0.33
+    if r < 0.66
         r = sample(rng, [1, 2, 3, 4])
         move_symbol = [:rNNI1, :rNNI2, :rNNI3, :rNNI4][r]
         return (move_symbol, sample_rNNI_parameters(N, r, rng))
+    elseif r < 0.66
+        return (:rSPR, sample_rSPR_parameters(N, rng))
     else
         r = sample(rng, [1, 2, 3, 4])   # 1 = move retic origin
                                         # 2 = move retic target

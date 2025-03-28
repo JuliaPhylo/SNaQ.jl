@@ -95,6 +95,7 @@ function all_valid_rNNI1_nodes(N::HybridNetwork)
 
     stuv_combos = [];
     for u in valid_us
+        u == getroot(N) && continue
         children = getchildren(u)
 
         if !children[1].leaf && !(children[2] in getchildren(children[1])) && !children[1].hybrid
