@@ -1,4 +1,5 @@
 using PhyloNetworks, StatsBase, Random
+import PhyloNetworks: fliphybrid!
 const Node = PhyloNetworks.Node;
 const Edge = PhyloNetworks.Edge;
 include("misc.jl")
@@ -39,9 +40,11 @@ function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     replace!(t.edge, edge_tv => edge_su)
     #edge_sv::Edge = s.edge[findfirst(e -> v in e.node, s.edge)]
 
-    # temp_number = edge_su.number
-    # edge_su.number = edge_tv.number
-    # edge_tv.number = temp_number
+    # If `v` is a hybrid, we need to flip the direciton of the edge `uv`
+    if v.hybrid
+        edge_uv::Edge = u.edge[findfirst(e -> v in e.node, u.edge)]
+        fliphybrid!(N, v, edge_uv.ismajor)
+    end
 
     # Swap the hybridization-related info of these edges. That way, if either
     # `s` or `t` are hybrids, they maintain their status

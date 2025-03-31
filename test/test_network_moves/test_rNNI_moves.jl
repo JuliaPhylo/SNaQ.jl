@@ -191,7 +191,13 @@ end
 
 rng = Random.seed!(0)
 net = reload_labelled_net()
-for j = 1:1000
+prev_newick = ""
+for j = 1:10000
+    global net
+    if j % 100 == 0
+        net = reload_labelled_net()
+        prev_newick = ""
+    end
     prev_newick = writenewick(net)
     perform_random_rNNI!(net, rng)
     @test_nowarn writenewick(net)
