@@ -155,9 +155,9 @@ end
 
 
 """
-Add a docstring later - I'm going on a walk 
+Function used exclusively for testing in `test_rNNI_moves.jl`
 """
-function sample_random_rNNI(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
+function perform_random_rNNI!(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
     (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
     
     r = rand()

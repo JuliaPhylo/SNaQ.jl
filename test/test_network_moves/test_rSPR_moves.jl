@@ -65,10 +65,19 @@ semidirect_network!(net)
 # THIRD: RUN A LOT OF NETWORK MOVES AND MAKE SURE THAT NOTHING BREAKS #
 #######################################################################
 
-net = nothing
-w, x, y, z, xprime, yprime = repeat([nothing], 6)
 
 
+rng = Random.seed!(0)
+net = reload_labelled_net()
+prev_newick = ""
+for j = 1:1000
+    prev_newick = writenewick(net)
+    params = sample_rSPR_parameters(net, rng)
+    perform_rSPR!(net, params...)
+    @test findfirst(tip -> !occursin(tip, writenewick(net)), tipLabels(net)) === nothing
+    @test_nowarn writenewick(net)
+    @test prev_newick != writenewick(net)
+end
 
 
 

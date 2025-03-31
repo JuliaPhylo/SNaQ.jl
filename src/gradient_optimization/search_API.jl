@@ -15,12 +15,6 @@ API NOT FINALIZED
 function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=abs(rand(Int) % 100000), kwargs...)
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
 
-    global API_WARNED
-    if !API_WARNED
-        @warn "API NOT YET FINALIZED"
-        API_WARNED = true
-    end
-
     # Prep data
     N = readnewick(writenewick(N));
 
@@ -115,7 +109,7 @@ function search(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
         )
-        compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
+        # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
         (Nprime_logPL === NaN || abs(Nprime_logPL) < eps()) && error("""

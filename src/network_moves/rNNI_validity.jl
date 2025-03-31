@@ -14,8 +14,6 @@ is_valid_rNNI(s::Node, t::Node, u::Node, v::Node, type::Int) = type == 1 ? is_va
 
 
 function is_valid_rNNI1(s::Node, t::Node, u::Node, v::Node)
-    !v.hybrid || return false
-
     cu = getchildren(u)
     (s in cu && v in cu) || return false
 
@@ -51,7 +49,7 @@ function is_valid_rNNI4(s::Node, t::Node, u::Node, v::Node)
     v in getchildren(u) || return false
     v in getchildren(t) || return false
     s in getchildren(u) || return false
-    length(getchildren(u)) == 2 || return false
+    length(getchildren(u)) >= 2 || return false
     v.hybrid || return false
     !is_descendant_of(u, t) || return false
     !is_descendant_of(t, s) || return false
@@ -97,15 +95,16 @@ function all_valid_rNNI1_nodes(N::HybridNetwork)
     for u in valid_us
         u == getroot(N) && continue
         children = getchildren(u)
+        (children[1] in getchildren(children[2]) || children[2] in getchildren(children[1])) && continue
 
-        if !children[1].leaf && !(children[2] in getchildren(children[1])) && !children[1].hybrid
+        if !children[1].leaf && !(children[2] in getchildren(children[1]))
             for t in getchildren(children[1])
                 children[2].hybrid && children[1] in getparents(children[2]) && continue
                 push!(stuv_combos, (children[2], t, u, children[1]))
             end
         end
 
-        if !children[2].leaf && !(children[1] in getchildren(children[2])) && !children[2].hybrid
+        if !children[2].leaf && !(children[1] in getchildren(children[2]))
             for t in getchildren(children[2])
                 children[1].hybrid && children[2] in getparents(children[1]) && continue
                 push!(stuv_combos, (children[1], t, u, children[2]))

@@ -111,7 +111,7 @@ function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
     param_idx = 1
 
     if change_numbers
-        for obj in vcat(net.hybrid, net.edge)
+        for obj in vcat(net.hybrid, net.edge, net.node)
             obj.number = uq_ID
             uq_ID += 1
         end

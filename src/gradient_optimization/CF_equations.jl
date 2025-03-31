@@ -382,7 +382,7 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::Vector{Int
     t_idx::Int = 1
     ts::Vector{Int} = Vector{Int}([1,2,3,4])
 
-    Threads.@threads for _ = 1:length(sampled_quartets)
+    for _ = 1:length(sampled_quartets)
         # Define a local variable b/c using `q_idx` would lead to race conditions
         this_iter_idx::Int = 0
         iter_taxa::Vector{String} = String[]
@@ -475,7 +475,7 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{<:Abstrac
     for t in sort(tipLabels(net))
         t in taxa && continue
         L = net.leaf[findfirst(l -> l.name == t, net.leaf)]
-        PhyloNetworks.deleteleaf!(net, L; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
+        PhyloNetworks.deleteleaf!(net, L.number; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
     end
 
     # find and delete degree-2 blobs along external edges
@@ -587,11 +587,13 @@ function find_treelike_mrca_path(a::Node, b::Node)
         end
 
         if length(pa) == 1
+            pa[1] in node_path_a && return nothing
             push!(node_path_a, pa[1])
             push!(edge_path_a, getparentedge(a))
             a = pa[1]
         end
         if length(pb) == 1
+            pb[1] in node_path_b && return nothing
             push!(node_path_b, pb[1])
             push!(edge_path_b, getparentedge(b))
             b = pb[1]

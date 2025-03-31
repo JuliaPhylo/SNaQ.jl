@@ -41,7 +41,7 @@ function shrink_bad_diamonds!(N::HybridNetwork)
             n0_ge2 && continue  # good diamond
 
             # 4. this is a bad diamond - shrink it! (i.e. remove the minor reticulate edge)
-            remove_hybrid!(H, N)
+            remove_hybrid!(N, H)
             check_again = true      # this could drastically change the network, so check everything again!
             break
         end
