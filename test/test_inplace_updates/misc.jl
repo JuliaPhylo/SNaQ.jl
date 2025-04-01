@@ -4,7 +4,7 @@ include("../../src/network_moves/add_remove_retic.jl")
 
 function generate_tree(n::Int, seed::Int=42)
     n > 0 || error("n must be >0 (n=$(n))")
-    Random.seed!(seed)
+    rng = Random.seed!(seed)
 
     newick = "(" * join(["t$(j)" for j=1:n], ",") * ");"
     tre0 = readnewick(newick)
