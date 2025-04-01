@@ -11,3 +11,6 @@ SNaQ = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
 
 [sources]
 PhyloTraits = {url = "https://github.com/JuliaPhylo/PhyloTraits.jl"}
+
+[compat]
+Documenter = "~1"

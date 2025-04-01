@@ -145,33 +145,13 @@ nothing # hide
 ![othernets before reroot](../assets/figures/fixednetworkoptim_othernets1.svg)
 
 Now imagine that our outgroup is taxon A.
-- best network: we would get a `RootMismatch` error if we tried to set
-  the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
-  (see the PhyloNetworks guide 
-  [Does the root conflict with the direction of a reticulation?](@extref)).
-  But we could root the best network on the major parent edge to A, edge 10
-  (rooted network on the left below).
-- For the second best network in our list, there are 2 ways to root it
-  with A.
-  These 2 options give quite different rooted versions of the network: 
-  1. On the external edge 8 to A (top right).   
-     This requires the existence of an unsampled taxon,
-     sister to BOECD, that would have contributed to introgression into
-     an ancestor of E.
-  2. On its parent edge 10 (bottom right).  
-     Although the second rooted version could also be explained with
-     an unsampled taxon sister to A that contributes to introgression, it is not explicitly required
-     in this case. 
-     Instead, an ancestor of A could have directly contributed to the
-     introgression into the ancestor of E. SNaQ does not 
-     distinguish between these possibilities. The MSCI model
-     implemented in [BPP](https://bpp.github.io/bpp-manual/bpp-4-manual/#the-msc-i-model)
-     attempts to test between different models of introgression (see [Flouri et al. 2019](https://doi.org/10.1093/molbev/msz296)).
 
-  A is an outgroup in both rootings, but the second case is more parsimonious,
-  in the sense that it does not outright require the existence of an unsampled
-  taxon.
-
+Best network: we would get a `RootMismatch` error if we tried to set
+the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
+(see the PhyloNetworks guide
+[Does the root conflict with the direction of a reticulation?](@extref)).
+But we could root the best network on the major parent edge to A, edge 10
+(rooted network on the left below).
 
 ```@example fixednetworkoptim
 R"svg(name('fixednetworkoptim_othernets2.svg'), width=7, height=7)" # hide
@@ -199,3 +179,51 @@ nothing # hide
 ```
 ![othernets after reroot](../assets/figures/fixednetworkoptim_othernets2.svg)
 
+For the second best network in our list, there are 2 ways to root it with A.
+These 2 options give quite different rooted versions of the network:
+1. On the external edge 8 to A (top right).
+   This requires the existence of an unsampled taxon,
+   sister to BOECD, that would have contributed to introgression into
+   an ancestor of E.
+2. On its parent edge 10 (bottom right).
+
+A is an outgroup in both rootings, but the second option is more parsimonious,
+in the sense that it does not outright require the existence of a "ghost"
+taxon: a taxon that went extinct after the introgression, or that is unsampled.
+
+This second rooted version is consistent with 2 possibilities.
+It could arise either from
+(a) an unsampled taxon sister to A that contributed to introgression, or
+(b) a direct ancestor of A could have contributed to the
+introgression into the ancestor of E.
+Case (a) stipulates the existence of an unsampled ("ghost") taxon,
+but case (b) does not require any unsampled taxon.
+
+These two possibilities differ in the length of their gene flow edge
+(light blue, here with γ=0.185).
+If gene flow came from an unsampled taxon under case (a),
+this edge would have positive length, in calendar time.
+If gene flow came from a direct ancestor of A under case (b),
+the gene flow edge would have length 0.
+
+Edge lengths from SNaQ should be interpreted with caution to
+distinguish between the two possibilities because:
+* edge lengths estimated with SNaQ are in coalescent units instead of
+  calendar time, and necessarily include estimation error;
+* an edge with a true length of 0 may be estimated to have a non-zero length
+  in coalescent units due to errors in estimated gene trees, to explain
+  some degree of apparent gene tree discordance;
+* an incorrect topology may result in edges of estimated length 0
+  (this is known in trees, to force a polytomy);
+* and some edge lengths are not identifiable from quartet concordance
+  factors anyway.
+
+To distinguish between these possibilities, models that separate calendar time,
+substitution rate, and population size can be useful. Using stronger assumptions
+than SNaQ (e.g. a molecular clock), the rooted network and branch lengths may
+be identifiable, so networks with / without unsampled taxa may be distinguished.
+See for example [Zhang et al. 2024](https://doi.org/10.1111/tpj.16859),
+who used BPP. Note that the model named
+"[MSci](https://bpp.github.io/bpp-manual/bpp-4-manual/#the-msc-i-model)"
+in BPP is exactly the same as the network multispecies coalescent,
+and is typically named NMSC in most papers.

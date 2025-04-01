@@ -57,7 +57,7 @@ summarizedataCF(d_sp)
 
 Four-taxon sets involving 2 individuals per species can provide more
 information about the underlying network, including external branch
-length in coalescent units. However, [`snaq!`]()@ref) runs more slowly when
+length in coalescent units. However, [`snaq!`](@ref) runs more slowly when
 using this extra information. To get quartet CFs from sets of 4 individuals
 in which 2 individuals are from the same species, the following functions
 should be used:

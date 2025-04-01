@@ -11,8 +11,10 @@ truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,
 
 One can formally assess whether an estimated network fits the concordance factor data
 with the [`QuartetNetworkGoodnessFit`](https://github.com/JuliaPhylo/QuartetNetworkGoodnessFit.jl) package in Julia.
-This package simulates concordance factors from the estimated network under the  network multispeciescoalescent,
-computes how often outlier quartet topologies are observed, and compares this to the observed concordance factors to 
+This package simulates concordance factors from the estimated network under the
+network multispecies coalescent,
+computes how often outlier quartet topologies are observed,
+and compares this to the observed concordance factors to
 perform a test for goodness-of-fit.
 See the [`QuartetNetworkGoodnessFit` documentation](https://juliaphylo.github.io/QuartetNetworkGoodnessFit.jl/stable/man/gof/)
 for an example of this test.
