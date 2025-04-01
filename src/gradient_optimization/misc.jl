@@ -75,7 +75,7 @@ function deepcopy_network(net::HybridNetwork)::HybridNetwork
     nodec = Array{Node}(undef, net.numnodes)
     for (j, node) in enumerate(net.node)
         nodec[j] = Node(node.number, node.leaf, node.hybrid)
-        nodec[j].name = deepcopy(node.name)
+        nodec[j].name = node.name
         node_map[node.number] = nodec[j]
     end
 
