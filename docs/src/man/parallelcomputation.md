@@ -1,6 +1,6 @@
 # Parallel computations
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 For network estimation, multiple runs can done in parallel.
 For example, if your machine has 4 or more processors (or cores),
@@ -124,4 +124,4 @@ echo "start of SNaQ parallel runs on $(hostname)"
 echo "end of SNaQ run ..."
 ```
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)

@@ -4,7 +4,7 @@ mkpath("../assets/figures")
 ```
 # Bootstrap
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## Running a bootstrap analysis
 

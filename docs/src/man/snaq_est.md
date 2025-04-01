@@ -29,7 +29,7 @@ created (with estimated networks for instance). Enter this directory
 and run Julia from there.
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## Inputs for SNaQ 
 
@@ -55,7 +55,7 @@ in MrBayes to estimate gene trees,
 then BUCKy to produce the table of estimated CFs and their credibility intervals.
 Both steps in this pipeline are parallelized. 
 
-!!! info "input quartet CFs: from BUCKy versus gene trees"
+!!! info "input quartet CFs: BUCKy versus gene trees"
     When quartet CFs are estimated using BUCKy on each subset of 4 taxa, then
     error in gene trees is accounted for: BUCKy aims to estimate true
     gene tree discordance, beyond discordance that is due to uncertainty in
@@ -414,4 +414,4 @@ Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia)
   More on this topic in here: [Parallel computations](@ref)
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Cécile Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
