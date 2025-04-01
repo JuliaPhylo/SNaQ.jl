@@ -77,7 +77,9 @@ function move_reticulate_origin!(N::HybridNetwork, hybrid::Node, new_origin::Edg
     else
         # z is the "root" at the moment - but we ignore this notion
         # because the network is semi-directed
-        x, y = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
+        other_nodes = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
+        length(other_nodes) == 2 || return false
+        x, y = other_nodes
     end 
 
     xprime = getparent(new_origin)
@@ -121,7 +123,9 @@ function is_valid_move_reticulate_origin(hybrid::Node, new_origin::Edge, N::Hybr
     else
         # z is the "root" at the moment - but we ignore this notion
         # because the network is semi-directed
-        x, y = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
+        other_nodes = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
+        length(other_nodes) == 2 || return false
+        x, y = other_nodes
         return is_valid_rSPR(hybrid, x, y, z, xprime, yprime)
     end 
 end

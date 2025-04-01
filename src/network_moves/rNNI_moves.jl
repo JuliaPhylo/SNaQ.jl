@@ -40,15 +40,16 @@ function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     replace!(t.edge, edge_tv => edge_su)
     #edge_sv::Edge = s.edge[findfirst(e -> v in e.node, s.edge)]
 
-    # If `v` is a hybrid, we need to flip the direciton of the edge `uv`
-    if v.hybrid
-        edge_uv::Edge = u.edge[findfirst(e -> v in e.node, u.edge)]
-        fliphybrid!(N, v, edge_uv.ismajor)
-    end
-
     # Swap the hybridization-related info of these edges. That way, if either
     # `s` or `t` are hybrids, they maintain their status
     swap_edge_hybrid_info!(edge_su, edge_tv)
+
+    # If `v` is a hybrid, we need to flip the direciton of the edge `uv`
+    # if v.hybrid
+    #     edge_uv::Edge = u.edge[findfirst(e -> v in e.node, u.edge)]
+    #     fliphybrid!(N, v, edge_uv.ismajor)
+    # end
+    
     return 1
 end
 
@@ -103,7 +104,10 @@ function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     swap_edge_hybrid_info!(edge_u, edge_uv)
     u.hybrid = false
     v.hybrid = true
-    v.name = v.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" : v.name[1] == "H" ? v.name : "H$(v.name)"
+    v.name = v.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" :
+             v.name[1] == 'H' ? v.name :
+             v.name[1] == 'i' ? "H$(v.name[2:length(v.name)])" : "H$(v.name)"
+    u.name = u.name[1] == 'H' ? "i$(u.name[2:length(u.name)])" : u.name
     replace!(N.hybrid, u => v)
     return 3
 end
@@ -134,7 +138,10 @@ function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     swap_edge_hybrid_info!(edge_u, edge_uv)
     u.hybrid = true
     v.hybrid = false
-    u.name = u.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" : u.name[1] == "H" ? u.name : "H$(u.name)"
+    u.name = u.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" :
+             u.name[1] == 'H' ? u.name :
+             u.name[1] == 'i' ? "H$(u.name[2:length(u.name)])" : "H$(u.name)"
+    v.name = v.name[1] == 'H' ? "i$(v.name[2:length(v.name)])" : v.name
     replace!(N.hybrid, v => u)
     return 4
 end
@@ -199,31 +206,3 @@ function perform_random_rNNI!(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector
     end
 end
 
-
-# EDGE attributes:
-# - number:         unique ID
-# - node:           attached nodes, always 2 in our case
-# - ischild1:       TRUE if node[1] is child of the edge, FALSE if node[1] is parent of the edge
-# - length:         branch length
-# - hybrid:         whether the edge is a tree edge or hybrid edge
-# - gamma:          γ
-# - ismajor:        whether the edge is the major path to the child node
-# - containroot:    is the interior of this edge a valid rooting position?
-
-
-
-
-
-# NODE attributes:
-# - edge:   attached edges (order does not matter)
-# - hybrid: is the node a hybrid
-# - leaf:   is the node a leaf
-# - name:   node's name
-# - number: unique ID
-# 
-# these ones can be ignored:
-# - booln1-6
-# - int8n3
-# - intn1-2
-# - fvalue
-# - prev

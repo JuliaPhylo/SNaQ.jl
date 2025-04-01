@@ -4,7 +4,6 @@ using PhyloNetworks;
 function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
     # Semi-directed network attribute that we are enforcing here:
     #   all non-leaf vertices have degree-3
-    sum([E.hybrid for E in getroot(N).edge]) <= 1 || error("Both root edges are hybrids.")
 
     # Fuse root edges and mark the network as no longer rooted
     if length(getroot(N).edge) == 2
@@ -39,7 +38,7 @@ function is_descendant_of(descendant::Node, ancestor::Node)
             push!(queue, c)
         end
         iters += 1
-        if iters % 10000 == 0 @info "descendant iters: $(iters)" end
+        iters >= 1e5 && error("Looped $(iters) times in `is_descendant_of`")
     end
     return false
 end

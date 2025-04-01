@@ -17,6 +17,7 @@ function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpr
     edge_xprime_yprime = xprime.edge[findfirst(e -> yprime in e.node, xprime.edge)]
     zprime, edge_xprime_zprime = breakedge!(edge_xprime_yprime, N)
     zprime.name = z.name    # maintain original node naming - will be useful for debugging
+    zprime.number = z.number
 
     # 2. Disconnect z from w and attach w to z'
     edge_zw = z.edge[findfirst(z_edge -> w in z_edge.node, z.edge)]
