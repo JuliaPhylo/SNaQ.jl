@@ -11,7 +11,13 @@ function generate_tree(n::Int, seed::Int=42)
     for E in tre0.edge
         E.length = 0.0
     end
-    return simulatecoalescent(tre0, 1, 1)[1]
+    tre = simulatecoalescent(tre0, 1, 1)[1]
+    for node in tre.node
+        if node.name == ""
+            node.name = "i$(abs(rand(rng, Int)) % 10000)"
+        end
+    end
+    return tre
 end
 
 
@@ -22,6 +28,11 @@ function generate_net(n::Int, h::Int, seed::Int=42)
     net = generate_tree(n, seed)
     for j = 1:h
         add_hybrid!(net, sample_add_hybrid_parameters(net, rng)...)
+    end
+    for node in net.node
+        if node.name == ""
+            node.name = "i$(abs(rand(rng, Int)) % 10000)"
+        end
     end
     return net
 end

@@ -1,4 +1,5 @@
 using PhyloNetworks, Test, StatsBase, Random
+include("test_includes.jl")
 
 #### Helper functions ####
 function reload_labelled_net()
@@ -258,4 +259,3 @@ s, t, u, v = get_nodes(net, "i13", "i8641", "i7", "H1");
 net = readnewick("(a:1.146,(b:1.687,((((e:0.776,f:0.855)i5:0.49,(c1:0.289,(c2:0.482)#H1:0.5::0.905)i13:0.978)i6:0.125,(d1:1.602,d2:1.301)i10:0.818)i1346:0.789,#H1:0.5::0.095)i10616:0.417)i12:0.5)i7;");
 net.isrooted = false;
 @test !is_valid_rNNI2(get_nodes(net, "i12", "i13", "i10616", "H1")...)
-
