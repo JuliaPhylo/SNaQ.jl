@@ -183,7 +183,7 @@ For the second best network in our list, there are 2 ways to root it with A.
 These 2 options give quite different rooted versions of the network:
 1. On the external edge 8 to A (top right).
    This requires the existence of an unsampled taxon,
-   sister to BOECD, that would have contributed to introgression into
+   sister to BDCOE, that would have contributed to introgression into
    an ancestor of E.
 2. On its parent edge 10 (bottom right).
 
@@ -192,10 +192,10 @@ in the sense that it does not outright require the existence of a "ghost"
 taxon: a taxon that went extinct after the introgression, or that is unsampled.
 
 This second rooted version is consistent with 2 possibilities.
-It could arise either from
-(a) an unsampled taxon sister to A that contributed to introgression, or
+It could arise either from  
+(a) an unsampled taxon sister to A that contributed to introgression, or  
 (b) a direct ancestor of A could have contributed to the
-introgression into the ancestor of E.
+introgression into the ancestor of E.  
 Case (a) stipulates the existence of an unsampled ("ghost") taxon,
 but case (b) does not require any unsampled taxon.
 
@@ -211,10 +211,9 @@ distinguish between the two possibilities because:
 * edge lengths estimated with SNaQ are in coalescent units instead of
   calendar time, and necessarily include estimation error;
 * an edge with a true length of 0 may be estimated to have a non-zero length
-  in coalescent units due to errors in estimated gene trees, to explain
-  some degree of apparent gene tree discordance;
-* an incorrect topology may result in edges of estimated length 0
-  (this is known in trees, to force a polytomy);
+  in coalescent units due to errors in estimated gene trees, to help explain
+  gene tree discordance;
+* an incorrect topology may result in edges of estimated length 0;
 * and some edge lengths are not identifiable from quartet concordance
   factors anyway.
 
