@@ -375,12 +375,13 @@ Here the slope heuristic suggests a single hybrid node:
 the score does not get much better beyond h=1.
 
 We made the plot via R above. A more Julian way would use a Julia plotting
-package such as [Gadfly](http://gadflyjl.org/stable/) or
-[Plots](http://docs.juliaplots.org/latest/ecosystem/), like this for instance:
-```julia
-using Gadfly
-plot(x=collect(0:3), y=scores, Geom.point, Geom.line)
-```
+package such as
+[Plots](https://docs.juliaplots.org/latest/),
+[Makie](https://docs.makie.org/stable/tutorials/getting-started) or
+packages with similar principles to ggplot2 in R:
+[AlgebraOfGraphics](https://aog.makie.org/v0.10.2/tutorials/intro-i)
+(based on Makie) or
+[Gadfly](http://gadflyjl.org/stable/).
 
 Note that since SNaQ assumes level-1 networks (i.e., no intersecting cycles), it might not be possible to add more hybridizations
 to networks with few taxa: 
