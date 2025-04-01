@@ -55,6 +55,24 @@ in MrBayes to estimate gene trees,
 then BUCKy to produce the table of estimated CFs and their credibility intervals.
 Both steps in this pipeline are parallelized. 
 
+!!! info "input quartet CFs: from BUCKy versus gene trees"
+    When quartet CFs are estimated using BUCKy on each subset of 4 taxa, then
+    error in gene trees is accounted for: BUCKy aims to estimate true
+    gene tree discordance, beyond discordance that is due to uncertainty in
+    estimated gene trees. This is achieved in a Bayesian framework, using
+    a full posterior sample of trees for each individual gene.
+    So this method of obtaining quartet CFs
+    - is *not* what is sometimes referred to as a "summary" method
+    - is expected to be robust to gene tree estimation error.
+
+    When quartet CFs are calculated based on a single tree per gene, then gene
+    tree error is *not* accounted for. Estimation error in gene trees can cause
+    gene tree discordance. Downstream analysis with SNaQ would need to invoke
+    deep coalescence or introgression to account for this apparent discordance.
+    So this method
+    - may be called a "summary" method
+    - may be sensitive to gene tree estimation error.
+
 #### CFs from gene trees 
 
 Suppose you have a file with a list of gene trees in parenthetical
@@ -101,6 +119,7 @@ To get a predictable random sample, you may set the seed with
 Additionally, providing a file name for the optional argument `CFile` saves the quartet CFs to file for later use.
 
 #### CFs from large datasets
+
 When we want to get *all* quartet CFs, 
 the [`readtrees2CF`](@ref) is *much* slower than the PhyloNetworks function [`PhyloNetworks.countquartetsintrees`](@extref)
 to read in trees and calculate the quartet CFs observed in the trees:
