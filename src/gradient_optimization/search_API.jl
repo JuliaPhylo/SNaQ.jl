@@ -68,7 +68,10 @@ function search(
     semidirect_network!(N)
 
     if rand(rng) < probST
-        perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
+        try
+            perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
+        catch
+        end
     end
 
     q_idxs = sample_qindices(N, propQuartets, rng)
@@ -94,8 +97,11 @@ function search(
         @debug "Proposed network level: $(getlevel(Nprime))"
         removedegree2nodes!(Nprime);
         # shrink3cycles!(Nprime);
-        shrink2cycles!(Nprime);
+        while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
         # shrink_bad_diamonds!(Nprime);
+
+        # 2.5 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
+        semidirect_network!(Nprime)
 
         # 3. Immediately throw away networks that don't meet restrictions
         if !restrictions(Nprime)
