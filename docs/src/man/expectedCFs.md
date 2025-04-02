@@ -76,13 +76,6 @@ To export the table of quartet CFs and explore the fit of the network with other
 using CSV
 CSV.write("fittedCF.csv", df_long)
 ```
-alternative code to get a similar plot with [Gadfly](http://gadflyjl.org/):
-```julia
-using Gadfly
-plot(layer(df_long, Geom.point, x="obsCF", y="expCF"),
-     layer(x=0:1,y=0:1, Geom.line), # diagonal line
-     Guide.xlabel("CF observed in gene trees"), Guide.ylabel("CF expected from network"))
-```
 
 We could highlight quartets that include taxon A, say,
 if we suspect that it is an unrecognized hybrid.
