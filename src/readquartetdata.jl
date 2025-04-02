@@ -805,7 +805,7 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 
 
 """
-`summarizedataCF(d::DataCF)`
+    summarizedataCF(d::DataCF)
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
 - `filename`: if provided, the summary will be saved in the filename, not to screen

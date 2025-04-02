@@ -59,7 +59,7 @@ function fittedquartetCF(d::DataCF, format=:wide::Symbol)
 end
 
 """
-`setNonIdBL!(net)`
+    setNonIdBL!(net)
 
 Set non-identifiable edge branch lengths to -1.0 (i.e. missing) for a level-1 network `net`,
 except for edges in

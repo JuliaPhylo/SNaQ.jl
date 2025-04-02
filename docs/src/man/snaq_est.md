@@ -382,14 +382,16 @@ packages with similar principles to ggplot2 in R:
 [AlgebraOfGraphics](https://aog.makie.org/v0.10.2/tutorials/intro-i)
 (based on Makie) or
 [Gadfly](http://gadflyjl.org/stable/).
+Also see this a cool (but now somewhat old)
+[blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia)
+about using ggplot within julia.
 
-Note that since SNaQ assumes level-1 networks (i.e., no intersecting cycles), it might not be possible to add more hybridizations
+Note that since SNaQ assumes level-1 networks (i.e., no intersecting cycles),
+it might not be possible to add more hybridizations
 to networks with few taxa: 
 
 ![level1](../assets/level1.png)
 
-
-Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia.
 
 ### Suggestions and best practices
 
