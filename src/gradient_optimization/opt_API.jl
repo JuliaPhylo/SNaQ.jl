@@ -58,7 +58,7 @@ function optimize_bls!(
     maxeval::Int=25
 )
 
-    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net)
+    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
 
     opt = Opt(NLopt.LD_LBFGS, narg)
 
@@ -74,13 +74,22 @@ function optimize_bls!(
 
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, params) #fill(0.1, narg))
+    setX!(net, minx, idx_obj_map)
 
     return minf
 end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 
 
-function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork, blocks::AbstractArray, obsCFs, idx_obj_map, α)::Float64
+function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork, eqns::AbstractArray, obsCFs, idx_obj_map, α)::Float64
+    setX!(net, X, idx_obj_map)
+    fill!(grad, 0.0)
+    loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
+    return loss
+end
+
+
+function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map)
     for j = 1:length(X)
         obj::Union{Node, Edge} = idx_obj_map[j]
         if typeof(obj) <: PN.Node
@@ -89,17 +98,14 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork
             E_major.gamma = 1-X[j]
             E_minor.gamma = X[j]
 
-            if 1-X[j] < 0.5
-                E_major.ismajor = false
-                E_minor.ismajor = true
-            end
+            # if 1-X[j] < 0.5
+            #     E_major.ismajor = false
+            #     E_minor.ismajor = true
+            # end
         else
             obj.length = X[j]
         end
     end
-
-    fill!(grad, 0.0)
-    return compute_loss_and_gradient!(blocks, X, grad, obsCFs, α)
 end
 
 
@@ -160,6 +166,12 @@ function gather_params(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Flo
         end
     end
     return params
+end
+
+
+function gather_params(net::HybridNetwork)::Array{Float64}
+    param_map = gather_optimization_info(net, true)[2]
+    return gather_params(net, param_map)
 end
 
 
