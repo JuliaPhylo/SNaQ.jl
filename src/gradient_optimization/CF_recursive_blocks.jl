@@ -15,8 +15,6 @@ end
 
 
 """
-TODO: remove (3) - it's just here for easier debugging
-
 A struct that contains:
 1. The initial `RecrusiveCFEquation` struct from which the loss & gradient can be calculated
 2. A list of "internal" parameters (stored as indexed from 1 to `k` where `k` is the total number of
@@ -46,7 +44,7 @@ Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet
 factor data `q` under Dirichlet parameter `α`.
 """
 function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
-    N = deepcopy(N)
+    N = deepcopy_network(N)
     semidirect_network!(N)
     qdata, _, params, _, _ = find_quartet_equations(N)
     return compute_loss(qdata, params, q, α)
