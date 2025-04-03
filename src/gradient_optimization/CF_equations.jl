@@ -2,7 +2,9 @@ include("CF_struct.jl")
 include("CF_blocks.jl")
 include("CF_recursive_blocks.jl")
 include("misc.jl")
-using PhyloNetworks, Graphs
+import Graphs
+import Graphs: SimpleGraph
+using PhyloNetworks
 const PN = PhyloNetworks;
 
 
