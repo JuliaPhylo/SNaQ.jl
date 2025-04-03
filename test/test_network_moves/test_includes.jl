@@ -1,5 +1,5 @@
 # PLACEHOLDER for now until all INCLUDE files are put into SNaQ.jl
-using PhyloNetworks
+using PhyloNetworks, Random
 for file in readdir(joinpath(@__DIR__, "../../src/network_moves/"), join=true)
     include(file)
 end
