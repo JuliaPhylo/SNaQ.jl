@@ -13,10 +13,15 @@ include("../network_properties/network_properties.jl")
 API NOT FINALIZED
 """
 function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=abs(rand(Int) % 100000), kwargs...)
+    # TODO: convert `q` to `DataCF` type and ensure that the taxa in that DataCF appear in the expected order
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
 
     # Prep data
     N = readnewick(writenewick(N));
+    semidirect_network!(N)
+
+    # Make sure starting network meets restrictions if any are provided
+    (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N)) || error("Starting topology does not meet provided restrictions.")
 
     # Generate per-run seeds
     Random.seed!(seed)
@@ -24,7 +29,7 @@ function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=ab
 
     # Do the runs distributed
     nets_and_PLs = Distributed.pmap(1:runs) do j
-        return search(N, q, hmax; seed = run_seeds[j], kwargs...)
+        return search(N, q, hmax; seed = run_seeds[1], kwargs...)
     end
 
     # Consolidate return data
@@ -72,6 +77,7 @@ function search(
 
     N = readnewick(writenewick(N));
     semidirect_network!(N)
+    restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
     if rand(rng) < probST
         try
@@ -79,17 +85,28 @@ function search(
         catch
         end
     end
+    restrictions(N) || error("N does not meet restrictions after probST")
 
     # Initial pre-opt search
     if preopt
         @debug "Pre-optimizing"
-        N, _ = search(N, q, hmax; preopt=false, probST=0.0, maxeval=1000, opt_maxeval=opt_maxeval, prehybattempts=0, maxequivPLs=50)
+        N, _ = search(N, q, hmax;
+            restrictions=restrictions,
+            preopt=false,
+            probST=0.0,
+            maxeval=1000,
+            opt_maxeval=opt_maxeval,
+            prehybattempts=0,
+            maxequivPLs=50
+        )
+        restrictions(N) || error("N does not meet restrictions after preopt")
     end
 
     # Try many different ways of adding hybrids and pick the best
     if prehybattempts > 0 && rand(rng) < prehybprob
         @debug "Attempting pre-opt hybrid attachments"
-        attempt_prehybs(N, q, hmax, prehybattempts, rng)
+        attempt_prehybs(N, q, hmax, restrictions, prehybattempts, rng)
+        restrictions(N) || error("N does not meet restrictions after prehyb")
     end
 
     q_idxs = sample_qindices(N, propQuartets, rng)
@@ -193,17 +210,30 @@ function search(
 end
 
 
-function attempt_prehybs(net::HybridNetwork, q, hmax::Int, attempts::Int, rng::TaskLocalRNG)
-    last_net = deepcopy_network(net)
+function attempt_prehybs(net::HybridNetwork, q, hmax::Int, restrictions::Function, attempts::Int, rng::TaskLocalRNG)
     best_net = deepcopy_network(net)
+    last_net = best_net
     best_PL = optimize_bls!(net, q)
 
     for nhyb = net.numhybrids:hmax
         best_PL = -Inf
 
         for j = 1:attempts
-            N0 = deepcopy_network(last_net)
-            apply_move!(N0, :add_hybrid, Tuple(sample_add_hybrid_parameters(N0, rng)))
+            local N0::HybridNetwork
+            found_valid_move = false
+            
+            # Try to add a hybrid that complies w/ the given restrictions 100 times
+            # If none are found, we just skip
+            for restr_attempt = 1:100
+                N0 = deepcopy_network(last_net)
+                apply_move!(N0, :add_hybrid, Tuple(sample_add_hybrid_parameters(N0, rng)))
+                if restrictions(N0)
+                    found_valid_move = true
+                    break
+                end
+            end
+            found_valid_move || continue
+
             new_PL = optimize_bls!(N0, q)
             if new_PL > best_PL
                 best_PL = new_PL
@@ -211,7 +241,8 @@ function attempt_prehybs(net::HybridNetwork, q, hmax::Int, attempts::Int, rng::T
             end
         end
 
-        last_net = deepcopy_network(best_net)
+        best_net == last_net && break   # Couldn't find a move that is valid under `restrictions`
+        last_net = best_net
     end
     return best_net, best_PL
 end
