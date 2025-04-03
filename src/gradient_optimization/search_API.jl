@@ -48,11 +48,15 @@ function search(
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
+    preopt::Bool=true,
+    prehybprob::Real=0.3,
+    prehybattempts::Int=5,
     probST::Real=0.3,
     maxeval::Int=Int(1e8),
-    maxequivPLs::Int=200,
+    maxequivPLs::Int=1500,
     opt_maxeval::Int=10,
-    seed::Int=abs(rand(Int) % 100000)
+    seed::Int=abs(rand(Int) % 100000),
+    verbose::Bool=false
 )
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
@@ -60,6 +64,8 @@ function search(
     1 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
+    0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
+    0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
 
     # Set the seed
     rng = Random.seed!(seed)
@@ -74,16 +80,30 @@ function search(
         end
     end
 
+    # Initial pre-opt search
+    if preopt
+        @debug "Pre-optimizing"
+        N, _ = search(N, q, hmax; preopt=false, probST=0.0, maxeval=1000, opt_maxeval=opt_maxeval, prehybattempts=0, maxequivPLs=50)
+    end
+
+    # Try many different ways of adding hybrids and pick the best
+    if prehybattempts > 0 && rand(rng) < prehybprob
+        @debug "Attempting pre-opt hybrid attachments"
+        attempt_prehybs(N, q, hmax, prehybattempts, rng)
+    end
+
     q_idxs = sample_qindices(N, propQuartets, rng)
     logPLs = Array{Float64}(undef, maxeval)
     logPLs[1], N_eqns = compute_loss(N, q, q_idxs, propQuartets, rng, α)
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
-    moves_proposed = zeros(10)
-    moves_accepted = zeros(10)
+    moves_proposed = Dict{Symbol,Int}()
+    moves_accepted = Dict{Symbol,Int}()
 
     for j = 2:maxeval
+        verbose && print("\rIteration $(j)/$(maxeval) - in a row=$(unchanged_iters)/$(maxequivPLs)              ")
+
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
         Nprime = readnewick(writenewick(N));
@@ -92,11 +112,15 @@ function search(
         push!(moves_attempted, (prop_move, prop_params))
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
+        if !haskey(moves_proposed, prop_move) moves_proposed[prop_move] = 0 end
+        if !haskey(moves_accepted, prop_move) moves_accepted[prop_move] = 0 end
+        moves_proposed[prop_move] += 1
+
         # 2. Check for identifiability
         # TODO: check for galled-TC identifiability
         @debug "Proposed network level: $(getlevel(Nprime))"
         removedegree2nodes!(Nprime);
-        # shrink3cycles!(Nprime);
+        while shrink3cycles!(Nprime) continue end
         while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
         # shrink_bad_diamonds!(Nprime);
 
@@ -127,6 +151,7 @@ function search(
             N = Nprime
             N_eqns = Nprime_eqns
             logPLs[j] = Nprime_logPL
+            moves_accepted[prop_move] += 1
 
             # Update tracking vars
             unchanged_iters = 0
@@ -165,6 +190,30 @@ function search(
 
     return N, logPLs[length(logPLs)]
 
+end
+
+
+function attempt_prehybs(net::HybridNetwork, q, hmax::Int, attempts::Int, rng::TaskLocalRNG)
+    last_net = deepcopy_network(net)
+    best_net = deepcopy_network(net)
+    best_PL = optimize_bls!(net, q)
+
+    for nhyb = net.numhybrids:hmax
+        best_PL = -Inf
+
+        for j = 1:attempts
+            N0 = deepcopy_network(last_net)
+            apply_move!(N0, :add_hybrid, Tuple(sample_add_hybrid_parameters(N0, rng)))
+            new_PL = optimize_bls!(N0, q)
+            if new_PL > best_PL
+                best_PL = new_PL
+                best_net = N0
+            end
+        end
+
+        last_net = deepcopy_network(best_net)
+    end
+    return best_net, best_PL
 end
 
 
@@ -247,7 +296,7 @@ Randomly samples a move to generate a new topology from `N`.
 """
 function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
 
-    if N.numhybrids < hmax && rand(rng) < 0.05
+    if N.numhybrids < hmax && rand(rng) < 0.15
         @debug "SELECTED: add_random_hybrid!"
         return (:add_hybrid, sample_add_hybrid_parameters(N, rng))
     end
