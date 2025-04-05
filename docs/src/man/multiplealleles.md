@@ -15,7 +15,8 @@ then the following functions can be used:
 
 ```@repl multialleles
 using CSV, DataFrames
-mappingfile = joinpath(dirname(pathof(SNaQ)), "..","examples","mappingIndividuals.csv");
+mappingfile = joinpath(dirname(pathof(SNaQ)), "..","examples",
+    "mappingIndividuals.csv");
 tm = CSV.read(mappingfile, DataFrame) # taxon map as a data frame
 taxonmap = Dict(r[:individual] => r[:species] for r in eachrow(tm)) # as dictionary
 ```
@@ -30,10 +31,12 @@ and calculate the quartet CFs at the species level:
 
 
 ```@repl multialleles
-genetreefile = joinpath(dirname(pathof(SNaQ)), "..","examples","genetrees_alleletips.tre");
+genetreefile = joinpath(dirname(pathof(SNaQ)), "..","examples",
+    "genetrees_alleletips.tre");
 genetrees = readmultinewick(genetreefile);
 sort(tiplabels(genetrees[1])) # multiple tips in species S1
-df_sp = tablequartetCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...);
+df_sp = tablequartetCF(countquartetsintrees(genetrees, taxonmap;
+    showprogressbar=false)...);
 keys(df_sp)  # columns names
 df_sp[:qind] # quartet index
 df_sp[:t1]   # name of first taxon in each quartet
@@ -53,8 +56,8 @@ this particular gene trees is 1).
 It is safe to save this data frame, then use it for `snaq!` like this:
 
 ```@repl multialleles
-CSV.write("tableCF_species.csv", df_sp);   # to save the data frame to a file
-d_sp = readtableCF("tableCF_species.csv"); # to get a "DataCF" object for use in snaq!
+CSV.write("tableCF_species.csv", df_sp);   # to save the table to a file
+d_sp = readtableCF("tableCF_species.csv"); # "DataCF" object for use in snaq!
 summarizedataCF(d_sp)
 ```
 
@@ -114,7 +117,7 @@ which can be calculated by averaging the CFs of quartets of individuals
 from the associated species:
 
 ```@repl multialleles
-df_sp = DataFrame(tablequartetCF(d_sp)) # data frame, quartet CFs averaged across individuals of same species
+df_sp = DataFrame(tablequartetCF(d_sp)) # CFs averaged across individuals
 CSV.write("CFtable_species.csv", df_sp); # save to file
 ```
 
@@ -149,9 +152,20 @@ or as shown below to give more weight to genes that have more alleles:
 
 ```@repl multialleles
 first(df_sp, 3) # some quartets have the same species twice
-function hasrep(row) # see if a row (4-taxon set) has a species name ending with "__2": repeated species
-    occursin(r"__2$", row[:t1]) || occursin(r"__2$", row[:t2]) || # replace :t1 :t2 etc. by appropriate column names in your data,
-    occursin(r"__2$", row[:t3]) || occursin(r"__2$", row[:t4])    # e.g. by :taxon1 :taxon2 etc.
+"""
+    hasrep
+
+Return true if a row (4-taxon set) has a "repeated" species, that is, a species
+whose name ends with "__2". Otherwise, return false.
+
+Warning: this function assumes that taxon names are in column named
+"t1", "t2", "t3", "t4". For data frames with different column names,
+e.g. "taxon1", "taxon2" etc., simply edit the function by replacing
+`:t1` by `:taxon1` (or the appropriate column name in your data).
+"""
+function hasrep(row)
+    occursin(r"__2$", row[:t1]) || occursin(r"__2$", row[:t2]) ||
+    occursin(r"__2$", row[:t3]) || occursin(r"__2$", row[:t4])
 end
 df_sp_reduced = filter(!hasrep, df_sp) # removes rows with repeated species
 CSV.write("CFtable_species_norep.csv", df_sp_reduced); # to save to file
