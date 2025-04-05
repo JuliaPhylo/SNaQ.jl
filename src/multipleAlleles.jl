@@ -137,7 +137,8 @@ function cleanAlleleDF!(
     nkeep = nrows - length(delrows)
     if nkeep < nrows
         print("""found $(length(delrows)) 4-taxon sets uninformative about between-species relationships, out of $(nrows).
-              These 4-taxon sets will be deleted from the data frame. $nkeep informative 4-taxon sets will be used.
+              These 4-taxon sets will be deleted from the data frame.
+              $nkeep informative 4-taxon sets will be used.
               """)
         nkeep > 0 || @warn "All 4-taxon subsets are uninformative, so the dataframe will be left empty"
         deleteat!(newdf, delrows) # deleteat! requires DataFrames 1.3
@@ -156,7 +157,7 @@ function mergeRows(df::DataFrame, cols::Vector{Int})
                  colnam .=> mean .=> colnam)
     # rename!(df, Dict((Symbol(n, "_mean"), n) for n in colnam) )
     n4tax = size(df,1) # total number of 4-taxon sets
-    print("$n4tax unique 4-taxon sets were found. CF values of repeated 4-taxon sets will be averaged")
+    print("$n4tax unique 4-taxon sets were found.\nCF values of repeated 4-taxon sets will be averaged")
     println((length(cols)>7 ? " (ngenes too)." : "."))
     return df
 end

@@ -66,17 +66,38 @@ summarizedataCF(d_sp)
 Four-taxon sets involving 2 individuals per species can provide more
 information about the underlying network, including external branch
 length in coalescent units. However, [`snaq!`](@ref) runs more slowly when
-using this extra information. To get quartet CFs from sets of 4 individuals
+using this extra information.
+
+To get quartet CFs from sets of 4 individuals
 in which 2 individuals are from the same species, the following functions
-should be used:
+should be used,
+where the mapping file can be a text (or `csv`) file with two columns
+named `allele` (or `individual`) and `species`,
+mapping each allele name to a species name.
 
 ```@repl multialleles
 q,t = countquartetsintrees(genetrees);
 df_ind = DataFrame(tablequartetCF(q,t)); # no mapping: CFs across individuals
 first(df_ind, 5) # to see the first 5 rows
+```
+Now `df_ind` is the table of concordance factors at the level of individuals.
+In other words, it lists CFs using one row for each set of 4 alleles/individuals.
+
+**Warning**:
+This procedure requires that all alleles from the same individual are given
+the same name (the individual's 'name') *across all genes* for which that
+individual was sequenced.
+
+Next, we use [`mapallelesCFtable`](@ref) to get these data as
+quartet concordance factors at the species level in `df_sp`:
+with the allele names replaced by the appropriate species names.
+
+```@repl multialleles
 CSV.write("tableCF_individuals.csv", df_ind);  # to save to a file
 df_sp = mapallelesCFtable(mappingfile, "tableCF_individuals.csv";
     columns=2:5); # taxon names are in columns 2 through 5, not default 1-4
+nrow(df_sp)       # 35 quartets of individuals
+first(df_sp, 6)   # first 6 rows of data frame
 ```
 
 The warning above is because our mapping file does not list species
@@ -86,39 +107,32 @@ name. So we can safely ignore the warning.
 We will just need to make sure that our starting tree, when we run SNaQ,
 has the same (unmapped) names, here S2-S5.
 
+The command below modifies `df_sp` to delete rows that are uninformative about
+between-species relationships, such as rows containing 3 or 4 individuals from
+the same species (e.g. rows 1, 2 and 6: they contain S1 three times);
+and creates `d_sp`, an object of type [`DataCF`](@ref) at the species level,
+that we can use later as input for networks estimation with [`snaq!`](@ref).
 ```@repl multialleles
-d_sp = readtableCF!(df_sp, mergerows=true);
+d_sp = readtableCF!(df_sp, mergerows=true); # DataCF object
+nrow(df_sp) # 31 quartets of individuals informative between species
 ```
-where the mapping file can be a text (or `csv`) file with two columns
-named `allele` (or `individual`) and `species`, mapping each allele name to a species name.
-The data in `df_ind` is the table of concordance factors at the level of individuals.
-In other words, it lists CFs using one row for each set of 4 alleles/individuals.
 
-Here [`mapallelesCFtable`](@ref) creates a new data frame `df_sp` of quartet concordance factors at the
-species level: with the allele names replaced by the appropriate species names.
-
-**Warnings**:
-- This procedure requires that all alleles from the same
-  individual are given the same name (the individual's 'name') across
-  all genes for which that individual was sequenced.
-- For a four-taxon set `A,B,C,D`, all the individuals from `A`, `B`, `C` and `D`
-  are considered, say `(a1,b1,c1,d1)`, `(a2,b1,c1,d1)`, `(a1,b2,c1,d1)`, `(a2,b2,c1,d1)`
-  and so on. The CFs of these 4-taxon sets are averaged together to obtain the
+!!! note
+  For a four-taxon set `A,B,C,D`, all the individuals from `A`, `B`, `C` and `D`
+  are considered, say `(a1,b1,c1,d1)`, `(a2,b1,c1,d1)`, `(a1,b2,c1,d1)`,
+  `(a2,b2,c1,d1)` and so on.
+  The CFs of these 4-taxon sets are averaged together to obtain the
   CFs at the species level. This procedures gives more weight to genes that have
   many alleles (because they contribute to more sets of 4 individuals) and less
   weight to genes that have few alleles.
 
-The last command modifies this data frame `df_sp` by deleting rows that are uninformative
-about between-species relationships, such as rows corresponding to 4 individuals from the
-same species. The output `d_sp` of this second command is an object of type [`DataCF`](@ref) at the
-species level, which can be used as input for networks estimation with [`snaq!`](@ref).
-But before, it is safe to save the concordance factor of quartets of species,
+Before we run SNaQ, it is safe to save the concordance factor of *species* quartets,
 which can be calculated by averaging the CFs of quartets of individuals
 from the associated species:
 
 ```@repl multialleles
-df_sp = DataFrame(tablequartetCF(d_sp)) # CFs averaged across individuals
-CSV.write("CFtable_species.csv", df_sp); # save to file
+df_sp_ave = DataFrame(tablequartetCF(d_sp))  # CFs averaged across individuals
+CSV.write("CFtable_species.csv", df_sp_ave); # save to file
 ```
 
 Some quartets have the same species repeated twice,
@@ -148,10 +162,11 @@ To do so, we can use the quartet concordance factors at the species level,
 but filter out the quartets with one (or more) species repeated.
 This can be done as in the first section ("between-species 4-taxon sets")
 to give equal weight to all genes,
-or as shown below to give more weight to genes that have more alleles:
+or as shown below to give more weight to genes that have more alleles.
+We first define a helper function to identify which rows we want to get rid of.
 
 ```@repl multialleles
-first(df_sp, 3) # some quartets have the same species twice
+first(df_sp_ave, 3) # some quartets have the same species twice
 """
     hasrep
 
@@ -167,7 +182,7 @@ function hasrep(row)
     occursin(r"__2$", row[:t1]) || occursin(r"__2$", row[:t2]) ||
     occursin(r"__2$", row[:t3]) || occursin(r"__2$", row[:t4])
 end
-df_sp_reduced = filter(!hasrep, df_sp) # removes rows with repeated species
+df_sp_reduced = filter(!hasrep, df_sp_ave) # removes rows with repeated species
 CSV.write("CFtable_species_norep.csv", df_sp_reduced); # to save to file
 d_sp_reduced = readtableCF(df_sp_reduced) # DataCF object, for input to snaq!
 ```
