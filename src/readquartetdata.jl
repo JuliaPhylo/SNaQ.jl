@@ -133,8 +133,8 @@ function readtableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
     d = readtableCF!(df, columns; kwargs...)
 
     if withngenes # && d.numTrees == -1
-        m1 = minimum([q.ngenes for q in d.quartet])
-        m2 = maximum([q.ngenes for q in d.quartet])
+        m1 = round(minimum([q.ngenes for q in d.quartet]), digits=5)
+        m2 = round(maximum([q.ngenes for q in d.quartet]), digits=5)
         if m1<m2 print("between $m1 and ") end
         println("$m2 gene trees per 4-taxon set")
         # other info printed by show() on a DataCF object: num quartets and num gene trees

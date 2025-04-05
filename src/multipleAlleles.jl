@@ -37,8 +37,13 @@ df_sp = CSV.read("quartetCF_speciesNames.csv", DataFrame); # DataFrame object
 dataCF_specieslevel = readtableCF!(df_sp, mergerows=true); # DataCF object
 ```
 """
-function mapallelesCFtable(alleleDF::AbstractString, cfDF::AbstractString;
-        filename=""::AbstractString, columns=Int[]::Vector{Int}, CSVargs...)
+function mapallelesCFtable(
+    alleleDF::AbstractString,
+    cfDF::AbstractString;
+    filename::AbstractString="",
+    columns::AbstractVector{Int}=Int[],
+    CSVargs...
+)
     # force pool=false unless the user wants otherwise
     if :pool ∉ [pair[1] for pair in CSVargs]
         CSVargs = (CSVargs..., :pool=>false)
@@ -62,7 +67,13 @@ Warning: [`mapallelesCFtable`](@ref) takes the quartet data file as its second
 argument, while `mapallelesCFtable!` takes the quartet data (which it modifies)
 as its first argument.
 """
-function mapallelesCFtable!(cfDF::DataFrame, alleleDF::DataFrame, co::Vector{Int},write::Bool,filename::AbstractString)
+function mapallelesCFtable!(
+    cfDF::DataFrame,
+    alleleDF::DataFrame,
+    co::AbstractVector{Int},
+    write::Bool,
+    filename::AbstractString
+)
     size(cfDF,2) >= 7 || error("CF DataFrame should have 7+ columns: 4taxa, 3CF, and possibly ngenes")
     if length(co)==0 co=[1,2,3,4]; end
     allelecol, speciescol = compareTaxaNames(alleleDF,cfDF,co)
@@ -85,7 +96,11 @@ end
 # inside readtableCF!
 # by deleting rows that are not informative like sp1 sp1 sp1 sp2
 # keepOne=true: we only keep one allele per species
-function cleanAlleleDF!(newdf::DataFrame, cols::Vector{<:Integer}; keepOne=false::Bool)
+function cleanAlleleDF!(
+    newdf::DataFrame,
+    cols::Vector{<:Integer};
+    keepOne::Bool=false,
+)
     delrows = Int[] # indices of rows to delete
     repSpecies = Set{String}()
     if(isa(newdf[1,cols[1]],Integer)) #taxon names as integers: we need this to be able to add __2
@@ -149,7 +164,10 @@ end
 
 # function to expand leaves in tree to two individuals
 # based on cf table with alleles mapped to species names
-function expandLeaves!(repSpecies::Union{Vector{String},Vector{Int}},tree::HybridNetwork)
+function expandLeaves!(
+    repSpecies::Union{Vector{String},Vector{Int}},
+    tree::HybridNetwork
+)
     for sp in repSpecies
         for n in tree.node
             if(n.name == sp) #found leaf with sp name
@@ -190,7 +208,11 @@ end
 
 # function to compare the taxon names in the allele-species matching table
 # and the CF table
-function compareTaxaNames(alleleDF::DataFrame, cfDF::DataFrame, co::Vector{Int})
+function compareTaxaNames(
+    alleleDF::DataFrame,
+    cfDF::DataFrame,
+    co::AbstractVector{Int}
+)
     allelecol, speciescol = checkMapDF(alleleDF)
     CFtaxa = string.(mapreduce(x -> unique(skipmissing(x)), union, eachcol(cfDF[!,co[1:4]])))
     alleleTaxa = map(string, alleleDF[!,allelecol]) # as string, too

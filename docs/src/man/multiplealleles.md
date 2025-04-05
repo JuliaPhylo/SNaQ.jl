@@ -17,7 +17,7 @@ then the following functions can be used:
 using CSV, DataFrames
 mappingfile = joinpath(dirname(pathof(SNaQ)), "..","examples","mappingIndividuals.csv");
 tm = CSV.read(mappingfile, DataFrame) # taxon map as a data frame
-taxonmap = Dict(row[:individual] => row[:species] for row in eachrow(tm)) # taxon map as a dictionary
+taxonmap = Dict(r[:individual] => r[:species] for r in eachrow(tm)) # as dictionary
 ```
 
 The [mapping file](https://github.com/juliaphylo/SNaQ/blob/main/examples/mappingIndividuals.csv)
@@ -33,11 +33,16 @@ and calculate the quartet CFs at the species level:
 genetreefile = joinpath(dirname(pathof(SNaQ)), "..","examples","genetrees_alleletips.tre");
 genetrees = readmultinewick(genetreefile);
 sort(tiplabels(genetrees[1])) # multiple tips in species S1
-df_sp = tablequartetCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...)
+df_sp = tablequartetCF(countquartetsintrees(genetrees, taxonmap, showprogressbar=false)...);
+keys(df_sp)  # columns names
+df_sp[:qind] # quartet index
+df_sp[:t1]   # name of first taxon in each quartet
+df_sp[:CF12_34] # concordance factor for split taxa 12 vs 34
 ```
 
-Now `df_sp` is a data frame containing the quartet concordance factors
-at the species level only, that is, considering sets made of 4 distinct species,
+Now `df_sp` is a table (technically, a named tuple) containing the
+quartet concordance factors at the species level only, that is,
+considering sets made of 4 distinct species,
 even if the gene trees may have multiple alleles from the same species.
 For 4 distinct species `A,B,C,D`, all alleles from each species (`A` etc.)
 will be used to calculate the quartet CF. If a given gene tree has
@@ -65,9 +70,20 @@ should be used:
 ```@repl multialleles
 q,t = countquartetsintrees(genetrees);
 df_ind = DataFrame(tablequartetCF(q,t)); # no mapping: CFs across individuals
-first(df_ind, 4) # to see the first 4 rows
+first(df_ind, 5) # to see the first 5 rows
 CSV.write("tableCF_individuals.csv", df_ind);  # to save to a file
-df_sp = mapallelesCFtable(mappingfile, "tableCF_individuals.csv");
+df_sp = mapallelesCFtable(mappingfile, "tableCF_individuals.csv";
+    columns=2:5); # taxon names are in columns 2 through 5, not default 1-4
+```
+
+The warning above is because our mapping file does not list species
+S2 through S5: that's because there's a single individual in each of these
+species, and we don't need a map to match each individual name to a species
+name. So we can safely ignore the warning.
+We will just need to make sure that our starting tree, when we run SNaQ,
+has the same (unmapped) names, here S2-S5.
+
+```@repl multialleles
 d_sp = readtableCF!(df_sp, mergerows=true);
 ```
 where the mapping file can be a text (or `csv`) file with two columns
