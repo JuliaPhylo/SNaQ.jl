@@ -100,10 +100,10 @@ nrow(df_sp)       # 35 quartets of individuals
 first(df_sp, 6)   # first 6 rows of data frame
 ```
 
-The warning above is because our mapping file does not list species
-S2 through S5: that's because there's a single individual in each of these
-species, and we don't need a map to match each individual name to a species
-name. So we can safely ignore the warning.
+The warning above, after creating `df_sp`, is because our mapping file does not
+list species S2 through S5. We did not need to list them because we have a
+single individual in each of these species.
+So we can safely ignore the warning.
 We will just need to make sure that our starting tree, when we run SNaQ,
 has the same (unmapped) names, here S2-S5.
 
@@ -118,13 +118,13 @@ nrow(df_sp) # 31 quartets of individuals informative between species
 ```
 
 !!! note
-  For a four-taxon set `A,B,C,D`, all the individuals from `A`, `B`, `C` and `D`
-  are considered, say `(a1,b1,c1,d1)`, `(a2,b1,c1,d1)`, `(a1,b2,c1,d1)`,
-  `(a2,b2,c1,d1)` and so on.
-  The CFs of these 4-taxon sets are averaged together to obtain the
-  CFs at the species level. This procedures gives more weight to genes that have
-  many alleles (because they contribute to more sets of 4 individuals) and less
-  weight to genes that have few alleles.
+    For a four-taxon set `A,B,C,D`, all the individuals from `A`, `B`, `C` and `D`
+    are considered, say `(a1,b1,c1,d1)`, `(a2,b1,c1,d1)`, `(a1,b2,c1,d1)`,
+    `(a2,b2,c1,d1)` and so on.
+    The CFs of these 4-taxon sets are averaged together to obtain the
+    CFs at the species level. This procedures gives more weight to genes that have
+    many alleles (because they contribute to more sets of 4 individuals) and less
+    weight to genes that have few alleles.
 
 Before we run SNaQ, it is safe to save the concordance factor of *species* quartets,
 which can be calculated by averaging the CFs of quartets of individuals
@@ -142,7 +142,7 @@ size of extant populations, i.e. about the lengths of external branches in
 coalescent units.
 
 The main difference between this section compared to the previous section
-("between-species 4-taxon sets") is that quartets with 2 individuals from
+on [Between-species 4-taxon sets](@ref) is that quartets with 2 individuals from
 the same species are included here, such as `a1,a2,b1,c1`.
 Also, the weighting of quartets is different. Here, genes with more alleles
 are given more weight.
@@ -159,9 +159,15 @@ If `snaq!` takes too long that way, we can try a less ambitious estimation
 that does not estimate the external branch lengths, that is,
 *without* using quartets that have 2 individuals from the same species.
 To do so, we can use the quartet concordance factors at the species level,
-but filter out the quartets with one (or more) species repeated.
-This can be done as in the first section ("between-species 4-taxon sets")
-to give equal weight to all genes,
+but filter out the quartets with one (or more) species repeated, such as
+these below:
+
+```@repl multialleles
+first(df_sp_ave, 3) # some quartets have the same species twice
+```
+
+Filtering them out can be done as in the first section
+([Between-species 4-taxon sets](@ref)) to give equal weight to all genes,
 or as shown below to give more weight to genes that have more alleles.
 We first define a helper function to identify which rows we want to get rid of.
 
@@ -173,15 +179,15 @@ first(df_sp_ave, 3) # some quartets have the same species twice
 Return true if a row (4-taxon set) has a "repeated" species, that is, a species
 whose name ends with "__2". Otherwise, return false.
 
-Warning: this function assumes that taxon names are in column named
+Warning: this function assumes that taxon names are in columns
 "t1", "t2", "t3", "t4". For data frames with different column names,
-e.g. "taxon1", "taxon2" etc., simply edit the function by replacing
+e.g. "taxon1", "taxon2" etc., simply edit the code below by replacing
 `:t1` by `:taxon1` (or the appropriate column name in your data).
 """
 function hasrep(row)
     occursin(r"__2$", row[:t1]) || occursin(r"__2$", row[:t2]) ||
     occursin(r"__2$", row[:t3]) || occursin(r"__2$", row[:t4])
-end
+end; # this function is used on the next line
 df_sp_reduced = filter(!hasrep, df_sp_ave) # removes rows with repeated species
 CSV.write("CFtable_species_norep.csv", df_sp_reduced); # to save to file
 d_sp_reduced = readtableCF(df_sp_reduced) # DataCF object, for input to snaq!
