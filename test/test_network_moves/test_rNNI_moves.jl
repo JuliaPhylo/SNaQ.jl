@@ -26,15 +26,15 @@ perform_rNNI2!(net, get_nodes(net, "i2", "i3", "i6", "i4")...);
 
 net = reload_labelled_net();
 perform_rNNI3!(net, get_nodes(net, "i6", "f", "i4", "i5")...)
-@test writenewick(net) == "((c,#Hi5)i6,(d,((e)#Hi5,f)i4)i3,(a,b)i1)i2;"
+@test writenewick(net) == "((c,#H5)i6,(d,((e)#H5,f)i4)i3,(a,b)i1)i2;"
 
 net = reload_labelled_net();
 perform_rNNI4!(net, get_nodes(net, "d", "i6", "i3", "i4")...)
-@test writenewick(net) == "((c,#Hi3)i6,(((e,f)i5,d)i4)#Hi3,(a,b)i1)i2;"
+@test writenewick(net) == "((c,#H3)i6,(((e,f)i5,d)i4)#H3,(a,b)i1)i2;"
 
 net = reload_labelled_net();
 perform_rNNI4!(net, get_nodes(net, "c", "i3", "i6", "i4")...)
-@test is_valid_rNNI4(get_nodes(net, "i1", "i3", "i2", "Hi6")...)
+@test is_valid_rNNI4(get_nodes(net, "i1", "i3", "i2", "H6")...)
 
 
 ##########################################################
@@ -52,15 +52,15 @@ net2 = reload_labelled_net();
 ##### rNNI (1) #####
 for j = 1:100
     # Perform the move
-    perform_rNNI1!(net1, get_nodes(net1, "i6", "i4", "i2", "i3")...)
+    perform_rNNI1!(net1, get_nodes(net1, "d", "i5", "i3", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI1!(net2, get_nodes(net2, "i6", "i4", "i2", "i3")...)
+    perform_rNNI1!(net2, get_nodes(net2, "d", "i5", "i3", "i4")...)
     @test writenewick(net1) == writenewick(net2)
 
     # Reverse the move
-    perform_rNNI1!(net1, get_nodes(net1, "i4", "i6", "i2", "i3")...)
+    perform_rNNI1!(net1, get_nodes(net1, "i5", "d", "i3", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI1!(net2, get_nodes(net2, "i4", "i6", "i2", "i3")...)
+    perform_rNNI1!(net2, get_nodes(net2, "i5", "d", "i3", "i4")...)
     @test writenewick(net1) == writenewick(net2)
     @test writenewick(net1) == writenewick(net0)
 end
