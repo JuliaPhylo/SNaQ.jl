@@ -7,6 +7,7 @@ include("../network_moves/rSPR_moves.jl")
 include("../network_moves/move_origin_target.jl")
 include("../network_moves/identifiability_moves.jl")
 include("../network_properties/network_properties.jl")
+include("../network_moves/flip_hybrid.jl")
 
 
 """
@@ -268,6 +269,8 @@ function apply_move!(N::HybridNetwork, move::Symbol, params::Tuple)
         return move_reticulate_target!(N, params...)
     elseif move == :rSPR
         return perform_rSPR!(N, params...)
+    elseif move == :flip_hybrid
+        return fliphybrid!(N, params[1])
     end
 
     error("Move \"$(move)\" not recognized.")
@@ -338,14 +341,20 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
         return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
     end
 
+
+    # PROBABILITY OF EACH MOVE:
+    # rNNI(1-4):  60%
+    # moveretic:  20%
+    # rSPR:       10%
+    # fliphybrid: 10%
     r = rand(rng)
-    if r < 0.66
+    if r < 0.60
         r = sample(rng, [1, 2, 3, 4])
         move_symbol = [:rNNI1, :rNNI2, :rNNI3, :rNNI4][r]
         return (move_symbol, sample_rNNI_parameters(N, r, rng))
-    elseif r < 0.66
+    elseif r < 0.7
         return (:rSPR, sample_rSPR_parameters(N, rng))
-    else
+    elseif r < 0.9
         r = sample(rng, [1, 2, 3, 4])   # 1 = move retic origin
                                         # 2 = move retic target
                                         # 3 = move retic origin local
@@ -359,6 +368,8 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
         else
             return (:retic_target_local, sample_move_reticulate_target_local_parameters(N, rng))
         end
+    else
+        return (:flip_hybrid, sample_flip_hybrid_parameters(N, rng))
     end
 
 end
