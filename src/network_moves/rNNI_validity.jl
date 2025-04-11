@@ -1,7 +1,3 @@
-using PhyloNetworks, StatsBase
-const Node = PhyloNetworks.Node;
-const Edge = PhyloNetworks.Edge;
-include("misc.jl")
 
 """
 Checks whether rNNI move of type `type` ([see Figure 4 here](https://doi.org/10.1371/journal.pcbi.1005611))

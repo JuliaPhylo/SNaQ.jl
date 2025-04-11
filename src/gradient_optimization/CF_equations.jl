@@ -1,7 +1,3 @@
-include("CF_struct.jl")
-include("CF_blocks.jl")
-include("CF_recursive_blocks.jl")
-include("misc.jl")
 import Graphs
 import Graphs: SimpleGraph  # TODO: remove Graphs dependency
 using PhyloNetworks

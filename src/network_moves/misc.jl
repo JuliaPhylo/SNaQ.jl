@@ -1,4 +1,3 @@
-using PhyloNetworks;
 
 
 function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)

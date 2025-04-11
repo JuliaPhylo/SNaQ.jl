@@ -60,7 +60,11 @@ module SNaQ
         bootsnaq,
         # functions to access relevant object variables
         loglik,
-        loglik!
+        loglik!,
+        ########## NEW STUFF
+        multi_search,
+        search,
+        optimize_bls!
 
 
     include("types.jl")
@@ -78,5 +82,23 @@ module SNaQ
     include("snaq_optimization.jl")
     include("undo.jl")
     include("update.jl")
+    ############ NEW STUFF
+    include("gradient_optimization/CF_blocks.jl")
+    include("gradient_optimization/CF_recursive_blocks.jl")
+    include("gradient_optimization/misc.jl")
+    include("gradient_optimization/CF_equations.jl")
+    include("gradient_optimization/inplace_updates.jl")
+    include("gradient_optimization/opt_API.jl")
+    include("gradient_optimization/search_API.jl")
+    
+    include("network_moves/add_remove_retic.jl")
+    include("network_moves/rNNI_validity.jl")
+    include("network_moves/rNNI_moves.jl")
+    include("network_moves/rSPR_validity.jl")
+    include("network_moves/rSPR_moves.jl")
+    include("network_moves/move_origin_target.jl")
+    include("network_moves/identifiability_moves.jl")
+    include("network_moves/flip_hybrid.jl")
+    include("network_properties/network_properties.jl")
 
 end

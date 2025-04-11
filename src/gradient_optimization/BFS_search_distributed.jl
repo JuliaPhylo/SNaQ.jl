@@ -291,13 +291,13 @@ end
 
 
 
-net = generate_net(10, 3, 50);
-while shrink2cycles!(net) || shrink3cycles!(net) continue end
-net.numhybrids, istreechild(net), getlevel(net)
-gts = simulatecoalescent(net, 10000, 1);
-q, t = countquartetsintrees(gts; showprogressbar=false);
-semidirect_network!(net);
+# net = generate_net(15, 3, 50);
+# while shrink2cycles!(net) || shrink3cycles!(net) continue end
+# net.numhybrids, istreechild(net), getlevel(net)
+# gts = simulatecoalescent(net, 10000, 1);
+# q, t = countquartetsintrees(gts; showprogressbar=false);
+# semidirect_network!(net);
 
-rt = @elapsed results = BFS_distributed(gts[1:10], 1, 25, 1, 100, q, net.numhybrids, net; restrictions=restriction_set(; require_strongly_tree_child=true))
+# rt = @elapsed results = BFS_distributed(gts[1:10], 1, 25, 1, 100, q, net.numhybrids, net; restrictions=restriction_set(; require_strongly_tree_child=true))
 
-istreechild(results)[3] == true
+# istreechild(results)[3] == true

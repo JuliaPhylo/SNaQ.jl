@@ -1,13 +1,3 @@
-using PhyloNetworks, Random, Distributed
-include("CF_equations.jl")
-include("opt_API.jl")
-include("../network_moves/add_remove_retic.jl")
-include("../network_moves/rNNI_moves.jl")
-include("../network_moves/rSPR_moves.jl")
-include("../network_moves/move_origin_target.jl")
-include("../network_moves/identifiability_moves.jl")
-include("../network_properties/network_properties.jl")
-include("../network_moves/flip_hybrid.jl")
 
 
 """

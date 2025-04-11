@@ -1,7 +1,5 @@
 using PhyloNetworks
 const PN = PhyloNetworks;
-const Node = PN.Node;
-const Edge = PN.Edge;
 
 abstract type Block end
 
