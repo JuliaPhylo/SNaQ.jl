@@ -14,7 +14,7 @@ function optimize_topology!(
     old_eqns::Array{QuartetData},
     move::Symbol,
     params::Tuple,
-    q,
+    q::AbstractArray{Float64},
     q_idxs::Vector{Int},
     opt_maxeval::Int,
     force_resample_all::Bool,
@@ -22,7 +22,7 @@ function optimize_topology!(
     α::Real
 )
 
-    new_eqns = Array{QuartetData}(undef, length(old_eqns)) # placeholder
+    new_eqns::Array{QuartetData} = Array{QuartetData}(undef, length(old_eqns)) # placeholder
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
         _, param_map, idxobjmap, _ = gather_optimization_info(Nprime, true)
@@ -33,13 +33,13 @@ function optimize_topology!(
     end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_logPL = optimize_bls!(Nprime, new_eqns, q[q_idxs], α; maxeval=opt_maxeval)
+    Nprime_logPL = optimize_bls!(Nprime, new_eqns, q[q_idxs, :], α; maxeval=opt_maxeval)
 
     return Nprime_logPL, new_eqns
 end
 
 
-function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, propQuartets::Real, rng::TaskLocalRNG, α::Real)
+function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)
     @debug "\tGathering quartet equations."
     N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
 
@@ -53,7 +53,7 @@ end
 function optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
-    observed_CFs,
+    observed_CFs::AbstractArray{Float64},
     α::Real=Inf;
     maxeval::Int=25
 )
@@ -81,7 +81,7 @@ end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 
 
-function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork, eqns::AbstractArray, obsCFs, idx_obj_map, α)::Float64
+function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork, eqns::AbstractArray, obsCFs::AbstractArray{Float64}, idx_obj_map, α)::Float64
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)

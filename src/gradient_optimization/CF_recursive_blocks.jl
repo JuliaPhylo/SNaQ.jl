@@ -57,7 +57,7 @@ end
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, q, α::Real=Inf)::Float64
+function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, q::AbstractArray{Float64}, α::Real=Inf)::Float64
 
     thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
@@ -75,15 +75,15 @@ function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Abstract
         eCF3 = max(eCF3, 1e-9)
 
         total_loss_incr::Float64 = 
-            ((q[j].data[1] > 0) ? q[j].data[1] * log(eCF1 / q[j].data[1]) : 0.0) +
-            ((q[j].data[2] > 0) ? q[j].data[2] * log(eCF2 / q[j].data[2]) : 0.0) +
-            ((q[j].data[3] > 0) ? q[j].data[3] * log(eCF3 / q[j].data[3]) : 0.0)
+            ((q[j, 1] > 0) ? q[j, 1] * log(eCF1 / q[j, 1]) : 0.0) +
+            ((q[j, 2] > 0) ? q[j, 2] * log(eCF2 / q[j, 2]) : 0.0) +
+            ((q[j, 3] > 0) ? q[j, 3] * log(eCF3 / q[j, 3]) : 0.0)
         Threads.atomic_add!(total_loss, total_loss_incr)
 
         gradient_incr::Array{Float64} =
-            q[j].data[1] .* iter_grad[:, 1] ./ eCF1 +
-            q[j].data[2] .* iter_grad[:, 2] ./ eCF2 +
-            q[j].data[3] .* iter_grad[:, 3] ./ eCF3
+            q[j, 1] .* iter_grad[:, 1] ./ eCF1 +
+            q[j, 2] .* iter_grad[:, 2] ./ eCF2 +
+            q[j, 3] .* iter_grad[:, 3] ./ eCF3
         
         lock(thread_lock) do
             gradient_storage .+= gradient_incr

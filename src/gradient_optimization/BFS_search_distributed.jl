@@ -1,11 +1,12 @@
-using PhyloNetworks, SNaQ, DataFrames, Random, Distributed, PhyloCoalSimulations, StatsBase
-include("../network_moves/rNNI_moves.jl")
-include("../network_moves/rSPR_moves.jl")
-include("opt_API.jl")
-include("search_API.jl")
-include("../../test/test_inplace_updates/misc.jl")
-include("bfs_search.jl")
-
+@everywhere begin
+    using PhyloNetworks, SNaQ, DataFrames, Random, Distributed, PhyloCoalSimulations, StatsBase
+    include("../network_moves/rNNI_moves.jl")
+    include("../network_moves/rSPR_moves.jl")
+    include("opt_API.jl")
+    include("search_API.jl")
+    include("../../test/test_inplace_updates/misc.jl")
+    include("bfs_search.jl")
+end
 using Plots
 
 
@@ -32,6 +33,13 @@ function BFS_distributed(
     rng = Random.seed!(seed)
     q_idxs = sample_qindices(starting_pool[1], propQuartets, rng)
     
+    # Convert `q` to a SharedArray
+    shared_q = SharedArray{Float64}(length(q), 3)
+    for j = 1:length(q)
+        shared_q[j,:] .= q[j].data[1:3]
+    end
+    q = shared_q
+
     # Semi-direct input networks
     for n in starting_pool
         semidirect_network!(n)
@@ -84,42 +92,56 @@ function BFS_distributed(
 
         # Sample from pool
         valid_idxs = get_vidxs()
-        sample_idx = sample(rng, valid_idxs, compute_weights(pool[valid_idxs], multiplicity[valid_idxs]))
-        net = pool[sample_idx]
+        sample_idxs = sample(rng, valid_idxs, compute_weights(pool[valid_idxs], multiplicity[valid_idxs]), nprocs(), replace=true)
+        nets = pool[sample_idxs]
 
         # Perform single iter of search
-        next_net, next_eqns = BFS_single_iter(
-            rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...
-        )
-        
-        # If improvement found: add it to the pool
-        # If NO improvement found: increment `nfailures` 
-        if next_net !== nothing
-            nsuccesses[sample_idx] += 1
-            if nsuccesses[sample_idx] >= maxsuccess
+        futures = []
+        @sync begin
+            for (ip, p) in enumerate(procs())
+                @async begin
+                    r = remotecall_wait(BFS_single_iter, p, rng, nets[p], pool_eqns[sample_idxs[ip]], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...)
+                    push!(futures, r)
+                end
+            end
+        end
+
+        for (jf, fut) in enumerate(futures)
+            next_net, next_eqns = fetch(fut)
+            sample_idx = sample_idxs[jf]
+            # next_net, next_eqns = BFS_single_iter(
+            #     rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...
+            # )
+            
+            # If improvement found: add it to the pool
+            # If NO improvement found: increment `nfailures` 
+            if next_net !== nothing
+                nsuccesses[sample_idx] += 1
+                if nsuccesses[sample_idx] >= maxsuccess
+                    forceremoved[sample_idx] = true
+                    pool_eqns[sample_idx] = nothing
+                end
+
+                match_idx = findfirst(j -> pool[j] ≊ next_net, 1:length(pool))
+                if match_idx === nothing
+                    push!(pool, next_net)
+                    push!(pool_eqns, next_eqns)
+                    push!(nfailures, 0)
+                    push!(nsuccesses, 0)
+                    push!(multiplicity, 1)
+                    push!(forceremoved, false)
+                else
+                    # Finding a network that has already been discovered is considered a failure!
+                    nfailures[sample_idx] += 1
+                    multiplicity[match_idx] = min(multiplicity[match_idx] + 1, maxmultiplicity)
+                end
+            else
+                nfailures[sample_idx] += 1
+            end
+            if nfailures[sample_idx] >= maxfail
                 forceremoved[sample_idx] = true
                 pool_eqns[sample_idx] = nothing
             end
-
-            match_idx = findfirst(j -> pool[j] ≊ next_net, 1:length(pool))
-            if match_idx === nothing
-                push!(pool, next_net)
-                push!(pool_eqns, next_eqns)
-                push!(nfailures, 0)
-                push!(nsuccesses, 0)
-                push!(multiplicity, 1)
-                push!(forceremoved, false)
-            else
-                # Finding a network that has already been discovered is considered a failure!
-                nfailures[sample_idx] += 1
-                multiplicity[match_idx] = min(multiplicity[match_idx] + 1, maxmultiplicity)
-            end
-        else
-            nfailures[sample_idx] += 1
-        end
-        if nfailures[sample_idx] >= maxfail
-            forceremoved[sample_idx] = true
-            pool_eqns[sample_idx] = nothing
         end
 
         # Trim pool back down to `maxpoolsize`
@@ -157,12 +179,12 @@ function BFS_distributed(
 end
 
 
-function BFS_single_iter(
+@everywhere function BFS_single_iter(
     rng::TaskLocalRNG,
     N::HybridNetwork,
     net_eqns::Array{QuartetData},
     d::Int,
-    q,
+    q::AbstractArray{Float64},
     q_idxs::AbstractVector{Int},
     hmax::Int,
     ftolabs::Float64,
@@ -223,7 +245,7 @@ function BFS_single_iter(
 end
 
 
-function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_attempted::Vector{<:Tuple}, restrictions::Function)
+@everywhere function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_attempted::Vector{<:Tuple}, restrictions::Function)
     j = 0
     while true
         j += 1
@@ -250,7 +272,7 @@ function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_
 end
 
 
-function compute_weights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::Weights{Float64}
+@everywhere function compute_weights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::Weights{Float64}
     L::Vector{Float64} = [loglik(n) for n in N]
     sumL = sum(L)
     return Weights([m * max(sumL / l, 0.0) for (l, m) in zip(L, multiplicity)])  # weight: (xi / sum(xi)) ^ {-1}
@@ -258,7 +280,7 @@ function compute_weights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::W
 end
 
 
-function ≊(N1::HybridNetwork, N2::HybridNetwork)::Bool
+@everywhere function ≊(N1::HybridNetwork, N2::HybridNetwork)::Bool
     if loglik(N1) ≈ 0.0
         loglik(N2) ≈ 0.0 && return true
     end
@@ -269,7 +291,7 @@ end
 
 
 
-net = generate_net(10, 2, 44);
+net = generate_net(10, 3, 50);
 while shrink2cycles!(net) || shrink3cycles!(net) continue end
 net.numhybrids, istreechild(net), getlevel(net)
 gts = simulatecoalescent(net, 10000, 1);

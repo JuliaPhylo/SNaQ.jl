@@ -2,6 +2,8 @@ using PhyloNetworks
 import PhyloNetworks: getOtherNode
 
 
+# TODO: if this function gets used in the future, it does not always work as intended
+# see e.g. "((((t8:0.062,t2:0.062)i5504:0.152,((((t7:0.166,t4:0.166)i6465:0.007,#H31657:0.0::0.25)i99601:0.018,(t6:0.032,((t5:0.016)#H31657:0.008::0.75)#H89630:0.008::0.75)i9479:0.142)i2897:0.014,#H89630:0.0::0.25)i94318:0.01)i9632:0.3,(t3:0.247,t1:0.247)i2921:0.267)i9981:0.368,t10:0.882,t9:1.256)i4435;"
 function shrink_bad_diamonds!(N::HybridNetwork)
 
     check_again::Bool = true

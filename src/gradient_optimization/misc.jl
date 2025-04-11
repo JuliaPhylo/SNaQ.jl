@@ -65,9 +65,6 @@ Helper function that calculates how many quartet combinations exist.
 end
 
 
-# TODO: faster delete leaf set?
-
-
 function deepcopy_network(net::HybridNetwork)::HybridNetwork
 
     # List of nodes W/O attached edges
@@ -115,6 +112,7 @@ function deepcopy_network(net::HybridNetwork)::HybridNetwork
     netc.hybrid = hybc
     netc.numhybrids = net.numhybrids
     netc.isrooted = net.isrooted
+    loglik!(netc, loglik(net))
     return netc
 end
 
