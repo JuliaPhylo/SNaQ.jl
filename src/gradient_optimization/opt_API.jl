@@ -36,7 +36,7 @@ function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, rng::TaskLocalRN
     N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
 
     @debug "\tComputing loss."
-    return compute_loss(N_qdata, N_params, q[q_idxs], α), N_qdata
+    return compute_loss(N_qdata, N_params, q[q_idxs, :], α), N_qdata
 end
 
 
