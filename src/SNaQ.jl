@@ -91,6 +91,7 @@ module SNaQ
     include("gradient_optimization/opt_API.jl")
     include("gradient_optimization/search_API.jl")
     
+    include("network_moves/misc.jl")
     include("network_moves/add_remove_retic.jl")
     include("network_moves/rNNI_validity.jl")
     include("network_moves/rNNI_moves.jl")
