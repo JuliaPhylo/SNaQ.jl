@@ -102,7 +102,7 @@ function search(
 
     q_idxs = sample_qindices(N, propQuartets, rng)
     logPLs = Array{Float64}(undef, maxeval)
-    logPLs[1], N_eqns = compute_loss(N, q, q_idxs, propQuartets, rng, α)
+    logPLs[1], N_eqns = compute_loss(N, q, q_idxs, rng, α)
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)

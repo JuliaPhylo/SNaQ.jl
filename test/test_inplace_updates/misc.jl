@@ -1,5 +1,3 @@
-using PhyloNetworks, PhyloCoalSimulations, Random, BenchmarkTools
-include("../../src/network_moves/add_remove_retic.jl")
 
 
 function generate_tree(n::Int, seed::Int=42)

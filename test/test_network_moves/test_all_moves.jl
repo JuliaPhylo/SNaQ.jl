@@ -1,4 +1,4 @@
-include("test_includes.jl")
+#include("test_includes.jl")
 
 # Here, we repeatedly do the following:
 # 1) generate a random starting tree t0 with anywhere from 5-40 tips
@@ -8,6 +8,8 @@ include("test_includes.jl")
 # 4) at each step, ensure that every node's name can be found in the networks
 #    newick generated from `writenewick` (helps ensure all nodes are traversable)
 
+import SNaQ: deepcopy_network, semidirect_network!,
+    generate_move_proposal, apply_move!
 
 for z = 1:500
     # Generate random data
