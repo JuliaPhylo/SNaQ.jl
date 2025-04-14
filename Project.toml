@@ -16,7 +16,6 @@ Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 NLopt = "76087f3c-5699-56af-9a33-bf431cd00edd"
 PhyloCoalSimulations = "53f7b83a-06b5-4910-9a21-1896bf762ade"
 PhyloNetworks = "33ad39ac-ed31-50eb-9b15-43d0656eaa72"
-Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
@@ -42,6 +41,7 @@ julia = "1.11"
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 PhyloPlots = "c0d5b6db-e3fc-52bc-a87d-1d050989ed3b"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [targets]
 test = ["Test", "PhyloNetworks"]
