@@ -20,7 +20,7 @@ function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=ab
 
     # Do the runs distributed
     nets_and_PLs = Distributed.pmap(1:runs) do j
-        return search(N, q, hmax; seed = run_seeds[1], kwargs...)
+        return search(N, q, hmax; seed = run_seeds[j], kwargs...)
     end
 
     # Consolidate return data
