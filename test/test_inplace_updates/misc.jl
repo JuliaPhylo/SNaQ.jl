@@ -1,3 +1,4 @@
+using SNaQ
 
 
 function generate_tree(n::Int, seed::Int=42)
@@ -25,7 +26,7 @@ function generate_net(n::Int, h::Int, seed::Int=42)
 
     net = generate_tree(n, seed)
     for j = 1:h
-        add_hybrid!(net, sample_add_hybrid_parameters(net, rng)...)
+        SNaQ.add_hybrid!(net, SNaQ.sample_add_hybrid_parameters(net, rng)...)
     end
     for node in net.node
         if node.name == ""

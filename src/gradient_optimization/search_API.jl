@@ -63,6 +63,17 @@ function search(
     0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
     0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
 
+    # Clean the quartet input
+    if typeof(q) <: AbstractVector{<:PhyloNetworks.QuartetT}
+        qstatic = Array{Float64}(undef, length(q), 3)
+        for j = 1:length(q)
+            for k = 1:3
+                qstatic[j, k] = q[j].data[k]
+            end
+        end
+        q = qstatic
+    end
+
     # Set the seed
     rng = Random.seed!(seed)
 
@@ -114,7 +125,16 @@ function search(
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
-        Nprime = readnewick(writenewick(N));
+        Nprime = nothing
+        try
+            Nprime = readnewick(writenewick(N));
+        catch e
+            @error "Bad newick: $(writenewick(N, round=true))"
+            @info "Bad newick: $(writenewick(N, round=true))"
+            println("Bad newick: $(writenewick(N, round=true))")
+            rethrow(e)
+        end
+
         prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
         apply_move!(Nprime, prop_move, prop_params)
         push!(moves_attempted, (prop_move, prop_params))
