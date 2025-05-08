@@ -36,4 +36,36 @@ end
     end
 end
 
+@testset "-logPL strictly improves" begin
+    ntested::Int = 0
+    nfail::Int = 0
+    while ntested < 100
+        rng = Random.seed!(ntested + nfail)
+
+        net = generate_net(7, 1, ntested + nfail)
+        while shrink2cycles!(net) || shrink3cycles!(net) continue end
+        if net.numhybrids == 0
+            nfail += 1
+            continue
+        end
+        gts = simulatecoalescent(net, 100, 1)
+        SNaQ.semidirect_network!(net)
+        q, t = countquartetsintrees(gts, showprogressbar=false)
+        qstat = Array{Float64}(undef, length(q), 3)
+        for j = 1:length(q)
+            for k = 1:3
+                qstat[j, k] = q[j].data[k]
+            end
+        end
+        q = qstat
+
+        before_L = SNaQ.compute_loss(net, q)
+        SNaQ.optimize_bls!(net, SNaQ.find_quartet_equations(net)[1], q, maxeval = 10)
+        after_L = SNaQ.compute_loss(net, q)
+
+        @test after_L > before_L
+        ntested += 1
+    end
+end
+
 

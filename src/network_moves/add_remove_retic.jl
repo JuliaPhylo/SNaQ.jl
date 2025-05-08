@@ -52,6 +52,7 @@ function sample_add_hybrid_parameters(N::HybridNetwork, rng::TaskLocalRNG)
         e1, e2 = sample(rng, N.edge, 2, replace=false)
         is_valid_add_hybrid(e1, e2, N) && return (e1, e2)
         is_valid_add_hybrid(e2, e1, N) && return (e2, e1)
+        niter += 1
     end
 
     return nothing
@@ -68,7 +69,7 @@ Checks whether the `add_hybrid!` move defined by this `from_edge` and
 function is_valid_add_hybrid(from_edge::Edge, to_edge::Edge, N::HybridNetwork)::Bool
     # Condition (1)
     !directionalconflict(getparent(from_edge), to_edge, true) || return false
-
+    getparent(from_edge) == getparent(to_edge) && isrootof(getparent(from_edge), net) && return false
     return true
 end
 

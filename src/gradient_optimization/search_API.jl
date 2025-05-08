@@ -72,6 +72,7 @@ function search(
             end
         end
         q = qstatic
+        qstatic = nothing
     end
 
     # Set the seed

@@ -65,15 +65,12 @@ is_galled_tree(net::HybridNetwork) = get_network_level(net) <= 1
 
 
 function is_galled_network(net::HybridNetwork)
-
-    G = Graph(net)
-    bi_comp = [comp for comp in biconnected_components(G) if length(comp) > 1]
-
-    v_counts = Dict{Int, Int}()
+    bi_comp = [comp for comp in biconnectedcomponents(net) if length(comp) > 1]
+    v_counts = Dict{Node, Int}()
     for component in bi_comp
-        component = reduce(vcat, [[edge.dst, edge.src] for edge in component])
+        component = reduce(vcat, [[edge.node[1], edge.node[2]] for edge in component])
         for node in component
-            if net.node[node].hybrid
+            if node.hybrid
                 if !haskey(v_counts, node)
                     v_counts[node] = 1
                 else
@@ -84,5 +81,4 @@ function is_galled_network(net::HybridNetwork)
         end
     end
     return true
-
 end
