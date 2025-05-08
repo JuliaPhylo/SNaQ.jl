@@ -1,34 +1,39 @@
-using PhyloNetworks, Plots, SNaQ, DataFrames, PhyloCoalSimulations, Test, Random
-include("../../src/network_moves/rNNI_moves.jl")
-include("../../src/network_moves/rSPR_moves.jl")
-include("../../src/gradient_optimization/opt_API.jl")
-using PhyloPlots    # can be helpful, not always required
+using PhyloNetworks, SNaQ, PhyloCoalSimulations, Test, Random, StatsBase
+import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs
 
 
-function get_data(L::Float64=0.5, ngt::Int=5_000, seed::Int=42)
+function get_data(L::Float64=0.5, seed::Int=42)
     Random.seed!(seed)
     net = readnewick(joinpath(@__DIR__, "n1.netfile"))
     for E in net.edge E.length = (E.length > 0) ? L : 0 end
-    net.isrooted = false
-    rootonedge!(net, getroot(net).edge[1])
-    gts = simulatecoalescent(net, ngt, 1);
-    q, t = countquartetsintrees(gts, showprogressbar=false);
     semidirect_network!(net)
+    q = compute_eCFs(net)
     return net, q
 end
 
 
 
-# Parameter 12 (the immediately parent to e and f) has a VERY large gradient - why??
-net, q = get_data(1.0);
+@testset "optimize_bls! gets close to truth" begin
+    for L in [0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
+        for seed = 1:10
+            net, q = get_data(L, seed);
+            _, _, params, _, _ = find_quartet_equations(net);
 
-opt_net = deepcopy(net)
-optimize_bls!(opt_net, q)
-eqns, _, opt_params, idx_obj_map, _ = find_quartet_equations(opt_net);
+            opt_net = deepcopy(net)
+            for E in opt_net.edge
+                if E.length != 0.0 E.length = rand()*L end
+                if E.gamma != -1.0 E.gamma = 0.5 end
+            end
 
-@test sum((opt_params .- params).^2) < 0.1
+            optimize_bls!(opt_net, q; maxeval=100000)
+            eqns, _, opt_params, idx_obj_map, _ = find_quartet_equations(opt_net);
+            if !(sum(mean((opt_params .- params).^2)) < 0.5)
+                @info L
+            end
 
-
-
+            @test sum(mean((opt_params .- params).^2)) < 0.5
+        end
+    end
+end
 
 
