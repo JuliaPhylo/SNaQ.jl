@@ -45,29 +45,60 @@ end
 function optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
-    observed_CFs::AbstractArray{Float64},
+    observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
     α::Real=Inf;
     maxeval::Int=25
+)
+    obsCF_static = Array{Float64}(undef, length(observed_CFs), 3)
+    for j = 1:length(observed_CFs)
+        for k = 1:3
+            obsCF_static[j, k] = observed_CFs[j].data[k]
+        end
+    end
+    return optimize_bls!(net, eqns, obsCF_static, α, maxeval=maxeval)
+end
+
+
+function optimize_bls!(
+    net::HybridNetwork,
+    eqns::Array{QuartetData},
+    observed_CFs::AbstractArray{Float64},
+    α::Real=Inf;
+    maxeval::Int=10
 )
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
 
-    opt = Opt(NLopt.LD_LBFGS, narg)
+    opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)
 
     opt.maxeval = maxeval
-    opt.ftol_rel = 1e-6
-    opt.ftol_abs = 1e-6
-    opt.xtol_rel = 1e-3
-    opt.xtol_abs = 1e-3
+    opt.ftol_rel = 1e-12
+    opt.ftol_abs = 1e-12
+    opt.xtol_rel = 1e-8
+    opt.xtol_abs = 1e-8
 
     opt.initial_step = init_steps
     opt.lower_bounds = LB
     opt.upper_bounds = UB
 
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
-    (minf, minx, ret) = NLopt.optimize(opt, params) #fill(0.1, narg))
+    (minf, minx, ret) = NLopt.optimize(opt, params)
     setX!(net, minx, idx_obj_map)
 
+    # The major/minor property of some hybrid edges may need to be changed at this point
+    for hyb in net.hybrid
+        par = getparents(hyb)
+        if getconnectingedge(hyb, par[1]).gamma > 0.5
+            getconnectingedge(hyb, par[1]).ismajor = true
+            getconnectingedge(hyb, par[2]).ismajor = false
+        elseif getconnectingedge(hyb, par[1]).gamma < 0.5
+            getconnectingedge(hyb, par[1]).ismajor = false
+            getconnectingedge(hyb, par[2]).ismajor = true
+        end
+
+        # If they are both exactly 0.5, just leave the values as they were before.
+        # This way, no updates will be forced.
+    end
     return minf
 end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
@@ -89,12 +120,10 @@ function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map)
             E_minor = getparentedgeminor(obj)
             E_major.gamma = 1-X[j]
             E_minor.gamma = X[j]
-
-            # if 1-X[j] < 0.5
-            #     E_major.ismajor = false
-            #     E_minor.ismajor = true
-            # end
         else
+            if X[j] < 1e-6
+                X[j] = 0.0
+            end
             obj.length = X[j]
         end
     end
@@ -141,7 +170,7 @@ function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
         else
             params[j] = obj.length
             LB[j] = 0.0
-            UB[j] = 15.0
+            UB[j] = 25.0
             init_steps[j] = 1.0
         end
     end
