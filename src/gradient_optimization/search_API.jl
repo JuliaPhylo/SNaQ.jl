@@ -1,3 +1,4 @@
+using Dates
 
 
 """
@@ -21,7 +22,7 @@ function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=ab
     # Do the runs distributed
     nets_and_PLs = Distributed.pmap(1:runs) do j
         println("Begining run #$(j) on seed $(run_seeds[j])")
-        return search(N, q, hmax; seed = run_seeds[j], kwargs...)
+        return search(N, q, hmax; seed = run_seeds[j], logfile="snaq_$(run_seeds[j])", kwargs...)
     end
 
     # Consolidate return data
@@ -37,6 +38,17 @@ function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=ab
 end
 
 
+function log_text(logfile::String, msg::String)
+    logfile == "" && return
+    # get the current time and format it
+    timestamp = Dates.format(now(), "yyyy-mm-dd HH:MM:SS")
+    # open the file in append mode and write the log line
+    open(logfile, "a") do io
+        println(io, "[$timestamp] $msg")
+    end
+end
+
+
 """
 API NOT FINALIZED
 """
@@ -45,15 +57,18 @@ function search(
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
-    preopt::Bool=true,
-    prehybprob::Real=0.3,
+    #preopt::Bool=true,
+    preopt::Bool=false,
+    #prehybprob::Real=0.3,
+    prehybprob::Real=0.0,
     prehybattempts::Int=5,
     probST::Real=0.3,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=1500,
     opt_maxeval::Int=10,
     seed::Int=abs(rand(Int) % 100000),
-    verbose::Bool=false
+    verbose::Bool=false,
+    logfile::String=""
 )
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
@@ -122,8 +137,10 @@ function search(
     moves_proposed = Dict{Symbol,Int}()
     moves_accepted = Dict{Symbol,Int}()
 
+    log_text(logfile, "Entering main loop with -logPL = $(logPLs[1])")
     for j = 2:maxeval
         verbose && print("\rIteration $(j)/$(maxeval) - in a row=$(unchanged_iters)/$(maxequivPLs)              ")
+        log_text(logfile, "Iteration $(j)/$(maxeval), in a row = $(unchanged_iters)/$(maxequivPLs) (current best = $(round(logPLs[j-1], digits=6)))")
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
