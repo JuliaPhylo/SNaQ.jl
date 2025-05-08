@@ -69,7 +69,7 @@ Checks whether the `add_hybrid!` move defined by this `from_edge` and
 function is_valid_add_hybrid(from_edge::Edge, to_edge::Edge, N::HybridNetwork)::Bool
     # Condition (1)
     !directionalconflict(getparent(from_edge), to_edge, true) || return false
-    getparent(from_edge) == getparent(to_edge) && isrootof(getparent(from_edge), net) && return false
+    getparent(from_edge) == getparent(to_edge) && isrootof(getparent(from_edge), N) && return false
     return true
 end
 
