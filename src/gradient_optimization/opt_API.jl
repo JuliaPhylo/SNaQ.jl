@@ -7,7 +7,7 @@ function optimize_topology!(
     old_eqns::Array{QuartetData},
     move::Symbol,
     params::Tuple,
-    q::AbstractArray{Float64},
+    q::Matrix{Float64},
     q_idxs::Vector{Int},
     opt_maxeval::Int,
     force_resample_all::Bool,
@@ -63,13 +63,12 @@ end
 function optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
-    observed_CFs::AbstractArray{Float64},
+    observed_CFs::Matrix{Float64},
     α::Real=Inf;
     maxeval::Int=10
 )
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
-
     opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)
 
     opt.maxeval = maxeval
@@ -105,7 +104,7 @@ end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 
 
-function objective(X::AbstractVector{T}, grad::AbstractVector{T}, net::HybridNetwork, eqns::AbstractArray, obsCFs::AbstractArray{T}, idx_obj_map, α)::Float64 where T<:Real
+function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::Float64 where T<:Float64
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
@@ -119,7 +118,7 @@ Sets the branch lengths and γ values of edges in `net` according
 to the values provided in `X` and the index-to-object map
 provided in `idx_obj_map`.
 """
-function setX!(net::HybridNetwork, X::AbstractVector{Float64}, idx_obj_map::IdxObjMap)
+function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map::IdxObjMap)
     for j = 1:length(X)
         obj::Union{Node, Edge} = idx_obj_map[j]
         if typeof(obj) <: PN.Node
@@ -216,18 +215,6 @@ function compute_gradient(net::HybridNetwork, obsCFs)
         end
     end
     return grad
-end
-
-
-function compute_logPL(blocks::AbstractMatrix{<:AbstractArray{<:AbstractArray{<:Block}}}, params::AbstractArray{<:Real}, obsCFs, α::Real)::Float64
-    total_loss::Float64 = 0.0
-    for j = 1:size(blocks)[1]
-        for k = 1:3
-            # Loss function
-            total_loss += obsCFs[j].data[k] * log(compute_eCF(blocks[j,k], params, k, α) / obsCFs[j].data[k])
-        end
-    end
-    return total_loss
 end
 
 

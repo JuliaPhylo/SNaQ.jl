@@ -15,7 +15,7 @@ mutable struct RecursiveCFEquation
 
     function RecursiveCFEquation(can_coal::Bool, coal_Es::Vector{Int}, which_c::Int, dH::Int, d::Vector, nparam::Int)
         mask = falses(nparam)
-        for pidx in coal_Es
+        @inbounds @simd for pidx in coal_Es
             mask[pidx] = true
         end
         new(can_coal, coal_Es, which_c, dH, d, mask)
@@ -117,19 +117,19 @@ function compute_eCF_and_gradient_recur!(
     if eqn.division_H == -1
 
         # Simple treelike block
-        exp_sum = length(eqn.coal_edges) == 0 ? 1 : exp(-sum(params[e] for e in eqn.coal_edges))
+        exp_sum = eqn.coal_edges == EMPTY_INT_VEC ? 1 : exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
 
         # Gradient computation
-        for param_idx = 1:length(params)
+        @inbounds @simd for param_idx = 1:length(params)
             if eqn.coal_mask[param_idx]
                 # we need to take the derivative
-                for k = 1:3
+                @inbounds @simd for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 2/3*exp_sum : -1/3*exp_sum)
                 end
             elseif params_seen[param_idx]
                 # don't need to take the derivative, but we do need to
                 # multiple the eCF value onto the gradient
-                for k = 1:3
+                @inbounds @simd for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 1-2/3*exp_sum : 1/3*exp_sum)
                 end
             end
@@ -148,9 +148,9 @@ function compute_eCF_and_gradient_recur!(
 
         eqn_eCF1::Float64 = 0.0
         eqn_eCF2::Float64 = 0.0
-        before = deepcopy(params_seen)
+        before = params_seen
 
-        early_coal_exp_sum::Float64 = exp(-sum(params[e] for e in eqn.coal_edges))
+        early_coal_exp_sum::Float64 = exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
         if eqn.can_coalesce_here
             # eCF contribution
             if eqn.which_coal == 1
@@ -160,7 +160,7 @@ function compute_eCF_and_gradient_recur!(
             end
 
             # gradient contribution
-            for param_idx = 1:length(params)
+            @inbounds @simd for param_idx = 1:length(params)
                 if eqn.coal_mask[param_idx]
                     # calculate the derivative
                     !params_seen[param_idx] || error("Already seen this param??")
@@ -176,30 +176,30 @@ function compute_eCF_and_gradient_recur!(
         !params_seen[eqn.division_H] || error("Already seen this param??")
         params_seen[eqn.division_H] = true
         γ::Float64 = params[eqn.division_H]
-        for division_idx = 1:4
+        @inbounds @simd for division_idx = 1:4
             split_grad = quad_split_probability_gradient(division_idx, γ, α)
             split_prob = quad_split_probability(division_idx, γ, α)
             prev_gamma_grad = running_gradient[eqn.division_H, :]   # store here in case `split_grad` is 0.0
 
             # apply running gradient changes
-            for param_idx = 1:length(params)
+            @inbounds @simd for param_idx = 1:length(params)
                 if param_idx == eqn.division_H
                     running_gradient[eqn.division_H, :] .*= split_grad
                 else
                     running_gradient[param_idx, :] .*= split_prob
                 end
             end
-            for e in eqn.coal_edges
+            @inbounds @simd for e in eqn.coal_edges
                 running_gradient[e, :] .*= -1.
             end
 
             recur_probs = compute_eCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
 
             # revert running gradient changes so that the next iteration is unbothered by them
-            for e in eqn.coal_edges
+            @inbounds @simd for e in eqn.coal_edges
                 running_gradient[e, :] .*= -1.
             end
-            for param_idx = 1:length(params)
+            @inbounds @simd for param_idx = 1:length(params)
                 if param_idx == eqn.division_H
                     running_gradient[eqn.division_H, :] .= prev_gamma_grad
                 else
@@ -215,7 +215,7 @@ function compute_eCF_and_gradient_recur!(
 
         # revert running_gradient and params_seen changes
         running_gradient ./= early_coal_exp_sum
-        for e in eqn.coal_edges
+        @inbounds @simd for e in eqn.coal_edges
             params_seen[e] = false
         end
         params_seen[eqn.division_H] = false
@@ -233,7 +233,7 @@ function compute_eCF_and_gradient_recur!(
         params_seen[eqn.division_H] = true
 
         # apply running gradient changes
-        for param_idx = 1:length(params)
+        @inbounds @simd for param_idx = 1:length(params)
             if param_idx != eqn.division_H
                 running_gradient[param_idx, :] .*= γ
             end
@@ -242,7 +242,7 @@ function compute_eCF_and_gradient_recur!(
         eqn_eCF1, eqn_eCF2 = γ .* compute_eCF_and_gradient_recur!(eqn.divisions[1], params, gradient_storage, params_seen, α, running_gradient)
 
         # revert running gradient changes
-        for param_idx = 1:length(params)
+        @inbounds @simd for param_idx = 1:length(params)
             if param_idx != eqn.division_H
                 running_gradient[param_idx, :] ./= γ
             end
@@ -250,7 +250,7 @@ function compute_eCF_and_gradient_recur!(
 
 
         # apply running gradient changes
-        for param_idx = 1:length(params)
+        @inbounds @simd for param_idx = 1:length(params)
             if param_idx != eqn.division_H
                 running_gradient[param_idx, :] .*= (1-γ)
             else
@@ -261,7 +261,7 @@ function compute_eCF_and_gradient_recur!(
         secondary_probs = (1 - γ) .* compute_eCF_and_gradient_recur!(eqn.divisions[2], params, gradient_storage, params_seen, α, running_gradient)
 
         # revert running gradient changes
-        for param_idx = 1:length(params)
+        @inbounds @simd for param_idx = 1:length(params)
             if param_idx != eqn.division_H
                 running_gradient[param_idx, :] ./= (1-γ)
             else
