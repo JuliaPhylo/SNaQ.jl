@@ -14,7 +14,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         quartet_type, int_edges = get_quartet_type_and_internal_edges(net, taxa, parameter_map)
         return RecursiveCFEquation(
             true, [parameter_map[int_e.number] for int_e in int_edges], quartet_type, -1,
-            Vector{RecursiveCFEquation}([])
+            Vector{RecursiveCFEquation}([]), length(parameter_map)
         )
     end
 
@@ -24,7 +24,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         p_leaf_ch = getchildren(p_leaf)
         if length(p_leaf_ch) > 2 && sum(ch.leaf for ch in p_leaf_ch) > 2
             return RecursiveCFEquation(
-                true, [], 1, -1, Vector{RecursiveCFEquation}([])
+                true, [], 1, -1, Vector{RecursiveCFEquation}([]), length(parameter_map)
             )
         end
     end
@@ -95,7 +95,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
         return RecursiveCFEquation(
             false, [], 0, parameter_map[lowest_H.number], [
                 r1, r2
-            ]
+            ], length(parameter_map)
         )
 
     elseif n_below_H == 2
@@ -216,7 +216,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{<:Abstract
 
         return RecursiveCFEquation(
             length(int_edges) > 0, [parameter_map[int_e.number] for int_e in int_edges],
-            which_quartet, parameter_map[lowest_H.number], recurrences
+            which_quartet, parameter_map[lowest_H.number], recurrences, length(parameter_map)
         )
     else    # n_below_H is 3 or 4
         # 3 or 4 leaves below this hybrid, so it has no effect on eCFs!
@@ -538,21 +538,21 @@ function try_treelike_quartet(net::HybridNetwork, taxa::Vector{String}, param_ma
     if length(i_abcd) == 0
         coal_edges = [param_map[e.number] for e in i_acbd]
         return QuartetData(
-            RecursiveCFEquation(true, coal_edges, 1, -1, []),
+            RecursiveCFEquation(true, coal_edges, 1, -1, [], length(param_map)),
             [param_map[e.number] for e in union(path_ac, path_bd) if haskey(param_map, e.number)],
             [a.name, b.name, c.name, d.name]
         )
     elseif length(i_acbd) == 0
         coal_edges = [param_map[e.number] for e in i_abcd]
         return QuartetData(
-            RecursiveCFEquation(true, coal_edges, 2, -1, []),
+            RecursiveCFEquation(true, coal_edges, 2, -1, [], length(param_map)),
             [param_map[e.number] for e in union(path_ab, path_cd) if haskey(param_map, e.number)],
             [a.name, b.name, c.name, d.name]
         )
     else
         coal_edges = [param_map[e.number] for e in i_abcd]
         return QuartetData(
-            RecursiveCFEquation(true, coal_edges, 3, -1, []),
+            RecursiveCFEquation(true, coal_edges, 3, -1, [], length(param_map)),
             [param_map[e.number] for e in union(path_ab, path_cd) if haskey(param_map, e.number)],
             [a.name, b.name, c.name, d.name]
         )

@@ -7,10 +7,19 @@ when optimizing branch lengths.
 """
 mutable struct RecursiveCFEquation
     can_coalesce_here::Bool
-    coal_edges::AbstractArray{Int}
+    coal_edges::Vector{Int}
     which_coal::Int     # 0 = NA, 1 = ab|cd, 2 = ac|bd, 3 = ad|bc
     division_H::Int     # hybrid index in `net.hybrid`; -1 means not set
-    divisions::AbstractArray{RecursiveCFEquation}
+    divisions::Vector{RecursiveCFEquation}
+    coal_mask::BitVector
+
+    function RecursiveCFEquation(can_coal::Bool, coal_Es::Vector{Int}, which_c::Int, dH::Int, d::Vector, nparam::Int)
+        mask = falses(nparam)
+        for pidx in coal_Es
+            mask[pidx] = true
+        end
+        new(can_coal, coal_Es, which_c, dH, d, mask)
+    end
 end
 
 
@@ -26,15 +35,15 @@ A struct that contains:
 """
 mutable struct QuartetData
     eqn::RecursiveCFEquation
-    relevant_params::AbstractArray{Int}
+    relevant_params::Vector{Int}
     q_taxa::Vector{String}
 end
-contains_parameter(qdata::QuartetData, param_idxs::AbstractVector{Int})::Bool = any(
+contains_parameter(qdata::QuartetData, param_idxs::Vector{Int})::Bool = any(
     obj_idx -> obj_idx in qdata.relevant_params, param_idxs
 )
 
 
-function compute_eCF(qdata::QuartetData, params::Vector{<:Real}, α::Real)
+function compute_eCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
     return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α)
 end
 
@@ -49,7 +58,7 @@ function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
     qdata, _, params, _, _ = find_quartet_equations(N)
     return compute_loss(qdata, params, q, α)
 end
-function compute_loss(qdata::Vector{QuartetData}, params::AbstractVector{<:Real}, q, α::Real=Inf)::Float64
+function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q, α::Float64=Inf)::Float64
     return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
 end
 
@@ -57,7 +66,7 @@ end
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::AbstractArray{<:Real}, gradient_storage::AbstractArray{Float64}, q::AbstractArray{Float64}, α::Real=Inf)::Float64
+function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Vector{Float64}, gradient_storage::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
 
     thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
@@ -99,10 +108,10 @@ Recursive helper function that does the actual computations for [`compute_eCFs_a
 Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 """
 function compute_eCF_and_gradient_recur!(
-    eqn::RecursiveCFEquation, params::AbstractArray{<:Real},
-    gradient_storage::AbstractArray{Float64},
+    eqn::RecursiveCFEquation, params::Vector{Float64},
+    gradient_storage::Matrix{Float64},
     params_seen::BitVector,
-    α::Real,
+    α::Float64,
     running_gradient::Array{Float64}=ones(length(params), 3))::Tuple{Float64, Float64}
 
     if eqn.division_H == -1
@@ -112,7 +121,7 @@ function compute_eCF_and_gradient_recur!(
 
         # Gradient computation
         for param_idx = 1:length(params)
-            if param_idx in eqn.coal_edges
+            if eqn.coal_mask[param_idx]
                 # we need to take the derivative
                 for k = 1:3
                     gradient_storage[param_idx, k] += running_gradient[param_idx, k] * ((eqn.which_coal == k) ? 2/3*exp_sum : -1/3*exp_sum)
@@ -152,7 +161,7 @@ function compute_eCF_and_gradient_recur!(
 
             # gradient contribution
             for param_idx = 1:length(params)
-                if param_idx in eqn.coal_edges
+                if eqn.coal_mask[param_idx]
                     # calculate the derivative
                     !params_seen[param_idx] || error("Already seen this param??")
                     gradient_storage[param_idx, eqn.which_coal] += running_gradient[param_idx, eqn.which_coal] .* early_coal_exp_sum

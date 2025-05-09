@@ -106,8 +106,6 @@ optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_qua
 
 
 function objective(X::AbstractVector{T}, grad::AbstractVector{T}, net::HybridNetwork, eqns::AbstractArray, obsCFs::AbstractArray{T}, idx_obj_map, α)::Float64 where T<:Real
-    global count, xprev
-    count += 1
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
