@@ -356,7 +356,7 @@ Gathers a vector of `QuartetData` objects that define the expected
 quartet concordance factors of `net`.
 """
 find_quartet_equations(net::HybridNetwork) =
-    find_quartet_equations(net, collect(1:nchoose4taxa_length(net)))
+    find_quartet_equations(net, 1:nchoose4taxa_length(net))
 
 """
 Gathers a vector of `QuartetData` objects that define the expected
@@ -364,7 +364,7 @@ quartet concordance factors of `net`. `q_idxs` is a `Vector{Int}` that
 must be of length exactly (`net.numtaxa` choose 4). Each index of
 `q_idxs` corresponds to a quartet whose equation will be computed.
 """
-function find_quartet_equations(net::HybridNetwork, sampled_quartets::Vector{Int})
+function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
@@ -396,7 +396,7 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::Vector{Int
             this_iter_idx = q_idx
             iter_taxa = t[ts]
         end
-        recur_eqns[this_iter_idx] = find_quartet_equations_4taxa(net, iter_taxa, param_map)     # 625ms, 287MiB
+        recur_eqns[this_iter_idx] = find_quartet_equations_4taxa(net, iter_taxa, param_map)
     end
 
     return recur_eqns, param_map, params, idx_obj_map, t

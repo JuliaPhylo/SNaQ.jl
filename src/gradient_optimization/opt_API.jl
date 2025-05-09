@@ -1,4 +1,5 @@
 
+const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 
 
 function optimize_topology!(
@@ -77,7 +78,7 @@ function optimize_bls!(
     opt.xtol_rel = 1e-8
     opt.xtol_abs = 1e-8
 
-    opt.initial_step = init_steps
+    initial_step!(opt, init_steps)
     opt.lower_bounds = LB
     opt.upper_bounds = UB
 
@@ -104,7 +105,9 @@ end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 
 
-function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork, eqns::AbstractArray, obsCFs::AbstractArray{Float64}, idx_obj_map, α)::Float64
+function objective(X::AbstractVector{T}, grad::AbstractVector{T}, net::HybridNetwork, eqns::AbstractArray, obsCFs::AbstractArray{T}, idx_obj_map, α)::Float64 where T<:Real
+    global count, xprev
+    count += 1
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
@@ -112,7 +115,13 @@ function objective(X::Vector{Float64}, grad::Vector{Float64}, net::HybridNetwork
 end
 
 
-function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map)
+
+"""
+Sets the branch lengths and γ values of edges in `net` according
+to the values provided in `X` and the index-to-object map
+provided in `idx_obj_map`.
+"""
+function setX!(net::HybridNetwork, X::AbstractVector{Float64}, idx_obj_map::IdxObjMap)
     for j = 1:length(X)
         obj::Union{Node, Edge} = idx_obj_map[j]
         if typeof(obj) <: PN.Node
@@ -130,10 +139,11 @@ function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map)
 end
 
 
+
 function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
 
     param_map = Dict{Int, Int}()
-    idx_obj_map = Dict{Int, Union{Node, Edge}}()
+    idx_obj_map::IdxObjMap = IdxObjMap();
     uq_ID = net.numedges
     param_idx = 1
 

@@ -4,9 +4,28 @@ using Dates
 """
 API NOT FINALIZED
 """
-function multi_search(N::HybridNetwork, q, hmax::Int; runs::Int=10, seed::Int=abs(rand(Int) % 100000), kwargs...)
-    # TODO: convert `q` to `DataCF` type and ensure that the taxa in that DataCF appear in the expected order
+function multi_search(
+    N::HybridNetwork,
+    q::Union{DataCF, AbstractArray{Float64}},
+    hmax::Int;
+    # Basic arguments
+    runs::Int=10,
+    seed::Int=42,
+    kwargs...
+)
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
+
+    # Convert q to a Matrix if it is a DataCF
+    if typeof(q) <: DataCF
+        qtemp::Matrix{Float64} = Matrix{Float64}(undef, length(q), 3)
+        for j = 1:length(q)
+            for k = 1:3
+                qtemp[j, k] = q[j].data[k]
+            end
+        end
+        q = qtemp
+        qtemp = nothing
+    end
 
     # Prep data
     N = readnewick(writenewick(N));
@@ -49,11 +68,34 @@ function log_text(logfile::String, msg::String)
 end
 
 
+
+# function snaq!(
+#     currT0::HybridNetwork,
+#     d::DataCF;
+#     hmax::Integer=1,
+#     liktolAbs::Float64=likAbs,
+#     Nfail::Integer=numFails,
+#     ftolRel::Float64=fRel,
+#     ftolAbs::Float64=fAbs,
+#     xtolRel::Float64=xRel,
+#     xtolAbs::Float64=xAbs,
+#     verbose::Bool=false,
+#     closeN::Bool=true,
+#     Nmov0::Vector{Int}=numMoves,
+#     runs::Integer=10,
+#     outgroup::AbstractString="none",
+#     filename::AbstractString="snaq",
+#     seed::Integer=0,
+#     probST::Float64=0.3,
+#     updateBL::Bool=true,
+# )
 """
 API NOT FINALIZED
 """
 function search(
-    N::HybridNetwork, q, hmax::Int;
+    N::HybridNetwork,
+    q,
+    hmax::Int;
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
@@ -156,6 +198,7 @@ function search(
         end
 
         prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
+        last_move = prop_move
         apply_move!(Nprime, prop_move, prop_params)
         push!(moves_attempted, (prop_move, prop_params))
         @debug "Proposed: $(writenewick(Nprime, round=true))"
