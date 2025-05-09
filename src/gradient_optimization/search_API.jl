@@ -136,11 +136,12 @@ function search(
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
     moves_proposed = Dict{Symbol,Int}()
     moves_accepted = Dict{Symbol,Int}()
+    last_move = :nothing
 
     log_text(logfile, "Entering main loop with -logPL = $(logPLs[1])")
     for j = 2:maxeval
         verbose && print("\rIteration $(j)/$(maxeval) - in a row=$(unchanged_iters)/$(maxequivPLs)              ")
-        log_text(logfile, "Iteration $(j)/$(maxeval), in a row = $(unchanged_iters)/$(maxequivPLs) (current best = $(round(logPLs[j-1], digits=6)))")
+        log_text(logfile, "Iteration $(j)/$(maxeval), in a row = $(unchanged_iters)/$(maxequivPLs) (current best = $(round(logPLs[j-1], digits=6)), last move = $(last_move))")
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
