@@ -44,7 +44,7 @@ contains_parameter(qdata::QuartetData, param_idxs::Vector{Int})::Bool = any(
 
 
 function compute_eCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
-    return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α)
+    return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α, ones(length(params), 3))
 end
 
 
@@ -66,17 +66,32 @@ end
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Vector{Float64}, gradient_storage::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
+@fastmath function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Vector{Float64}, gradient_storage::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
 
     thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
     total_loss = Threads.Atomic{Float64}(0.0)
 
-    Threads.@threads for j = 1:length(qdata)
-        iter_grad::Array{Float64} = zeros(length(params), 3)
-        bv::BitVector = falses(length(params))
+    iter_grad_buffer::Array{Float64} = Array{Float64}(undef, length(params), 3, Threads.nthreads())
+    bv_buffer::BitMatrix = BitArray(undef, length(params), Threads.nthreads())
+    running_grad_buffer::Array{Float64} = Array{Float64}(undef, length(params), 3, Threads.nthreads())
 
-        eCF1, eCF2 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α)
+    Threads.@threads for j = 1:length(qdata)
+        tid = Threads.threadid()
+
+        # iter_grad::Array{Float64} = zeros(length(params), 3)
+        # bv::BitVector = falses(length(params))
+        # running_grad = ones(length(params), 3)
+
+        iter_grad::Array{Float64} = iter_grad_buffer[:,:,tid]
+        bv::BitVector = bv_buffer[:, tid]
+        running_grad::Array{Float64} = running_grad_buffer[:, :, tid]
+        
+        fill!(iter_grad, 0.0)
+        fill!(bv, false)
+        fill!(running_grad, 1.0)
+
+        eCF1, eCF2 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
         eCF3 = 1 - eCF1 - eCF2
 
         eCF1 = max(eCF1, 1e-9)
@@ -107,12 +122,12 @@ end
 Recursive helper function that does the actual computations for [`compute_eCFs_and_gradient!`](@ref).
 Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 """
-function compute_eCF_and_gradient_recur!(
+@fastmath function compute_eCF_and_gradient_recur!(
     eqn::RecursiveCFEquation, params::Vector{Float64},
     gradient_storage::Matrix{Float64},
     params_seen::BitVector,
     α::Float64,
-    running_gradient::Array{Float64}=ones(length(params), 3))::Tuple{Float64, Float64}
+    running_gradient::Array{Float64})::Tuple{Float64, Float64}
 
     if eqn.division_H == -1
 
