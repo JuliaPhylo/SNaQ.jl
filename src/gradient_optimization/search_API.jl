@@ -121,6 +121,8 @@ function search(
     0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
     0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
 
+    propQuartets == 1.0 || error("propQuartets != 1.0 NOT IMPLEMENTED YET")
+
     # Clean the quartet input
     if typeof(q) <: AbstractVector{<:PhyloNetworks.QuartetT}
         qstatic = Array{Float64}(undef, length(q), 3)
@@ -170,9 +172,11 @@ function search(
         restrictions(N) || error("N does not meet restrictions after prehyb")
     end
 
+    # Data used throughout the optimization process
     q_idxs = sample_qindices(N, propQuartets, rng)
-    logPLs = Array{Float64}(undef, maxeval)
-    logPLs[1], N_eqns = compute_loss(N, q, q_idxs, rng, α)
+    logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
+    logPLs[1], N_eqns::Vector{QuartetData} = compute_loss(N, q, q_idxs, rng, α)
+    Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(N_eqns))
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -213,7 +217,6 @@ function search(
         removedegree2nodes!(Nprime);
         while shrink3cycles!(Nprime) continue end
         while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
-        # shrink_bad_diamonds!(Nprime);
 
         # 2.5 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
         semidirect_network!(Nprime)
@@ -227,7 +230,7 @@ function search(
 
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimize_topology!(
-            Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
+            Nprime, N_eqns, Nprime_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
         )
         # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")

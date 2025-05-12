@@ -274,4 +274,3 @@ mutable struct EdgeParts
     part3::Vector{Node}
     part4::Vector{Node}
 end
-

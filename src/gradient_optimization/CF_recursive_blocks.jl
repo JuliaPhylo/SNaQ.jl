@@ -52,36 +52,33 @@ end
 Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet concordance
 factor data `q` under Dirichlet parameter `α`.
 """
-function compute_loss(N::HybridNetwork, q, α::Real=Inf)::Float64
+function compute_loss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float64
     N = deepcopy_network(N)
     semidirect_network!(N)
     qdata, _, params, _, _ = find_quartet_equations(N)
     return compute_loss(qdata, params, q, α)
 end
-function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q, α::Float64=Inf)::Float64
+function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
     return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
 end
-
 
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-@fastmath function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Vector{Float64}, gradient_storage::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
+@fastmath function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Vector{T}, gradient_storage::Vector{T}, q::Matrix{T}, α::T=Inf)::T where T<:Float64
 
     thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
     total_loss = Threads.Atomic{Float64}(0.0)
+    np::Int = length(params)
 
     iter_grad_buffer::Array{Float64} = Array{Float64}(undef, length(params), 3, Threads.nthreads())
     bv_buffer::BitMatrix = BitArray(undef, length(params), Threads.nthreads())
     running_grad_buffer::Array{Float64} = Array{Float64}(undef, length(params), 3, Threads.nthreads())
 
-    Threads.@threads for j = 1:length(qdata)
+    #Threads.@threads for j = 1:length(qdata)
+    for j = 1:length(qdata)
         tid = Threads.threadid()
-
-        # iter_grad::Array{Float64} = zeros(length(params), 3)
-        # bv::BitVector = falses(length(params))
-        # running_grad = ones(length(params), 3)
 
         iter_grad::Array{Float64} = iter_grad_buffer[:,:,tid]
         bv::BitVector = bv_buffer[:, tid]

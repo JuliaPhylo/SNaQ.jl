@@ -4,7 +4,8 @@ const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 
 function optimize_topology!(
     Nprime::HybridNetwork,
-    old_eqns::Array{QuartetData},
+    old_eqns::Vector{QuartetData},
+    Nprime_eqns::Vector{QuartetData},
     move::Symbol,
     params::Tuple,
     q::Matrix{Float64},
@@ -12,27 +13,28 @@ function optimize_topology!(
     opt_maxeval::Int,
     force_resample_all::Bool,
     rng::TaskLocalRNG,
-    α::Real
+    α::Float64
 )
 
-    new_eqns::Array{QuartetData} = Array{QuartetData}(undef, length(old_eqns)) # placeholder
+    Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, 3*length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
         _, param_map, idxobjmap, _ = gather_optimization_info(Nprime, true)
-        update_quartet_equations!(old_eqns, new_eqns, Nprime, param_map, move, params, α)
+        update_quartet_equations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, α)
     else
         @debug "\tGathering quartet equations."
-        new_eqns, _ = find_quartet_equations(Nprime, q_idxs);
+        find_quartet_equations!(Nprime, q_idxs, Nprime_eqns);
     end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_logPL = optimize_bls!(Nprime, new_eqns, q[q_idxs, :], α; maxeval=opt_maxeval)
+    Nprime_eqns = Nprime_eqns[1:length(old_eqns)]
+    Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q, α; maxeval=opt_maxeval)
 
-    return Nprime_logPL, new_eqns
+    return Nprime_logPL, Nprime_eqns
 end
 
 
-function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)
+function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)::Tuple{Float64, Vector{QuartetData}}
     @debug "\tGathering quartet equations."
     N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
 

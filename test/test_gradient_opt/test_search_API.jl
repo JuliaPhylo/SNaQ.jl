@@ -11,3 +11,11 @@ tre0 = majortree(net);
 
 opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
 @test hardwiredClusterDistance(net, opt_net, false) == 0
+
+
+
+
+error("@btime")
+using BenchmarkTools
+@btime search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
+# 7.1s, 6.83 GiB

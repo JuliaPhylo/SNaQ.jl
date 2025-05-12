@@ -371,9 +371,13 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVe
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
 
+    return find_quartet_equations!(net, sampled_quartets, Array{QuartetData}(undef, length(sampled_quartets)))
+end
+
+
+function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})
     # Relevant data to be returned
     t = sort(tipLabels(net))
-    recur_eqns = Array{QuartetData}(undef, length(sampled_quartets))
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
     # Relevant loop vars
@@ -398,10 +402,10 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVe
             this_iter_idx = q_idx
             iter_taxa = t[ts]
         end
-        recur_eqns[this_iter_idx] = find_quartet_equations_4taxa(net, iter_taxa, param_map)
+        N_eqns[this_iter_idx] = find_quartet_equations_4taxa(net, iter_taxa, param_map)
     end
 
-    return recur_eqns, param_map, params, idx_obj_map, t
+    return N_eqns, param_map, params, idx_obj_map, t
 end
 
 
