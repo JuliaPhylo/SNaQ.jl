@@ -13,7 +13,7 @@ mutable struct RecursiveCFEquation
     divisions::Vector{RecursiveCFEquation}
     coal_mask::BitVector
 
-    function RecursiveCFEquation(can_coal::Bool, coal_Es::Vector{Int}, which_c::Int, dH::Int, d::Vector, nparam::Int)
+    function RecursiveCFEquation(can_coal::Bool, coal_Es::Vector{Int}, which_c::Int, dH::Int, d::Vector{RecursiveCFEquation}, nparam::Int)
         mask = falses(nparam)
         @inbounds @simd for pidx in coal_Es
             mask[pidx] = true
@@ -36,7 +36,7 @@ A struct that contains:
 mutable struct QuartetData
     eqn::RecursiveCFEquation
     relevant_params::Vector{Int}
-    q_taxa::Vector{String}
+    q_taxa::SizedVector{4,String}
 end
 contains_parameter(qdata::QuartetData, param_idxs::Vector{Int})::Bool = any(
     obj_idx -> obj_idx in qdata.relevant_params, param_idxs
@@ -62,6 +62,24 @@ function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Ma
     return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
 end
 
+
+# Global thread buffers
+const THREAD_ITER_GRAD_BUFFER::Dict{Int, Array{Float64, 3}} = Dict{Int, Array{Float64, 3}}()
+const THREAD_BV_BUFFER::Dict{Int, BitMatrix} = Dict{Int, BitMatrix}()
+const THREAD_RUNNING_GRAD_BUFFER::Dict{Int, Array{Float64, 3}} = Dict{Int, Array{Float64, 3}}()
+const THREAD_LOCAL_GRAD_BUFFER::Dict{Int, Array{Float64}} = Dict{Int, Array{Float64}}()
+
+function get_or_create_buffers(params_len::Int)
+    if !haskey(THREAD_LOCAL_GRAD_BUFFER, params_len)
+        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads())
+        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.nthreads())
+        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads())
+        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.nthreads())
+    end
+    return THREAD_ITER_GRAD_BUFFER[params_len], THREAD_BV_BUFFER[params_len], THREAD_RUNNING_GRAD_BUFFER[params_len], THREAD_LOCAL_GRAD_BUFFER[params_len]
+end
+
+
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
@@ -72,12 +90,11 @@ Computes expected concordance factors and gradients by recursively passing throu
     total_loss = Threads.Atomic{Float64}(0.0)
     np::Int = length(params)
 
-    iter_grad_buffer::Array{Float64} = Array{Float64}(undef, length(params), 3, Threads.nthreads())
-    bv_buffer::BitMatrix = BitArray(undef, length(params), Threads.nthreads())
-    running_grad_buffer::Array{Float64} = Array{Float64}(undef, length(params), 3, Threads.nthreads())
+    iter_grad_buffer::Array{Float64}, bv_buffer::BitMatrix, running_grad_buffer::Array{Float64}, local_grad_buffer::Array{Float64} =
+        get_or_create_buffers(length(params))
+    fill!(local_grad_buffer, 0.0)
 
-    #Threads.@threads for j = 1:length(qdata)
-    for j = 1:length(qdata)
+    Threads.@threads for j = 1:length(qdata)
         tid = Threads.threadid()
 
         iter_grad::Array{Float64} = iter_grad_buffer[:,:,tid]
@@ -88,12 +105,16 @@ Computes expected concordance factors and gradients by recursively passing throu
         fill!(bv, false)
         fill!(running_grad, 1.0)
 
-        eCF1, eCF2 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
-        eCF3 = 1 - eCF1 - eCF2
+        eCF1::Float64, eCF2::Float64 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
+        eCF3::Float64 = 1 - eCF1 - eCF2
 
         eCF1 = max(eCF1, 1e-9)
         eCF2 = max(eCF2, 1e-9)
         eCF3 = max(eCF3, 1e-9)
+
+        inv_eCF1::Float64 = 1 / eCF1
+        inv_eCF2::Float64 = 1 / eCF2
+        inv_eCF3::Float64 = 1 / eCF3
 
         total_loss_incr::Float64 = 
             ((q[j, 1] > 0) ? q[j, 1] * log(eCF1 / q[j, 1]) : 0.0) +
@@ -101,15 +122,12 @@ Computes expected concordance factors and gradients by recursively passing throu
             ((q[j, 3] > 0) ? q[j, 3] * log(eCF3 / q[j, 3]) : 0.0)
         Threads.atomic_add!(total_loss, total_loss_incr)
 
-        gradient_incr::Array{Float64} =
-            q[j, 1] .* iter_grad[:, 1] ./ eCF1 +
-            q[j, 2] .* iter_grad[:, 2] ./ eCF2 +
-            q[j, 3] .* iter_grad[:, 3] ./ eCF3
-        
-        lock(thread_lock) do
-            gradient_storage .+= gradient_incr
-        end
+        local_grad_buffer[:, tid] .+= q[j, 1] .* iter_grad[:, 1] .* inv_eCF1 +
+            q[j, 2] .* iter_grad[:, 2] .* inv_eCF2 +
+            q[j, 3] .* iter_grad[:, 3] .* inv_eCF3
     end
+
+    gradient_storage .= sum(local_grad_buffer, dims=2)[:,1]
     return total_loss[]
 
 end
@@ -128,7 +146,6 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 
     if eqn.division_H == -1
 
-        # Simple treelike block
         exp_sum = eqn.coal_edges == EMPTY_INT_VEC ? 1 : exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
 
         # Gradient computation
@@ -189,9 +206,9 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         params_seen[eqn.division_H] = true
         γ::Float64 = params[eqn.division_H]
         @inbounds @simd for division_idx = 1:4
-            split_grad = quad_split_probability_gradient(division_idx, γ, α)
-            split_prob = quad_split_probability(division_idx, γ, α)
-            prev_gamma_grad = running_gradient[eqn.division_H, :]   # store here in case `split_grad` is 0.0
+            split_grad::Float64 = quad_split_probability_gradient(division_idx, γ, α)
+            split_prob::Float64 = quad_split_probability(division_idx, γ, α)
+            prev_gamma_grad::Vector{Float64} = running_gradient[eqn.division_H, :]   # store here in case `split_grad` is 0.0
 
             # apply running gradient changes
             @inbounds @simd for param_idx = 1:length(params)
@@ -205,7 +222,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
                 running_gradient[e, :] .*= -1.
             end
 
-            recur_probs = compute_eCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
+            recur_probs::Tuple{Float64, Float64} = compute_eCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
 
             # revert running gradient changes so that the next iteration is unbothered by them
             @inbounds @simd for e in eqn.coal_edges
@@ -296,9 +313,9 @@ function quad_split_probability(type::Int, γ::Real, α::Real)::Float64
     if α == Inf
         # Strictly independent
         if type == 1
-            return γ^2
+            return γ * γ
         elseif type == 2
-            return (1 - γ)^2
+            return (1 - γ) * (1 - γ)
         else
             return γ * (1 - γ)
         end

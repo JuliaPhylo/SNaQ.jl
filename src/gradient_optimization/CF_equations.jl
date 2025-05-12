@@ -3,10 +3,10 @@ import Graphs: SimpleGraph  # TODO: remove Graphs dependency
 using PhyloNetworks
 const PN = PhyloNetworks;
 
-const EMPTY_EQN_VEC = Vector{RecursiveCFEquation}([]);
-const EMPTY_INT_VEC = Vector{Int}([]);
+const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([]);
+const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);
 
-function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
+function get_4taxa_quartet_equations(net::HybridNetwork, taxa::SizedVector{4,String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
 
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
@@ -93,11 +93,9 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, p
         # @info "DIV_MINOR AFTER: $(dminnew)"
         r1 = get_4taxa_quartet_equations(div_minor, taxa, parameter_map)
         r2 = get_4taxa_quartet_equations(div_major, taxa, parameter_map)
-        # @info "$(parameter_map[lowest_H.number]) -> $([eqn.division_H for eqn in [r1, r2]])"
         return RecursiveCFEquation(
-            false, EMPTY_INT_VEC, 0, parameter_map[lowest_H.number], [
-                r1, r2
-            ], length(parameter_map)
+            false, EMPTY_INT_VEC, 0, parameter_map[lowest_H.number],
+            [r1, r2], length(parameter_map)
         )
 
     elseif n_below_H == 2
@@ -122,7 +120,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, p
         ##########################################################################################
 
         ######## Both taxa take the minor edge ########
-        div1 = deepcopy_network(net)
+        div1::HybridNetwork = deepcopy_network(net)
         div1_H = div1.hybrid[findfirst(div1_H -> div1_H.number == lowest_H.number && div1_H.name == lowest_H.name, div1.hybrid)]
         E_minor = getparentedgeminor(div1_H)
         E_major = getparentedge(div1_H)
@@ -141,7 +139,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, p
 
         ######## Both taxa take the major edge ########
         # Same steps as above but for major instead of minor
-        div2 = deepcopy_network(net)
+        div2::HybridNetwork = deepcopy_network(net)
         div2_H = div2.hybrid[findfirst(div2_H -> div2_H.number == lowest_H.number && div2_H.name == lowest_H.name, div2.hybrid)]
         E_minor = getparentedgeminor(div2_H)
         E_major = getparentedge(div2_H)
@@ -160,7 +158,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, p
 
 
         ######## Lower taxa takes minor, higher takes major ########
-        div3 = deepcopy_network(net)
+        div3::HybridNetwork = deepcopy_network(net)
         div3_H = div3.hybrid[findfirst(div3_H -> div3_H.number == lowest_H.number && div3_H.name == lowest_H.name, div3.hybrid)]
         E_minor = getparentedgeminor(div3_H)
         E_major = getparentedge(div3_H)
@@ -180,7 +178,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, p
         new_leaf.name = leaf_names[2]
 
         ######## Lower taxa takes major, higher takes minor ########
-        div4 = deepcopy_network(net)
+        div4::HybridNetwork = deepcopy_network(net)
         div4_H = div4.hybrid[findfirst(div4_H -> div4_H.number == lowest_H.number && div4_H.name == lowest_H.name, div4.hybrid)]
         E_minor = getparentedgeminor(div4_H)
         E_major = getparentedge(div4_H)
@@ -209,7 +207,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::Vector{String}, p
         leaf_names[1] == taxa[2] ? (
             leaf_names[2] == taxa[3] ? 3 : 2
         ) : 1
-        recurrences = Array{RecursiveCFEquation}(undef, 4)
+        recurrences::Array{RecursiveCFEquation} = Array{RecursiveCFEquation}(undef, 4)
         recurrences[1] = get_4taxa_quartet_equations(div1, taxa, parameter_map)
         recurrences[2] = get_4taxa_quartet_equations(div2, taxa, parameter_map)
         recurrences[3] = get_4taxa_quartet_equations(div3, taxa, parameter_map)
@@ -389,7 +387,7 @@ function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractV
     for _ = 1:length(sampled_quartets)
         # Define a local variable b/c using `q_idx` would lead to race conditions
         this_iter_idx::Int = 0
-        iter_taxa::Vector{String} = String[]
+        iter_taxa::SizedVector{4,String} = String["", "", "", ""]
 
         lock(thread_lock) do
             # Grab the taxa for this iteration and move forward the tickers
@@ -467,7 +465,7 @@ function get_reduced_net(reduced_nets::Dict{Set{String}, HybridNetwork}, taxa::S
 end
 
 
-function find_quartet_equations_4taxa(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
+function find_quartet_equations_4taxa(net::HybridNetwork, taxa::SizedVector{4,String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
     # Let's see if the quartet is tree-like and easy first
     qdat = try_treelike_quartet(net, taxa, parameter_map)
     qdat !== nothing && return qdat
@@ -523,7 +521,7 @@ quartet, the corresponding `QuartetData` object is returned. If a hybrid
 is encountered along a given path in this operation, `nothing` is
 returned instead.
 """
-function try_treelike_quartet(net::HybridNetwork, taxa::Vector{String}, param_map::Dict{Int,Int})
+function try_treelike_quartet(net::HybridNetwork, taxa::SizedVector{4,String}, param_map::Dict{Int,Int})
     a = net.leaf[findfirst(l -> l.name == taxa[1], net.leaf)]
     b = net.leaf[findfirst(l -> l.name == taxa[2], net.leaf)]
     c = net.leaf[findfirst(l -> l.name == taxa[3], net.leaf)]
