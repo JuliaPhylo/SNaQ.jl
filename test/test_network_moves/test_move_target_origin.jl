@@ -1,4 +1,7 @@
 using PhyloNetworks, Test, StatsBase, Random
+import SNaQ:
+    move_reticulate_target!, move_reticulate_origin!,
+    semidirect_network!
 
 #### Helper functions ####
 function reload_labelled_net()
@@ -39,7 +42,6 @@ net.isrooted = false;
 H4, i12, i3056 = get_nodes(net, "H4", "i12", "i3056");
 E = [e for e in i12.edge if i3056 in e.node][1];
 move_reticulate_target!(net, H4, E)
-net
-
+@test all([getparentedge(hyb).gamma + getparentedgeminor(hyb).gamma ≈ 1 for hyb in net.hybrid])
 
 

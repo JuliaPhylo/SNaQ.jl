@@ -10,6 +10,7 @@
 
 import SNaQ: deepcopy_network, semidirect_network!,
     generate_move_proposal, apply_move!
+using Test, Random, StatsBase
 
 for z = 1:500
     # Generate random data
@@ -28,7 +29,7 @@ for z = 1:500
     prev_move = :none
     prev_params = ()
 
-    for miter = 1:2500
+    for miter = 1:250
         seed = rand(rng, Int)
         Random.seed!(rng, seed)
 

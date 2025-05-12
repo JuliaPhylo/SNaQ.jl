@@ -1,5 +1,9 @@
 using PhyloNetworks, Test, StatsBase, Random
-include("test_includes.jl")
+import SNaQ:
+    perform_rNNI!, perform_rNNI1!, perform_rNNI2!, perform_rNNI3!, perform_rNNI4!,
+    is_valid_rNNI1, is_valid_rNNI2, is_valid_rNNI3, is_valid_rNNI4,
+    all_valid_rNNI_nodes, perform_random_rNNI!, semidirect_network!,
+    all_valid_rNNI1_nodes, all_valid_rNNI2_nodes
 
 #### Helper functions ####
 function reload_labelled_net()

@@ -1,4 +1,11 @@
 using PhyloNetworks, Test
+import SNaQ:
+    is_valid_add_hybrid,
+    add_hybrid!, remove_hybrid!,
+    getparentedge, getparent,
+    sample_move_reticulate_origin_parameters,
+    is_valid_move_reticulate_origin, move_reticulate_origin!
+
 
 
 ################################################

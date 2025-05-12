@@ -15,7 +15,7 @@ opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=5, maxe
 
 
 
-error("@btime")
-using BenchmarkTools
-@btime search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
-# 4.7s, 5.29 GiB
+# error("@btime")
+# using BenchmarkTools
+# @btime search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
+# # 4.7s, 5.29 GiB

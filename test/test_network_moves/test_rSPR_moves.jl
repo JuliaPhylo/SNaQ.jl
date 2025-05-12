@@ -1,4 +1,7 @@
 using PhyloNetworks, Test
+import SNaQ:
+    apply_move!, perform_rSPR!, is_valid_rSPR, semidirect_network!,
+    sample_rSPR_parameters
 
 #### Helper functions ####
 function reload_labelled_net()
@@ -7,9 +10,9 @@ function reload_labelled_net()
     net.hybrid[1].name = "i4"   # do it here so that PhyloNetworks doesn't through a warning
     return net
 end
-get_nodes(net::HybridNetwork, names::String...) = [
+get_nodes(net::HybridNetwork, names::String...) = Tuple([
     net.node[findfirst(node -> node.name == name, net.node)] for name in names
-]
+])
 
 ###############################################################
 # FIRST: TESTS THAT WHOSE OUTCOMES HAVE BEEN VERIFIED BY HAND #
@@ -20,10 +23,10 @@ net = reload_labelled_net()
 @test !is_valid_rSPR(get_nodes(net, "i1", "i3", "i6", "i2", "i5", "i4")...)
 @test !is_valid_rSPR(get_nodes(net, "i3", "i1", "i2", "i6", "i4", "i5")...)
 
-perform_rSPR!(net, get_nodes(net, "i1", "i3", "i6", "i2", "i4", "i5")...)
+apply_move!(net, :rSPR, get_nodes(net, "i1", "i3", "i6", "i2", "i4", "i5"))
 @test writenewick(net) == "(d,(((e,f)i5,(a,b)i1)i2)#i4,(c,#i4)i6)i3;"
 
-perform_rSPR!(net, get_nodes(net, "i6", "i3", "i2", "i4", "i5", "e")...)
+apply_move!(net, :rSPR, get_nodes(net, "i6", "i3", "i2", "i4", "i5", "e"))
 @test writenewick(net) == "(d,((f,(e)#i4)i5,(a,b)i1)i2,(c,#i4)i6)i3;"
 
 
@@ -33,7 +36,8 @@ perform_rSPR!(net, get_nodes(net, "i6", "i3", "i2", "i4", "i5", "e")...)
 
 net = reload_labelled_net()
 w, x, y, z, xprime, yprime = get_nodes(net, "i1", "i3", "i6", "i2", "i4", "i5")
-perform_rSPR!(net, w, x, y, z, xprime, yprime)
+apply_move!(net, :rSPR, (w, x, y, z, xprime, yprime))
+
 w, x, y, z, xprime, yprime = get_nodes(net, "i1", "i3", "i6", "i2", "i4", "i5")
 perform_rSPR!(net, w, xprime, yprime, z, x, y)
 
@@ -69,8 +73,9 @@ semidirect_network!(net)
 
 rng = Random.seed!(0)
 net = reload_labelled_net()
-prev_newick = ""
+global prev_newick = ""
 for j = 1:1000
+    global prev_newick
     prev_newick = writenewick(net)
     params = sample_rSPR_parameters(net, rng)
     perform_rSPR!(net, params...)
