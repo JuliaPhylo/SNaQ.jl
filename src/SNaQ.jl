@@ -20,6 +20,9 @@ module SNaQ
     import Base: show
 
     const DEBUGC = false # even more debug messages
+    const PN = PhyloNetworks;
+    const Edge = PN.Edge;
+    const Node = PN.Node;
     global CHECKNET = false # for debugging only
 
 
@@ -83,7 +86,6 @@ module SNaQ
     include("undo.jl")
     include("update.jl")
     ############ NEW STUFF
-    include("gradient_optimization/CF_blocks.jl")
     include("gradient_optimization/CF_recursive_blocks.jl")
     include("gradient_optimization/misc.jl")
     include("gradient_optimization/CF_equations.jl")

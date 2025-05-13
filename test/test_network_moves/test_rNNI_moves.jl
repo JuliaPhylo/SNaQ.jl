@@ -164,7 +164,7 @@ end
 #######################################################################
 
 net, net0, net1, net2 = nothing, nothing, nothing, nothing
-s, t, u, v = nothing, nothing, nothing, nothing
+global s, t, u, v = nothing, nothing, nothing, nothing
 net = reload_labelled_net()
 
 for rNNI_type = 1:4
@@ -196,9 +196,9 @@ end
 
 rng = Random.seed!(0)
 net = reload_labelled_net()
-prev_newick = ""
+global prev_newick = ""
 for j = 1:10000
-    global net
+    global net, prev_newick
     if j % 100 == 0
         net = reload_labelled_net()
         prev_newick = ""

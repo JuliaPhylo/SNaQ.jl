@@ -1,8 +1,38 @@
-using Dates
-
+# Look through all of my TODOs, and arguments that are available in the `snaq!` function (but not anywhere in this file)
+# and create a list of things that are left to do in this directory.
 
 """
-API NOT FINALIZED
+    multi_search(
+        N::HybridNetwork,
+        q::Union{DataCF, AbstractArray{Float64}},
+        hmax::Int;
+        runs::Int=10,
+        seed::Int=42,
+        kwargs...
+    ) -> Tuple{HybridNetwork, Vector{HybridNetwork}, Vector{Float64}}
+
+Performs multiple independent searches to find the best network topology and parameters
+that fit the observed quartet concordance factors.
+
+# Arguments
+- `N::HybridNetwork`: The starting network topology.
+- `q::Union{DataCF, AbstractArray{Float64}}`: Observed quartet concordance factors.
+- `hmax::Int`: Maximum number of hybridization events allowed.
+
+# Optional Arguments
+- `runs::Int=10`: Number of independent search runs.
+- `seed::Int=42`: Random seed for reproducibility.
+- `kwargs...`: Additional keyword arguments passed to the [`search`](@ref) function.
+- TODO: list the additional arguments that are passed via kwargs
+
+# Returns
+- `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
+- `all_networks::Vector{HybridNetwork}`: All networks from the runs, sorted by score.
+- `all_scores::Vector{Float64}`: Negative log pseudo-likelihood scores for each network.
+
+# Notes
+- This function uses distributed computing to perform searches in parallel.
+- It returns the best network found across all runs.
 """
 function multi_search(
     N::HybridNetwork,
@@ -90,7 +120,51 @@ end
 #     updateBL::Bool=true,
 # )
 """
-API NOT FINALIZED
+    search(
+        N::HybridNetwork,
+        q,
+        hmax::Int;
+        restrictions::Function=no_restrictions(),
+        α::Real=Inf,
+        propQuartets::Real=1.0,
+        preopt::Bool=false,
+        prehybprob::Real=0.0,
+        prehybattempts::Int=5,
+        probST::Real=0.3,
+        maxeval::Int=Int(1e8),
+        maxequivPLs::Int=1500,
+        opt_maxeval::Int=10,
+        seed::Int=abs(rand(Int) % 100000),
+        verbose::Bool=false,
+        logfile::String=""
+    ) -> Tuple{HybridNetwork, Float64}
+
+Performs a single search for the optimal network topology with gradient-based optimization
+of branch lengths and inheritance probabilities.
+
+# Arguments
+- `N::HybridNetwork`: The starting network topology.
+- `q`: Observed quartet concordance factors.
+- `hmax::Int`: Maximum number of hybridization events allowed.
+
+# Optional Arguments
+- `restrictions::Function=no_restrictions()`: Function to enforce restrictions on the proposed networks.
+- `α::Real=Inf`: Dirichlet parameter for gene tree heterogeneity model.
+- `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
+- `preopt::Bool=false`: Whether to perform a pre-optimization step.
+- `prehybprob::Real=0.0`: Probability of attempting pre-optimization hybrid attachments.
+- `prehybattempts::Int=5`: Number of attempts for pre-optimization hybrid attachments.
+- `probST::Real=0.3`: Probability of performing a subtree move.
+- `maxeval::Int=Int(1e8)`: Maximum number of evaluations.
+- `maxequivPLs::Int=1500`: Maximum number of equivalent pseudo-likelihood scores to consider.
+- `opt_maxeval::Int=10`: Maximum evaluations for optimization.
+- `seed::Int=abs(rand(Int) % 100000)`: Random seed for reproducibility.
+- `verbose::Bool=false`: Whether to print verbose output.
+- `logfile::String=""`: File to log progress.
+
+# Returns
+- `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
+- `best_score::Float64`: The negative log pseudo-likelihood of the best network.
 """
 function search(
     N::HybridNetwork,

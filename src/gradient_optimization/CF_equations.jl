@@ -6,6 +6,9 @@ const PN = PhyloNetworks;
 const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([]);
 const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);
 
+"""
+
+"""
 function get_4taxa_quartet_equations(net::HybridNetwork, taxa::SizedVector{4,String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
 
     # If no hybrids remain, this case is simple

@@ -14,7 +14,7 @@ using Test, Random, StatsBase
 
 for z = 1:500
     # Generate random data
-    rng = Random.seed!(z)
+    local rng = Random.seed!(z)
     ntaxa = sample(rng, 5:40)
     nhyb = sample(rng, 0:ntaxa)
     t0 = generate_tree(ntaxa, rand(rng, Int))
