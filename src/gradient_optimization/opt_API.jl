@@ -71,7 +71,8 @@ function optimize_bls!(
 )
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
-    opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)
+    #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)
+    opt = Opt(NLopt.LD_LBFGS, narg)
 
     opt.maxeval = maxeval
     opt.ftol_rel = 1e-12
@@ -86,6 +87,19 @@ function optimize_bls!(
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, params)
     setX!(net, minx, idx_obj_map)
+    if minf == -Inf
+        @show writenewick(net, round=true)
+        @info "\n\n\n"
+        @show minf
+        @show minx
+        @show ret
+        @show params
+        @show UB
+        @show LB
+        @show UB .- LB
+        @show objective(minx, fill(0.0, length(minx)), net, eqns, observed_CFs, idx_obj_map, α)
+        error("minf == -Inf")
+    end
 
     # The major/minor property of some hybrid edges may need to be changed at this point
     for hyb in net.hybrid
@@ -101,6 +115,7 @@ function optimize_bls!(
         # If they are both exactly 0.5, just leave the values as they were before.
         # This way, no updates will be forced.
     end
+
     return minf
 end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
@@ -129,9 +144,6 @@ function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map::IdxObjMap)
             E_major.gamma = 1-X[j]
             E_minor.gamma = X[j]
         else
-            if X[j] < 1e-6
-                X[j] = 0.0
-            end
             obj.length = X[j]
         end
     end
@@ -173,8 +185,8 @@ function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
         obj::Union{Node,Edge} = idx_obj_map[j]
         if typeof(obj) <: Node
             params[j] = getparentedgeminor(obj).gamma
-            LB[j] = 0.0001
-            UB[j] = 0.9999
+            LB[j] = 0.0
+            UB[j] = 1.0
             init_steps[j] = 0.1
         else
             params[j] = obj.length

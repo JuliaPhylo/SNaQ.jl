@@ -1,4 +1,4 @@
-using SNaQ
+using SNaQ, Random, StatsBase
 
 
 function generate_tree(n::Int, seed::Int=42)

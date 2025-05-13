@@ -97,6 +97,43 @@ function log_text(logfile::String, msg::String)
     end
 end
 
+function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict)
+    all_keys = sort(collect(keys(moves_prop)))
+    min_width::Int = maximum([max(length(string(k)), length(string(moves_prop[k])), length(string(moves_acc[k]))) for k in all_keys])+2
+    function expand(str::String)::String
+        ret::String = str
+        for j = 1:(min_width - length(str))
+            ret *= " "
+        end
+        return ret
+    end
+
+    msg::String = repeat("-", 12) * "MOVE ACCEPTANCE RATES" * repeat("-", 12) * "\n"
+    msg *= expand("\tmove:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(k))
+    end
+    msg *= " |\n" * expand("\tproposals:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(moves_prop[k]))
+    end
+    msg *= " |\n" * expand("\taccepted:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(moves_acc[k]))
+    end
+    msg *= " |\n" * expand("\taccept %:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(round(100 * moves_acc[k] / moves_prop[k], digits=0)))
+    end
+    msg *= "|\n\n"
+
+    log_text(logfile, msg)
+end
+
 
 
 # function snaq!(
@@ -249,7 +286,8 @@ function search(
     # Data used throughout the optimization process
     q_idxs = sample_qindices(N, propQuartets, rng)
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
-    logPLs[1], N_eqns::Vector{QuartetData} = compute_loss(N, q, q_idxs, rng, α)
+    N_eqns::Vector{QuartetData} = find_quartet_equations(N, q_idxs)[1]
+    logPLs[1] = optimize_bls!(N, N_eqns, q, α; maxeval=opt_maxeval)
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(N_eqns))
     unchanged_iters = 0
 
@@ -260,20 +298,15 @@ function search(
 
     log_text(logfile, "Entering main loop with -logPL = $(logPLs[1])")
     for j = 2:maxeval
+        if j % 100 == 0
+            log_moves(logfile, moves_proposed, moves_accepted)
+        end
+
         verbose && print("\rIteration $(j)/$(maxeval) - in a row=$(unchanged_iters)/$(maxequivPLs)              ")
-        log_text(logfile, "Iteration $(j)/$(maxeval), in a row = $(unchanged_iters)/$(maxequivPLs) (current best = $(round(logPLs[j-1], digits=6)), last move = $(last_move))")
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
-        Nprime = nothing
-        try
-            Nprime = readnewick(writenewick(N));
-        catch e
-            @error "Bad newick: $(writenewick(N, round=true))"
-            @info "Bad newick: $(writenewick(N, round=true))"
-            println("Bad newick: $(writenewick(N, round=true))")
-            rethrow(e)
-        end
+        Nprime = readnewick(writenewick(N));
 
         prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
         last_move = prop_move
@@ -298,6 +331,7 @@ function search(
         # 3. Immediately throw away networks that don't meet restrictions
         if !restrictions(Nprime)
             @debug "Nprime does not meet restrictions - skipping."
+            log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
             logPLs[j] = logPLs[j-1]
             continue
         end
@@ -307,6 +341,7 @@ function search(
             Nprime, N_eqns, Nprime_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
         )
+        Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
         # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
@@ -314,12 +349,15 @@ function search(
             Nprime_logPL = $(Nprime_logPL)
             $(writenewick(Nprime, round=true))
         """)
-        if Nprime_logPL - logPLs[j-1] > 1e-8
+        if Nprime_logPL - logPLs[j-1] > 1e-8 && (logPLs[j-1] - Nprime_logPL) / logPLs[j-1] > 1e-4
             # Update current topology info
             N = Nprime
             N_eqns = Nprime_eqns
             logPLs[j] = Nprime_logPL
             moves_accepted[prop_move] += 1
+
+            # Log acceptance
+            log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) ACCEPTED $(prop_move), new -logPL=$(round(logPLs[j], digits=6))")
 
             # Update tracking vars
             unchanged_iters = 0
@@ -327,6 +365,9 @@ function search(
         else
             logPLs[j] = logPLs[j-1]
             unchanged_iters += 1
+
+            # Log rejection and reason
+            log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) ($(round(Nprime_logPL, digits=3)) < $(round(logPLs[j], digits=3)))")
         end
 
         # 6. IF we chose Nprime (which is now N), remove hybrids with γ ≈ 0 from N
@@ -355,6 +396,9 @@ function search(
             break
         end
     end
+
+    log_text(logfile, "Search complete.\n\n")
+    log_moves(logfile, moves_proposed, moves_accepted)
 
     return N, logPLs[length(logPLs)]
 
@@ -480,44 +524,58 @@ Randomly samples a move to generate a new topology from `N`.
 """
 function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
 
-    if N.numhybrids < hmax && rand(rng) < 0.15
+    if N.numhybrids < hmax && rand(rng) < 0.05
         @debug "SELECTED: add_random_hybrid!"
         return (:add_hybrid, sample_add_hybrid_parameters(N, rng))
     end
 
-    # If net has 0 hybrids, we can only do an NNI (SPRs are only
-    # set up for reticulate moves at the moment)
+    # If net has 0 hybrids, we can only do rNNI(1) or rSPR moves
     if N.numhybrids == 0
-        return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
+        # PROBABILITY OF EACH MOVE:
+        # rNNI(1):  70%
+        # rSPR:     30%
+
+        r = rand(rng)
+        if r < 0.7
+            return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
+        else
+            return (:rSPR, sample_rSPR_parameters(N, rng))
+        end
     end
 
 
     # PROBABILITY OF EACH MOVE:
-    # rNNI(1-4):  60%
-    # moveretic:  20%
-    # rSPR:       10%
-    # fliphybrid: 10%
+    # rNNI(1):      10%
+    # rNNI(2):      0%
+    # rNNI(3):      5%
+    # rNNI(4):      10%
+    # rSPR:         5%
+    # origin:       10%
+    # target:       10%
+    # loc origin:   20%
+    # loc target:   15%
+    # fliphybrid:   15%
+    probs = [0.1, 0.0, 0.05, 0.1, 0.05, 0.1, 0.1, 0.2, 0.15, 0.15]
+
     r = rand(rng)
-    if r < 0.60
-        r = sample(rng, [1, 2, 3, 4])
-        move_symbol = [:rNNI1, :rNNI2, :rNNI3, :rNNI4][r]
-        return (move_symbol, sample_rNNI_parameters(N, r, rng))
-    elseif r < 0.7
+    if r < sum(probs[1:1])
+        return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
+    elseif r < sum(probs[1:2])
+        return (:rNNI2, sample_rNNI_parameters(N, 2, rng))
+    elseif r < sum(probs[1:3])
+        return (:rNNI3, sample_rNNI_parameters(N, 3, rng))
+    elseif r < sum(probs[1:4])
+        return (:rNNI4, sample_rNNI_parameters(N, 4, rng))
+    elseif r < sum(probs[1:5])
         return (:rSPR, sample_rSPR_parameters(N, rng))
-    elseif r < 0.9
-        r = sample(rng, [1, 2, 3, 4])   # 1 = move retic origin
-                                        # 2 = move retic target
-                                        # 3 = move retic origin local
-                                        # 4 = move retic target local
-        if r == 1
-            return (:retic_origin, sample_move_reticulate_origin_parameters(N, rng))
-        elseif r == 2
-            return (:retic_target, sample_move_reticulate_target_parameters(N, rng))
-        elseif r == 3
-            return (:retic_origin_local, sample_move_reticulate_origin_local_parameters(N, rng))
-        else
-            return (:retic_target_local, sample_move_reticulate_target_local_parameters(N, rng))
-        end
+    elseif r < sum(probs[1:6])
+        return (:retic_origin, sample_move_reticulate_origin_parameters(N, rng))
+    elseif r < sum(probs[1:7])
+        return (:retic_target, sample_move_reticulate_target_parameters(N, rng))
+    elseif r < sum(probs[1:8])
+        return (:retic_origin_local, sample_move_reticulate_origin_local_parameters(N, rng))
+    elseif r < sum(probs[1:9])
+        return (:retic_target_local, sample_move_reticulate_target_local_parameters(N, rng))
     else
         return (:flip_hybrid, sample_flip_hybrid_parameters(N, rng))
     end
