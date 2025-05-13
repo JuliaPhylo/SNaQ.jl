@@ -168,7 +168,7 @@ of branch lengths and inheritance probabilities.
 """
 function search(
     N::HybridNetwork,
-    q,
+    q::Union{DataCF, Matrix{Float64}},
     hmax::Int;
     restrictions::Function=no_restrictions(),
     α::Real=Inf,
