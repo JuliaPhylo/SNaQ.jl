@@ -71,8 +71,8 @@ function optimize_bls!(
 )
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
-    #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)
-    opt = Opt(NLopt.LD_LBFGS, narg)
+    #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
+    opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
 
     opt.maxeval = maxeval
     opt.ftol_rel = 1e-12
