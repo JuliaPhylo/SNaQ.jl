@@ -359,7 +359,15 @@ function search(
         while shrink3cycles!(Nprime) continue end
         while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
 
-        # 2.5 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
+        # 2.1 If this reduces the number of reticulations in the network, reject it.
+        if Nprime.numhybrids < N.numhybrids
+            @debug "Nprime has fewer hybrids - rejecting."
+            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) < $(N.numhybrids) = N.h)")
+            logPLs[j] = logPLs[j-1]
+            continue
+        end
+
+        # 2.2 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
         semidirect_network!(Nprime)
 
         # 3. Immediately throw away networks that don't meet restrictions
