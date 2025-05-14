@@ -41,6 +41,7 @@ function multi_search(
     # Basic arguments
     runs::Int=10,
     seed::Int=42,
+    logprefix::String="",
     kwargs...
 )
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
@@ -71,7 +72,8 @@ function multi_search(
     # Do the runs distributed
     nets_and_PLs = Distributed.pmap(1:runs) do j
         println("Begining run #$(j) on seed $(run_seeds[j])")
-        return search(N, q, hmax; seed = run_seeds[j], logfile="snaq_$(run_seeds[j])", kwargs...)
+        iter_log = logfile == "" ? "" : "$(logprefix)$(run_seeds[j])"
+        return search(N, q, hmax; seed = run_seeds[j], logfile=iter_log, kwargs...)
     end
 
     # Consolidate return data
