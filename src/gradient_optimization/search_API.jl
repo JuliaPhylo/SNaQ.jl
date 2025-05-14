@@ -139,7 +139,7 @@ function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL:
     msg *= " |\n" * expand("\tmax ΔPL %:")
     for k in all_keys
         msg *= "| "
-        msg *= expand(string(round(maximum(moves_PL[k]), digits=2)))
+        msg *= expand(string(round(maximum(moves_PL[k], init=0), digits=2)))
     end
     msg *= " |\n\n"
 
@@ -312,7 +312,7 @@ function search(
     log_text(logfile, "Entering main loop with -logPL = $(logPLs[1])")
     for j = 2:maxeval
         if j % 100 == 0
-            log_moves(logfile, moves_proposed, moves_accepted)
+            log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
         end
 
         verbose && print("\rIteration $(j)/$(maxeval) - in a row=$(unchanged_iters)/$(maxequivPLs)              ")
@@ -413,7 +413,7 @@ function search(
     end
 
     log_text(logfile, "Search complete.\n\n")
-    log_moves(logfile, moves_proposed, moves_accepted)
+    log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
     return N, logPLs[length(logPLs)]
 
