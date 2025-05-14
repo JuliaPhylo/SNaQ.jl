@@ -365,6 +365,11 @@ function search(
             log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) < $(N.numhybrids) = N.h)")
             logPLs[j] = logPLs[j-1]
             continue
+        elseif Nprime.numhybrids == N.numhybrids && prop_move == :add_hybrid
+            @debug "Nprime has equal hybrids with move $(prop_move) - rejecting."
+            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) == $(N.numhybrids) = N.h)")
+            logPLs[j] = logPLs[j-1]
+            continue
         end
 
         # 2.2 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
