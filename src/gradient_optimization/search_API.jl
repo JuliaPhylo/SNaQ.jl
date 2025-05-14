@@ -588,9 +588,9 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
 
 
     # PROBABILITY OF EACH MOVE:
-    # rNNI(1):      10%
-    # rNNI(2):      0%
-    # rNNI(3):      5%
+    # rNNI(1):      15%
+    # rNNI(2):      0%  NEVER accepted!
+    # rNNI(3):      0%  NEVER accepted!
     # rNNI(4):      10%
     # rSPR:         5%
     # origin:       10%
@@ -598,7 +598,7 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
     # loc origin:   20%
     # loc target:   15%
     # fliphybrid:   15%
-    probs = [0.1, 0.0, 0.05, 0.1, 0.05, 0.1, 0.1, 0.2, 0.15, 0.15]
+    probs = [0.15, 0.0, 0.0, 0.1, 0.05, 0.1, 0.1, 0.2, 0.15, 0.15]
 
     r = rand(rng)
     if r < sum(probs[1:1])
