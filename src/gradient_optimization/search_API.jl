@@ -15,7 +15,8 @@ Performs multiple independent searches to find the best network topology and par
 that fit the observed quartet concordance factors.
 
 # Arguments
-- `N::HybridNetwork`: The starting network topology.
+- `N::Union{HybridNetwork, Vector{HybridNetwork}}`: The starting network topology or vector
+    of topologies. If a vector, must be length 1 or of length `runs`.
 - `q::Union{DataCF, AbstractArray{Float64}}`: Observed quartet concordance factors.
 - `hmax::Int`: Maximum number of hybridization events allowed.
 
@@ -35,7 +36,7 @@ that fit the observed quartet concordance factors.
 - It returns the best network found across all runs.
 """
 function multi_search(
-    N::HybridNetwork,
+    N::Union{HybridNetwork, Vector{HybridNetwork}},
     q::Union{DataCF, AbstractArray{Float64}},
     hmax::Int;
     # Basic arguments
@@ -45,6 +46,7 @@ function multi_search(
     kwargs...
 )
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
+    typeof(N) <: Vector{HybridNetwork} && (length(N) == 1 || length(N) == runs) || error("If N is a vector, it must be length 1 or length equal to runs (length(N) = $(length(N)), runs = $(runs))")
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
@@ -73,7 +75,9 @@ function multi_search(
     nets_and_PLs = Distributed.pmap(1:runs) do j
         println("Begining run #$(j) on seed $(run_seeds[j])")
         iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
-        return search(N, q, hmax; seed = run_seeds[j], logfile=iter_log, kwargs...)
+        N0::HybridNetwork = typeof(N) <: Vector{HybridNetwork} ? (length(N) == 1 ? N[1] : N[j]) : N
+
+        return search(N0, q, hmax; seed = run_seeds[j], logfile=iter_log, kwargs...)
     end
 
     # Consolidate return data
