@@ -60,19 +60,23 @@ function multi_search(
         qtemp = nothing
     end
 
-    # Prep data
     if typeof(N) <: Vector{HybridNetwork}
         for (j, n) in enumerate(N)
+            # Prep data
             N[j] = deepcopy_network(n);
             semidirect_network!(N[j]);
+
+            # Make sure starting network meets restrictions if any are provided
+            (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N[j])) || error("Starting topology #$(j) does not meet provided restrictions.")
         end
     else
+        # Prep data
         N = deepcopy_network(N);
         semidirect_network!(N)
-    end
 
-    # Make sure starting network meets restrictions if any are provided
-    (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N)) || error("Starting topology does not meet provided restrictions.")
+        # Make sure starting network meets restrictions if any are provided
+        (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N)) || error("Starting topology does not meet provided restrictions.")
+    end
 
     # Generate per-run seeds
     Random.seed!(seed)
