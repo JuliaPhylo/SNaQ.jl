@@ -99,7 +99,7 @@ function log_text(logfile::String, msg::String)
     end
 end
 
-function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict)
+function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL::Dict)
     all_keys = sort(collect(keys(moves_prop)))
     min_width::Int = maximum([max(length(string(k)), length(string(moves_prop[k])), length(string(moves_acc[k]))) for k in all_keys])+2
     function expand(str::String)::String
@@ -131,7 +131,17 @@ function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict)
         msg *= "| "
         msg *= expand(string(round(100 * moves_acc[k] / moves_prop[k], digits=0)))
     end
-    msg *= "|\n\n"
+    msg *= " |\n" * expand("\tmean ΔPL %:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(round(mean(moves_PL[k]), digits=2)))
+    end
+    msg *= " |\n" * expand("\tmax ΔPL %:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(round(maximum(moves_PL[k]), digits=2)))
+    end
+    msg *= " |\n\n"
 
     log_text(logfile, msg)
 end
@@ -296,6 +306,7 @@ function search(
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
     moves_proposed = Dict{Symbol,Int}()
     moves_accepted = Dict{Symbol,Int}()
+    moves_logPL = Dict{Symbol,Vector{Float64}}()
     last_move = :nothing
 
     log_text(logfile, "Entering main loop with -logPL = $(logPLs[1])")
@@ -318,6 +329,7 @@ function search(
 
         if !haskey(moves_proposed, prop_move) moves_proposed[prop_move] = 0 end
         if !haskey(moves_accepted, prop_move) moves_accepted[prop_move] = 0 end
+        if !haskey(moves_logPL, prop_move) moves_logPL[prop_move] = Vector{Float64}([]) end
         moves_proposed[prop_move] += 1
 
         # 2. Check for identifiability
@@ -357,6 +369,7 @@ function search(
             N_eqns = Nprime_eqns
             logPLs[j] = Nprime_logPL
             moves_accepted[prop_move] += 1
+            push!(moves_logPL[prop_move], logPLs[j] - logPLs[j-1])
 
             # Log acceptance
             log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) ACCEPTED $(prop_move), new -logPL=$(round(logPLs[j], digits=6))")
