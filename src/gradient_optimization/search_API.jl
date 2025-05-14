@@ -72,7 +72,7 @@ function multi_search(
     # Do the runs distributed
     nets_and_PLs = Distributed.pmap(1:runs) do j
         println("Begining run #$(j) on seed $(run_seeds[j])")
-        iter_log = logfile == "" ? "" : "$(logprefix)$(run_seeds[j])"
+        iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
         return search(N, q, hmax; seed = run_seeds[j], logfile=iter_log, kwargs...)
     end
 
