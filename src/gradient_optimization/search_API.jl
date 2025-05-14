@@ -131,15 +131,20 @@ function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL:
         msg *= "| "
         msg *= expand(string(round(100 * moves_acc[k] / moves_prop[k], digits=0)))
     end
-    msg *= " |\n" * expand("\tmean ΔPL:")
+    msg *= " |\n" * expand("\tmean SUCC ΔPL:")
     for k in all_keys
         msg *= "| "
         msg *= expand(string(round(mean(moves_PL[k]), digits=2)))
     end
-    msg *= " |\n" * expand("\tmax ΔPL:")
+    msg *= " |\n" * expand("\tmax SUCC ΔPL:")
     for k in all_keys
         msg *= "| "
         msg *= expand(string(round(maximum(moves_PL[k], init=0), digits=2)))
+    end
+    msg *= " |\n" * expand("\tmean ALL ΔPL:")
+    for k in all_keys
+        msg *= "| "
+        msg *= expand(string(round(sum(moves_PL[k]) / moves_prop[k], digits=2)))
     end
     msg *= " |\n\n"
 
