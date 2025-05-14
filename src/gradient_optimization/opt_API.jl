@@ -84,7 +84,7 @@ function optimize_bls!(
     opt.lower_bounds = LB
     opt.upper_bounds = UB
 
-    setX!(net, [min(ub / 2.0, val) for (ub, val) in zip(UB, params), idx_obj_map])
+    setX!(net, [min(ub / 2.0, val) for (ub, val) in zip(UB, params)], idx_obj_map)
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, params)
     setX!(net, minx, idx_obj_map)
