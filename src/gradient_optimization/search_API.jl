@@ -350,7 +350,7 @@ function search(
         # 3. Immediately throw away networks that don't meet restrictions
         if !restrictions(Nprime)
             @debug "Nprime does not meet restrictions - skipping."
-            log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
+            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
             logPLs[j] = logPLs[j-1]
             continue
         end
@@ -377,7 +377,7 @@ function search(
             push!(moves_logPL[prop_move], logPLs[j] - logPLs[j-1])
 
             # Log acceptance
-            log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) ACCEPTED $(prop_move), new -logPL=$(round(logPLs[j], digits=6))")
+            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) ACCEPTED $(prop_move), new -logPL=$(round(logPLs[j], digits=6))")
 
             # Update tracking vars
             unchanged_iters = 0
@@ -387,7 +387,7 @@ function search(
             unchanged_iters += 1
 
             # Log rejection and reason
-            log_text(logfile, "Iteration $(j), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) ($(round(Nprime_logPL, digits=3)) < $(round(logPLs[j], digits=3)))")
+            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) ($(round(Nprime_logPL, digits=3)) < $(round(logPLs[j], digits=3)))")
         end
 
         # 6. IF we chose Nprime (which is now N), remove hybrids with γ ≈ 0 from N
