@@ -61,8 +61,15 @@ function multi_search(
     end
 
     # Prep data
-    N = readnewick(writenewick(N));
-    semidirect_network!(N)
+    if typeof(N) <: Vector{HybridNetwork}
+        for (j, n) in enumerate(N)
+            N[j] = deepcopy_network(n);
+            semidirect_network!(N[j]);
+        end
+    else
+        N = deepcopy_network(N);
+        semidirect_network!(N)
+    end
 
     # Make sure starting network meets restrictions if any are provided
     (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N)) || error("Starting topology does not meet provided restrictions.")
