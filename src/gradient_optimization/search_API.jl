@@ -46,7 +46,7 @@ function multi_search(
     kwargs...
 )
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
-    typeof(N) <: Vector{HybridNetwork} && (length(N) == 1 || length(N) == runs) || error("If N is a vector, it must be length 1 or length equal to runs (length(N) = $(length(N)), runs = $(runs))")
+    typeof(N) <: Vector{HybridNetwork} && length(N) != 1 && length(N) != runs && error("If N is a vector, it must be length 1 or length equal to runs (length(N) = $(length(N)), runs = $(runs))")
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
