@@ -5,7 +5,6 @@ const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 function optimize_topology!(
     Nprime::HybridNetwork,
     old_eqns::Vector{QuartetData},
-    Nprime_eqns::Vector{QuartetData},
     move::Symbol,
     params::Tuple,
     q::Matrix{Float64},

@@ -320,7 +320,6 @@ function search(
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
     N_eqns::Vector{QuartetData} = find_quartet_equations(N, q_idxs)[1]
     logPLs[1] = optimize_bls!(N, N_eqns, q, α; maxeval=opt_maxeval)
-    Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(N_eqns))
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -359,18 +358,18 @@ function search(
         while shrink3cycles!(Nprime) continue end
         while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
 
-        # 2.1 If this reduces the number of reticulations in the network, reject it.
-        if Nprime.numhybrids < N.numhybrids
-            @debug "Nprime has fewer hybrids - rejecting."
-            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) < $(N.numhybrids) = N.h)")
-            logPLs[j] = logPLs[j-1]
-            continue
-        elseif Nprime.numhybrids == N.numhybrids && prop_move == :add_hybrid
-            @debug "Nprime has equal hybrids with move $(prop_move) - rejecting."
-            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) == $(N.numhybrids) = N.h)")
-            logPLs[j] = logPLs[j-1]
-            continue
-        end
+        # # 2.1 If this reduces the number of reticulations in the network, reject it.
+        # if Nprime.numhybrids < N.numhybrids
+        #     @debug "Nprime has fewer hybrids - rejecting."
+        #     log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) < $(N.numhybrids) = N.h)")
+        #     logPLs[j] = logPLs[j-1]
+        #     continue
+        # elseif Nprime.numhybrids == N.numhybrids && prop_move == :add_hybrid
+        #     @debug "Nprime has equal hybrids with move $(prop_move) - rejecting."
+        #     log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) == $(N.numhybrids) = N.h)")
+        #     logPLs[j] = logPLs[j-1]
+        #     continue
+        # end
 
         # 2.2 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
         semidirect_network!(Nprime)
@@ -385,7 +384,7 @@ function search(
 
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimize_topology!(
-            Nprime, N_eqns, Nprime_eqns, prop_move, prop_params, q, q_idxs,
+            Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")

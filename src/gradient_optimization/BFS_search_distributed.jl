@@ -1,13 +1,3 @@
-@everywhere begin
-    using PhyloNetworks, SNaQ, DataFrames, Random, Distributed, PhyloCoalSimulations, StatsBase
-    include("../network_moves/rNNI_moves.jl")
-    include("../network_moves/rSPR_moves.jl")
-    include("opt_API.jl")
-    include("search_API.jl")
-    include("../../test/test_inplace_updates/misc.jl")
-    include("bfs_search.jl")
-end
-using Plots
 
 
 function BFS_distributed(
@@ -24,6 +14,7 @@ function BFS_distributed(
     ftolabs::Float64=1e-6,  # optimization param
     ftolrel::Float64=0.05,  # optimization param
     seed::Int=abs(rand(Int) % 10000),
+    max_worst_factor::Float64=4.0,  # all items in the pool are allowed to have at most logPL of this factor times the best logPL
     propQuartets::Float64=1.0,
     maxmultiplicity::Int=maxpoolsize,
     searchargs...   # arguments passed to the search algo
@@ -32,13 +23,6 @@ function BFS_distributed(
 
     rng = Random.seed!(seed)
     q_idxs = sample_qindices(starting_pool[1], propQuartets, rng)
-    
-    # Convert `q` to a SharedArray
-    shared_q = SharedArray{Float64}(length(q), 3)
-    for j = 1:length(q)
-        shared_q[j,:] .= q[j].data[1:3]
-    end
-    q = shared_q
 
     # Semi-direct input networks
     for n in starting_pool
@@ -59,9 +43,6 @@ function BFS_distributed(
     get_vidxs() = findall(nfailures .< maxfail .&& nfailures .< multiplicity .&& .!forceremoved .&& nsuccesses .< maxsuccess)
 
     tPL = optimize_bls!(truenet, q)
-    p = plot(layout=2, size=(800, 400))
-    hline!(p[1], [tPL], color=:red, linestyle=:dash, label=false)
-    hline!(p[2], [0.0], color=:black, linestyle=:dash, label=false)
     ############# FOR NOW: implement on 1 worker #############
     iter_ii = 0
     while any(j -> nfailures[j] < multiplicity[j] && nfailures[j] < maxfail && !forceremoved[j] && nsuccesses[j] < maxsuccess, 1:length(pool))
@@ -79,69 +60,60 @@ function BFS_distributed(
         print("fails=$(sum(nfailures)), ")
         print("worst -loglik=$(round(worstPL, digits=5)), ")
         print("best -loglik=$(round(bestPL, digits=5))      ")
-
-
-        if iter_ii > 1
-            scatter!(p[1], [iter_ii-1], [bestPL], color=:cyan, label=(iter_ii==2 ? "Best PL" : false), markersize=2)
-            scatter!(p[1], [iter_ii-1], [worstPL], color=:red, label=(iter_ii==2 ? "Worst PL" : false), markersize=2)
-            scatter!(p[2], [iter_ii-1], [hardwiredclusterdistance(truenet, bestnet, false)], color=:green, label=(iter_ii==2 ? "HWCD" : false), markersize=2)
-            display(p)
-        end
         ################################################################################################
 
 
         # Sample from pool
         valid_idxs = get_vidxs()
-        sample_idxs = sample(rng, valid_idxs, compute_weights(pool[valid_idxs], multiplicity[valid_idxs]), nprocs(), replace=true)
-        nets = pool[sample_idxs]
+        sample_idx = sample(rng, valid_idxs, compute_weights(pool[valid_idxs], multiplicity[valid_idxs]))
+        net = pool[sample_idx]
 
         # Perform single iter of search
-        futures = []
-        @sync begin
-            for (ip, p) in enumerate(procs())
-                @async begin
-                    r = remotecall_wait(BFS_single_iter, p, rng, nets[p], pool_eqns[sample_idxs[ip]], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...)
-                    push!(futures, r)
-                end
-            end
-        end
-
-        for (jf, fut) in enumerate(futures)
-            next_net, next_eqns = fetch(fut)
-            sample_idx = sample_idxs[jf]
-            # next_net, next_eqns = BFS_single_iter(
-            #     rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...
-            # )
-            
-            # If improvement found: add it to the pool
-            # If NO improvement found: increment `nfailures` 
-            if next_net !== nothing
-                nsuccesses[sample_idx] += 1
-                if nsuccesses[sample_idx] >= maxsuccess
-                    forceremoved[sample_idx] = true
-                    pool_eqns[sample_idx] = nothing
-                end
-
-                match_idx = findfirst(j -> pool[j] ≊ next_net, 1:length(pool))
-                if match_idx === nothing
-                    push!(pool, next_net)
-                    push!(pool_eqns, next_eqns)
-                    push!(nfailures, 0)
-                    push!(nsuccesses, 0)
-                    push!(multiplicity, 1)
-                    push!(forceremoved, false)
-                else
-                    # Finding a network that has already been discovered is considered a failure!
-                    nfailures[sample_idx] += 1
-                    multiplicity[match_idx] = min(multiplicity[match_idx] + 1, maxmultiplicity)
-                end
-            else
-                nfailures[sample_idx] += 1
-            end
-            if nfailures[sample_idx] >= maxfail
+        next_net, next_eqns = BFS_single_iter(
+            rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...
+        )
+        
+        # If improvement found: add it to the pool
+        # If NO improvement found: increment `nfailures` 
+        if next_net !== nothing
+            nsuccesses[sample_idx] += 1
+            if nsuccesses[sample_idx] >= maxsuccess
                 forceremoved[sample_idx] = true
                 pool_eqns[sample_idx] = nothing
             end
+
+            match_idx = findfirst(j -> pool[j] ≊ next_net, 1:length(pool))
+            if match_idx === nothing
+                push!(pool, next_net)
+                push!(pool_eqns, next_eqns)
+                push!(nfailures, 0)
+                push!(nsuccesses, 0)
+                push!(multiplicity, 1)
+                push!(forceremoved, false)
+            else
+                # Finding a network that has already been discovered is considered a failure!
+                nfailures[sample_idx] += 1
+                multiplicity[match_idx] = min(multiplicity[match_idx] + 1, maxmultiplicity)
+            end
+        else
+            nfailures[sample_idx] += 1
+        end
+        if nfailures[sample_idx] >= maxfail
+            forceremoved[sample_idx] = true
+            pool_eqns[sample_idx] = nothing
+        end
+
+        # Remove items with terrible factors
+        remove_idxs::Vector{Int64} = []
+        for (j, vidx) in enumerate(valid_idxs)
+            if loglik(pool[vidx]) <= max_worst_factor * bestPL
+                forceremoved[vidx] = true
+                push!(remove_idxs, j)
+                effpoolsize -= multiplicity[vidx]
+            end
+        end
+        if length(remove_idxs) > 0
+            deleteat!(valid_idxs, remove_idxs)
         end
 
         # Trim pool back down to `maxpoolsize`
@@ -179,7 +151,7 @@ function BFS_distributed(
 end
 
 
-@everywhere function BFS_single_iter(
+function BFS_single_iter(
     rng::TaskLocalRNG,
     N::HybridNetwork,
     net_eqns::Array{QuartetData},
@@ -245,7 +217,7 @@ end
 end
 
 
-@everywhere function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_attempted::Vector{<:Tuple}, restrictions::Function)
+function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_attempted::Vector{<:Tuple}, restrictions::Function)
     j = 0
     while true
         j += 1
@@ -272,7 +244,7 @@ end
 end
 
 
-@everywhere function compute_weights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::Weights{Float64}
+function compute_weights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::Weights{Float64}
     L::Vector{Float64} = [loglik(n) for n in N]
     sumL = sum(L)
     return Weights([m * max(sumL / l, 0.0) for (l, m) in zip(L, multiplicity)])  # weight: (xi / sum(xi)) ^ {-1}
@@ -280,7 +252,7 @@ end
 end
 
 
-@everywhere function ≊(N1::HybridNetwork, N2::HybridNetwork)::Bool
+function ≊(N1::HybridNetwork, N2::HybridNetwork)::Bool
     if loglik(N1) ≈ 0.0
         loglik(N2) ≈ 0.0 && return true
     end
@@ -301,3 +273,12 @@ end
 # rt = @elapsed results = BFS_distributed(gts[1:10], 1, 25, 1, 100, q, net.numhybrids, net; restrictions=restriction_set(; require_strongly_tree_child=true))
 
 # istreechild(results)[3] == true
+
+# using Random
+# Random.seed!(0)
+# include("test/test_inplace_updates/misc.jl")
+# t = generate_net(20, 4, 1);
+# for E in t.edge E.length = 1.0 end
+# t0s = simulatecoalescent(t, 10, 1);
+# q = SNaQ.compute_eCFs(t);
+# rt = @elapsed results = SNaQ.BFS_distributed(t0s, 1, 25, 1, 100, q, 3, t)
