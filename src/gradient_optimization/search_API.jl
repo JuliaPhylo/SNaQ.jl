@@ -76,7 +76,11 @@ function multi_search(
         iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
         N0::HybridNetwork = (length(Ns) == 1) ? Ns[1] : Ns[j]
 
-        return search(N0, q, hmax; seed = run_seeds[j], logfile=iter_log, kwargs...)
+        return search(
+            N0, q, hmax;
+            seed = run_seeds[j], restrictions=restrictions,
+            logfile=iter_log, outgroup=outgroup, kwargs...
+        )
     end
 
     # Consolidate return data
@@ -381,10 +385,7 @@ function search(
         while shrink3cycles!(Nprime) continue end
         while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
 
-        # 2.2 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
-        semidirect_network!(Nprime)
-
-        # 2.3 Try re-rooting at the outgroup - if we can't, throw the network away
+        # 2.2 Try re-rooting at the outgroup - if we can't, throw the network away
         if outgroup != "none"
             try
                 rootatnode!(Nprime, outgroup)
@@ -399,6 +400,9 @@ function search(
                 end
             end
         end
+
+        # 2.3 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
+        semidirect_network!(Nprime)
 
         # 3. Immediately throw away networks that don't meet restrictions 
         if !restrictions(Nprime)
@@ -441,25 +445,6 @@ function search(
 
             # Log rejection and reason
             log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) ($(round(Nprime_logPL, digits=3)) < $(round(logPLs[j], digits=3)))")
-        end
-
-        # 6. IF we chose Nprime (which is now N), remove hybrids with γ ≈ 0 from N
-        #    if we did not choose Nprime, no point in doing this work
-        if Nprime_logPL - logPLs[j-1] > 1e-8
-            bad_Hs = []
-            for H in N.hybrid
-                if getparentedgeminor(H).gamma <= 0.001
-                    bad_H = H
-                end
-            end
-            if length(bad_Hs) != 0
-                @error "Removing bad H!"
-                @debug "Found $(length(bad_Hs)) hybrids with γ=$(getparentedge(bad_H).gamma), removing them."
-                for H in bad_Hs
-                    remove_hybrid!(N, H)
-                end
-                N_eqns = find_quartet_equations(N, q_idxs)
-            end
         end
 
         # Early stopping checks
