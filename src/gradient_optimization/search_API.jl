@@ -44,11 +44,15 @@ function multi_search(
     seed::Int=42,
     logprefix::String="",
     outgroup::String="none",
+    restrictions::Function=no_restrictions(),
     kwargs...
 )
+    # Verify input parameters
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
     typeof(N) <: Vector{HybridNetwork} && length(N) != 1 && length(N) != runs && error("If N is a vector, it must be length 1 or length equal to runs (length(N) = $(length(N)), runs = $(runs))")
-    Ns::Vector{HybridNetwork} = verifystartingtopologies(N, outgroup)
+
+    # Verify the starting network inputs
+    Ns::Vector{HybridNetwork} = verifystartingtopologies(N, outgroup, restrictions)
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
@@ -88,7 +92,7 @@ function multi_search(
 end
 
 
-function verifystartingtopologies(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String)::Vector{HybridNetwork}
+function verifystartingtopologies(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String, restrictions::Function)::Vector{HybridNetwork}
     # Copy the input networks
     Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopy_network(N)] : [deepcopy_network(n) for n in N]
     for (j, n) in enumerate(Ns)
@@ -96,19 +100,19 @@ function verifystartingtopologies(N::Union{HybridNetwork, AbstractVector{HybridN
         semidirect_network!(Ns[j]);
 
         # Make sure starting network meets restrictions if any are provided
-        (!haskey(kwargs, :restrictions) || kwargs[:restrictions](Ns[j])) || error("Starting topology #$(j) does not meet provided restrictions.")
+        restrictions(Ns[j]) || throw(ArgumentError("Starting topology #$(j) does not meet provided restrictions."))
 
         # If no outgroup exists, go next
         if outgroup == "none" continue end
         
         # Make sure the outgroup exists in this network
-        if !any(L -> L.name == outgroup, N.leaf)
+        if !any(L -> L.name == outgroup, Ns[j].leaf)
             throw(ArgumentError("Starting topology #$(j) does not contain the supplied outgroup ($(outgroup))."))
         end
 
         # Try rooting at outgroup if there is one
         try
-            PN.rootatnode!(N, outgroup)
+            PN.rootatnode!(Ns[j], outgroup)
         catch e
             if typeof(e) <: PN.RootMismatch
                 throw(ArgumentError("Starting topology #$(j) contains the outgroup but cannot be rooted at the outgroup."))
