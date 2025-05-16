@@ -36,17 +36,19 @@ that fit the observed quartet concordance factors.
 - It returns the best network found across all runs.
 """
 function multi_search(
-    N::Union{HybridNetwork, Vector{HybridNetwork}},
+    N::Union{HybridNetwork, AbstractVector{HybridNetwork}},
     q::Union{DataCF, AbstractArray{Float64}},
     hmax::Int;
     # Basic arguments
     runs::Int=10,
     seed::Int=42,
     logprefix::String="",
+    outgroup::String="none",
     kwargs...
 )
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
     typeof(N) <: Vector{HybridNetwork} && length(N) != 1 && length(N) != runs && error("If N is a vector, it must be length 1 or length equal to runs (length(N) = $(length(N)), runs = $(runs))")
+    Ns::Vector{HybridNetwork} = verifystartingtopologies(N, outgroup)
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
@@ -60,24 +62,6 @@ function multi_search(
         qtemp = nothing
     end
 
-    if typeof(N) <: Vector{HybridNetwork}
-        for (j, n) in enumerate(N)
-            # Prep data
-            N[j] = deepcopy_network(n);
-            semidirect_network!(N[j]);
-
-            # Make sure starting network meets restrictions if any are provided
-            (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N[j])) || error("Starting topology #$(j) does not meet provided restrictions.")
-        end
-    else
-        # Prep data
-        N = deepcopy_network(N);
-        semidirect_network!(N)
-
-        # Make sure starting network meets restrictions if any are provided
-        (!haskey(kwargs, :restrictions) || kwargs[:restrictions](N)) || error("Starting topology does not meet provided restrictions.")
-    end
-
     # Generate per-run seeds
     Random.seed!(seed)
     run_seeds = abs.(rand(Int, runs) .% 100000)
@@ -86,7 +70,7 @@ function multi_search(
     nets_and_PLs = Distributed.pmap(1:runs) do j
         println("Begining run #$(j) on seed $(run_seeds[j])")
         iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
-        N0::HybridNetwork = typeof(N) <: Vector{HybridNetwork} ? (length(N) == 1 ? N[1] : N[j]) : N
+        N0::HybridNetwork = (length(Ns) == 1) ? Ns[1] : Ns[j]
 
         return search(N0, q, hmax; seed = run_seeds[j], logfile=iter_log, kwargs...)
     end
@@ -101,6 +85,39 @@ function multi_search(
     # Return
     sort_idx = sortperm(all_logPLs, rev=true)
     return all_nets[sort_idx[1]], all_nets[sort_idx], all_logPLs[sort_idx]
+end
+
+
+function verifystartingtopologies(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String)::Vector{HybridNetwork}
+    # Copy the input networks
+    Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopy_network(N)] : [deepcopy_network(n) for n in N]
+    for (j, n) in enumerate(Ns)
+        # Prep data
+        semidirect_network!(Ns[j]);
+
+        # Make sure starting network meets restrictions if any are provided
+        (!haskey(kwargs, :restrictions) || kwargs[:restrictions](Ns[j])) || error("Starting topology #$(j) does not meet provided restrictions.")
+
+        # If no outgroup exists, go next
+        if outgroup == "none" continue end
+        
+        # Make sure the outgroup exists in this network
+        if !any(L -> L.name == outgroup, N.leaf)
+            throw(ArgumentError("Starting topology #$(j) does not contain the supplied outgroup ($(outgroup))."))
+        end
+
+        # Try rooting at outgroup if there is one
+        try
+            PN.rootatnode!(N, outgroup)
+        catch e
+            if typeof(e) <: PN.RootMismatch
+                throw(ArgumentError("Starting topology #$(j) contains the outgroup but cannot be rooted at the outgroup."))
+            else
+                rethrow(e)
+            end
+        end
+    end
+    return Ns
 end
 
 
@@ -253,7 +270,8 @@ function search(
     opt_maxeval::Int=10,
     seed::Int=abs(rand(Int) % 100000),
     verbose::Bool=false,
-    logfile::String=""
+    logfile::String="",
+    outgroup::String="none"
 )
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
@@ -263,6 +281,7 @@ function search(
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
     0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
     0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
+    outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
 
     propQuartets == 1.0 || error("propQuartets != 1.0 NOT IMPLEMENTED YET")
 
@@ -285,7 +304,7 @@ function search(
     semidirect_network!(N)
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
-    if rand(rng) < probST
+    if rand(rng) > probST
         try
             perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
         catch
@@ -358,23 +377,26 @@ function search(
         while shrink3cycles!(Nprime) continue end
         while shrink2cycles!(Nprime) continue end   # keep shrinking until there is nothing to shrink
 
-        # # 2.1 If this reduces the number of reticulations in the network, reject it.
-        # if Nprime.numhybrids < N.numhybrids
-        #     @debug "Nprime has fewer hybrids - rejecting."
-        #     log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) < $(N.numhybrids) = N.h)")
-        #     logPLs[j] = logPLs[j-1]
-        #     continue
-        # elseif Nprime.numhybrids == N.numhybrids && prop_move == :add_hybrid
-        #     @debug "Nprime has equal hybrids with move $(prop_move) - rejecting."
-        #     log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (Nprime.h = $(Nprime.numhybrids) == $(N.numhybrids) = N.h)")
-        #     logPLs[j] = logPLs[j-1]
-        #     continue
-        # end
-
         # 2.2 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
         semidirect_network!(Nprime)
 
-        # 3. Immediately throw away networks that don't meet restrictions
+        # 2.3 Try re-rooting at the outgroup - if we can't, throw the network away
+        if outgroup != "none"
+            try
+                rootatnode!(Nprime, outgroup)
+            catch e
+                if typeof(e) <: PN.RootMismatch
+                    @debug "Nprime cannot be rooted at outgroup - skipping."
+                    log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (cannot reroot at outgroup)")
+                    logPLs[j] = logPLs[j-1]
+                    continue
+                else
+                    rethrow(e)
+                end
+            end
+        end
+
+        # 3. Immediately throw away networks that don't meet restrictions 
         if !restrictions(Nprime)
             @debug "Nprime does not meet restrictions - skipping."
             log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
