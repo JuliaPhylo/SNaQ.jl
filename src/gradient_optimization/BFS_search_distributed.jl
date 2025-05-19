@@ -55,8 +55,8 @@ function BFS(
         bestnet = pool[findmax(n -> loglik(n), pool)[2]]
         bestPL = loglik(bestnet)
         worstPL = minimum([loglik(n) for n in pool[valid_idxs]])
-        minl = 0.25
-        maxl = 2.50
+        minl = 0.25 * l
+        maxl = 2.50 * l
         maxequivPLs::Int = Int(round(effpoolsize / maxpoolsize * (maxl - minl) + minl))
 
         print("\riter_ii=$(iter_ii), effpoolsize=$(effpoolsize), ")
