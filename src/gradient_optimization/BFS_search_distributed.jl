@@ -57,7 +57,7 @@ function BFS(
         worstPL = minimum([loglik(n) for n in pool[valid_idxs]])
         minl = 0.25 * l
         maxl = 2.50 * l
-        maxequivPLs::Int = Int(round(effpoolsize / maxpoolsize * (maxl - minl) + minl))
+        maxequivPLs::Int = Int(round((1.0 - effpoolsize / maxpoolsize) * (maxl - minl) + minl))
 
         print("\riter_ii=$(iter_ii), effpoolsize=$(effpoolsize), ")
         print("poolsize=$(length(pool)) ($(maxequivPLs)), ")
