@@ -55,8 +55,9 @@ function BFS(
         bestnet = pool[findmax(n -> loglik(n), pool)[2]]
         bestPL = loglik(bestnet)
         worstPL = minimum([loglik(n) for n in pool[valid_idxs]])
+        maxequivPLs = l * min(max(1.0 - effpoolsize / maxpoolsize, 0.25), 2.50)
         print("\riter_ii=$(iter_ii), effpoolsize=$(effpoolsize), ")
-        print("poolsize=$(length(pool)), ")
+        print("poolsize=$(length(pool)) ($(maxequivPLs)), ")
         print("mult=($(round(mean(multiplicity), digits=2)), $(maximum(multiplicity))), ")
         print("fails=$(sum(nfailures)), ")
         print("worst -loglik=$(round(worstPL, digits=5)), ")
@@ -71,7 +72,7 @@ function BFS(
 
         # Perform single iter of search
         next_net, next_eqns = BFS_single_iter(
-            rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=l, searchargs...
+            rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=maxequivPLs, searchargs...
         )
         
         # If improvement found: add it to the pool
