@@ -1,6 +1,6 @@
 
 
-function BFS_distributed(
+function BFS(
     starting_pool::Vector{HybridNetwork},
     d::Int, # depth for each strand to traverse
     l::Int, # maxequivPLs for each strand
@@ -146,8 +146,8 @@ function BFS_distributed(
     end
     ##########################################################
     
-    best_idx = findmax(n -> loglik(n), pool)[2]
-    return pool[best_idx]
+    bestnet = pool[findmax(n -> loglik(n), pool)[2]]
+    return bestnet
 end
 
 
