@@ -15,6 +15,7 @@ function BFS(
     ftolrel::Float64=0.05,  # optimization param
     seed::Int=abs(rand(Int) % 10000),
     max_worst_factor::Float64=4.0,  # all items in the pool are allowed to have at most logPL of this factor times the best logPL
+    max_worst_summand::Float64=1.0,
     propQuartets::Float64=1.0,
     maxmultiplicity::Int=maxpoolsize,
     searchargs...   # arguments passed to the search algo
@@ -106,7 +107,7 @@ function BFS(
         # Remove items with terrible factors
         remove_idxs::Vector{Int64} = []
         for (j, vidx) in enumerate(valid_idxs)
-            if loglik(pool[vidx]) <= max_worst_factor * bestPL
+            if loglik(pool[vidx]) <= max_worst_factor * bestPL && loglik(pool[vidx]) <= bestPL - max_worst_summand
                 forceremoved[vidx] = true
                 push!(remove_idxs, j)
                 effpoolsize -= multiplicity[vidx]
