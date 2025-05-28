@@ -41,7 +41,7 @@ function knownidentifiable(N::HybridNetwork)::Bool
             end
         end
     else
-        boolCk, k = isCk(N)
+        boolCk::Bool, k::Int = isCk(N)
         boolCk || return false
         k < 4 && return false
         k > 4 && return true

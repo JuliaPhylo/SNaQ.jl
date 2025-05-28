@@ -34,6 +34,7 @@ restrict_galled_tree() = (net) -> get_network_level(net) <= 1
 restrict_rooted_tree_child() = (net) -> PhyloNetworks.istreechild(net)[1]
 restrict_weakly_tree_child() = (net) -> PhyloNetworks.istreechild(net)[2]
 restrict_strongly_tree_child() = (net) -> PhyloNetworks.istreechild(net)[3]
+default_restrictions() = (net) -> knownidentifiable(net)
 no_restrictions() = (net) -> true
 
 

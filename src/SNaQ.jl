@@ -90,6 +90,8 @@ module SNaQ
     include("gradient_optimization/misc.jl")
     include("gradient_optimization/CF_equations.jl")
     include("gradient_optimization/inplace_updates.jl")
+    include("network_properties/network_properties.jl")
+    include("network_properties/identifiability_properties.jl")
     include("gradient_optimization/opt_API.jl")
     include("gradient_optimization/search_API.jl")
     include("gradient_optimization/BFS_search_distributed.jl")
@@ -104,6 +106,5 @@ module SNaQ
     include("network_moves/move_origin_target.jl")
     include("network_moves/identifiability_moves.jl")
     include("network_moves/flip_hybrid.jl")
-    include("network_properties/network_properties.jl")
 
 end
