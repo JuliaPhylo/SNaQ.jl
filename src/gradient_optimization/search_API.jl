@@ -44,7 +44,7 @@ function multi_search(
     seed::Int=42,
     logprefix::String="",
     outgroup::String="none",
-    restrictions::Function=no_restrictions(),
+    restrictions::Function=defaultrestrictions(),
     kwargs...
 )
     # Verify input parameters
@@ -218,7 +218,7 @@ end
         N::HybridNetwork,
         q,
         hmax::Int;
-        restrictions::Function=no_restrictions(),
+        restrictions::Function=defaultrestrictions(),
         α::Real=Inf,
         propQuartets::Real=1.0,
         preopt::Bool=false,
@@ -242,7 +242,7 @@ of branch lengths and inheritance probabilities.
 - `hmax::Int`: Maximum number of hybridization events allowed.
 
 # Optional Arguments
-- `restrictions::Function=no_restrictions()`: Function to enforce restrictions on the proposed networks.
+- `restrictions::Function=defaultrestrictions()`: Function to enforce restrictions on the proposed networks.
 - `α::Real=Inf`: Dirichlet parameter for gene tree heterogeneity model.
 - `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
@@ -264,7 +264,7 @@ function search(
     N::HybridNetwork,
     q::Union{DataCF, Matrix{Float64}},
     hmax::Int;
-    restrictions::Function=no_restrictions(),
+    restrictions::Function=defaultrestrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
     #preopt::Bool=true,

@@ -166,7 +166,7 @@ function BFS_single_iter(
     hmax::Int,
     ftolabs::Float64,
     ftolrel::Float64;
-    restrictions::Function=no_restrictions(),
+    restrictions::Function=norestrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
     maxequivPLs::Int=100,
@@ -275,7 +275,7 @@ end
 # q, t = countquartetsintrees(gts; showprogressbar=false);
 # semidirect_network!(net);
 
-# rt = @elapsed results = BFS_distributed(gts[1:10], 1, 25, 1, 100, q, net.numhybrids, net; restrictions=restriction_set(; require_strongly_tree_child=true))
+# rt = @elapsed results = BFS_distributed(gts[1:10], 1, 25, 1, 100, q, net.numhybrids, net; restrictions=restrictionset(; require_strongly_tree_child=true))
 
 # istreechild(results)[3] == true
 

@@ -1,41 +1,41 @@
 using PhyloNetworks
 
-# snaq!(tre0, df, restriction_set(max_level=3, require_galled_tree=true))
+# snaq!(tre0, df, restrictionset(max_level=3, require_galled_tree=true))
 
-function restriction_set(; max_level::Real=Inf, galled_tree::Bool=false, galled_network::Bool=false,
+function restrictionset(; max_level::Real=Inf, galled_tree::Bool=false, galled_network::Bool=false,
     rooted_tree_child::Bool=false, weakly_tree_child::Bool=false, strongly_tree_child::Bool=false)
 
     restrictions = Vector{Function}()
     if max_level < Inf
-        push!(restrictions, restrict_maximum_level(max_level))
+        push!(restrictions, restrictmaximumlevel(max_level))
     end
 
     if galled_tree
-        push!(restrictions, restrict_galled_tree())
+        push!(restrictions, restrictgalledtree())
     elseif galled_network
-        push!(restrictions, restrict_galled_network())
+        push!(restrictions, restrictgallednetwork())
     end
 
     if rooted_tree_child
-        push!(restrictions, restrict_rooted_tree_child())
+        push!(restrictions, restrictrootedtreechild())
     elseif weakly_tree_child
-        push!(restrictions, restrict_weakly_tree_child())
+        push!(restrictions, restrictweaklytreechild())
     elseif strongly_tree_child
-        push!(restrictions, restrict_strongly_tree_child())
+        push!(restrictions, restrictstronglytreechild())
     end
 
     return (net) -> all(F(net) for F in restrictions)
 
 end
 
-restrict_maximum_level(level::Int) = (net) -> get_network_level(net) <= level
-restrict_galled_network() = (net) -> is_galled_network(net)
-restrict_galled_tree() = (net) -> get_network_level(net) <= 1
-restrict_rooted_tree_child() = (net) -> PhyloNetworks.istreechild(net)[1]
-restrict_weakly_tree_child() = (net) -> PhyloNetworks.istreechild(net)[2]
-restrict_strongly_tree_child() = (net) -> PhyloNetworks.istreechild(net)[3]
-default_restrictions() = (net) -> knownidentifiable(net)
-no_restrictions() = (net) -> true
+restrictmaximumlevel(level::Int) = (net) -> getnetworklevel(net) <= level
+restrictgallednetwork() = (net) -> isgallednetwork(net)
+restrictgalledtree() = (net) -> getnetworklevel(net) <= 1
+restrictrootedtreechild() = (net) -> PhyloNetworks.istreechild(net)[1]
+restrictweaklytreechild() = (net) -> PhyloNetworks.istreechild(net)[2]
+restrictstronglytreechild() = (net) -> PhyloNetworks.istreechild(net)[3]
+defaultrestrictions() = (net) -> knownidentifiable(net)
+norestrictions() = (net) -> true
 
 
 function meets_constraints(net::HybridNetwork, constraints::Vector{Function})
@@ -47,7 +47,7 @@ end
 
 
 # Faster than PhyloNetworks but not as extensively tested, so we don't use it
-function get_network_level(net::HybridNetwork)
+function getnetworklevel(net::HybridNetwork)
     bi_comp = [comp for comp in biconnectedcomponents(net) if length(comp) > 1]
     max_level = 1
     for component in bi_comp
@@ -62,10 +62,10 @@ function get_network_level(net::HybridNetwork)
     end
     return max_level
 end
-is_galled_tree(net::HybridNetwork) = get_network_level(net) <= 1
+isgalledtree(net::HybridNetwork) = getnetworklevel(net) <= 1
 
 
-function is_galled_network(net::HybridNetwork)
+function isgallednetwork(net::HybridNetwork)
     bi_comp = [comp for comp in biconnectedcomponents(net) if length(comp) > 1]
     v_counts = Dict{Node, Int}()
     for component in bi_comp

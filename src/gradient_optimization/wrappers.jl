@@ -21,7 +21,7 @@
 #     updateBL::Bool=true,
 
 #     # New arguments
-#     restrictions::Function=restriction_set(;rooted_tree_child=true, galled_network=true)
+#     restrictions::Function=restrictionset(;rooted_tree_child=true, galled_network=true)
 # )
 
 #     multi_search(

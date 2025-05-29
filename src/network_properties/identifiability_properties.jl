@@ -107,7 +107,7 @@ Returns `(false, 0)` if network `N` is not of any class Ck and
 """
 function isCk(N::HybridNetwork)::Tuple{Bool, Int}
     N = deepcopy_network(N)
-    is_galled_network(N) || return (false, 0)
+    isgallednetwork(N) || return (false, 0)
     istreechild(N)[3] || return (false, 0)
     if shrink2cycles!(N) return (false, 0) end
 

@@ -64,10 +64,16 @@ module SNaQ
         # functions to access relevant object variables
         loglik,
         loglik!,
-        ########## NEW STUFF
+        ########## New optimization functions
         multi_search,
         search,
-        optimize_bls!
+        optimize_bls!,
+        BFS,
+        ########## New identifiability/restriction functions
+        defaultrestrictions,
+        norestrictions,
+        knownidentifiable,
+        restrictionset
 
 
     include("types.jl")

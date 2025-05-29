@@ -5,8 +5,8 @@ import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs
 function get_data(L::Float64=0.5, seed::Int=42)
     Random.seed!(seed)
     net = readnewick(joinpath(@__DIR__, "n1.netfile"))
-    for E in net.edge E.length = (E.length > 0) ? L : 0 end
     semidirect_network!(net)
+    for E in net.edge E.length = (E.length > 0) ? L : 0 end
     q = compute_eCFs(net)
     return net, q
 end
@@ -27,8 +27,9 @@ end
 
             optimize_bls!(opt_net, q; maxeval=100000)
             eqns, _, opt_params, idx_obj_map, _ = find_quartet_equations(opt_net);
-            if !(sum(mean((opt_params .- params).^2)) < 0.5)
+            if !(sum(mean((opt_params .- params).^2)) < 1.0)
                 @info L
+                @info (sum(mean((opt_params .- params).^2)))
             end
 
             @test sum(mean((opt_params .- params).^2)) < 0.5
