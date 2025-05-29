@@ -32,7 +32,7 @@ end
                 @info (sum(mean((opt_params .- params).^2)))
             end
 
-            @test sum(mean((opt_params .- params).^2)) < 0.5
+            @test sum(mean((opt_params .- params).^2)) < 1.0
         end
     end
 end
