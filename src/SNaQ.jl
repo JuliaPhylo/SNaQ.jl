@@ -75,7 +75,6 @@ module SNaQ
     include("moves_snaq.jl")
     include("manipulateNet.jl")
     include("multipleAlleles.jl")
-    include("parsimony.jl")
     include("pseudolik.jl")
     include("readquartetdata.jl")
     include("readwrite.jl")

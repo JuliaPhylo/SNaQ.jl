@@ -22,9 +22,7 @@ do the following (which will update all of your packages):
 Pkg.update()
 ```
 It is important to update the package regularly as it is
-undergoing constant development. Join the google group for updates
-[here]
-(https://groups.google.com/forum/#!forum/phylonetworks-users/new).
+undergoing constant development.
 
 `Pkg.update()` will install the latest registered version, but there
 could be other improvements in the `main` branch of the
@@ -79,8 +77,9 @@ followed by the name of a function (or type) to get more details about it.
 
 We show here small examples on how to get more
 info on an object, what's its type, and how to manipulate objects.
-For example, let's take an object `raxmlCF` created from reading in some data
-(see [Input for SNaQ](@ref)):
+
+For example, let's take an object `raxmlCF` created from reading in some data in the form of gene trees
+(see more on the data in [Inputs for SNaQ](@ref)):
 
 ```@repl install
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
@@ -93,7 +92,7 @@ If we want to know the type of a particular object, we do:
 ```@repl install
 typeof(raxmlCF)
 ```
-which shows us that `raxmlCF` is of type `DataCF`.
+which shows us that `raxmlCF` is of type [`DataCF`](@ref).
 If we want to know about the attributes the object has, we can type `?` in Julia,
 followed by `DataCF` for a description.
 We can also ask for a list of all its attributes with

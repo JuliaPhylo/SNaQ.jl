@@ -133,8 +133,8 @@ function readtableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
     d = readtableCF!(df, columns; kwargs...)
 
     if withngenes # && d.numTrees == -1
-        m1 = minimum([q.ngenes for q in d.quartet])
-        m2 = maximum([q.ngenes for q in d.quartet])
+        m1 = round(minimum([q.ngenes for q in d.quartet]), digits=5)
+        m2 = round(maximum([q.ngenes for q in d.quartet]), digits=5)
         if m1<m2 print("between $m1 and ") end
         println("$m2 gene trees per 4-taxon set")
         # other info printed by show() on a DataCF object: num quartets and num gene trees
@@ -229,7 +229,7 @@ Namely, in each tree/network
 - any missing γ's are set to (0.1, 0.9)
 and more (see [`readnewicklevel1`](@ref)).
 
-See [`PhyloNetworks.readmultinewick`]()
+See [`PhyloNetworks.readmultinewick`](@extref)
 to read multiple trees or networks with no modification.
 
 Output: array of HybridNetwork objects.
@@ -559,7 +559,7 @@ Uses [`calculateObsCFAll!`](@ref), which implements a slow algorithm.
 
 See also:
 [`PhyloNetworks.countquartetsintrees`](@extref), which uses a much faster algorithm;
-[`readtrees2CF`](@ref), which is basically a re-naming of `readInputData`, and
+[`readtrees2CF`](@ref), which is an exported and user-friendly re-naming of `readInputData`, and
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
 function readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
@@ -672,9 +672,6 @@ function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integ
     return d
 end
 
-
-
-# rename the function readInputData to make it more user-friendly
 """
     readtrees2CF(treefile)
     readtrees2CF(vector of trees)
@@ -808,7 +805,7 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 
 
 """
-`summarizedataCF(d::DataCF)`
+    `summarizedataCF(d::DataCF)`
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
 - `filename`: if provided, the summary will be saved in the filename, not to screen

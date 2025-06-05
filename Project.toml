@@ -1,7 +1,7 @@
 name = "SNaQ"
 uuid = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
 authors = ["Claudia Solis-Lemus <crsl4@users.noreply.github.com>", "Paul Bastide <pbastide@users.noreply.github.com>", "Cecile Ane <cecileane@users.noreply.github.com>", "and contributors"]
-version = "0.1.0"
+version = "1.0.0"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -24,9 +24,10 @@ DataFrames = "1.3"
 DataStructures = "0.9, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18"
 Distributions = "0.25.115"
 NLopt = "0.5.1, 0.6, 1"
+PhyloNetworks = "1"
 StaticArrays = "0.8.3, 0.9, 0.10, 0.11, 0.12, 1.0"
 StatsBase = "0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34"
-julia = "1.11"
+julia = "1.5"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

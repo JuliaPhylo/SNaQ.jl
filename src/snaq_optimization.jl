@@ -270,10 +270,6 @@ function updateParameters!(net::HybridNetwork, xmin::Vector{Float64})
     end
 end
 
-# function to update the attribute loglik(net)
-function updateLik!(net::HybridNetwork, l::Float64)
-    loglik!(net, l)
-end
 
 # function for the upper bound of ht
 function upper(net::HybridNetwork)
@@ -395,22 +391,6 @@ function optBL!(
         return val
     end
     NLopt.min_objective!(opt,obj)
-    ## if(numBad(net) == 1)
-    ##     function inequalityGammaz(x::Vector{Float64},g::Vector{Float64})
-    ##         val = calculateIneqGammaz(x,net,1,verbose)
-    ##         return val
-    ##     end
-    ##     NLopt.inequality_constraint!(opt,inequalityGammaz)
-    ## elseif(numBad(net) > 1)
-    ##     function inequalityGammaz(result::Vector{Float64},x::Vector{Float64},g::Matrix{Float64})
-    ##         i = 1
-    ##         while(i < numBad(net))
-    ##             result[i] = calculateIneqGammaz(x,net,i,verbose)
-    ##             i += 2
-    ##         end
-    ##     end
-    ##     NLopt.inequality_constraint!(opt,inequalityGammaz)
-    ## end
     if verbose println("OPTBL: starting point $(ht(net))")     # to stdout
     else @debug        "OPTBL: starting point $(ht(net))"; end # to logger if debug turned on by user
     fmin, xmin, ret = NLopt.optimize(opt,ht(net))
@@ -511,27 +491,41 @@ function topologymaxQpseudolik!(
     return net
 end
 
-# function to delete a hybrid, and then add a new hybrid:
-# deleteHybridizationUpdate and addHybridizationUpdate,
+# deleteHybridizationUpdate to delete a hybrid, addHybridizationUpdate to add one.
 # closeN=true will try move origin/target, if false, will delete/add new hybrid
 # default is closeN =true
-# origin=true, moves origin, if false, moves target. option added to control not keep coming
-# to the same network over and over
-# returns success
-# movesgama: vector of count of number of times each move is proposed to fix gamma zero situation:(add,mvorigin,mvtarget,chdir,delete,nni)
 # movesgamma[13]: total number of accepted moves by loglik
 """
-`moveHybrid` road map
+    moveHybrid!(net, edge, closeN, origin, N, movesgamma)
 
-Function that tries to fix a gamma zero problem (`h==0,1; t==0; hz==0,1`) after changing direction of hybrid edge failed.
-This function is called in `gammaZero`.
+Delete a hybrid, and then add a new hybrid.
+Attempt to fix a gamma zero problem (`h==0,1; t==0; hz==0,1`) after changing the
+direction of hybrid edge failed.
+This function is called in `gammaZero!`.
 
 Arguments:
-- `closeN=true` will try move origin/target on all neighbors (first choose minor/major edge at random, then make list of all neighbor edges and tries to put the hybrid node in all the neighbors until successful move); if false, will delete and add hybrid until successful move up to N times (this is never tested)
+- `closeN=true` will try move origin/target on all neighbors (first choose
+  minor/major edge at random, then make list of all neighbor edges and tries
+  to put the hybrid node in all the neighbors until successful move).  
+  `closeN=false` will delete and add hybrid until successful move up to `N` times
+  (this is never tested).
+- `origin`: move the origin if true, moves the target if false. Option used
+  to avoid coming back to propose the same network over and over.
+- `movesgama`: vector of integers. Counts the number of times each move is
+  proposed to fix a gamma zero situation. Proposal types and order:
+  `(add, mvorigin, mvtarget, chdir, delete, nni)`
 
-Returns true if change was successful (not testing `optBL` again), and false if we could not move anything
+Return `true` if change was successful (not testing `optBL` again), and
+`false` if we could not move anything.
 """
-function moveHybrid!(net::HybridNetwork, edge::Edge, closeN ::Bool, origin::Bool,N::Integer, movesgamma::Vector{Int})
+function moveHybrid!(
+    net::HybridNetwork,
+    edge::Edge,
+    closeN::Bool,
+    origin::Bool,
+    N::Integer,
+    movesgamma::Vector{Int}
+)
     edge.hybrid || error("edge $(edge.number) cannot be deleted because it is not hybrid")
     node = edge.node[edge.ischild1 ? 1 : 2];
     node.hybrid || error("hybrid edge $(edge.number) pointing at tree node $(node.number)")
@@ -555,29 +549,35 @@ function moveHybrid!(net::HybridNetwork, edge::Edge, closeN ::Bool, origin::Bool
     return success
 end
 
-# function to deal with h=0,1 case by:
-# - change direction of hybrid edge, do optBL again
-# - if failed, call moveHybrid
-# input: net (network to be altered)
-# closeN =true will try move origin/target, if false, will delete/add new hybrid
-# origin=true, moves origin, if false, moves target. option added to control not keep coming
-# to the same network over and over
-# returns success
-# movesgama: vector of count of number of times each move is proposed to fix gamma zero situation:(add,mvorigin,mvtarget,chdir,delete,nni)
-# movesgamma[13]: total number of accepted moves by loglik
+# closeN, origin, movesgamma: passed to moveHybrid!: see above
 """
-`gammaZero` road map
+    gammaZero!
 
-Function that tries to fix a gamma zero problem (`h==0,1; t==0; hz==0,1`)
-1) First tries to do `changeDirection`
-2) If not successful from start, we call `moveHybrid`
-3) If successful move (change direction), we call `optBL` and check if we fixed the problem
-4) If problem fixed and we do not have worse pseudolik, we return `success=true`
-5) If still problem or worse pseudolik, we call `moveHybrid`
+Try to fix a gamma zero problem (`h==0,1; t==0; hz==0,1`)
+1) First tries to do `changeDirection`: change the direction of hybrid edge
+2) If changing the direction was successful, call `optBL` and check that the problem was fixed
+3) If problem fixed and the pseudolik is not worse, return `success=true`
+4) If changing the direction failed (step 1) or
+   if the problem persists (step 2 failed) or
+   if the pseudolik got worse (step 3 failed), then call `moveHybrid!`.
 
-** Important: ** Any function (`afterOptBL`) calling `gammaZero` is assuming that it only made a change, so if the returned value is true, then a change was made, and the other function needs to run `optBL` and check that all parameters are 'valid'. If the returned value is false, then no change was possible and we need to remove a hybridization if the problem is h==0,1; hz==0,1. If the problem is t==0, we ignore this problem.
+** Important**: Any function (`afterOptBL`) calling `gammaZero!` is assuming
+that it only made a change, so if the returned value is true,
+then a change was made, and the other function needs to run `optBL` and check
+that all parameters are 'valid'.
+If the returned value is false, then no change was possible and we need to
+remove a hybridization if the problem is h==0,1; hz==0,1.
+If the problem is t==0, we ignore this problem.
 """
-function gammaZero!(net::HybridNetwork, d::DataCF, edge::Edge, closeN ::Bool, origin::Bool, N::Integer, movesgamma::Vector{Int})
+function gammaZero!(
+    net::HybridNetwork,
+    d::DataCF,
+    edge::Edge,
+    closeN::Bool,
+    origin::Bool,
+    N::Integer,
+    movesgamma::Vector{Int}
+)
     global CHECKNET
     currTloglik = loglik(net)
     edge.hybrid || error("edge $(edge.number) should be hybrid edge because it corresponds to a gamma (or gammaz) in ht(net)")
@@ -612,23 +612,24 @@ function gammaZero!(net::HybridNetwork, d::DataCF, edge::Edge, closeN ::Bool, or
     return success2
 end
 
-# function to check if h or t (in ht(currT)) are 0 (or 1 for h)
-# closeN =true will try move origin/target, if false, will delete/add new hybrid
-# origin=true, moves origin, if false, moves target. option added to control not keep coming
-# to the same network over and over
-# returns successchange=false if could not add new hybrid; true ow
-# returns successchange,flagh,flagt,flaghz (flag_=false if problem with gamma, t=0 or gammaz)
-# movesgama: vector of count of number of times each move is proposed to fix gamma zero situation:(add,mvorigin,mvtarget,chdir,delete,nni)
 # movesgamma[13]: total number of accepted moves by loglik
 """
-`afterOptBL` road map
+    afterOptBL!
 
-Function that will check if there are `h==0,1;t==0,hz==0,1` cases in a network after calling `optBL!`.
+Check if there are `h==0,1;t==0,hz==0,1` cases in a network after calling `optBL!`.
+
+Output: `(successchange,flagh,flagt,flaghz)` where `successchange` is `false` if
+could not add new hybrid; `true` otherwise. Flags `flag*` is `false` if there is
+problem with gamma, t=0 or gammaz.
 
 Arguments:
-- `closeN=true` will move origin/target, if false, add/delete N times before giving up (we have only tested `closeN=true`)
-- `origin=true` will move origin, false will move target. We added this to avoid going back and forth between the same networks
-- `movesgamma` vector of counts of number of times each move is proposed to fix a gamma zero problem: `(add,mvorigin,mvtarget,chdir,delete,nni)`
+- `closeN: move origin/target if `true`; if `false` add/delete `N` times before
+  giving up (we have only tested `closeN=true`)
+- `origin=true` will move origin, false will move target. We added this to avoid
+  going back and forth between the same networks
+- `movesgamma`: vector of integers. Counts the number of times each move is
+  proposed to fix a gamma zero problem. Proposal types and order:
+  `(add, mvorigin, mvtarget, chdir, delete, nni)`.
 
 Procedure:
 
@@ -636,16 +637,27 @@ Procedure:
 - If we find a `h==0,1`, we loop through `nh` to find a hybrid edge with h==0 or 1 and want to try to fix this by doing:
   - `gammaZero!(currT,d,edge,closeN,origin,N,movesgamma)` which returns true if there was a successful change, and we stop the loop
 - If we find a `t==0`, we loop through all `nt` to find such edge, and do NNI move on this edge; return true if change successful and we stop the loop
-- If we find a `hz==0,1`, we loop through `nhz` to find such hybrid edge and call `gammaZero` again
+- If we find a `hz==0,1`, we loop through `nhz` to find such hybrid edge and
+  call `gammaZero!` again
 
 - If we did a successful change, we run `optBL` again, and recheck if there are no more problems.
 - Returns successchange, flagh, flagt,flaghz (flag=true means no problems)
 
 - If it is the multiple alleles case, it will not try to fix `h==0,1;hz==0,1` because it can reach a case that violates the multiple alleles condition. If we add a check here, things become horribly slow and inefficient, so we just delete a hybridization that has `h==0,1;hz==0,1`
 
-** Important: ** `afterOptBL` is doing only one change, but we need to repeat multiple times to be sure that we fix all the gamma zero problems, which is why we call `afterOptBLRepeat`
+** Important**: `afterOptBL` is doing only one change, but we need to repeat
+multiple times to be sure that we fix all the gamma zero problems,
+which is why we call `afterOptBLRepeat`.
 """
-function afterOptBL!(currT::HybridNetwork, d::DataCF,closeN ::Bool, origin::Bool,verbose::Bool, N::Integer, movesgamma::Vector{Int})
+function afterOptBL!(
+    currT::HybridNetwork,
+    d::DataCF,
+    closeN::Bool,
+    origin::Bool,
+    verbose::Bool,
+    N::Integer,
+    movesgamma::Vector{Int}
+)
     global CHECKNET
     !isTree(currT) || return false,true,true,true
     nh = ht(currT)[1 : currT.numhybrids - numBad(currT)]
@@ -731,21 +743,30 @@ function afterOptBL!(currT::HybridNetwork, d::DataCF,closeN ::Bool, origin::Bool
     return successchange,flagh,flagt,flaghz
 end
 
-# function to repeat afterOptBL every time after changing something
-# N: number of times it will delete/add hybrid if closeN =false
-# origin=true, moves origin, if false, moves target. option added to control not keep coming
-# to the same network over and over
-# movesgama: vector of count of number of times each move is proposed to fix gamma zero situation:(add,mvorigin,mvtarget,chdir,delete,nni)
+# to repeat afterOptBL every time after changing something
+# closeN, origin, movesgamma: as for moveHybrid!
 # movesgamma[13]: total number of accepted moves by loglik
 """
-`afterOptBLRepeat` road map
+    afterOptBLRepeat!
 
-`afterOptBL` is doing only one change, but we need to repeat multiple times to be sure that we fix all the gamma zero problems, which is why we call `afterOptBLRepeat`.
-This function will repeat `afterOptBL` every time a successful change happened; this is done only
-if `closeN=false`, because we would delete/add hybridizations and need to stop after tried N times. If `closeN=true` (default), then `afterOptBLRepeat` only does one `afterOptBL`, because in this case, only the neighbor edges need to be tested, and this would have been done already in `gammaZero`.
+Repeat `afterOptBL!`, which only does one change.
+Repeating multiple times is to be sure that we fix all the gamma zero problems,
+after every time a successful change happened.
+This is done only if `closeN=false`, because we would delete/add hybridizations
+and need to stop after tried N times.
+If `closeN=true` (default), then `afterOptBLRepeat!` only does one `afterOptBL!`,
+because in this case, only the neighbor edges need to be tested, and this would
+have been done already in `gammaZero!`.
 """
-function afterOptBLRepeat!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Bool, origin::Bool,
-                           verbose::Bool, movesgamma::Vector{Int})
+function afterOptBLRepeat!(
+    currT::HybridNetwork,
+    d::DataCF,
+    N::Integer,
+    closeN::Bool,
+    origin::Bool,
+    verbose::Bool,
+    movesgamma::Vector{Int}
+)
     success,flagh,flagt,flaghz = afterOptBL!(currT,d,closeN ,origin,verbose,N, movesgamma)
     @debug "inside afterOptBLRepeat, after afterOptBL once, we get: success, flags: $([success,flagh,flagt,flaghz])"
     if !closeN
@@ -798,17 +819,19 @@ function afterOptBLAllMultipleAlleles!(currT::HybridNetwork, d::DataCF, N::Integ
 end
 
 
-# function to repeat afterOptBL every time after changing something
-# closeN =true will try move origin/target, if false, will delete/add new hybrid
-# default is closeN =true
-# returns new approved currT (no gammas=0.0)
+# to repeat afterOptBL every time after changing something
+# closeN, origin, movesgamma: as for moveHybrid!
 # N: number of times failures of accepting loglik is allowed, liktolAbs: tolerance to stop the search for lik improvement
-# movesgama: vector of count of number of times each move is proposed to fix gamma zero situation:(add,mvorigin,mvtarget,chdir,delete,nni)
 # movesgamma[13]: total number of accepted moves by loglik
 """
-`afterOptBLAll` road map
+    afterOptBLAll!(currT, args...)
 
-After `optBL`, we want to call `afterOptBLAll` (or `afterOptBLAllMultipleAlleles`) to check if there are `h==0,1`; `t==0`; `hz==0,1`. This function will try to fix the gamma zero problem, but if it cannot, it will call `moveDownLevel`, to delete the hybridization from the network.
+Try to fix any gamma zero problem (`h==0,1`; `t==0`; `hz==0,1`) by calling
+`afterOptBLRepeat!`. If problems cannot be fixed,
+it will call `moveDownLevel` to delete the hybridization from the network.
+Like `afterOptBLAllMultipleAlleles`, this function is called after `optBL`.
+
+Output: new approved network `currT` (no gammas=0.0)
 
 Procedure:
 
@@ -825,7 +848,19 @@ While `startover=true` and `tries<N`
 - If left second while by back to original `currT`, and still bad h/hz, then move down one level, and `startover=true`; otherwise `startover=false`
 If first while ends by `tries>N`, then it checks one last time the flags, if bad h/hz will move down one level, and exit
 """
-function afterOptBLAll!(currT::HybridNetwork, d::DataCF, N::Integer,closeN ::Bool, liktolAbs::Float64, ftolAbs::Float64, verbose::Bool, movesgamma::Vector{Int},ftolRel::Float64, xtolRel::Float64, xtolAbs::Float64)
+function afterOptBLAll!(
+    currT::HybridNetwork,
+    d::DataCF,
+    N::Integer,
+    closeN::Bool,
+    liktolAbs::Float64,
+    ftolAbs::Float64,
+    verbose::Bool,
+    movesgamma::Vector{Int},
+    ftolRel::Float64,
+    xtolRel::Float64,
+    xtolAbs::Float64
+)
     @debug "afterOptBLAll: checking if currT has gamma (gammaz) = 0.0(1.0): ht(currT) $(ht(currT))"
     currloglik = loglik(currT)
     blacklist!(currT, Int[]);
@@ -1069,27 +1104,37 @@ function chooseHybrid(net::HybridNetwork)
     return net.hybrid[index1]
 end
 
-# function to propose a new topology given a move
-# random = false uses the minor hybrid edge always
-# count to know in which step we are, N for NNI trials
-# order in movescount as in IF here (add,mvorigin,mvtarget,chdir,delete,nni)
-# multAll = true if d.repSpecies is not empty, checked outside
+
+# multall = true if d.repSpecies is not empty, checked outside
 """
-`proposedTop!(move,newT,random,count,N,movescount,movesfail,multall)` road map
+    proposedTop!(move,newT,random,count,N,movescount,movesfail,multall)
 
-Function to change the current network `newT` by a given `move`, and checks that the move was successful (correct attributes). If not successful, `newT` is changed back to its original state, except for the case of multiple alleles.
+Change the current network `newT` by a given `move`, and check that the move was
+successful (correct attributes). If not successful, `newT` is changed back to
+its original state, except for the case of multiple alleles.
 
-**Note** that the update of attributes by each move is not done in all the network, but only in the local edges that were changed by the move. This is efficient (and makes a move easy to undo), but makes the code of each move function very clunky.
+**Note** that the update of attributes by each move is not done in all the
+network, but only in the local edges that were changed by the move. This is
+efficient (and makes a move easy to undo), but makes the code of each move
+function very clunky.
 
 Arguments:
 
-- move chosen from `whichMove` as described in `optTopLevel`
+- `move` chosen from `whichMove` as described in `optTopLevel!`
 - `newT` is the topology that will be modified inside with the move
-- `random=true`: chooses minor hybrid edge with prob 1-h, and major edge with prob h, if false, always chooses minor hybrid edge
-- `count`: simply which likelihood step we are in in the optimization at `optTopLevel`
-- `movescount` and `movesfail`: vector of counts of number of moves proposed
-- `multall=true` if multiple alleles case: we need to check if the move did not violate the multiple alleles condition (sister alleles together and no gene flow into the alleles). This is inefficient because we are proposing moves that we can reject later, instead of being smart about the moves we propose: for example, move origin/target could rule out some neighbors that move gene flow into the alleles, the same for add hybridization; nni move can check if it is trying to separate the alleles)
-- `d`: DataCF containing the run's quartet information. This value is `nothing` for parsimony optimizations.
+- `random=true`: choose the minor hybrid edge with probability 1-h, and
+  major edge with probability h. If `false`: always choose the minor hybrid edge
+- `count`: simply which likelihood step we are in, in the optimization at `optTopLevel!`
+- `N`: number of attempts for NNI moves
+- `movescount` and `movesfail`: vector of counts of number of moves proposed.
+  move types and order: `(add,mvorigin,mvtarget,chdir,delete,nni)`.
+- `multall=true` if multiple alleles case: we need to check if the move did not
+  violate the multiple alleles condition (sister alleles together and no gene
+  flow into the alleles). This is inefficient because we are proposing moves
+  that we can reject later, instead of being smart about the moves we propose:
+  for example, move origin/target could rule out some neighbors that move gene
+  flow into the alleles, the same for add hybridization; nni move can check if
+  it is trying to separate the alleles)
 
 Moves:
 
@@ -1118,49 +1163,6 @@ choose an edge for nni that does not have a neighbor hybrid. It will try to find
 Also, after each move, when we update the attributes, we do not update the attributes of the whole network, we only update the attributes of the edges that were affected by the move. This saves time, but makes the code quite clunky.
 Only the case of multiple alleles the moves does not undo what it did, because it finds out that it failed after the function is over, so just need to treat this case special.
 """
-# function proposedTop!(move::Integer, newT::HybridNetwork,random::Bool, count::Integer, 
-#     N::Integer, movescount::Vector{Int}, movesfail::Vector{Int}, multall::Bool, probQR::Float64)
-#     0.0 < probQR || error("proposedTop! with probQR > 0.0 required dataCF")
-#     global CHECKNET
-#     1 <= move <= 6 || error("invalid move $(move)") #fixit: if previous move rejected, do not redo it!
-#     @debug "current move: $(int2move[move])"
-#     if(move == 1)
-#         success = addHybridizationUpdateSmart!(newT,N)
-#     elseif(move == 2)
-#         node = chooseHybrid(newT)
-#         success = moveOriginUpdateRepeat!(newT,node,random)
-#         CHECKNET && isBadTriangle(node) && success && error("success is $(success) in proposedTop, but node $(node.number) is very bad triangle")
-#     elseif(move == 3)
-#         node = chooseHybrid(newT)
-#         success = moveTargetUpdateRepeat!(newT,node,random)
-#         CHECKNET && isBadTriangle(node) && success && error("success is $(success) in proposedTop, but node $(node.number) is very bad triangle")
-#     elseif(move == 4)
-#         node = chooseHybrid(newT)
-#         success = changeDirectionUpdate!(newT,node, random)
-#         CHECKNET && isBadTriangle(node) && success && error("success is $(success) in proposedTop, but node $(node.number) is very bad triangle")
-#     elseif(move == 5)
-#         node = chooseHybrid(newT)
-#         deleteHybridizationUpdate!(newT,node)
-#         success = true
-#     elseif(move == 6)
-#         success = NNIRepeat!(newT,N)
-#     end
-#     if(multall)
-#         success2 = checkTop4multAllele(newT)
-#         @debug "entered to check topology for mult allele: $(success2)"
-#         success &= success2
-#     end
-#     movescount[move] += 1
-#     movescount[move+6] += success ? 1 : 0
-#     movesfail[move] += success ? 0 : 1
-#     @debug "success $(success), movescount (add,mvorigin,mvtarget,chdir,delete,nni) proposed: $(movescount[1:6]); successful: $(movescount[7:12]); movesfail: $(movesfail)"
-#     !success || return true
-#     @debug "new proposed topology failed in step $(count) for move $(int2move[move])"
-#     @debug begin printEverything(newT); "printed everything" end
-#     CHECKNET && checkNet(newT)
-#     return false
-# end
-
 function proposedTop!(move::Integer, newT::HybridNetwork,random::Bool, count::Integer, 
     N::Integer, movescount::Vector{Int}, movesfail::Vector{Int}, multall::Bool, probQR::Float64, d::DataCF)
     global CHECKNET
@@ -1245,24 +1247,25 @@ function calculateNmov!(net::HybridNetwork, N::Vector{Int})
     end
 end
 
-# function to optimize on the space of networks with the same (or fewer) numHyb
-# currT, the starting network will be modified inside
-# Nmov: vector with max number of tries per move (add,mvorigin,mvtarget,chdir,delete,nni)
-# Nfail: number of failure networks with lower loglik before aborting
-# liktolAbs: to stop the search if loglik close to liktolAbs, or if absDiff less than liktolAbs
-# hmax: max number of hybrids allowed
 # closeN =true if gamma=0.0 fixed only around neighbors with move origin/target
 # logfile=IOStream to capture the information on the heurisitc optimization, default stdout
 """
-`optTopLevel` road map
+    optTopLevel!(currT, args...)
 
-Function that does most of the heavy-lifting of `snaq`. It optimizes the pseudolikelihood for a given starting topology, and returns the best network.
-Assumes that the starting topology is level-1 network, and has all the attributes correctly updated.
+Does most of the heavy-lifting of `snaq!`, to search the space of networks with
+at most `hmax` hybrid nodes. It optimizes the pseudolikelihood starting from
+network `currT`, and returns the best network. Unlike `snaq!`, it assumes that
+the starting topology `currT` is of level-1, and has all the attributes
+correctly updated. `currT` is modified.
 
 Input parameters:
 
 - Starting topology `currT`, input data `DataCF` `d`, maximum number of hybridizations `hmax`
-- Numerical optimization parameters: `liktolAbs, Nfail, ftolRel, ftolAbs, xtolRel, xtolAbs`
+- Numerical optimization parameters:
+  * `liktolAbs`: stop the search if the change in loglik is smaller (in absolute value)
+  * `Nfail`: number of failure networks with lower loglik before aborting
+  * `ftolRel, ftolAbs, xtolRel, xtolAbs`: to stop the optimization of
+     edge parameters on each fixed topology
 - Print parameters: `verbose, logfile, writelog`
 - Parameters to tune the search in space of networks: `closeN=true` only propose move origin/target to neighbor edges (coded, but not tested with `closeN=false`), `Nmov0` vector with maximum number of trials allowed per type of move `(add, mvorigin, mvtarget, chdir, delete, nni)`, by default computed inside with coupon’s collector formulas
 
@@ -1277,7 +1280,11 @@ Optimization procedure:
 While the difference between current loglik and proposed loglik is greater than `liktolAbs`,
 or `failures<Nfail`, or `stillmoves=true`:
 
-- `Nmov` is updated based on `newT`. The type of move proposed will depend on `newT` (which is the same as `currT` at this point). For example, if `currT` is a tree, we cannot propose move origin/target.
+- `Nmov` is a vector with the maximum number of trial per move type:
+  `(add,mvorigin,mvtarget,chdir,delete,nni)`. `Nmov` is updated based on `newT`.
+  The type of move proposed will depend on `newT` (which is the same as `currT`
+  at this point).
+  For example, if `currT` is a tree, we cannot propose move origin/target.
 
 - `move = whichMove` selects randomly a type of move, depending on `Nmov,movesfail,hmax,newT` with weights 1/5 by default for all, and 0 for delete. These weights are adjusted depending on `newT.numhybrids` and `hmax`. If `newT.numhybrids` is far from `hmax`, we give higher probability to adding a new hybrid (we want to reach the `hmax` sooner, maybe not the best strategy, easy to change).
    Later, we adjust the weights by `movesfail` (first, give weight of 0 if `movesfail[i]>Nmov[i]`, that is, if we reached the maximum possible number of moves allowed for a certain type) and then increase the probability of the other moves.
@@ -1309,11 +1316,23 @@ end while
 After choosing the best network `newT`, we do one last more thorough optimization of branch lengths with `optBL`,
 we change non identifiable branch lengths to -1 (only in debug mode) and return `newT`
 """
-function optTopLevel!(currT::HybridNetwork, liktolAbs::Float64, Nfail::Integer, d::DataCF, hmax::Integer,
-                      ftolRel::Float64, ftolAbs::Float64, xtolRel::Float64, xtolAbs::Float64, probQR::Float64,
-                      verbose::Bool, closeN ::Bool, Nmov0::Vector{Int}, logfile::IO,
-                      writelog::Bool)
-    println("probQR: ", probQR)
+function optTopLevel!(
+    currT::HybridNetwork,
+    liktolAbs::Float64,
+    Nfail::Integer,
+    d::DataCF,
+    hmax::Integer,
+    ftolRel::Float64,
+    ftolAbs::Float64,
+    xtolRel::Float64,
+    xtolAbs::Float64,
+    probQR::Float64,
+    verbose::Bool,
+    closeN ::Bool,
+    Nmov0::Vector{Int},
+    logfile::IO,
+    writelog::Bool
+)
     global CHECKNET
     @debug "OPT: begins optTopLevel with hmax $(hmax)"
     liktolAbs > 0 || error("liktolAbs must be greater than zero: $(liktolAbs)")
@@ -1633,7 +1652,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
       writelog = false
       logfile = stdout # used in call to optTopRun1!
     end
-    str = """optimization of topology, BL and inheritance probabilities using:
+    str = """optimization of topology, BL and inheritance probabilities in SNaQ.jl using:
               hmax = $(hmax),
               tolerance parameters: ftolRel=$(ftolRel), ftolAbs=$(ftolAbs),
                                     xtolAbs=$(xtolAbs), xtolRel=$(xtolRel).
