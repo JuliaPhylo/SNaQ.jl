@@ -93,6 +93,63 @@ end
 # blacklist used for afterOptBLAll
 # input: edges, list of edges from which to choose, default is net.edge
 # warning: if edges is not net.edge, it still need to contain Edge objects from net (not deepcopies)
+function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edge}, probQR::Float64, d::DataCF)
+    index1 = 1;
+    index2 = 1;
+    inlimits = false
+    inblack = true
+    cherry = false
+    nonidentifiable = false
+    while !inlimits || inCycle(edges[index1]) != -1 || inCycle(edges[index2]) != -1 || inblack || cherry || nonidentifiable
+        #choose edge w/ quartet-weighted sampling with probability probQR, otherwise choose random edge
+        if(probQR>0.0 && rand() < probQR)
+            index1 = sampleEdgeQuartetWeighted(edges, d)
+        else
+            index1 = round(Integer,rand()*size(edges,1));
+        end
+        if(probQR>0.0 && rand() < probQR)
+            index2 = sampleEdgeQuartetWeighted(edges, d)
+        else
+            index2 = round(Integer,rand()*size(edges,1));
+        end
+        if index1 != index2 && index1 != 0 && index2 != 0 && index1 <= size(edges,1) && index2 <= size(edges,1)
+            inlimits = true
+            sisters, cherry, nonidentifiable = sisterOrCherry(edges[index1],edges[index2]);
+        else
+            inlimits = false
+            @goto outer
+        end
+        if blacklist && !isempty(blacklist(net))
+            length(blacklist(net)) % 2 == 0 || error("blacklist(net) should have even number of entries, not length: $(length(blacklist(net)))")
+            i = 1
+            while i < length(blacklist(net))
+                if edges[index1].number == blacklist(net)[i]
+                    if edges[index2].number == blacklist(net)[i+1]
+                        inblack = true
+                    else
+                        inblack = false
+                        @goto outer
+                    end
+                elseif edges[index2].number == blacklist(net)[i]
+                    if edges[index1].number == blacklist(net)[i+1]
+                        inblack = true
+                    else
+                        inblack = false
+                        @goto outer
+                    end
+                end
+                i += 2
+            end
+        else
+            inblack = false
+            @goto outer
+        end
+        @label outer
+    end
+    gamma = rand()*0.5;
+    @debug "choose edges and gamma: from $(edges[index1].number) to $(edges[index2].number), $(gamma)"
+    return edges[index1],edges[index2],gamma
+end
 function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edge})
     index1 = 1;
     index2 = 1;
@@ -108,6 +165,7 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
             sisters, cherry, nonidentifiable = sisterOrCherry(edges[index1],edges[index2]);
         else
             inlimits = false
+            @goto outer
         end
         if blacklist && !isempty(blacklist(net))
             length(blacklist(net)) % 2 == 0 || error("blacklist(net) should have even number of entries, not length: $(length(blacklist(net)))")
@@ -118,19 +176,23 @@ function chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, edges::Vector{Edg
                         inblack = true
                     else
                         inblack = false
+                        @goto outer
                     end
                 elseif edges[index2].number == blacklist(net)[i]
                     if edges[index1].number == blacklist(net)[i+1]
                         inblack = true
                     else
                         inblack = false
+                        @goto outer 
                     end
                 end
                 i += 2
             end
         else
             inblack = false
+            @goto outer
         end
+        @label outer
     end
     gamma = rand()*0.5;
     @debug "choose edges and gamma: from $(edges[index1].number) to $(edges[index2].number), $(gamma)"
@@ -139,6 +201,7 @@ end
 
 chooseEdgesGamma(net::HybridNetwork) = chooseEdgesGamma(net, false, net.edge)
 chooseEdgesGamma(net::HybridNetwork, blacklist::Bool) = chooseEdgesGamma(net, blacklist, net.edge)
+chooseEdgesGamma(net::HybridNetwork, blacklist::Bool, probQR::Float64, d::DataCF) = chooseEdgesGamma(net, blacklist, net.edge, probQR, d)
 
 # aux function for addHybridization
 # that takes the output edge1, edge2.
@@ -166,6 +229,25 @@ end
 # calls chooseEdgesGamma, parameter4createHybrid and createHybrid
 # blacklist used in afterOptBLAll
 # usePartition=true if we use the information on net.partition, default true
+function addHybridization!(net::HybridNetwork, blacklist::Bool, usePartition::Bool, probQR::Float64, d::DataCF)
+    if(net.numhybrids > 0 && usePartition)
+        !isempty(net.partition) || error("net has $(net.numHybrids) but net.partition is empty")
+        index = choosePartition(net)
+        if(index == 0) #no place for new hybrid
+            @debug "no partition suitable to place new hybridization"
+            return nothing
+        end
+        partition = splice!(net.partition,index) #type partition
+        @debug "add hybrid with partition $([n.number for n in partition.edges])"
+        edge1, edge2, gamma = chooseEdgesGamma(net, blacklist, partition.edges, probQR, d);
+    else
+        edge1, edge2, gamma = chooseEdgesGamma(net, blacklist, probQR, d);
+    end
+    @debug "add hybridization between edge1, $(edge1.number) and edge2 $(edge2.number) with gamma $(gamma)"
+    edge3, edge4 = parameters4createHybrid!(edge1,edge2,net);
+    hybrid = createHybrid!(edge1, edge2, edge3, edge4, net, gamma);
+    return hybrid
+end
 function addHybridization!(net::HybridNetwork, blacklist::Bool, usePartition::Bool)
     if net.numhybrids > 0 && usePartition
         !isempty(net.partition) || error("net has $(net.numhybrids) but net.partition is empty")
@@ -176,17 +258,17 @@ function addHybridization!(net::HybridNetwork, blacklist::Bool, usePartition::Bo
         end
         partition = splice!(net.partition,index) #type partition
         @debug "add hybrid with partition $([n.number for n in partition.edges])"
-        edge1, edge2, gamma = chooseEdgesGamma(net, blacklist,partition.edges);
+        edge1, edge2, gamma = chooseEdgesGamma(net, blacklist, partition.edges);
     else
         edge1, edge2, gamma = chooseEdgesGamma(net, blacklist);
     end
-    @debug "add hybridization between edge1, $(edge1.number) and edge2 $(edge2.number) with gamma $(gamma)"
     edge3, edge4 = parameters4createHybrid!(edge1,edge2,net);
     hybrid = createHybrid!(edge1, edge2, edge3, edge4, net, gamma);
     return hybrid
 end
 
 addHybridization!(net::HybridNetwork) = addHybridization!(net, false, true)
+addHybridization!(net::HybridNetwork, blacklist::Bool) = addHybridization!(net, blacklist, true)
 
 # function to update who is the major hybrid
 # after a new hybridization is added and
@@ -274,6 +356,11 @@ updateAllNewHybrid!(hybrid::Node,net::HybridNetwork, updatemajor::Bool) = update
 #          success, it attempts to add once
 # returns: success (bool), hybrid, flag, nocycle, flag2, flag3
 # blacklist used in afterOptBLAll
+function addHybridizationUpdate!(net::HybridNetwork, blacklist::Bool, usePartition::Bool, probQR::Float64, d::DataCF)
+    hybrid = addHybridization!(net, blacklist, usePartition, probQR, d);
+    isa(hybrid,Nothing) && return false,nothing,false,false,false,false
+    updateAllNewHybrid!(hybrid,net,true)
+end
 function addHybridizationUpdate!(net::HybridNetwork, blacklist::Bool, usePartition::Bool)
     hybrid = addHybridization!(net,blacklist, usePartition);
     isa(hybrid,Nothing) && return false,nothing,false,false,false,false
@@ -282,18 +369,17 @@ end
 
 addHybridizationUpdate!(net::HybridNetwork) = addHybridizationUpdate!(net, false, true)
 addHybridizationUpdate!(net::HybridNetwork, blacklist::Bool) = addHybridizationUpdate!(net, blacklist::Bool, true)
-
-
+addHybridizationUpdate!(net::HybridNetwork, blacklist::Bool, probQR::Float64, d::DataCF) = addHybridizationUpdate!(net, blacklist::Bool, true, probQR, d)
 
 
 # function that will add a hybridization with addHybridizationUpdate,
 # if success=false, it will try to move the hybridization before
 # declaring failure
 # blacklist used in afterOptBLAll
-function addHybridizationUpdateSmart!(net::HybridNetwork, blacklist::Bool, N::Integer)
+function addHybridizationUpdateSmart!(net::HybridNetwork, blacklist::Bool, N::Integer, probQR::Float64, d::DataCF)
     global CHECKNET
     @debug "MOVE: addHybridizationUpdateSmart"
-    success, hybrid, flag, nocycle, flag2, flag3 = addHybridizationUpdate!(net, blacklist)
+    success, hybrid, flag, nocycle, flag2, flag3 = addHybridizationUpdate!(net, blacklist, probQR, d)
     @debug begin
         printEverything(net)
         "success $(success), flag $(flag), flag2 $(flag2), flag3 $(flag3)"
@@ -306,7 +392,7 @@ function addHybridizationUpdateSmart!(net::HybridNetwork, blacklist::Bool, N::In
             while((nocycle || !flag) && i < N) #incycle failed
                 @debug "MOVE: added hybrid causes conflict with previous cycle, need to delete and add another"
                 deleteHybrid!(hybrid,net,true)
-                success, hybrid, flag, nocycle, flag2, flag3 = addHybridizationUpdate!(net, blacklist)
+                success, hybrid, flag, nocycle, flag2, flag3 = addHybridizationUpdate!(net, blacklist, probQR, d)
             end
             if(nocycle || !flag)
                 @debug "MOVE: added hybridization $(i) times trying to avoid incycle conflicts, but failed"
@@ -341,7 +427,8 @@ function addHybridizationUpdateSmart!(net::HybridNetwork, blacklist::Bool, N::In
     return success
 end
 
-addHybridizationUpdateSmart!(net::HybridNetwork, N::Integer) = addHybridizationUpdateSmart!(net, false,N)
+addHybridizationUpdateSmart!(net::HybridNetwork, N::Integer) = addHybridizationUpdateSmart!(net, false, N, 0.0, nothing)
+addHybridizationUpdateSmart!(net::HybridNetwork, N::Integer, probQR::Float64, d::DataCF) = addHybridizationUpdateSmart!(net, false, N, probQR, d)
 
 
 

@@ -406,6 +406,18 @@ function canBeRoot(n::Node)
     return any([e.containroot for e in n.edge])
 end
 
+# function to delete the extra node created in updateRoot
+# this extra node is needed to be able to compare networks with the distance function
+# but if left in the network, everything crashes (as everything assumes three edges per node)
+# fromUpdateRoot=true if called after updateRoot (in which case leaf has to be a leaf), ow it is used in readTopUpdate
+function undoRoot!(net::HybridNetwork, fromUpdateRoot::Bool=true)
+    if length(getroot(net).edge) == 2
+        root = getroot(net)
+        leaf = getOtherNode(root.edge[1],root).leaf ? getOtherNode(root.edge[1],root) : getOtherNode(root.edge[2],root)
+        (fromUpdateRoot && leaf.leaf) || error("root should have one neighbor leaf which has to be the outgroup defined")
+        deleteIntLeafWhile!(net,root,leaf);
+    end
+end
 
 # .out file from snaq written by optTopRuns
 """

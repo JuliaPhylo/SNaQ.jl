@@ -25,7 +25,6 @@ for an example of this test.
 A good way to visualize the "goodness-of-fit" of a given estimated network to the data
 is to plot the observed CF versus the expected CF. If the network is a good fit, then the dots
 in the plot will be close to the diagonal (x=y line).
-
 The following function will create a dataframe with the observed and expected CFs,
 which are all saved in the DataCF object after running snaq:
 ```@repl expCFs
