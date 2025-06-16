@@ -278,18 +278,6 @@ function upper(net::HybridNetwork)
                 ones(length(ht(net))-ntIdent-net.numhybrids+numBad(net)))
 end
 
-# function to calculate the inequality gammaz1+gammaz2 <= 1
-function calculateIneqGammaz(x::Vector{Float64}, net::HybridNetwork, ind::Integer, verbose::Bool)
-    ntIdent = sum([istIdentifiable(e) ? 1 : 0 for e in net.edge])
-    hz = x[net.numhybrids - numBad(net) + ntIdent + 1 : length(x)]
-    if verbose # goes to stdout
-        println("enters calculateIneqGammaz with hz $(hz), and hz[ind*2] + hz[ind*2-1] - 1 = $(hz[ind*2] + hz[ind*2-1] - 1)")
-    else # goes to logger (if debug messages are turned on by user)
-        @debug "enters calculateIneqGammaz with hz $(hz), and hz[ind*2] + hz[ind*2-1] - 1 = $(hz[ind*2] + hz[ind*2-1] - 1)"
-    end
-    hz[ind*2] + hz[ind*2-1] - 1
-end
-
 """
     optBL!(
         net::HybridNetwork,
