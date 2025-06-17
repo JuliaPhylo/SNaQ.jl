@@ -1083,13 +1083,13 @@ Reads a PHYLIP-formatted DNA sequence alignment and calculates SNP concordance
     #- nboots: Number of bootstraps to perform if bootstrap=true
 Output: 
 """
-function readPhylip2CF(gen::Dict{String, Array{Array{Char,1}, 1}}, 
+function readphylip2CF(gen::Tuple{Vector{String},Vector{Any}}, ##JAJ: TODO should not be Any but an abstract vector for biosequences 
     quartetfile="none"::AbstractString, ploidy=2::Integer, 
     whichQ="all"::AbstractString, numQ=0::Integer,
     writeTab=true::Bool, CFfile="none"::AbstractString,
     writeQ=false::Bool)
 
-    taxa = [k for k in keys(gen)]
+    taxa = [k for k in gen[1]]
     println(typeof(taxa))
 
     #taxonnumber = Dict(taxa[i] => i for i in eachindex(taxa))
@@ -1123,7 +1123,7 @@ function readPhylip2CF(gen::Dict{String, Array{Array{Char,1}, 1}},
     end
 
     #calculate ObsCF values 
-    calculateObsCFAll_SNP!(quartets, gen)
+    calculateObsCFAll_SNP!(quartets, gen,ploidy) ##JAJ: Unsure if it needs ploidy or how exactly it is used TODO figure out what this function should be doing
 
     if(writeTab)
         if(CFfile == "none")
