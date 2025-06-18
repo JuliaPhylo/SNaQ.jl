@@ -91,7 +91,7 @@ Computes expected concordance factors and gradients by recursively passing throu
     np::Int = length(params)
 
     iter_grad_buffer::Array{Float64}, bv_buffer::BitMatrix, running_grad_buffer::Array{Float64}, local_grad_buffer::Array{Float64} =
-        get_or_create_buffers(length(params))
+        get_or_create_buffers(np)
     fill!(local_grad_buffer, 0.0)
 
     Threads.@threads for j = 1:length(qdata)

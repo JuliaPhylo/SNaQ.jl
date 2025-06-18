@@ -345,7 +345,9 @@ function search(
     # Data used throughout the optimization process
     q_idxs = sample_qindices(N, propQuartets, rng)
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
-    N_eqns::Vector{QuartetData} = find_quartet_equations(N, q_idxs)[1]
+    neq = find_quartet_equations(N, q_idxs);
+    N_eqns::Vector{QuartetData} = neq[1];
+    N_numparams::Int = length(neq[3])
     logPLs[1] = optimize_bls!(N, N_eqns, q, α; maxeval=opt_maxeval)
     unchanged_iters = 0
 
@@ -412,10 +414,18 @@ function search(
             continue
         end
 
+        # Check whether we can do in-place updates here.
+        # We CANNOT do inplace updates if:
+        # 1. the number of hybrids changes, OR
+        # 2. the number of optimization parameters in the network changed
+        Nprime_np::Int = gather_optimization_info(Nprime)[1]
+        N_np::Int = gather_optimization_info(N)[1]
+        cannot_do_inplace::Bool = N.numhybrids != Nprime.numhybrids || N_np != Nprime_np
+
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimize_topology!(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
-            opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
+            opt_maxeval, cannot_do_inplace, rng, α
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
         # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
