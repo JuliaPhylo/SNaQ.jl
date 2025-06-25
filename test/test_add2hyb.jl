@@ -26,9 +26,17 @@ ed = PhyloNetworks.hybridEdges(hybrid)
 @test ed[1].hybrid
 
 # Functions that run stuff w/ the blacklist
-SNaQ.deleteHybrid!(besttree.hybrid[2], besttree, true, true)
+deleteHybrid!(besttree.hybrid[2], besttree, true, true)
 blacklist(besttree)
-SNaQ.chooseEdgesGamma(besttree, true, besttree.edge)
+@test length(chooseEdgesGamma(besttree, true, besttree.edge)) == 3
+
+tre = readnewicklevel1("(((1,2),3),(4,(5,6)));");
+d = readtableCF(joinpath(@__DIR__, "..", "examples", "tableCF.txt"))
+Random.seed!(4)
+SNaQ.addHybridizationUpdate!(tre)
+SNaQ.addHybridizationUpdate!(tre)
+deleteHybrid!(tre.hybrid[1], tre, true, true)
+@test length(chooseEdgesGamma(tre, true, tre.edge, 0.0, d)) == 3
 
 # did not recognize as bad diamond II
 tree = "(6,(5,#H7:0.0):9.970714072991349,(3,(((2,1):0.2950382234364404,4):0.036924483697671304)#H7:0.00926495670648208):1.1071489442240392);"
