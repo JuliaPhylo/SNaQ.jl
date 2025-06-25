@@ -379,7 +379,7 @@ addHybridizationUpdate!(net::HybridNetwork, use_blacklist::Bool, probQR::Float64
 function addHybridizationUpdateSmart!(net::HybridNetwork, use_blacklist::Bool, N::Integer, probQR::Float64, d::DataCF)
     global CHECKNET
     @debug "MOVE: addHybridizationUpdateSmart"
-    success, hybrid, flag, nocycle, flag2, flag3 = addHybridizationUpdate!(net, blacklist, probQR, d)
+    success, hybrid, flag, nocycle, flag2, flag3 = addHybridizationUpdate!(net, use_blacklist, probQR, d)
     @debug begin
         printEverything(net)
         "success $(success), flag $(flag), flag2 $(flag2), flag3 $(flag3)"
