@@ -20,6 +20,9 @@
     d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false, whichQ="rand", numQ=nq)))
     @test nrow(d) == nq
   end
+
+  d = readtrees2CF(sixtrees)
+  SNaQ.descData(d)
 end
 
 
