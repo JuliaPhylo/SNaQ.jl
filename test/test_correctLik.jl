@@ -112,10 +112,6 @@ end
   n3 = readsnaqnetwork("snaq.out")
   @test writenewick(n3, round=true)==writenewick(n2, round=true)
   @test loglik(n3) > 0.0
-  rm("snaq.out")
-  rm("snaq.networks")
-  rm("snaq.log") # .log and .err should be git-ignored, but still
-  rm("snaq.err")
 end
 
 @testset "snaq! with qinfTest=true" begin
