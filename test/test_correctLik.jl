@@ -161,7 +161,7 @@ end
   if Threads.nthreads() > 1
     global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
     d = readtableCF(df)
-    @test_warn "You are running snaq! with $(Threads.nthreads()) threads but are trying to use a set-seed. Results are not reproducible when multiple threads are used." snaq!(net, d, seed = 1, runs = 1)
+    @test_warn "You are running snaq! with $(Threads.nthreads()) threads but are trying to use a set-seed. Results are not reproducible in this version of SNaQ when multiple threads are used." snaq!(net, d, seed = 1, runs = 1)
   end
 end
 end
