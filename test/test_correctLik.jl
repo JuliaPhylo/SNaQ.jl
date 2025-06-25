@@ -118,6 +118,29 @@ end
   rm("snaq.err")
 end
 
+@testset "snaq! with qinfTest=true" begin
+  global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
+  @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
+  originalstdout = stdout
+  redirect_stdout(devnull)
+  global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
+  @test_logs (:warn, r"^these taxa will be deleted") snaq!(net, d, # taxon "60" in net: not in quartets
+    hmax=1, runs=1, Nfail=1, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,qinfTest=true)
+  global n1 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+            ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+            verbose=false, qinfTest=true)
+  global n2 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+    ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+    verbose=false, qinfTest=false)
+  redirect_stdout(originalstdout)
+  @test writenewick(n1, round=true)==writenewick(n2, round=true)
+  @test loglik(n1) == loglik(n2)
+  rm("snaq.out")
+  rm("snaq.networks")
+  rm("snaq.log") # .log and .err should be git-ignored, but still
+  rm("snaq.err")
+end
+
 @testset "snaq! in serial and in parallel w/ different probQR and propQuartets values" begin
   global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
   @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree

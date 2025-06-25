@@ -33,7 +33,7 @@ import SNaQ: checkNet,
     isBadDiamondI!, isBadDiamondII!, isExtBadTriangle!, isVeryBadTriangle!,
     k!, typeHyb!, gammaz!,
     visited!, edges_changed!, nodes_changed!, ht!, numht!,
-    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
+    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!, deleteHybrid!
 
 
 import PhyloNetworks:
