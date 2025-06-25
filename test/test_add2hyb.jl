@@ -26,7 +26,7 @@ ed = PhyloNetworks.hybridEdges(hybrid)
 @test ed[1].hybrid
 
 # Functions that run stuff w/ the blacklist
-deleteHybrid!(besttree.hybrid[2], besttree, true, true)
+deleteHybrid!(besttree.hybrid[1], besttree, true, true)
 blacklist(besttree)
 @test length(chooseEdgesGamma(besttree, true, besttree.edge)) == 3
 
