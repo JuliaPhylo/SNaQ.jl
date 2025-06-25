@@ -133,8 +133,8 @@ function readtableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
     d = readtableCF!(df, columns; kwargs...)
 
     if withngenes # && d.numTrees == -1
-        m1 = minimum([q.ngenes for q in d.quartet])
-        m2 = maximum([q.ngenes for q in d.quartet])
+        m1 = round(minimum([q.ngenes for q in d.quartet]), digits=5)
+        m2 = round(maximum([q.ngenes for q in d.quartet]), digits=5)
         if m1<m2 print("between $m1 and ") end
         println("$m2 gene trees per 4-taxon set")
         # other info printed by show() on a DataCF object: num quartets and num gene trees
@@ -229,7 +229,7 @@ Namely, in each tree/network
 - any missing γ's are set to (0.1, 0.9)
 and more (see [`readnewicklevel1`](@ref)).
 
-See [`PhyloNetworks.readmultinewick`]()
+See [`PhyloNetworks.readmultinewick`](@extref)
 to read multiple trees or networks with no modification.
 
 Output: array of HybridNetwork objects.
@@ -559,7 +559,7 @@ Uses [`calculateObsCFAll!`](@ref), which implements a slow algorithm.
 
 See also:
 [`PhyloNetworks.countquartetsintrees`](@extref), which uses a much faster algorithm;
-[`readtrees2CF`](@ref), which is basically a re-naming of `readInputData`, and
+[`readtrees2CF`](@ref), which is an exported and user-friendly re-naming of `readInputData`, and
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
 function readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
@@ -672,9 +672,6 @@ function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integ
     return d
 end
 
-
-
-# rename the function readInputData to make it more user-friendly
 """
     readtrees2CF(treefile)
     readtrees2CF(vector of trees)
@@ -808,7 +805,7 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 
 
 """
-`summarizedataCF(d::DataCF)`
+    `summarizedataCF(d::DataCF)`
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
 - `filename`: if provided, the summary will be saved in the filename, not to screen
@@ -1048,130 +1045,6 @@ function createQuartet(taxa::Union{Vector{<:AbstractString},Vector{Int}}, qvec::
     return Quartet(num,names,[1.0,0.0,0.0])
 end
 
-"""
-    readNexusTrees(filename::AbstractString, treereader=readTopology::Function [, args...])
-Read trees in nexus-formatted file and return a vector of `HybridNetwork`s.
-For the nexus format, see Maddison, Swofford & Maddison (1997)
-https://doi.org/10.1093/sysbio/46.4.590.
-The optional arguments are passed onto the individual tree reader.
-Warnings:
-- "translate" tables are not supported yet
-- only the first tree block is read
-"""
-function readNexusTrees(file::AbstractString, treereader=readTopology::Function, args...)
-    vnet = HybridNetwork[]
-    rx_start = r"^\s*begin\s+trees\s*;"i
-    rx_end = r"^\s*end\s*;"i
-    rx_tree = r"^\s*tree\s+[^(]+(\([^;]*;)"i
-    # spaces,"Tree",spaces,any_symbols_other_than_(, then we capture:
-    # ( any_symbols_other_than_; ;
-    treeblock = false # whether we are currently reading the TREE block or not
-    open(file) do s
-        numl = 0
-        for line in eachline(s)
-            numl += 1
-            if treeblock # currently reading trees, check for END signal
-                occursin(rx_end, line) && break # break if end of tree block
-            else # not reading trees: check for the BEGIN signal
-                if occursin(rx_start, line) treeblock=true; end
-                continue # to next line, either way
-            end
-            # if we get there, it's that we are inside the treeblock (true) and no END signal yet
-            m = match(rx_tree, line)
-            m != nothing || continue # continue to next line if no match
-            phy = m.captures[1] # string
-            try
-                push!(vnet, treereader(phy, args...)) # readTopologyUpdate(phy,false)
-            catch err
-                print("skipped phylogeny on line $(numl) of file $file: ")
-                if :msg in fieldnames(typeof(err)) println(err.msg); else println(typeof(err)); end
-            end
-        end
-    end
-    return vnet # consistent output type: HybridNetwork vector. might be of length 0.
-end
-
-"""
-    readPhylip(file::AbstractString)
-Reads a PHYLIP-formatted DNA sequence alignment
-Output: Returns a dictionary of 2D-arrays, with dimensions 
-    I x L x A where I=number of individuals in Phylip file, 
-    L=number of columns in DNA sequence alignment, and A=number 
-    of alleles per individual (=1 if expand==false). 
-"""
-
-function readPhylip(file::AbstractString, ploidy=2::Integer)
-    firstline = true
-    gen = Dict{String, Array{Array{Char,1}, 1}}()
-    open(file) do f
-        while !eof(f)
-            line = readline(f)
-            if firstline #skip header information
-                firstline = false
-            else
-                line = strip(line)
-                if isempty(line)
-                    continue
-                end
-                ind = split(line)
-                #println(ind[1])
-                gen[ind[1]] = [iupac(char, ploidy) for char in collect(ind[2])]
-                #println(gen[ind[1]])
-            end
-        end
-    end
-    return(gen)
-end
-
-"""
-    iupac(genotype::AbstractString)
-Expands a provided IUPAC code into a vector of nucleotide characters 
-    Nucleotides (ACGT) are simply returned as a 1-element vector. 
-    'N' or any invalid ambiguity character (e.g., '-') will return as 
-    ['A', 'C', 'T', 'G']
-Output: Vector of nucleotide characters 
-"""
-function iupac(genotype::Char, ploidy=2::Integer)
-    upper = uppercase(genotype)
-    ret = ['N']
-    if upper == 'A'
-        ret = ['A']
-    elseif upper == 'C'
-        ret = ['C']
-    elseif upper == 'G'
-        ret = ['G']
-    elseif upper == 'T'
-        ret = ['T']
-    elseif upper == 'M'
-        ret = ['A', 'C']
-    elseif upper == 'R'
-        ret = ['A', 'G']
-    elseif upper == 'W'
-        ret = ['A', 'T']
-    elseif upper == 'S'
-        ret = ['C', 'G']
-    elseif upper == 'Y'
-        ret = ['C', 'T']
-    elseif upper == 'K'
-        ret = ['G', 'T']
-    elseif upper == 'V'
-        ret = ['A', 'C', 'G']
-    elseif upper == 'H'
-        ret = ['A', 'C', 'T']
-    elseif upper == 'D'
-        ret = ['A', 'G', 'T']
-    elseif upper == 'B'
-        ret = ['C', 'G', 'T']
-    else
-        ret = ['A', 'C', 'G', 'T']
-    end
-    if length(ret) > ploidy
-        return ['N']
-    else
-        return ret
-    end
-end
-
 function readPhylip2CF(file::AbstractString,
     quartetfile="none"::AbstractString, ploidy=2::Integer,
     whichQ="all"::AbstractString, numQ=0::Integer,
@@ -1210,13 +1083,13 @@ Reads a PHYLIP-formatted DNA sequence alignment and calculates SNP concordance
     #- nboots: Number of bootstraps to perform if bootstrap=true
 Output: 
 """
-function readPhylip2CF(gen::Dict{String, Array{Array{Char,1}, 1}}, 
+function readphylip2CF(gen::Tuple{Vector{String},Vector{Any}}, ##JAJ: TODO should not be Any but an abstract vector for biosequences 
     quartetfile="none"::AbstractString, ploidy=2::Integer, 
     whichQ="all"::AbstractString, numQ=0::Integer,
     writeTab=true::Bool, CFfile="none"::AbstractString,
     writeQ=false::Bool)
 
-    taxa = [k for k in keys(gen)]
+    taxa = [k for k in gen[1]]
     println(typeof(taxa))
 
     #taxonnumber = Dict(taxa[i] => i for i in eachindex(taxa))
@@ -1250,7 +1123,7 @@ function readPhylip2CF(gen::Dict{String, Array{Array{Char,1}, 1}},
     end
 
     #calculate ObsCF values 
-    calculateObsCFAll_SNP!(quartets, gen)
+    calculateObsCFAll_SNP!(quartets, gen,ploidy) ##JAJ: Unsure if it needs ploidy or how exactly it is used TODO figure out what this function should be doing
 
     if(writeTab)
         if(CFfile == "none")

@@ -3,7 +3,6 @@
 # Claudia August 2014
 #
 # in julia: include("case_f_example.jl")
-Edge = SNaQ.Edge;
 
 ed1=Edge(1,0.6,true,0.7);
 ed2=Edge(2,0.7,true,0.3);

@@ -25,7 +25,7 @@ treefile = joinpath(exdir,"treefile.txt") # pretending these are bootstrap trees
 boottrees = Vector{HybridNetwork}[]
 T=readnewick(joinpath(exdir,"startTree.txt"))
 net1 = readnewick("(5,(((2,(1)#H7:::0.7143969494428192):1.5121337017411736,4):0.4894187322508883,3):0.519160762355313,(6,#H7:::0.2856030505571808):10.0);")
-for i=1:13 push!(boottrees, readmultinewick(treefile)) end
+for i=1:13 push!(boottrees, readmultinewicklevel1(treefile)) end
 for i=1:13 @test size(boottrees[i])==(10,) end # 10 bootstrap trees for each of 13 "genes"
 addprocs(1)
 @everywhere using SNaQ

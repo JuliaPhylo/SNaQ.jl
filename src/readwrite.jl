@@ -177,7 +177,7 @@ readTopologyUpdate(file::AbstractString,verbose::Bool) = readTopologyUpdate(file
     readnewicklevel1(filename)
     readnewicklevel1(parenthetical format)
 
-Similarly to [`PhyloNetworks.readnewick`](): read a tree or network in parenthetical
+Similarly to [`PhyloNetworks.readnewick`](@extref): read a tree or network in parenthetical
 format, but this function enforces the necessary conditions for any
 starting topology in SNaQ: non-intersecting cycles, no polytomies,
 unrooted. It sets any missing branch length to 1.0,
@@ -299,8 +299,6 @@ function writenewick_level1(net0::HybridNetwork, s::IO, di::Bool, namelabel::Boo
         end
         writesubtree!(s, net, di,namelabel, roundBL,digits,true)
     end
-    # outgroup != "none" && undoRoot!(net) # not needed because net is deepcopy of net0
-    # to delete 2-degree node, for snaq.
 end
 
 writenewick_level1(net::HybridNetwork,di::Bool,str::Bool,namelabel::Bool,outgroup::AbstractString,printID::Bool) = writenewick_level1(net,di,str,namelabel,outgroup,printID, false,3, false)
@@ -406,18 +404,6 @@ function canBeRoot(n::Node)
     return any([e.containroot for e in n.edge])
 end
 
-# function to delete the extra node created in updateRoot
-# this extra node is needed to be able to compare networks with the distance function
-# but if left in the network, everything crashes (as everything assumes three edges per node)
-# fromUpdateRoot=true if called after updateRoot (in which case leaf has to be a leaf), ow it is used in readTopUpdate
-function undoRoot!(net::HybridNetwork, fromUpdateRoot::Bool=true)
-    if length(getroot(net).edge) == 2
-        root = getroot(net)
-        leaf = getOtherNode(root.edge[1],root).leaf ? getOtherNode(root.edge[1],root) : getOtherNode(root.edge[2],root)
-        (fromUpdateRoot && leaf.leaf) || error("root should have one neighbor leaf which has to be the outgroup defined")
-        deleteIntLeafWhile!(net,root,leaf);
-    end
-end
 
 # .out file from snaq written by optTopRuns
 """

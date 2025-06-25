@@ -1,4 +1,4 @@
-# Candidate Networks
+# Candidate networks
 
 ## Optimizing parameters for a given network
 
@@ -12,9 +12,13 @@ The score being optimized is a pseudo-deviance, i.e.
 a multiple of the negative log pseudo-likelihood up to an additive constant
 (the lower the better; a pseudo-deviance of 0 corresponds to a perfect fit).
 
-Following our example in [Getting a Network](@ref),
+Following our example in [Estimating a network](@ref),
 we can optimize parameters on the true network
-(the one originally used to simulate the data):
+(the one originally used to simulate the data). 
+Given a table of CFs and a network,
+the function [`topologymaxQpseudolik!`](@ref)
+returns the same network topology
+but with optimized branch lengths and inheritance values:
 
 ```@setup fixednetworkoptim
 using PhyloNetworks, SNaQ, DataFrames
@@ -43,14 +47,15 @@ nothing # hide
 ```
 ![truenet_opt](../assets/figures/truenet_opt.svg)
 
-We get a score of 29.941,
+We get a score of 29.786,
 which is comparable to the score of the SNaQ network (net1: 28.315),
 especially compared to the score of the best tree (net0: 53.532).
 This begs the question: is the true network within the "range" of uncertainty?
 We can run a [Bootstrap](@ref) analysis to measure uncertainty
 in our network inference.
 
-For a more thorough optimization, we should increase the requirements before
+For a more thorough optimization, we could change the arguments for the tolerances
+(`ftolRel` and `xtolAbs`) used to determine when the parameters are optimized and
 the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
@@ -73,16 +78,15 @@ given network is of level 1 (cycles don't overlap).
 
 ## Candidate networks compatible with a known outgroup
 
-If the network was estimated via `snaq!`, it might turn out to be impossible
-to root our estimated network with a known outgroup (see section
-[What if the root conflicts with the direction of a reticulation?](@ref).)
+If the network was estimated via [`snaq!`](@ref), it might turn out to be impossible
+to root our estimated network with a known outgroup.
 At this time, `snaq!` does not impose any rooting constraint on the network:
 the search for the lowest score considers all level-1 networks, including those
 that are incompatible with a known outgroup.
 (The monophyly of outgroups is not imposed either, like in many other methods.)
 
 If the estimated network cannot be rooted with the known outgroup,
-we can check the `.networks` output file.
+we can check the `.networks` output file for a possible alternative network.
 It has a list of networks that are slight modifications of the best network,
 where the modifications changed the direction of one reticulation at a time.
 For each modified network, the score was calculated. So if we find in this list
@@ -91,7 +95,7 @@ and that can be re-rooted with our known root position, then this modified netwo
 is a better candidate than the network with the best score.
 
 Below is what the `net1.networks` file looks like, after performing
-the analysis in the section [Network Estimation](@ref).
+the analysis in the section [Network estimation](@ref).
 Scroll to the right to see the scores.
 
     (C,D,((O,(E,#H7:::0.19558838614943078):0.31352437658618976):0.6640664399202987,(B,(A)#H7:::0.8044116138505693):10.0):10.0);, with -loglik 28.31506721890958 (best network found, remaining sorted by log-pseudolik; the smaller, the better)
@@ -109,18 +113,19 @@ file = joinpath(dirname(pathof(SNaQ)), "..","examples","net1.networks");
 netlist = readmultinewick(file) # read the full list of networks in that file
 ```
 Next, we would like to extract the network scores from the file.
-Below is a one-liner to do this
-(we make Julia send a `sed` command to the shell --sorry, Mac or Linux for this.)
+Below is some code for doing this in julia
 ```@repl fixednetworkoptim
-scoresInString = read(`sed -E 's/.+with -loglik ([0-9]+.[0-9]+).+/\1/' $file`, String)
-scores = parse.(Float64, split(scoresInString))
+score_in_string = read(file, String); # read the file as a single string
+score_in_string = (x-> x[1]).(collect(eachmatch(r"with -loglik ([0-9]+.[0-9]+)",score_in_string))); # find all occurences of the loglik scores
+scores = parse.(Float64, score_in_string); # parse those matches into numbers
+
 # next: update the "loglik" of each network with the score read from the file
 for i in eachindex(netlist)
-   netlist[i].loglik = scores[i]
+   netlist[i].fscore = scores[i]
    println("net $i in the list: score = ",scores[i])
 end
 ```
-The first network in the list is the best network returned by `snaq!`.
+The first network in the list is the best network returned by [`snaq!`](@ref).
 We see that the second network has a score that's not too far, but the other networks
 have worse scores. The best network and its best modification (second network in the
 list) are shown below. We chose to show edge numbers, to use them later
@@ -140,21 +145,13 @@ nothing # hide
 ![othernets before reroot](../assets/figures/fixednetworkoptim_othernets1.svg)
 
 Now imagine that our outgroup is taxon A.
-- best network: we would get a "RootMismatch" error if we tried to set
-  the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
-  (see section
-  [What if the root conflicts with the direction of a reticulation?](@ref)).
-  But we could root the best network on the major parent edge to A, edge 10
-  (rooted network on the left below).
-- For the second best network in our list, there are 2 ways to root it
-  with A: on the external edge 8 to A (top right), or on its parent edge 10
-  These 2 options give quite different rooted versions
-  of the network, one of which requires the existence of an unsampled taxon,
-  sister to BOECD, that would have contributed to introgression into
-  an ancestor of E. The second rooted version says that an ancestor of
-  (or sister to) A contributed to the introgression into the ancestor of E.
-  A is an outgroup in both cases, but the second case is more parsimonious,
-  in the sense that it does not require the existence of an unsampled taxon.
+
+Best network: we would get a `RootMismatch` error if we tried to set
+the root on the external edge 9 to A, with `rootatnode!(netlist[1], "A")`
+(see the PhyloNetworks guide
+[Does the root conflict with the direction of a reticulation?](@extref)).
+But we could root the best network on the major parent edge to A, edge 10
+(rooted network on the left below).
 
 ```@example fixednetworkoptim
 R"svg(name('fixednetworkoptim_othernets2.svg'), width=7, height=7)" # hide
@@ -181,3 +178,51 @@ R"dev.off()"; # hide
 nothing # hide
 ```
 ![othernets after reroot](../assets/figures/fixednetworkoptim_othernets2.svg)
+
+For the second best network in our list, there are 2 ways to root it with A.
+These 2 options give quite different rooted versions of the network:
+1. On the external edge 8 to A (top right).
+   This requires the existence of an unsampled taxon,
+   sister to BDCOE, that would have contributed to introgression into
+   an ancestor of E.
+2. On its parent edge 10 (bottom right).
+
+A is an outgroup in both rootings, but the second option is more parsimonious,
+in the sense that it does not outright require the existence of a "ghost"
+taxon: a taxon that went extinct after the introgression, or that is unsampled.
+
+This second rooted version is consistent with 2 possibilities.
+It could arise either from  
+(a) an unsampled taxon sister to A that contributed to introgression, or  
+(b) a direct ancestor of A could have contributed to the
+introgression into the ancestor of E.  
+Case (a) stipulates the existence of an unsampled ("ghost") taxon,
+but case (b) does not require any unsampled taxon.
+
+These two possibilities differ in the length of their gene flow edge
+(light blue, here with γ=0.185).
+If gene flow came from an unsampled taxon under case (a),
+this edge would have positive length, in calendar time.
+If gene flow came from a direct ancestor of A under case (b),
+the gene flow edge would have length 0.
+
+Edge lengths from SNaQ should be interpreted with caution to
+distinguish between the two possibilities because:
+* edge lengths estimated with SNaQ are in coalescent units instead of
+  calendar time, and necessarily include estimation error;
+* an edge with a true length of 0 may be estimated to have a non-zero length
+  in coalescent units due to errors in estimated gene trees, to help explain
+  gene tree discordance;
+* an incorrect topology may result in edges of estimated length 0;
+* and some edge lengths are not identifiable from quartet concordance
+  factors anyway.
+
+To distinguish between these possibilities, models that separate calendar time,
+substitution rate, and population size can be useful. Using stronger assumptions
+than SNaQ (e.g. a molecular clock), the rooted network and branch lengths may
+be identifiable, so networks with / without unsampled taxa may be distinguished.
+See for example [Zhang et al. 2024](https://doi.org/10.1111/tpj.16859),
+who used BPP. Note that the model named
+"[MSci](https://bpp.github.io/bpp-manual/bpp-4-manual/#the-msc-i-model)"
+in BPP is exactly the same as the network multispecies coalescent,
+and is typically named NMSC in most papers.

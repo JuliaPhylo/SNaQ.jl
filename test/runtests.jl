@@ -37,7 +37,7 @@ import SNaQ: checkNet,
 
 
 import PhyloNetworks:
-    Node,
+    Node, Edge,
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,

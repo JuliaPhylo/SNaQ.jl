@@ -357,10 +357,10 @@ function deleteLeaf!(net::Network, leaf::Node)
 end
 
 """
-`deleteLeaf!(net::HybridNetwork, leaf::AbstractString)`
-`deleteLeaf!(net::Network, leaf::Node)`
+    deleteLeaf!(net::HybridNetwork, leaf::AbstractString)
+    deleteLeaf!(net::Network, leaf::Node)
 
-Deletes the leaf taxon from the network. The leaf argument is the name of the taxon to delete.
+Delete the leaf taxon from the network. The leaf argument is the name of the taxon to delete.
 
 Warnings:
 
@@ -1323,19 +1323,20 @@ function calculateExpCFAll!(data::DataCF, x::Vector{Float64},net::HybridNetwork)
     end
 end
 
-# function to simply calculate the pseudolik of a given network
 """
-`topologyQpseudolik!(net::HybridNetwork, d::DataCF)`
+    `topologyQpseudolik!(net::HybridNetwork, d::DataCF)`
 
 Calculate the quartet pseudo-deviance of a given network/tree for
 DataCF `d`. This is the negative log pseudo-likelihood,
 up to an additive constant, such that a perfect fit corresponds to a deviance of 0.0.
 
-Be careful if the net object does
-not have all internal branch lengths specified because then the
-pseudolikelihood will be meaningless. See [`topologymaxQpseudolik!`](@ref) if you want branch lengths and numerical parameters optimized on the given network.
+Note that the network's parameters (edge lengths and γs) are *not* optimized.
+So be careful if `net` does not have all internal branch lengths specified,
+because then the pseudolikelihood will be meaningless.
+See [`topologymaxQpseudolik!`](@ref) if you want branch lengths and numerical
+parameters optimized on the given network.
 
-The loglik attribute of the network is updated, and `d` is updated with the expected
+The loglik value of the network is updated, and `d` is updated with the expected
 concordance factors under the input network.
 """
 function topologyQpseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
@@ -1414,14 +1415,10 @@ end
 # warning: assumes that quartet.qnet is already updated with extractQuartet and
 #          calculateExpCF for all quartets
 function logPseudoLik(quartet::Array{Quartet,1})
-    suma=0.0
-    #println("logPseudoLik")
+    suma = 0
     for q in quartet
         suma += logPseudoLik(q)
-        #println(suma)
     end
-    #println("ending loop. Value= ",-suma, " - ", typeof(suma))
-    #println("returning")
     return -suma
 end
 
