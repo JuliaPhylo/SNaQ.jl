@@ -7,6 +7,19 @@
   d = readtableCF(joinpath(examp_dir, "tableCF.txt"))
   d = readtableCF(joinpath(examp_dir, "tableCF_species.csv"))
   d = readtableCF(joinpath(examp_dir, "tableCFCI.csv"))
+
+  sixtreestr = ["(E,((A,B),(C,D)),O);","(((A,B),(C,D)),(E,O));","(A,B,((C,D),(E,O)));",
+              "(B,((C,D),(E,O)));","((C,D),(A,(B,E)),O);","((C,D),(A,B,E),O);"]
+  sixtrees = readnewick.(sixtreestr)
+  d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false)))
+  @test nrow(d) > 0
+  d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false, whichQ="rand")))
+  @test nrow(d) > 0
+
+  for nq in [1, 3, 7, 12]
+    d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false, whichQ="rand", numQ=nq)))
+    @test nrow(d) == nq
+  end
 end
 
 

@@ -651,6 +651,7 @@ function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integ
     elseif(whichQ == :rand)
         if(numQ == 0)
             @warn "not specified numQ with whichQ=rand, so 10% of quartets will be sampled" #handled inside randQuartets
+            numQ = max(1, Int(round(0.1 * binomial(length(taxa), 4), digits=0)))
         else
             println("will use a random sample of $(numQ) 4-taxon sets ($(round((100*numQ)/binomial(length(taxa),4), digits=2)) percent) on $(length(taxa)) taxa")
         end
