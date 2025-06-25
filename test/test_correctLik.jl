@@ -149,8 +149,8 @@ end
   end
   @test loglik(n3) > 0.0
   # b/c of propQuartets the newicks will sometimes be different
-  @test hardwiredClusterDistance(n1, n2, false) == 0
-  @test hardwiredClusterDistance(n2, n3, false) == 0
+  @test hardwiredclusterdistance(n1, n2, false) == 0
+  @test hardwiredclusterdistance(n2, n3, false) == 0
   rm("snaq.out")
   rm("snaq.networks")
   rm("snaq.log") # .log and .err should be git-ignored, but still
