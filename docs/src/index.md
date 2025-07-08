@@ -37,14 +37,14 @@ See the references in
 
 ```@contents
 Pages =  [
-"man\\installation.md",
-"man\\snaq_est.md",
-"man\\fixednetworkoptim.md",
-"man\\expectedCFs.md",
-"man\\bootstrap.md",
-"man\\parallelcomputation.md",
-"man\\multiplealleles.md",
-"man\\error_reporting.md",
+"man/installation.md",
+"man/snaq_est.md",
+"man/fixednetworkoptim.md",
+"man/expectedCFs.md",
+"man/bootstrap.md",
+"man/parallelcomputation.md",
+"man/multiplealleles.md",
+"man/error_reporting.md",
  ]
 Depth = 3
 ```
