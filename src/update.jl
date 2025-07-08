@@ -394,18 +394,6 @@ function updateUninformativeQuartets!(quartets::Vector{Quartet}, atol::Float64)
 end
 updateUninformativeQuartets!(d::DataCF, atol::Float64) = updateUninformativeQuartets!(d.quartet, atol)
 
-# """
-# updateUninformativeQuartetsAll!(quartets::Vector{Quartet}, toset::Bool)
-# Updates in-place all Quartet.uninformative values to the value provided in toset::Bool
-# """
-# function updateUninformativeQuartetsAll!(quartets::Vector{Quartet}, toset::Bool)
-#     Threads.@threads for q in quartets
-#         q.uninformative=toset
-#     end
-# end
-# updateUninformativeQuartetsAll!(quartets::Vector{Quartet}) = updateUninformativeQuartetsAll!(quartets, false)
-# updateUninformativeQuartetsAll!(d::DataCF, toset::Bool) = updateUninformativeQuartetsAll!(d.quartet, toset)
-# updateUninformativeQuartetsAll!(d::DataCF) = updateUninformativeQuartetsAll!(d.quartet, false)
 
 """
 updateSampledQuartetsAll!(quartets::Vector{Quartet}, toset::Bool)
