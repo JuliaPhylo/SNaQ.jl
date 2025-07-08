@@ -169,3 +169,17 @@ net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
     Due to issues with seeds and random number generation,
     each run may use the seeded numbers in a different orde when running computations.
     This could lead to different results between runs, even when using the same seed.
+
+### Removing uninformative quartets
+
+We can further reduce computational costs with minimal detriment to accuracy by
+ignoring uniformative quartets.
+A star tree would give concordance factors of $\frac{1}{3}$ for all quartet topologies,
+thus, quartets with CFs near $\frac{1}{3}$ may not be informative of the overall species topology.
+We can check for and remove uninformative quartets by setting
+ the optional keyword argument `qinfTest` to `true`.
+Any quartets with concordance factors sufficiently close to $\frac{1}{3}$ will be removed when
+ computing the composite likelihood. 
+Further, the optional keyword argument `qtolAbs` can be used to specify the tolerence for determining
+what concordance factors are "close enough" to $\frac{1}{3}$.
+
