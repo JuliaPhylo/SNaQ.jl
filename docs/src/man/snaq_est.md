@@ -414,7 +414,7 @@ to networks with few taxa:
   arguments to the script are passed to Julia as a vector called `ARGS`.
   See the example script `runSNaQ.jl` in the `examples` folder of SNaQ,
   or the file located [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/runSNaQ.jl).
-  More on this topic in here: [Parallel computations](@ref)
+  More on this topic in here: [Improving runtimes](@ref)
 
 
 > This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)

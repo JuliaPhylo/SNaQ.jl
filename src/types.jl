@@ -207,6 +207,9 @@ type that saves the information on a given 4-taxon subset. It contains the follo
 - `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
 - `qnet`: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
   emphasize that the expCF depend on a specific network, not the data
+- `deltaCF`: The sum of absolute differences between observed and expected CFs
+- `sampled`: A boolean denoting whether the quartet is used in computing the likelihood
+- `uninformative`: A boolean denoting whether the quartet is not sampling due to being uninformative
 
 see also: [`PhyloNetworks.QuartetT`](@extref) for quartet with data of user-defined type `T`,
 using a mapping between quartet indices and quartet taxa.

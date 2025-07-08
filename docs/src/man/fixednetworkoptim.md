@@ -63,7 +63,7 @@ net1par = topologymaxQpseudolik!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
 loglik(net1par) # pseudo deviance, actually: the lower the better
 ```
 
-## Network Score with no optimization
+## Network score with no optimization
 
 For a network with given branch lengths and γ heritabilies,
 we can compute the pseudolikelihood (well, a pseudo-deviance) with:

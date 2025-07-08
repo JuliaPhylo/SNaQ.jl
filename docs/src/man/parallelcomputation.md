@@ -1,6 +1,6 @@
-# Parallel computations
+# Improving runtimes
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+## Parallel runs
 
 For network estimation, multiple runs can done in parallel.
 For example, if your machine has 4 or more processors (or cores),
@@ -20,7 +20,8 @@ then we need to re-load it again so that all processors have access to it:
 ```
 
 After that, running any of the `snaq!(...)` command will use
-different cores for different runs, as processors become available.
+different cores for the different independent runs specified by 
+optional `runs` argument, as processors become available.
 Fewer details are printed to the log file when multiple cores
 are used in parallel.
 
@@ -84,7 +85,7 @@ net0 = readnewick("astraltree.tre");
 using DataFrames, CSV
 df_sp = CSV.read("tableCF_speciesNames.csv", DataFrame; pool=false);
 d_sp = readtableCF!(df_sp);
-net = snaq!(net0, d_sp, hmax=h, filename=outputfile, seed=seed, runs=nruns)
+net = snaq!(net0, d_sp, hmax=2, filename=outputfile, seed=seed, runs=nruns)
 ```
 
 When julia is called on a script, whatever comes after "julia scriptname"
@@ -124,4 +125,47 @@ echo "start of SNaQ parallel runs on $(hostname)"
 echo "end of SNaQ run ..."
 ```
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+## Parallel quartet likelihood 
+
+Each step of optimization involves computing the likelihood of each quartet.
+Since SNaQ treats quartet likelihoods as independent,
+their likelihoods can be computed in parallel with multi-threading. 
+To enable multi-threading, the user needs to specify how many threads are
+avaliable when starting a Julia session with the `--threads` flag:
+```bash
+julia --threads=8 #use 8 threads
+```
+SNaQ then automatically multi-threads quartet likelihoods, if given the opportunity. 
+Further, setting `--threads=auto` uses all avaliable CPU threads.
+
+
+## Quartet subsampling
+
+For a network with $N$ taxa, there are $\binom{N}{4}$ different quartets,
+meaning that the complexity of likelihood computation balloons quartically with respect to the number of taxa. 
+In cases where the number of taxa causes network estimation to be prohibitively slow,
+we implemented a strategy that only uses a fraction of all quartets when computing the likelihood.
+For a network with $\binom{N}{4}$ quartets, the optional `propQuartets` argument can be used to randomly sample
+$\lceil \binom{N}{4} \cdot$ `propQuartets` $\rceil$ quartets.
+Although we lose some information (and thus accuracy) when subsampling quartets, using `propQuartets` as low as `0.5`
+has been shown to not signifcantly decrease accuracy.
+
+We can run the same analysis as the [Estimating a network](@ref) section and comapre the two networks
+when we use only a fraction of the quartets. 
+
+```julia
+raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
+raxmlCF = readtrees2CF(raxmltrees)
+astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
+astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
+
+net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
+```
+
+
+!!! note
+    The `seed` argument will not be used when multithreading,
+    thus results may not be reprodible when multithreading. 
+    Due to issues with seeds and random number generation,
+    each run may use the seeded numbers in a different orde when running computations.
+    This could lead to different results between runs, even when using the same seed.

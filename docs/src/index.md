@@ -44,7 +44,7 @@ Pages = [
   "man/bootstrap.md",
   "man/parallelcomputation.md",
   "man/multiplealleles.md",
-  "man/error_reporting.md",
+  "man/error_reporting.md"
 ]
 Depth = 3
 ```

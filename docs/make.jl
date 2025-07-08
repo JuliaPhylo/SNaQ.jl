@@ -39,7 +39,7 @@ makedocs(;
             "Candidate networks" => "man/fixednetworkoptim.md",
             "Extract expected CFs" => "man/expectedCFs.md",
             "Bootstrap" => "man/bootstrap.md",
-            "Parallel computation" => "man/parallelcomputation.md",
+            "Improving runtimes" => "man/parallelcomputation.md",
             "Multiple alleles" => "man/multiplealleles.md",
             "Error reporting" => "man/error_reporting.md"
         ],

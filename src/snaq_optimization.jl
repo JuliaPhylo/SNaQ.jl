@@ -1944,7 +1944,7 @@ Output:
   not the direction of hybridization in cases of near non-identifiability.
 - if any error occurred, file `.err` provides information (seed) to reproduce the error.
 
-There are many optional arguments, including
+There are many optional keyword arguments, including
 
 - `hmax` (default 1): maximum number of hybridizations allowed
 - `propQuartets` (default 1): the proportion of observed quartet concordance factors in `d`
@@ -1967,7 +1967,7 @@ There are many optional arguments, including
   are first optimized roughly with [`updateBL!`](@ref) by using the average CF of
   all quartets defining each branch and back-calculating the coalescent units.
 
-The following optional arguments control when to stop the optimization of branch
+The following optional keyword arguments control when to stop the optimization of branch
 lengths and γ's on each individual candidate network. Defaults are in parentheses:
 
 - `ftolRel` (1e-6) and `ftolAbs` (1e-6): relative and absolute differences of
@@ -1977,7 +1977,7 @@ lengths and γ's on each individual candidate network. Defaults are in parenthes
 
 Greater values will result in a less thorough but faster search.
 These parameters are used when evaluating candidate networks only.
-The following optional arguments control when to stop proposing new network topologies:
+The following optional keyword arguments control when to stop proposing new network topologies:
 
 - `Nfail` (75): maximum number of times that new topologies are proposed and rejected (in a row).
 - `liktolAbs` (1e-6): the proposed network is accepted if its score is better
@@ -1989,6 +1989,14 @@ result in a less thorough but faster search.
 At the end, branch lengths and γ's are optimized on the last "best" network
 with different and very thorough tolerance parameters:
 1e-12 for `ftolRel`, 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`.
+
+The following optional keyword arguments are used to identify and exclude uninformative quartets.
+Uninformative quartets are those with concordance factors sufficiently close to the
+expected concordance factors from the star tree (one-third for all topologies). 
+Default parameters are are in parentheses:
+- `qinfTest` (false): if true, then look for uninformative quartets to discard.
+- `qtolAbs` (1e-4): The tolerence for identifying uninformative concordance factors.
+Uninformative concordance factors are (1/3)±`qtolAbs`
 
 See also: [`topologymaxQpseudolik!`](@ref) to optimize parameters on a fixed topology,
 and [`topologyQpseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
