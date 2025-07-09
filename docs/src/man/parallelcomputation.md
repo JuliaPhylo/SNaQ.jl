@@ -4,13 +4,17 @@
 
 For network estimation, multiple runs can done in parallel.
 For example, if your machine has 4 or more processors (or cores),
-you can tell julia to use 4 processors by starting julia with `julia -p 4`,
+you can tell julia to use 4 processors by starting julia with `julia -p3`,
 or by starting julia the usual way (`julia`) and then adding processors with:
 
 ```julia
 using Distributed
-addprocs(4)
+addprocs(3)
 ```
+
+!!! note
+    The `-p` argument for `julia` denotes *additional* processors. So,
+    `julia -p3` will start Julia with *4* processors.
 
 If we load a package (`using SNaQ`) before adding processors,
 then we need to re-load it again so that all processors have access to it:
@@ -19,7 +23,7 @@ then we need to re-load it again so that all processors have access to it:
 @everywhere using PhyloNetworks, SNaQ
 ```
 
-After that, running any of the `snaq!(...)` command will use
+After that, running the `snaq!(...)` command will use
 different cores for the different independent runs specified by 
 optional `runs` argument, as processors become available.
 Fewer details are printed to the log file when multiple cores
@@ -147,7 +151,7 @@ In cases where the number of taxa causes network estimation to be prohibitively 
 we implemented a strategy that only uses a fraction of all quartets when computing the likelihood.
 For a network with $\binom{N}{4}$ quartets, the optional `propQuartets` argument can be used to randomly sample
 $\lceil \binom{N}{4} \cdot$ `propQuartets` $\rceil$ quartets.
-Although we lose some information (and thus accuracy) when subsampling quartets, using `propQuartets` as low as `0.5`
+Although we lose some information when subsampling quartets, using `propQuartets` as low as `0.5`
 has been shown to not signifcantly decrease accuracy.
 
 We can run the same analysis as the [Estimating a network](@ref) section and comapre the two networks
@@ -163,7 +167,7 @@ net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 ```
 
 
-!!! note
+!!! warning
     The `seed` argument will not be used when multithreading,
     thus results may not be reprodible when multithreading. 
     Due to issues with seeds and random number generation,
