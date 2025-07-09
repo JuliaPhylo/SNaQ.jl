@@ -169,9 +169,9 @@ net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 
 !!! warning
     The `seed` argument will not be used when multithreading,
-    thus results may not be reprodible when multithreading. 
+    thus results may not be reprodible. 
     Due to issues with seeds and random number generation,
-    each run may use the seeded numbers in a different orde when running computations.
+    each run may use the seeded numbers in a different order when running computations.
     This could lead to different results between runs, even when using the same seed.
 
 ### Removing uninformative quartets
