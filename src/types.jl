@@ -203,7 +203,7 @@ type that saves the information on a given 4-taxon subset. It contains the follo
 - `number`: integer
 - `taxon`: vector of taxon names, like t1 t2 t3 t4
 - `obsCF`: vector of observed CF, in order 12|34, 13|24, 14|23
-- `logPseudoLik`
+- `logPseudoLik`: log pseudo-likelihood of the quartet. 0.0 by default
 - `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
 - `qnet`: [`QuartetNetwork`](@ref), which saves the expCF after snaq estimation to
   emphasize that the expCF depend on a specific network, not the data
