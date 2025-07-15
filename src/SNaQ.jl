@@ -51,7 +51,6 @@ module SNaQ
         readtrees2CF,
         readtableCF,
         readtableCF!,
-        # readphylip2CF,
         mapallelesCFtable,
         summarizedataCF,
         fittedquartetCF,

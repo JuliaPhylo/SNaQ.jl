@@ -16,7 +16,7 @@ Join the PhyloNetworks google group for updates
 More information about the pre-processing steps to get the input data for SNaQ can be found in [PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/) and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/).
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+> This documentation pertains to SNaQ v1.1
 
 ## References
 
@@ -44,8 +44,8 @@ Pages =  [
 "man/bootstrap.md",
 "man/parallelcomputation.md",
 "man/multiplealleles.md",
-"man/error_reporting.md",
- ]
+"man/error_reporting.md"
+]
 Depth = 3
 ```
 
