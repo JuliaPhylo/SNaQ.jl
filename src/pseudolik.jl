@@ -1324,7 +1324,7 @@ function calculateExpCFAll!(data::DataCF, x::Vector{Float64},net::HybridNetwork)
 end
 
 """
-    `topologyQpseudolik!(net::HybridNetwork, d::DataCF)`
+    topologyQpseudolik!(net::HybridNetwork, d::DataCF)
 
 Calculate the quartet pseudo-deviance of a given network/tree for
 DataCF `d`. This is the negative log pseudo-likelihood,
