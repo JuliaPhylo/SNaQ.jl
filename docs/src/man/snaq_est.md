@@ -29,7 +29,6 @@ created (with estimated networks for instance). Enter this directory
 and run Julia from there.
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## Inputs for SNaQ 
 
@@ -417,4 +416,3 @@ to networks with few taxa:
   More on this topic in here: [Improving runtimes](@ref)
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
