@@ -54,7 +54,7 @@ in MrBayes to estimate gene trees,
 then BUCKy to produce the table of estimated CFs and their credibility intervals.
 Both steps in this pipeline are parallelized. 
 
-!!! Info "input quartet CFs: BUCKy versus gene trees"
+!!! info "input quartet CFs: BUCKy versus gene trees"
     When quartet CFs are estimated using BUCKy on each subset of 4 taxa, then
     error in gene trees is accounted for: BUCKy aims to estimate true
     gene tree discordance, beyond discordance that is due to uncertainty in
