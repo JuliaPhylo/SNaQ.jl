@@ -1,6 +1,6 @@
 # From the base directory, run with `julia --project=docs/ docs/run-doctest.jl`
 using Pkg
-Pkg.develop(PackageSpec(path=pwd()))
+Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..")))
 Pkg.instantiate()
 
 using Documenter: DocMeta, doctest

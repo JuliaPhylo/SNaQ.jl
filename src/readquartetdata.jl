@@ -133,8 +133,8 @@ function readtableCF!(df::DataFrames.DataFrame; summaryfile=""::AbstractString, 
     d = readtableCF!(df, columns; kwargs...)
 
     if withngenes # && d.numTrees == -1
-        m1 = minimum([q.ngenes for q in d.quartet])
-        m2 = maximum([q.ngenes for q in d.quartet])
+        m1 = round(minimum([q.ngenes for q in d.quartet]), digits=5)
+        m2 = round(maximum([q.ngenes for q in d.quartet]), digits=5)
         if m1<m2 print("between $m1 and ") end
         println("$m2 gene trees per 4-taxon set")
         # other info printed by show() on a DataCF object: num quartets and num gene trees
@@ -471,7 +471,7 @@ end
 
 function calculateObsCFAll!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
     calculateObsCFAll_noDataCF!(quartets, trees, taxa)
-    d = DataCF(quartets,trees)
+    d = DataCF(quartets, trees)
     return d
 end
 
@@ -651,6 +651,7 @@ function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integ
     elseif(whichQ == :rand)
         if(numQ == 0)
             @warn "not specified numQ with whichQ=rand, so 10% of quartets will be sampled" #handled inside randQuartets
+            numQ = max(1, Int(round(0.1 * binomial(length(taxa), 4), digits=0)))
         else
             println("will use a random sample of $(numQ) 4-taxon sets ($(round((100*numQ)/binomial(length(taxa),4), digits=2)) percent) on $(length(taxa)) taxa")
         end
@@ -805,7 +806,7 @@ descData(d::DataCF, filename::AbstractString) = descData(d, filename,0.7)
 
 
 """
-`summarizedataCF(d::DataCF)`
+    summarizedataCF(d::DataCF)
 
 function to summarize the information contained in a DataCF object. It has the following optional arguments:
 - `filename`: if provided, the summary will be saved in the filename, not to screen

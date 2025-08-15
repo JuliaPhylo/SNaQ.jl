@@ -21,7 +21,7 @@ In julia, but inside docs:
 ```julia
 using Pkg
 Pkg.add(PackageSpec(url="https://github.com/JuliaPhylo/PhyloTraits.jl", rev="dev01"))
-Pkg.add(PackageSpec(name="PhyloPlots", rev="dev11"))
+Pkg.add(PackageSpec(name="PhyloPlots"))
 ```
 
 # Run doctests 

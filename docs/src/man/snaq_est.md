@@ -18,7 +18,7 @@ loglik!(net3, 28.315067218909626)
 ```
 # Network estimation
 
-SNaQ implements the statistical inference method in
+SNaQ (v1.0) implements the statistical inference method in
 [Solís-Lemus & Ané 2016](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896).
 The procedure involves a numerical optimization of branch lengths and inheritance
 probabilities and a heuristic search in the space of phylogenetic networks.
@@ -28,9 +28,13 @@ where input files can be downloaded and where output files will be
 created (with estimated networks for instance). Enter this directory
 and run Julia from there.
 
+
+
 ## Inputs for SNaQ 
 
 SNaQ uses has two main inputs for estimating phylogenetic networks: concordance factors (CFs) and a starting tree (or network).
+
+
 
 ### Concordance factors
 
@@ -39,12 +43,34 @@ present among the gene trees, which can be estimated using
 [MrBayes](http://mrbayes.sourceforge.net) or
 [RAxML](http://sco.h-its.org/exelixis/software.html) for example. 
 
-This [pipeline](https://github.com/nstenz/TICR) can be used to obtain the table of
-quartet CF needed as input for SNaQ
-(see also the [wiki]() and the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
-It starts from the sequence alignments,
-runs MrBayes and then BUCKy (both parallelized), producing the
-table of estimated CFs and their credibility intervals.
+[PhyloUtilities](https://juliaphylo.github.io/PhyloUtilities/)
+has a step-by-step tutorial
+to go from multiple sequence alignments
+to a table of quartet gene frequencies (concordance factors: CFs),
+through BUCKy (to integrate out gene tree uncertainty) or through RAxML
+(see also the [snaq tutorial](https://solislemuslab.github.io/snaq-tutorial/)).
+This pipeline uses sequence alignments
+in MrBayes to estimate gene trees,
+then BUCKy to produce the table of estimated CFs and their credibility intervals.
+Both steps in this pipeline are parallelized. 
+
+!!! info "input quartet CFs: BUCKy versus gene trees"
+    When quartet CFs are estimated using BUCKy on each subset of 4 taxa, then
+    error in gene trees is accounted for: BUCKy aims to estimate true
+    gene tree discordance, beyond discordance that is due to uncertainty in
+    estimated gene trees. This is achieved in a Bayesian framework, using
+    a full posterior sample of trees for each individual gene.
+    So this method of obtaining quartet CFs
+    - is *not* what is sometimes referred to as a "summary" method
+    - is expected to be robust to gene tree estimation error.
+
+    When quartet CFs are calculated based on a single tree per gene, then gene
+    tree error is *not* accounted for. Estimation error in gene trees can cause
+    gene tree discordance. Downstream analysis with SNaQ would need to invoke
+    deep coalescence or introgression to account for this apparent discordance.
+    So this method
+    - may be called a "summary" method
+    - may be sensitive to gene tree estimation error.
 
 #### CFs from gene trees 
 
@@ -92,12 +118,13 @@ To get a predictable random sample, you may set the seed with
 Additionally, providing a file name for the optional argument `CFile` saves the quartet CFs to file for later use.
 
 #### CFs from large datasets
+
 When we want to get *all* quartet CFs, 
-the `readtrees2CF` is *much* slower than the PhyloNetworks function [`countquartetsintrees`](https://juliaphylo.github.io/PhyloNetworks.jl/stable/lib/public/#PhyloNetworks.countquartetsintrees)
+the [`readtrees2CF`](@ref) is *much* slower than the PhyloNetworks function [`PhyloNetworks.countquartetsintrees`](@extref)
 to read in trees and calculate the quartet CFs observed in the trees:
 
 ```@repl qcf
-trees = readmultinewick(raxmltrees)
+trees = readmultinewick(raxmltrees);
 q,t = countquartetsintrees(trees);
 nt = tablequartetCF(q,t); # named tuple
 using DataFrames
@@ -116,7 +143,7 @@ saved as a table in this format
 | D      | A| E | O|   0.565 |       0.0903 |       0.3447
 | ...    |  |   |  |         |              |       ...
 
-then we could read it in one step using the`readtableCF` function.
+then we could read it in one step using the [`readtableCF`](@ref) function.
 
 Concordance factors (CF), i.e. gene tree frequencies, for each
 4-taxon subset can be obtained from [BUCKy](http://www.stat.wisc.edu/~ane/bucky/)
@@ -132,8 +159,8 @@ buckyCFfile = joinpath(dirname(pathof(SNaQ)), "..","examples","buckyCF.csv");
 buckyCF = readtableCF(buckyCFfile)
 ```
 The same thing could be done in 2 steps:
-first to read the file and convert it to a 'DataFrame' object,
-and then to convert this DataFrame into a DataCF object.
+first to read the file and convert it to a `DataFrame` object from the [`DataFrames`](https://dataframes.juliadata.org/stable/) package
+and then to convert this `DataFrame` into a [`DataCF`](@ref) object.
 ```@repl qcf
 using CSV, DataFrames
 dat = CSV.read(buckyCFfile, DataFrame);
@@ -263,11 +290,11 @@ less("net1.networks") # extra info
 when viewing these result files with `less`
 within Julia, use arrows to scroll down and type `q` to quit viewing the files.
 - The `.networks` file contains a list of networks that are slight modifications
-of the best (estimated) network `net1`. The modifications change the direction
-of one reticulation at a time, by moving the placement of one hybrid node to another
-node inside the same cycle.
-For each modified network, the pseudolikelihood score was calculated
-(the `loglik` or `-Ploglik` values give a pseudo deviance actually).
+  of the best (estimated) network `net1`. The modifications change the direction
+  of one reticulation at a time, by moving the placement of one hybrid node to another
+  node inside the same cycle.
+  For each modified network, the pseudolikelihood score was calculated
+  (the `loglik` or `-Ploglik` values give a pseudo deviance actually).
 
 - The `.out` file contains the best network among all runs, and the best
   network per run, includes also the pseudolikelihood score and the
@@ -275,11 +302,10 @@ For each modified network, the pseudolikelihood score was calculated
 
 - The `.log` file contains a description of each run, convergence criterion, and seed information.
 
-- The `.err` file has seed information on runs that failed, empty when nothing failed. In the case of a failed run, 
-you could run the `snaqDebug` function on the same settings that caused the error (to help us debug).
+- The `.err` file has seed information on runs that failed, empty when nothing failed.
 
 
-The function name `snaq!` ends with ! because it modifies the argument `raxmlCF`
+The function name [`snaq!`](@ref) ends with ! because it modifies the argument `raxmlCF`
 by including the expected CF. Type `?` then `snaq!` to get help on that function.
 
 The main output file, here `net1.out` (or `snaq.out` by default) has the estimated
@@ -348,20 +374,23 @@ Here the slope heuristic suggests a single hybrid node:
 the score does not get much better beyond h=1.
 
 We made the plot via R above. A more Julian way would use a Julia plotting
-package such as [Gadfly](http://gadflyjl.org/stable/) or
-[Plots](http://docs.juliaplots.org/latest/ecosystem/), like this for instance:
-```julia
-using Gadfly
-plot(x=collect(0:3), y=scores, Geom.point, Geom.line)
-```
+package such as
+[Plots](https://docs.juliaplots.org/latest/),
+[Makie](https://docs.makie.org/stable/tutorials/getting-started) or
+packages with similar principles to ggplot2 in R:
+[AlgebraOfGraphics](https://aog.makie.org/v0.10.2/tutorials/intro-i)
+(based on Makie) or
+[Gadfly](http://gadflyjl.org/stable/).
+Also see this a cool (but now somewhat old)
+[blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia)
+about using ggplot within julia.
 
-Note that since SNaQ assumes level-1 networks (i.e., no intersecting cycles), it might not be possible to add more hybridizations
+Note that since SNaQ assumes level-1 networks (i.e., no intersecting cycles),
+it might not be possible to add more hybridizations
 to networks with few taxa: 
 
 ![level1](../assets/level1.png)
 
-
-Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia) about using ggplot within julia.
 
 ### Suggestions and best practices
 
@@ -382,5 +411,8 @@ Further, a cool [blog](http://avt.im/blog/2018/03/23/R-packages-ggplot-in-julia)
   different runs to different cores, like we did earlier.
 - For long jobs, run as a script in the terminal: `julia runSNaQ.jl`,
   arguments to the script are passed to Julia as a vector called `ARGS`.
-  See the example script `runSNaQ.jl` in the folder `data_results/scripts/`.
-  more on this topic in here: [Parallel computations](@ref)
+  See the example script `runSNaQ.jl` in the `examples` folder of SNaQ,
+  or the file located [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/runSNaQ.jl).
+  More on this topic in here: [Improving runtimes](@ref)
+
+

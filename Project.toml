@@ -1,7 +1,7 @@
 name = "SNaQ"
 uuid = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
 authors = ["Claudia Solis-Lemus <crsl4@users.noreply.github.com>", "Paul Bastide <pbastide@users.noreply.github.com>", "Cecile Ane <cecileane@users.noreply.github.com>", "and contributors"]
-version = "0.1.0"
+version = "1.1.0"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -41,17 +41,10 @@ Graphs = "1.12.0"
 Interpolations = "0.15.1"
 MultivariateStats = "0.10.3"
 NLopt = "0.5.1, 0.6, 1"
-NearestNeighbors = "0.4.21"
-PhyloCoalSimulations = "1.0.0"
-PhyloPlots = "2.0.1"
-PlotlyJS = "0.18.16"
-Plots = "1.40.9"
-ScatteredInterpolation = "0.3.6"
+PhyloNetworks = "1"
 StaticArrays = "0.8.3, 0.9, 0.10, 0.11, 0.12, 1.0"
 StatsBase = "0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34"
-StatsPlots = "0.15.7"
-Surrogates = "6.11.0"
-julia = "1.11"
+julia = "1.5"
 
 [extras]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -76,4 +69,4 @@ StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 Surrogates = "6fc51010-71bc-11e9-0e15-a3fcc6593c49"
 
 [targets]
-test = ["Test", "PhyloNetworks"]
+test = ["Test"]

@@ -120,7 +120,7 @@ end
 # warning: it uses the gamma of the hybrid edges even if
 #          it is not identifiable like in bad diamond I (assumes undone by now)
 # blacklist = true: add the edge as a bad choice to put a hybridization (not fully tested)
-function deleteHybridizationUpdate!(net::HybridNetwork, hybrid::Node, random::Bool, blacklist::Bool)
+function deleteHybridizationUpdate!(net::HybridNetwork, hybrid::Node, random::Bool, use_blacklist::Bool)
     hybrid.hybrid || error("node $(hybrid.number) is not hybrid, so we cannot delete hybridization event around it")
     @debug "MOVE: delete hybridization on hybrid node $(hybrid.number)"
     nocycle, edgesInCycle, nodesInCycle = identifyInCycle(net,hybrid);
@@ -144,7 +144,7 @@ function deleteHybridizationUpdate!(net::HybridNetwork, hybrid::Node, random::Bo
     else
         minor = true;
     end
-    deleteHybrid!(hybrid,net,minor, blacklist)
+    deleteHybrid!(hybrid,net,minor, use_blacklist)
     undoInCycle!(edgesInCycle, nodesInCycle); #moved after deleteHybrid to mantain who is incycle when deleteEdge and look for partition
     undoPartition!(net,hybrid, edgesInCycle)
 end
@@ -158,7 +158,7 @@ deleteHybridizationUpdate!(net::HybridNetwork, hybrid::Node) = deleteHybridizati
 #          hybridization in deleteHybridizationUpdate!
 #          by itself, it leaves things as is
 # branch lengths of -1.0 are interpreted as missing.
-function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Bool)
+function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, use_blacklist::Bool)
     node.hybrid || error("node $(node.number) has to be hybrid for deleteHybrid")
     if(minor)
         hybedge1,hybedge2,treeedge1 = hybridEdges(node);
@@ -173,7 +173,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             removeEdge!(other1, hybedge1);
             PhyloNetworks.deleteEdge!(net,hybedge1);
             #treeedge1.containroot = (!treeedge1.containroot || !hybedge1.containroot) ? false : true #causes problems if hybrid.CR=false
-            if(blacklist)
+            if(use_blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
                 push!(blacklist(net), treeedge1.number)
             end
@@ -187,7 +187,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             removeEdge!(other3,treeedge1);
             PhyloNetworks.deleteEdge!(net,treeedge1);
             hybedge1.containroot = (!treeedge1.containroot || !hybedge1.containroot) ? false : true
-            if(blacklist)
+            if(use_blacklist)
                 println("put in blacklist edge $(hybedge1.number)")
                 push!(blacklist(net), hybedge1.number)
             end
@@ -216,7 +216,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             removeEdge!(treenode1,treeedge1);
             PhyloNetworks.deleteEdge!(net,treeedge1);
             treeedge2.containroot = (!treeedge1.containroot || !treeedge2.containroot) ? false : true
-            if(blacklist)
+            if(use_blacklist)
                 println("put in blacklist edge $(treeedge2.number)")
                 push!(blacklist(net), treeedge2.number)
             end
@@ -228,7 +228,7 @@ function deleteHybrid!(node::Node,net::HybridNetwork,minor::Bool, blacklist::Boo
             removeEdge!(treenode2,treeedge2);
             PhyloNetworks.deleteEdge!(net,treeedge2);
             treeedge1.containroot = (!treeedge1.containroot || !treeedge2.containroot) ? false : true
-            if(blacklist)
+            if(use_blacklist)
                 println("put in blacklist edge $(treeedge1.number)")
                 push!(blacklist(net), treeedge1.number)
             end

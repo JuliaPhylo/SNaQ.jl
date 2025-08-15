@@ -360,3 +360,78 @@ function choosePartition(net::HybridNetwork)
 end
 
 
+"""
+updateUninformativeQuartets(obsCF::Array{Float64}, tol::Float64)
+Returns value to place in quartet.sampled
+"""
+function updateUninformativeQuartets(quartet::Quartet, atol::Float64)
+    allcomp = [(abs(a-b)<=atol) for a in quartet.obsCF', b in quartet.obsCF]
+    if false in allcomp
+        return(true)
+    else
+        return(false)
+    end
+end
+
+"""
+updateUninformativeQuartets!(quartets::Vector{Quartet}, tol::Float64)
+Checks for quartets classified as 'uninformative' given a tolerance to define CF equality 
+    if all CFs in quartet.obsCF are equal within 'tol' tolerance, 
+    quartet.sampled is set to 'false'
+Output: Updates quartet.sampled in-place for all quartets 
+"""
+function updateUninformativeQuartets!(quartets::Vector{Quartet}, atol::Float64)
+    i = Threads.Atomic{Int}(0);
+    Threads.@threads for q in quartets
+        q.sampled = updateUninformativeQuartets(q, atol)
+        if !(q.sampled)
+            #println("bad")
+            q.uninformative = true
+            Threads.atomic_add!(i, 1)
+        end
+    end
+    return(i[])
+end
+updateUninformativeQuartets!(d::DataCF, atol::Float64) = updateUninformativeQuartets!(d.quartet, atol)
+
+
+"""
+updateSampledQuartetsAll!(quartets::Vector{Quartet}, toset::Bool)
+Updates in-place all Quartet.sampled values where Quartet.uninformative=false 
+    to the value provided in toset::Bool
+"""
+function updateSampledQuartetsAll!(quartets::Vector{Quartet}, toset::Bool)
+    Threads.@threads for q in quartets
+        if !q.uninformative
+            q.sampled=toset
+        end
+    end
+end
+updateSampledQuartetsAll!(quartets::Vector{Quartet}) = updateSampledQuartetsAll!(quartets, true)
+updateSampledQuartetsAll!(d::DataCF, toset::Bool) = updateSampledQuartetsAll!(d.quartet, true)
+updateSampledQuartetsAll!(d::DataCF) = updateSampledQuartetsAll!(d.quartet, true)
+
+"""
+updateSubsetQuartets!
+Function to randomly sample a proportion of quartets, and update in-place 
+    Quartet.sampled = true. Number of quartets to sample is defined 
+    as the supplied proportion (prop::Float64) * the number of informative 
+    quartets (i.e., where Quartet.uninformative==false)
+Output: None, quartets vector is modified in-place 
+"""
+function updateSubsetQuartets!(quartets::Vector{Quartet}, prop::Float64)
+    #reset Quartet.samples for all informative quartets
+    updateSampledQuartetsAll!(quartets, false)
+
+    #get count of informative quartets
+    indices = [i for (i, q) in enumerate(quartets) if q.uninformative==false]
+    numQuartets = size(indices, 1)
+
+    #randomly sample numQuartets*propQuartets quartets
+    to_sample = Int(round(numQuartets*prop))
+    sampled = sample(indices, to_sample, replace=false)
+    for s in sampled 
+        quartets[s].sampled = true
+    end
+end
+updateSubsetQuartets!(d::DataCF, prop::Float64) = updateSubsetQuartets!(d.quartet, prop)

@@ -7,6 +7,8 @@ module SNaQ
     using Random
     using Statistics: mean
 
+    using Base.Threads
+
     # other libraries, indicate compatible version in Project.toml
     using CSV
     using DataFrames # innerjoin new in v0.21

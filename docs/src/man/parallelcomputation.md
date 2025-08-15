@@ -1,14 +1,20 @@
-# Parallel computations
+# Improving runtimes
+
+## Parallel runs
 
 For network estimation, multiple runs can done in parallel.
 For example, if your machine has 4 or more processors (or cores),
-you can tell julia to use 4 processors by starting julia with `julia -p 4`,
+you can tell julia to use 4 processors by starting julia with `julia -p3`,
 or by starting julia the usual way (`julia`) and then adding processors with:
 
 ```julia
 using Distributed
-addprocs(4)
+addprocs(3)
 ```
+
+!!! note
+    The `-p` argument for `julia` denotes *additional* processors. So,
+    `julia -p3` will start Julia with *4* processors.
 
 If we load a package (`using SNaQ`) before adding processors,
 then we need to re-load it again so that all processors have access to it:
@@ -17,12 +23,13 @@ then we need to re-load it again so that all processors have access to it:
 @everywhere using PhyloNetworks, SNaQ
 ```
 
-After that, running any of the `snaq!(...)` command will use
-different cores for different runs, as processors become available.
+After that, running the `snaq!(...)` command will use
+different cores for the different independent runs specified by 
+optional `runs` argument, as processors become available.
 Fewer details are printed to the log file when multiple cores
 are used in parallel.
 
-When running `bootsnaq`, the analysis of each bootstrap replicate
+When running [`bootsnaq`](@ref), the analysis of each bootstrap replicate
 will use multiple cores to parallelize separate runs of that particular
 bootstrap replicate. You may parallelize things further by running
 `bootsnaq` multiple times (on separate machines for instance), each time
@@ -34,7 +41,7 @@ At any time during the julia session, `nworkers()` tells us how many
 worker processors julia has access to.
 
 Below is an example of how to use a cluster, to run many independent
-`snaq!` searches in parallel on a cluster running the
+[`snaq!`](@ref) searches in parallel on a cluster running the
 [slurm](https://slurm.schedmd.com) job manager
 (other managers would require a different, but similar submit file).
 This example uses 2 files:
@@ -45,7 +52,7 @@ This example uses 2 files:
    (to run 50 runs instead of 10, say).
 2. a submit file, to launch the julia script.
 
-**First**: the example julia script, below, is assumed (by the submit file)
+**First**: the example julia script, below or [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/runSNaQ.jl), is assumed (by the submit file)
 to be called `runSNaQ.jl`. It uses a starting tree that
 is assumed to be available in a file named `astraltree.tre`, but that
 could be modified
@@ -82,7 +89,7 @@ net0 = readnewick("astraltree.tre");
 using DataFrames, CSV
 df_sp = CSV.read("tableCF_speciesNames.csv", DataFrame; pool=false);
 d_sp = readtableCF!(df_sp);
-net = snaq!(net0, d_sp, hmax=h, filename=outputfile, seed=seed, runs=nruns)
+net = snaq!(net0, d_sp, hmax=2, filename=outputfile, seed=seed, runs=nruns)
 ```
 
 When julia is called on a script, whatever comes after "julia scriptname"
@@ -91,7 +98,7 @@ So if we call a script like this: `julia runSNaQ.jl 2`
 then the script will know the arguments through `ARGS`,
 which would contain a single element, `"2"`.
 This first element is just a string, at this stage. We want to use it as a number,
-so we ask julia to parse the string into an integer.
+so we need to ask julia to parse the string into an integer.
 
 **Second**: we need a "submit" file to ask a job scheduler like
 [slurm](https://slurm.schedmd.com) to submit our julia script to a cluster.
@@ -121,3 +128,62 @@ echo "start of SNaQ parallel runs on $(hostname)"
 /workspace/software/bin/julia --history-file=no -- runSNaQ.jl $SLURM_ARRAY_TASK_ID 30 > net${SLURM_ARRAY_TASK_ID}_30runs.screenlog 2>&1
 echo "end of SNaQ run ..."
 ```
+
+## Parallel quartet likelihood 
+
+Each step of optimization involves computing the likelihood of each quartet.
+Since SNaQ treats quartet likelihoods as independent,
+their likelihoods can be computed in parallel with multi-threading. 
+To enable multi-threading, the user needs to specify how many threads are
+avaliable when starting a Julia session with the `--threads` flag:
+```bash
+julia --threads=8 #use 8 threads
+```
+SNaQ then automatically multi-threads quartet likelihoods, if given the opportunity. 
+Setting `--threads=auto` uses all avaliable CPU threads.
+
+
+## Quartet subsampling
+
+For a network with $N$ taxa, there are $\binom{N}{4}$ different quartets,
+meaning that the complexity of likelihood computation balloons quartically with respect to the number of taxa. 
+In cases where the number of taxa causes network estimation to be prohibitively slow,
+we implemented a strategy that only uses a fraction of all quartets when computing the likelihood.
+For a network with $\binom{N}{4}$ quartets, the optional `propQuartets` argument can be used to randomly sample
+$\lceil \binom{N}{4} \cdot$ `propQuartets` $\rceil$ quartets.
+Although we lose some information when subsampling quartets, using `propQuartets` as low as `0.5`
+has been shown to not signifcantly decrease accuracy.
+
+We can run the same analysis as the [Estimating a network](@ref) section and comapre the two networks
+when we use only a fraction of the quartets. 
+
+```julia
+raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
+raxmlCF = readtrees2CF(raxmltrees)
+astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
+astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
+
+net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
+```
+
+
+!!! warning
+    The `seed` argument will not be used when multithreading,
+    thus results may not be reproducible. 
+    Due to issues with seeds and random number generation,
+    each run may use the seeded numbers in a different order when running multithreaded computations.
+    This could lead to different results between runs, even when using the same seed.
+
+### Removing uninformative quartets
+
+We can further reduce computational costs with minimal detriment to accuracy by
+ignoring uniformative quartets.
+A star tree would give concordance factors of $\frac{1}{3}$ for all quartet topologies,
+thus, quartets with CFs near $\frac{1}{3}$ may not be informative of the overall species topology.
+We can check for and remove uninformative quartets by setting
+ the optional keyword argument `qinfTest` to `true`.
+Any quartets with concordance factors sufficiently close to $\frac{1}{3}$ will be removed when
+ computing the composite likelihood. 
+Further, the optional keyword argument `qtolAbs` can be used to specify the tolerence for determining
+what concordance factors are "close enough" to $\frac{1}{3}$.
+

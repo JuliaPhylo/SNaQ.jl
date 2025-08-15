@@ -7,7 +7,20 @@ raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinew
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 ```
 
-# Extract expected CFs
+# Quartet test for goodness of fit
+
+One can formally assess whether an estimated network fits the concordance factor data
+with the [`QuartetNetworkGoodnessFit`](https://github.com/JuliaPhylo/QuartetNetworkGoodnessFit.jl) package in Julia.
+This package simulates concordance factors from the estimated network under the
+network multispecies coalescent,
+computes how often outlier quartet topologies are observed,
+and compares this to the observed concordance factors to
+perform a test for goodness-of-fit.
+See the [`QuartetNetworkGoodnessFit` documentation](https://juliaphylo.github.io/QuartetNetworkGoodnessFit.jl/stable/man/gof/)
+for an example of this test.
+
+
+# Visualizing observed and expected CFs
 
 A good way to visualize the "goodness-of-fit" of a given estimated network to the data
 is to plot the observed CF versus the expected CF. If the network is a good fit, then the dots
@@ -62,13 +75,6 @@ To export the table of quartet CFs and explore the fit of the network with other
 ```julia
 using CSV
 CSV.write("fittedCF.csv", df_long)
-```
-alternative code to get a similar plot with [Gadfly](http://gadflyjl.org/):
-```julia
-using Gadfly
-plot(layer(df_long, Geom.point, x="obsCF", y="expCF"),
-     layer(x=0:1,y=0:1, Geom.line), # diagonal line
-     Guide.xlabel("CF observed in gene trees"), Guide.ylabel("CF expected from network"))
 ```
 
 We could highlight quartets that include taxon A, say,
