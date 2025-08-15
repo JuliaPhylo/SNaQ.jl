@@ -330,13 +330,13 @@ function quad_split_probability(type::Int, γ::Real, α::Real)::Float64
         end
     else
         if type == 1
-            # @info "1: $(γ * (1 / (α + 1) + α / (α + 1) * γ))"
+            # Same path, \gamma edge
             return γ * (1 / (α + 1) + α / (α + 1) * γ)
         elseif type == 2
-            # @info "2: $((1 - γ) * (1 / (α + 1) + α / (α + 1) * (1 - γ)))"
+            # Same path, 1-\gamma edge
             return (1 - γ) * (1 / (α + 1) + α / (α + 1) * (1 - γ))
         elseif type == 3 || type == 4
-            # @info "3: $(γ * (α / (α + 1)) * (1 - γ))"
+            # Different paths
             return γ * (α / (α + 1)) * (1 - γ)
         end
     end
