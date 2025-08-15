@@ -37,7 +37,7 @@ that fit the observed quartet concordance factors.
 """
 function multi_search(
     N::Union{HybridNetwork, AbstractVector{HybridNetwork}},
-    q::Union{DataCF, AbstractArray{Float64}},
+    q::Union{DataCF, AbstractMatrix{Float64}},
     hmax::Int;
     # Basic arguments
     runs::Int=10,
@@ -50,20 +50,61 @@ function multi_search(
     # Verify input parameters
     runs > 0 || error("runs must be > 0 (runs = $(runs)).")
     typeof(N) <: Vector{HybridNetwork} && length(N) != 1 && length(N) != runs && error("If N is a vector, it must be length 1 or length equal to runs (length(N) = $(length(N)), runs = $(runs))")
+    N = deepcopy(N)
+
+    if typeof(q) <: DataCF
+        # If input is DataCF, make sure there's not a name mismatch
+        dcf_names::Vector{String} = []
+        for quartet in q.quartet
+            for tax in quartet.taxon
+                if !(tax ∈ dcf_names)
+                    push!(dcf_names, tax)
+                end
+            end
+        end
+
+        # If any taxon are in the input but not the inputs but not the quartets, remove them from the inputs
+        # If any taxon are NOT in the input but are in the quartets, error
+        for T in (typeof(N) <: HybridNetwork ? [N] : N)
+            any(tax -> tax ∉ tiplabels(T), dcf_names) && throw(ErrorException("Taxa in DataCF does not match taxa in input."))
+            removetaxa = []
+            for taxon in tiplabels(T)
+                if taxon ∉ dcf_names
+                    push!(removetaxa, taxon)
+                end
+            end
+            if length(removetaxa) > 0
+                @warn "The following are in the inputs but not the DataCF, these taxa will be deleted: $(removetaxa)"
+                for taxon in removetaxa
+                    PhyloNetworks.deleteleaf!(T, taxon)
+                end
+            end
+        end
+
+        if typeof(N) <: HybridNetwork
+            length(symdiff(tiplabels(N), dcf_names)) == 0 || throw(ErrorException("Taxa in DataCF does not match taxa in input."))
+        else
+            all(t -> length(symdiff(tiplabels(t), dcf_names)) == 0, N) || throw(ErrorException("Taxa in DataCF does not match taxa in one of the inputs."))
+        end
+    else
+        # If input is AbstractArray{Float64}, make sure its size is (ntaxa choose 4, 3)
+        nrow::Int = binomial(typeof(N) <: HybridNetwork ? N.numtaxa : N[1].numtaxa, 4)
+        size(q) == (nrow, 3) || error("Input CF matrix should have size ($(nrow), 3), has size $(size(q)) instead.")
+    end
 
     # Verify the starting network inputs
-    Ns::Vector{HybridNetwork} = verifystartingtopologies(N, outgroup, restrictions)
+    Ns::Vector{HybridNetwork} = verifystartingtopologies!(N, outgroup, restrictions)
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
-        qtemp::Matrix{Float64} = Matrix{Float64}(undef, length(q), 3)
-        for j = 1:length(q)
+        qtemp::Matrix{Float64} = Matrix{Float64}(undef, q.numQuartets, 3)
+        for j = 1:q.numQuartets
             for k = 1:3
-                qtemp[j, k] = q[j].data[k]
+                qtemp[j, k] = q.quartet[j].obsCF[k]
             end
         end
         q = qtemp
-        qtemp = nothing
+        qtemp = Matrix{Float64}(undef, 0, 0)
     end
 
     # Generate per-run seeds
@@ -71,17 +112,29 @@ function multi_search(
     run_seeds = abs.(rand(Int, runs) .% 100000)
 
     # Do the runs distributed
-    nets_and_PLs = Distributed.pmap(1:runs) do j
-        println("Begining run #$(j) on seed $(run_seeds[j])")
-        iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
-        N0::HybridNetwork = (length(Ns) == 1) ? Ns[1] : Ns[j]
+    nets_and_PLs = pmap(
+        j -> search(
+            length(Ns) == 1 ? Ns[1] : Ns[j],
+            q, hmax; seed = run_seeds[j], restrictions=restrictions,
+            logfile = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])",
+            outgroup=outgroup, kwargs...
+        ),
+        1:runs
+    )
 
-        return search(
-            N0, q, hmax;
-            seed = run_seeds[j], restrictions=restrictions,
-            logfile=iter_log, outgroup=outgroup, kwargs...
-        )
-    end
+    # nets_and_PLs = Distributed.pmap(1:runs) do j
+    #     println("Begining run #$(j) on seed $(run_seeds[j])")
+    #     iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
+    #     N0::HybridNetwork = (length(Ns) == 1) ? Ns[1] : Ns[j]
+        
+    #     restrictions(N0)
+
+    #     return search(
+    #         N0, q, hmax;
+    #         seed = run_seeds[j], restrictions=restrictions,
+    #         logfile=iter_log, outgroup=outgroup, kwargs...
+    #     )
+    # end
 
     # Consolidate return data
     all_nets = Array{HybridNetwork}(undef, runs)
@@ -96,12 +149,24 @@ function multi_search(
 end
 
 
-function verifystartingtopologies(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String, restrictions::Function)::Vector{HybridNetwork}
+function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String, restrictions::Function)::Vector{HybridNetwork}
     # Copy the input networks
     Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopy_network(N)] : [deepcopy_network(n) for n in N]
     for (j, n) in enumerate(Ns)
         # Prep data
         semidirect_network!(Ns[j]);
+
+        # Make sure all leaf edges have some length so that code later doesn't error
+        for E in Ns[j].edge
+            E.length = E.length == -1.0 ? 0.0 : E.length
+        end
+        for H in Ns[j].hybrid
+            if 1 ≥ getparentedge(H).gamma ≥ 0 && 1 ≥ getparentedgeminor(H).gamma ≥ 0 && getparentedge(H).gamma + getparentedgeminor(H).gamma ≈ 1
+                continue
+            end
+            getparentedge(H).gamma = 0.5
+            getparentedgeminor(H).gamma = 0.5
+        end
 
         # Make sure starting network meets restrictions if any are provided
         restrictions(Ns[j]) || throw(ArgumentError("Starting topology #$(j) does not meet provided restrictions."))
@@ -193,26 +258,6 @@ end
 
 
 
-# function snaq!(
-#     currT0::HybridNetwork,
-#     d::DataCF;
-#     hmax::Integer=1,
-#     liktolAbs::Float64=likAbs,
-#     Nfail::Integer=numFails,
-#     ftolRel::Float64=fRel,
-#     ftolAbs::Float64=fAbs,
-#     xtolRel::Float64=xRel,
-#     xtolAbs::Float64=xAbs,
-#     verbose::Bool=false,
-#     closeN::Bool=true,
-#     Nmov0::Vector{Int}=numMoves,
-#     runs::Integer=10,
-#     outgroup::AbstractString="none",
-#     filename::AbstractString="snaq",
-#     seed::Integer=0,
-#     probST::Float64=0.3,
-#     updateBL::Bool=true,
-# )
 """
     search(
         N::HybridNetwork,

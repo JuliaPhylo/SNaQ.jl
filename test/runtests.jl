@@ -9,6 +9,9 @@ using Distributed
 using Test
 using CSV
 using Aqua
+using StatsBase
+using PhyloCoalSimulations
+include("test_inplace_updates/misc.jl")
 
 ## Import internal functions that are directly used in tests. There has got to be a better way
 import SNaQ: checkNet,
@@ -36,6 +39,21 @@ import SNaQ: checkNet,
     numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!,
     chooseEdgesGamma, deleteHybrid!
 
+import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs,
+    is_valid_add_hybrid,
+    add_hybrid!, remove_hybrid!,
+    getparentedge, getparent,
+    sample_move_reticulate_origin_parameters,
+    is_valid_move_reticulate_origin, move_reticulate_origin!,deepcopy_network, semidirect_network!,
+    generate_move_proposal, apply_move!,
+    move_reticulate_target!, move_reticulate_origin!,
+    semidirect_network!,
+    perform_rNNI!, perform_rNNI1!, perform_rNNI2!, perform_rNNI3!, perform_rNNI4!,
+    is_valid_rNNI1, is_valid_rNNI2, is_valid_rNNI3, is_valid_rNNI4,
+    all_valid_rNNI_nodes, perform_random_rNNI!, semidirect_network!,
+    all_valid_rNNI1_nodes, all_valid_rNNI2_nodes,
+    apply_move!, perform_rSPR!, is_valid_rSPR, semidirect_network!,
+    sample_rSPR_parameters
 
 import PhyloNetworks:
     Node, Edge,
@@ -80,5 +98,13 @@ SNaQ.setCHECKNET(true)
     runtestfile("test_readInputData.jl")
     runtestfile("test_hasEdge.jl")
     runtestfile("test_undirectedOtherNetworks.jl")
+    runtestfile("test_gradient_opt/test_opt_API.jl")
+    runtestfile("test_gradient_opt/test_search_API.jl")
+    runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")
+    runtestfile("test_network_moves/test_add_remove_retic.jl")
+    runtestfile("test_network_moves/test_move_target_origin.jl")
+    runtestfile("test_network_moves/test_rNNI_moves.jl")
+    runtestfile("test_network_moves/test_rSPR_moves.jl")
+    runtestfile("test_network_moves/test_all_moves.jl")
 end
 

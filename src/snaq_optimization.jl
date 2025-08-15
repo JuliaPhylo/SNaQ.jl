@@ -2005,7 +2005,7 @@ Claudia Solís-Lemus and Cécile Ané (2016).
 Inferring phylogenetic networks with maximum pseudolikelihood under incomplete lineage sorting.
 [PLoS Genetics 12(3):e1005896](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
 """
-function snaq!(
+function snaq_oldie!(
     currT0::HybridNetwork,
     d::DataCF;
     hmax::Integer=1,
