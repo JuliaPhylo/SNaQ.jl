@@ -2,6 +2,28 @@
 const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 
 
+"""
+Optimizes the branch lengths and γ parameters of the network `Nprime`.
+
+# Arguments:
+- `Nprime::HybridNetwork`: network to be optimized, typically the proposed network in [`search`](@ref).
+- `old_eqns::Vector{QuartetData}`: quartet equations of the network that came prior to `Nprime` in the
+    hill climbing optimization of [`search`](@ref).
+- `move::Symbol`: the topological move that turned the previous network into `Nprime`. Used to inform
+    which quartets equations in `old_eqns` need to be re-calculated and which remain the same.
+- `params::Tuple`: edges and/or hybrid nodes that define the move corresponding to `move` - used along with
+    `move` for the aforementioned purpose.
+- `q::Matrix{Float64}`: the set of quartet concordance factors used to optimize the network's parameters.
+    Should be a matrix with the same number of rows as the length of `old_eqns` and 3 columns.
+- `q_idxs::Vector{Int}`: indices corresponding to the set of quartets that are being used for optimization.
+    I.e., when `propQuartets` in [`search`](@ref) is 1.0, this contains all integers from 1 to [`nchoose4taxa_length`](@ref).
+    When `propQuartets` is 0.1, it contains 10% as many integers, randomly selected in this range.
+- `opt_maxeval::Int`: maximum number of evaluations when optimizing parameters.
+- `force_resample_all::Bool`: if `true`, ignore `move` and `params` and re-calculate *every* quartet CF
+    equation. Typically set to `true` when, e.g., a new reticulation is added to the network.
+- `rng::TaskLocalRNG`: `TaskLocalRNG` object from which random numbers are generated. Ensures reproducibility.
+- `α::Float64`: inheritance correlation parameter used in calculating pseudo-likelihoods.
+"""
 function optimize_topology!(
     Nprime::HybridNetwork,
     old_eqns::Vector{QuartetData},
@@ -15,6 +37,7 @@ function optimize_topology!(
     α::Float64;
     optargs...
 )
+
 
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, 3*length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
@@ -34,7 +57,13 @@ function optimize_topology!(
 end
 
 
-function compute_loss(N::HybridNetwork, q, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)::Tuple{Float64, Vector{QuartetData}}
+"""
+Computes the loss of network `N` given quartet equations `q` sampled from indices `q_idxs`.
+
+Returns a tuple `(loss::Float64, qeqns::Vector{QuartetData})` where `loss` is the aforementioned loss
+of network `N` and `qeqns` are the CF equations the define network `N`.
+"""
+function compute_loss(N::HybridNetwork, q::Matrix{Float64}, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)::Tuple{Float64, Vector{QuartetData}}
     @debug "\tGathering quartet equations."
     N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
 
@@ -44,7 +73,14 @@ end
 
 
 
-
+"""
+Optimizes the branch lengths of network `net` which is defined by quartet concordance factor
+equations `eqns` based on observed quartet CFs `observed_CFs` under inheritance correlation
+parameter `α`. `maxeval` adjusts the maximum number of loss evaluations in the optimization
+process. This overloaded function is used as a helper method that can directly take 
+Vectors of `PhyloNetworks.QuartetT` as input so that the user doesn't need to handle
+converting the input data.
+"""
 function optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
@@ -62,7 +98,24 @@ function optimize_bls!(
 end
 
 
+"""
+Optimizes the branch lengths (and γ parameters) of network `net`.
 
+# Required Arguments:
+- `net::HybridNetwork`: the network to be optimized
+- `eqns::Array{QuartetData}`: the set of quartet CF equations the define `net`
+- `observed_CFs::Matrix{Float64}`: the corresponding set of observed CFs. Each row
+    in this matrix MUST line up with each entry in `eqns`. If this is called through
+    the [`search`](@ref) method, then this is handled.
+
+# Optional Arguments:
+- `α::Float64=Inf`: the inheritance correlation parameter with which the network is optimized. (Default=`Inf`)
+- `maxeval::Int=10`: the maximum number of loss evaluations during optimization. (Default=`10`)
+- `ftolRel::Float64=1e-12`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-12`)
+- `ftolAbs::Float64=1e-12`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-12`)
+- `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-8`)
+- `xtolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-8`)
+"""
 function optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
@@ -127,6 +180,9 @@ end
 optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 
 
+"""
+The objective function that is maximized during network optimization.
+"""
 function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::Float64 where T<:Float64
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
@@ -156,9 +212,11 @@ function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map::IdxObjMap)
 end
 
 
-
+"""
+Helper function to gather necessary information about `net` to
+perform optimization.
+"""
 function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
-
     param_map = Dict{Int, Int}()
     idx_obj_map::IdxObjMap = IdxObjMap();
     uq_ID = net.numedges
@@ -209,6 +267,11 @@ function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
 end
 
 
+"""
+Helper function that takes a network `net` and its `param_map` (provided
+by [`gather_optimization_info`](@ref)) and gathers each of the associated
+parameters.
+"""
 function gather_params(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Float64}
     params = zeros(length(param_map))
     for obj in vcat(net.hybrid, net.edge)
@@ -220,6 +283,11 @@ function gather_params(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Flo
 end
 
 
+"""
+Helper function that takes a network `net` and its `param_map` (provided
+by [`gather_optimization_info`](@ref)) and gathers each of the associated
+parameters.
+"""
 function gather_params(net::HybridNetwork)::Array{Float64}
     param_map = gather_optimization_info(net, true)[2]
     return gather_params(net, param_map)
@@ -241,6 +309,10 @@ function compute_gradient(net::HybridNetwork, obsCFs)
 end
 
 
+"""
+Computes the expected concordance factors of `net` with the inheritance
+correlation parameter `α` (default=`Inf`).
+"""
 function compute_eCFs(net::HybridNetwork, α::Real=Inf)
     eqns, _, params, _ = find_quartet_equations(net)
     eCFs = zeros(length(eqns), 3)
@@ -249,4 +321,19 @@ function compute_eCFs(net::HybridNetwork, α::Real=Inf)
         eCFs[j, 3] = 1 - eCFs[j, 1] - eCFs[j, 2]
     end
     return eCFs
+end
+
+
+"""
+Creates a DataCF object containing the expected CFs for each quartet in `net`.
+"""
+function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)
+    eqns, _, params, _ = find_quartet_equations(net);
+    d = DataCF()
+    for j = 1:length(eqns)
+        eCF1, eCF2 = compute_eCF(eqns[j], params, α)
+        push!(d.quartet, Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2])))
+    end
+    d.numQuartets = length(eqns)
+    return d
 end

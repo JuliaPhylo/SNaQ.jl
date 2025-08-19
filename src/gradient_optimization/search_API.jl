@@ -122,20 +122,6 @@ function multi_search(
         1:runs
     )
 
-    # nets_and_PLs = Distributed.pmap(1:runs) do j
-    #     println("Begining run #$(j) on seed $(run_seeds[j])")
-    #     iter_log = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])"
-    #     N0::HybridNetwork = (length(Ns) == 1) ? Ns[1] : Ns[j]
-        
-    #     restrictions(N0)
-
-    #     return search(
-    #         N0, q, hmax;
-    #         seed = run_seeds[j], restrictions=restrictions,
-    #         logfile=iter_log, outgroup=outgroup, kwargs...
-    #     )
-    # end
-
     # Consolidate return data
     all_nets = Array{HybridNetwork}(undef, runs)
     all_logPLs = zeros(Float64, runs)
@@ -149,6 +135,10 @@ function multi_search(
 end
 
 
+"""
+Verifies that starting topology(ies) `N` are ready to be optimized.
+Modifies the network(s) `N` in-place.
+"""
 function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String, restrictions::Function)::Vector{HybridNetwork}
     # Copy the input networks
     Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopy_network(N)] : [deepcopy_network(n) for n in N]
@@ -194,6 +184,9 @@ function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{Hybrid
 end
 
 
+"""
+Helper function to log the message `msg` to file `logfile`.
+"""
 function log_text(logfile::String, msg::String)
     logfile == "" && return
     # get the current time and format it
@@ -204,6 +197,10 @@ function log_text(logfile::String, msg::String)
     end
 end
 
+
+"""
+Helper function to log proposed and accepted moves to `logfile`.
+"""
 function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL::Dict)
     all_keys = sort(collect(keys(moves_prop)))
     min_width::Int = maximum([max(length(string(k)), length(string(moves_prop[k])), length(string(moves_acc[k]))) for k in all_keys])+2
@@ -293,7 +290,7 @@ of branch lengths and inheritance probabilities.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
 - `prehybprob::Real=0.0`: Probability of attempting pre-optimization hybrid attachments.
 - `prehybattempts::Int=5`: Number of attempts for pre-optimization hybrid attachments.
-- `probST::Real=0.3`: Probability of performing a subtree move.
+- `probST::Real=0.3`: Probability of performing a subtree move before searching.
 - `maxeval::Int=Int(1e8)`: Maximum number of evaluations.
 - `maxequivPLs::Int=1500`: Maximum number of equivalent pseudo-likelihood scores to consider.
 - `opt_maxeval::Int=10`: Maximum evaluations for optimization.
@@ -339,20 +336,6 @@ function search(
     0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
 
-    propQuartets == 1.0 || error("propQuartets != 1.0 NOT IMPLEMENTED YET")
-
-    # Clean the quartet input
-    if typeof(q) <: AbstractVector{<:PhyloNetworks.QuartetT}
-        qstatic = Array{Float64}(undef, length(q), 3)
-        for j = 1:length(q)
-            for k = 1:3
-                qstatic[j, k] = q[j].data[k]
-            end
-        end
-        q = qstatic
-        qstatic = nothing
-    end
-
     # Set the seed
     rng = Random.seed!(seed)
 
@@ -396,7 +379,7 @@ function search(
     neq = find_quartet_equations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
     N_numparams::Int = length(neq[3])
-    logPLs[1] = optimize_bls!(N, N_eqns, q, α; maxeval=opt_maxeval, optargs...)
+    logPLs[1] = optimize_bls!(N, N_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -429,7 +412,6 @@ function search(
         moves_proposed[prop_move] += 1
 
         # 2. Check for identifiability
-        # TODO: check for galled-TC identifiability
         @debug "Proposed network level: $(getlevel(Nprime))"
         removedegree2nodes!(Nprime);
         while shrink3cycles!(Nprime) continue end
