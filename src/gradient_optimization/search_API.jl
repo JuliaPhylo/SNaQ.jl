@@ -1,6 +1,3 @@
-# Look through all of my TODOs, and arguments that are available in the `snaq!` function (but not anywhere in this file)
-# and create a list of things that are left to do in this directory.
-
 """
     multi_search(
         N::HybridNetwork,
@@ -24,7 +21,6 @@ that fit the observed quartet concordance factors.
 - `runs::Int=10`: Number of independent search runs.
 - `seed::Int=42`: Random seed for reproducibility.
 - `kwargs...`: Additional keyword arguments passed to the [`search`](@ref) function.
-- TODO: list the additional arguments that are passed via kwargs
 
 # Returns
 - `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.

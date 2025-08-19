@@ -1,5 +1,4 @@
 
-# TODO: if the pool size is 1, we can fail X times instead of `maxfail` like everyone else
 function BFS(
     starting_pool::Vector{HybridNetwork},
     d::Int, # depth for each strand to traverse

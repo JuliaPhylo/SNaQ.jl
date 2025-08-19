@@ -1,5 +1,5 @@
 import Graphs
-import Graphs: SimpleGraph  # TODO: remove Graphs dependency
+import Graphs: SimpleGraph
 using PhyloNetworks
 const PN = PhyloNetworks;
 
