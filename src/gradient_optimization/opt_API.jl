@@ -12,7 +12,8 @@ function optimize_topology!(
     opt_maxeval::Int,
     force_resample_all::Bool,
     rng::TaskLocalRNG,
-    α::Float64
+    α::Float64;
+    optargs...
 )
 
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, 3*length(old_eqns))
@@ -27,7 +28,7 @@ function optimize_topology!(
 
     @debug "\tOptimizing branch lengths."
     Nprime_eqns = Nprime_eqns[1:length(old_eqns)]
-    Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q, α; maxeval=opt_maxeval)
+    Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q, α; maxeval=opt_maxeval, optargs...)
 
     return Nprime_logPL, Nprime_eqns
 end
@@ -61,12 +62,17 @@ function optimize_bls!(
 end
 
 
+
 function optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
     α::Real=Inf;
-    maxeval::Int=10
+    maxeval::Int=10,
+    ftolRel::Float64=1e-12,
+    ftolAbs::Float64=1e-12,
+    xtolRel::Float64=1e-8,
+    xtolAbs::Float64=1e-8
 )
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
@@ -74,10 +80,10 @@ function optimize_bls!(
     opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
 
     opt.maxeval = maxeval
-    opt.ftol_rel = 1e-12
-    opt.ftol_abs = 1e-12
-    opt.xtol_rel = 1e-8
-    opt.xtol_abs = 1e-8
+    opt.ftol_rel = ftolRel
+    opt.ftol_abs = ftolAbs
+    opt.xtol_rel = xtolRel
+    opt.xtol_abs = xtolAbs
 
     initial_step!(opt, init_steps)
     opt.lower_bounds = LB

@@ -320,11 +320,14 @@ function search(
     probST::Real=0.3,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=1500,
+    liktolAbs::Float64=1e-8,
+    liktolRel::Float64=1e-4,
     opt_maxeval::Int=10,
     seed::Int=abs(rand(Int) % 100000),
     verbose::Bool=false,
     logfile::String="",
-    outgroup::String="none"
+    outgroup::String="none",
+    optargs...
 )
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
@@ -393,7 +396,7 @@ function search(
     neq = find_quartet_equations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
     N_numparams::Int = length(neq[3])
-    logPLs[1] = optimize_bls!(N, N_eqns, q, α; maxeval=opt_maxeval)
+    logPLs[1] = optimize_bls!(N, N_eqns, q, α; maxeval=opt_maxeval, optargs...)
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -470,7 +473,7 @@ function search(
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimize_topology!(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
-            opt_maxeval, cannot_do_inplace, rng, α
+            opt_maxeval, cannot_do_inplace, rng, α; optargs...
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
         # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
@@ -480,7 +483,7 @@ function search(
             Nprime_logPL = $(Nprime_logPL)
             $(writenewick(Nprime, round=true))
         """)
-        if Nprime_logPL - logPLs[j-1] > 1e-8 && (logPLs[j-1] - Nprime_logPL) / logPLs[j-1] > 1e-4
+        if Nprime_logPL - logPLs[j-1] > liktolAbs && (logPLs[j-1] - Nprime_logPL) / logPLs[j-1] > liktolRel
             # Update current topology info
             N = Nprime
             N_eqns = Nprime_eqns
@@ -518,10 +521,10 @@ function search(
 end
 
 
-function attempt_prehybs(net::HybridNetwork, q, hmax::Int, restrictions::Function, attempts::Int, rng::TaskLocalRNG)
+function attempt_prehybs(net::HybridNetwork, q, hmax::Int, restrictions::Function, attempts::Int, rng::TaskLocalRNG; optargs...)
     best_net = deepcopy_network(net)
     last_net = best_net
-    best_PL = optimize_bls!(net, q)
+    best_PL = optimize_bls!(net, q; optargs...)
 
     for nhyb = net.numhybrids:hmax
         best_PL = -Inf
@@ -542,7 +545,7 @@ function attempt_prehybs(net::HybridNetwork, q, hmax::Int, restrictions::Functio
             end
             found_valid_move || continue
 
-            new_PL = optimize_bls!(N0, q)
+            new_PL = optimize_bls!(N0, q; optargs...)
             if new_PL > best_PL
                 best_PL = new_PL
                 best_net = N0

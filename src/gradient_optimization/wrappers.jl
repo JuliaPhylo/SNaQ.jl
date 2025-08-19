@@ -32,13 +32,6 @@ function snaq!(
     # - `propQuartets`
     # - `qinfTest`
     # - `qtolAbs`
-    #
-    # Opt args:
-    # - `liktolAbs`
-    # - `ftolRel`
-    # - `ftolAbs`
-    # - `xtolRel`
-    # - `xtolAbs`
 
     return multi_search(
         currT0,
@@ -50,7 +43,12 @@ function snaq!(
         seed=seed,
         probST=probST,
         outgroup=outgroup,
-        restrictions=restrictionset(max_level=1)
+        restrictions=restrictionset(max_level=1),
+        ftolRel=ftolRel,
+        ftolAbs=ftolAbs,
+        xtolRel=xtolRel,
+        xtolAbs=xtolAbs,
+        propQuartets=propQuartets
     )[1]
 
 end
