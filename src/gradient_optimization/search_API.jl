@@ -13,7 +13,7 @@ that fit the observed quartet concordance factors.
 
 # Arguments
 - `N::Union{HybridNetwork, Vector{HybridNetwork}}`: The starting network topology or vector
-    of topologies. If a vector, must be length 1 or of length `runs`.
+    of topologies. If a vector, must be length eor of length `runs`.
 - `q::Union{DataCF, AbstractArray{Float64}}`: Observed quartet concordance factors.
 - `hmax::Int`: Maximum number of hybridization events allowed.
 
@@ -325,7 +325,7 @@ function search(
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
-    1 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
+    0 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
     0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
