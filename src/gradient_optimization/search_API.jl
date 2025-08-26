@@ -339,7 +339,7 @@ function search(
     semidirect_network!(N)
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
-    if rand(rng) > probST
+    if rand(rng) < probST
         try
             perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
         catch
