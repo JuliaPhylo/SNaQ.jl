@@ -34,7 +34,7 @@ raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinew
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
 net1alt = topologymaxQpseudolik!(truenet, raxmlCF);
 writenewick(net1alt, round=true)
-loglik(net1alt) # pseudo deviance actually: the lower the better
+loglik(net1alt) # pseudo-deviance actually: the lower the better
 ```
 ```@example fixednetworkoptim
 using PhyloPlots, RCall
@@ -60,7 +60,7 @@ the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
 net1par = topologymaxQpseudolik!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
-loglik(net1par) # pseudo deviance, actually: the lower the better
+loglik(net1par) # pseudo-deviance, actually: the lower the better
 ```
 
 ## Network score with no optimization
@@ -69,7 +69,7 @@ For a network with given branch lengths and γ heritabilies,
 we can compute the pseudolikelihood (well, a pseudo-deviance) with:
 ```@repl fixednetworkoptim
 topologyQpseudolik!(truenet,raxmlCF);
-loglik(truenet) # again, pseudo deviance
+loglik(truenet) # again, pseudo-deviance
 ```
 This function is not maximizing the pseudolikelihood, it is simply computing the
 pseudolikelihood (or deviance) for the given branch lengths and probabilities of

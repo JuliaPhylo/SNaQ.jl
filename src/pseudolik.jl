@@ -1336,7 +1336,7 @@ because then the pseudolikelihood will be meaningless.
 See [`topologymaxQpseudolik!`](@ref) if you want branch lengths and numerical
 parameters optimized on the given network.
 
-The loglik value of the network is updated, and `d` is updated with the expected
+The `fscore` field of the network is updated to contain the pseudo-deviance, and `d` is updated with the expected
 concordance factors under the input network.
 """
 function topologyQpseudolik!(net0::HybridNetwork,d::DataCF; verbose=false::Bool)
