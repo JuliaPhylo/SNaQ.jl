@@ -49,6 +49,21 @@ end
 
 
 """
+Helper function (primarily for the `QuartetNetworkGoodnessFit.jl` package) used
+to compute the expected CFs of the quartet consisting of `taxa` in `net`.
+"""
+function compute_eCF_4taxa(net::HybridNetwork, taxa::AbstractString)::Tuple{Float64,Float64,Float64}
+    # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
+    param_map, params = gather_optimization_info(net)[[2,4]]
+
+    qdata = SNaQ.find_quartet_equations_4taxa(net, taxa[quartet[qi].taxonnumber], snaq_param_map)
+    eCF1, eCF2 = SNaQ.compute_eCF(qdata, snaq_params, α)
+    
+    return eCF1, eCF2, 1-eCF1-eCF2
+end
+
+
+"""
 Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet concordance
 factor data `q` under Dirichlet parameter `α`.
 """
