@@ -52,7 +52,7 @@ end
 Helper function (primarily for the `QuartetNetworkGoodnessFit.jl` package) used
 to compute the expected CFs of the quartet consisting of `taxa` in `net`.
 """
-function compute_eCF_4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString})::Tuple{Float64,Float64,Float64}
+function compute_eCF_4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, α::Real)::Tuple{Float64,Float64,Float64}
     # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
     param_map, params = gather_optimization_info(net)[[2,4]]
 
