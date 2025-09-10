@@ -9,7 +9,7 @@ const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);
 """
 
 """
-function get_4taxa_quartet_equations(net::HybridNetwork, taxa::SizedVector{4,String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
+function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
 
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
@@ -390,7 +390,7 @@ function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractV
     for _ = 1:length(sampled_quartets)
         # Define a local variable b/c using `q_idx` would lead to race conditions
         this_iter_idx::Int = 0
-        iter_taxa::SizedVector{4,String} = String["", "", "", ""]
+        iter_taxa::AbstractVector{String} = String["", "", "", ""]
 
         lock(thread_lock) do
             # Grab the taxa for this iteration and move forward the tickers
@@ -468,7 +468,7 @@ function get_reduced_net(reduced_nets::Dict{Set{String}, HybridNetwork}, taxa::S
 end
 
 
-function find_quartet_equations_4taxa(net::HybridNetwork, taxa::SizedVector{4,String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
+function find_quartet_equations_4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
     # Let's see if the quartet is tree-like and easy first
     qdat = try_treelike_quartet(net, taxa, parameter_map)
     qdat !== nothing && return qdat
@@ -524,7 +524,7 @@ quartet, the corresponding `QuartetData` object is returned. If a hybrid
 is encountered along a given path in this operation, `nothing` is
 returned instead.
 """
-function try_treelike_quartet(net::HybridNetwork, taxa::SizedVector{4,String}, param_map::Dict{Int,Int})
+function try_treelike_quartet(net::HybridNetwork, taxa::AbstractVector{String}, param_map::Dict{Int,Int})
     a = net.leaf[findfirst(l -> l.name == taxa[1], net.leaf)]
     b = net.leaf[findfirst(l -> l.name == taxa[2], net.leaf)]
     c = net.leaf[findfirst(l -> l.name == taxa[3], net.leaf)]
