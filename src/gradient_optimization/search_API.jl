@@ -39,6 +39,7 @@ function multi_search(
     runs::Int=10,
     seed::Int=42,
     logprefix::String="",
+    filename::String="snaq",
     outgroup::String="none",
     restrictions::Function=defaultrestrictions(),
     kwargs...
@@ -107,27 +108,76 @@ function multi_search(
     Random.seed!(seed)
     run_seeds = abs.(rand(Int, runs) .% 100000)
 
+    # Log run details
+    if filename != ""
+        open("$(filename).log", "w+") do f end
+        restrictionmsg = restrictions == defaultrestrictions() ? "default restrictions" :
+            restrictions == restrictgallednetwork() ? "galled networks" :
+            restrictions == restrictgalledtree() ? "galled trees" :
+            restrictions == restrictrootedtreechild() ? "rooted tree child" :
+            restrictions == restrictweaklytreechild() ? "weakly tree child" :
+            restrictions == restrictstronglytreechild() ? "strongly tree child" : "custom restrictions"
+        
+        logmessage(filename, """
+        Beginning network optimization using SNaQ.jl across $runs runs with the following parameters:
+            hmax = $hmax,
+            seed = $seed,
+            outgroup = $outgroup,
+            restrictions = $restrictionmsg
+        Root name for log files: $filename (absolute path $(abspath(filename)))
+        Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").\n
+        """)
+    end
+
     # Do the runs distributed
+    starttime = time()
     nets_and_PLs = pmap(
         j -> search(
             length(Ns) == 1 ? Ns[1] : Ns[j],
             q, hmax; seed = run_seeds[j], restrictions=restrictions,
             logfile = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])",
+            filename = filename,
             outgroup=outgroup, kwargs...
         ),
         1:runs
     )
+    elapsed = timeelapsed(time() - starttime)
 
     # Consolidate return data
     all_nets = Array{HybridNetwork}(undef, runs)
     all_logPLs = zeros(Float64, runs)
     for j = 1:runs
         all_nets[j], all_logPLs[j] = nets_and_PLs[j]
+        loglik!(all_nets[j], all_logPLs[j])
+    end
+    sort_idx = sortperm(all_logPLs, rev=true)
+    bestnet = all_nets[sort_idx[1]]
+
+    # Log results
+    logmessage(filename, """
+    \nFinished optimizing topology at $(currenttime()) after $(elapsed).
+    Optimal network: $(writenewick(bestnet, round=true))
+    Optimal -loglik: $(-loglik(bestnet))
+    To view all $runs inferred networks and their associated -loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
+
+    open("$(filename).out", "w+") do f
+        print(f,
+            """
+            $(writenewick(bestnet)) -Ploglik = $(-loglik(bestnet))
+             Elapsed time: $(elapsed), $(runs) attempted runs
+            
+            -----------------------------------
+            List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
+            """
+        )
+        for j in sort_idx
+            println(f, " $(writenewick(all_nets[j])), with -loglik $(loglik(all_nets[j]))")
+        end
+        println(f, "-----------------------------------")
     end
 
     # Return
-    sort_idx = sortperm(all_logPLs, rev=true)
-    return all_nets[sort_idx[1]], all_nets[sort_idx], all_logPLs[sort_idx]
+    return bestnet, all_nets[sort_idx], all_logPLs[sort_idx]
 end
 
 
@@ -249,6 +299,32 @@ function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL:
     log_text(logfile, msg)
 end
 
+logmessage(filename::String, msg::String) = remotecall_fetch(writelogmessage, 1, filename, msg)
+currenttime() = Dates.format(now(), "HH:MM:SS yyyy-mm-dd")
+
+function writelogmessage(filename::String, msg::String)
+    open("$(filename).log", "a+") do f
+        println(f, msg)
+    end
+end
+
+function timeelapsed(totaltime::Float64)::String
+    seconds::Int = Int(round(totaltime))
+    minutes::Int = (seconds ÷ 60) % 60
+    hours::Int   = (seconds ÷ 3600) % 24
+    days::Int    = seconds ÷ 86400
+    seconds      = seconds % 60
+    if days > 0
+        return "$days days, $hours hours, $minutes minutes, and $seconds seconds"
+    elseif hours > 0
+        return "$hours hours, $minutes minutes, and $seconds seconds"
+    elseif minutes > 0
+        return "$minutes minutes, and $seconds seconds"
+    else
+        return "$seconds seconds"
+    end
+end
+
 
 
 """
@@ -292,7 +368,7 @@ of branch lengths and inheritance probabilities.
 - `opt_maxeval::Int=10`: Maximum evaluations for optimization.
 - `seed::Int=abs(rand(Int) % 100000)`: Random seed for reproducibility.
 - `verbose::Bool=false`: Whether to print verbose output.
-- `logfile::String=""`: File to log progress.
+- `logfile::String=""`: File to log detailed progress (mostly used for debugging).
 
 # Returns
 - `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
@@ -319,6 +395,7 @@ function search(
     seed::Int=abs(rand(Int) % 100000),
     verbose::Bool=false,
     logfile::String="",
+    filename::String="",
     outgroup::String="none",
     optargs...
 )
@@ -331,6 +408,12 @@ function search(
     0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
     0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
+
+    # Initial logging message
+    starttime = time()
+    logmessage(filename, """
+    BEGIN: search with seed $(seed) at $(currenttime())
+           starting topology: $(writenewick(N, round=true))""")
 
     # Set the seed
     rng = Random.seed!(seed)
@@ -494,6 +577,7 @@ function search(
     log_text(logfile, "Search complete.\n\n")
     log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
+    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)).")
     return N, logPLs[length(logPLs)]
 
 end

@@ -48,7 +48,8 @@ function snaq!(
         ftolAbs=ftolAbs,
         xtolRel=xtolRel,
         xtolAbs=xtolAbs,
-        propQuartets=propQuartets
+        propQuartets=propQuartets,
+        filename=filename
     )[1]
 
 end
