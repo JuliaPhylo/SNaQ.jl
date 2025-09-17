@@ -444,7 +444,7 @@ function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
     # This sorting function is what we use to take the set of
     # quartets in `dcf` as they appear and quickly determine
     # the rearrangement that SNaQ's API is expecting
-    function label_sorter(a::String, b::String)::Bool
+    function label_sorter(a::Vector{String}, b::Vector{String})::Bool
         for j = 4:-1:1
             a[j] < b[j] && return true
             b[j] < a[j] && return false
@@ -452,7 +452,7 @@ function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
     end
 
     eCF_matrix = zeros(length(dcf.quartet), 3)
-    qorder = sortperm(dcf.quartet, lt = label_sorter)
+    qorder = sortperm(dcf.quartet, lt = (a, b) -> label_sorter(sort(a.taxon), sort(b.taxon)))
 
     iteration_mapping = [1, 2, 3]
     for (j, qidx) in enumerate(qorder)
