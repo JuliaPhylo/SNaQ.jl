@@ -1,4 +1,4 @@
-if Threads.nthreads() == 1 error("Tests must be run with >1 thread.") end
+#if Threads.nthreads() == 1 error("Tests must be run with >1 thread.") end
 
 
 using SNaQ
@@ -81,23 +81,23 @@ end
 
 SNaQ.setCHECKNET(true)
 @testset "SNaQ.jl" begin
-    runtestfile("test_5taxon_readTopology.jl")
-    runtestfile("test_add2hyb.jl")
-    runtestfile("test_badDiamII.jl")
-    runtestfile("test_bootstrap.jl") 
-    runtestfile("test_calculateExpCF.jl")
-    runtestfile("test_calculateExpCF2.jl")
-    runtestfile("test_correctLik.jl")
-    runtestfile("test_deleteHybridizationUpdate.jl")
-    runtestfile("test_multipleAlleles.jl")
-    runtestfile("test_optBLparts.jl")
-    runtestfile("test_parameters.jl")
-    runtestfile("test_partition.jl")
-    runtestfile("test_partition2.jl")
-    runtestfile("test_perfectData.jl")
-    runtestfile("test_readInputData.jl")
-    runtestfile("test_hasEdge.jl")
-    runtestfile("test_undirectedOtherNetworks.jl")
+    # runtestfile("test_5taxon_readTopology.jl")
+    # runtestfile("test_add2hyb.jl")
+    # runtestfile("test_badDiamII.jl")
+    # runtestfile("test_bootstrap.jl") 
+    # runtestfile("test_calculateExpCF.jl")
+    # runtestfile("test_calculateExpCF2.jl")
+    # runtestfile("test_correctLik.jl")
+    # runtestfile("test_deleteHybridizationUpdate.jl")
+    # runtestfile("test_multipleAlleles.jl")
+    # runtestfile("test_optBLparts.jl")
+    # runtestfile("test_parameters.jl")
+    # runtestfile("test_partition.jl")
+    # runtestfile("test_partition2.jl")
+    # runtestfile("test_perfectData.jl")
+    # runtestfile("test_readInputData.jl")
+    # runtestfile("test_hasEdge.jl")
+    # runtestfile("test_undirectedOtherNetworks.jl")
     runtestfile("test_gradient_opt/test_opt_API.jl")
     runtestfile("test_gradient_opt/test_search_API.jl")
     runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")

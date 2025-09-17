@@ -230,8 +230,16 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{St
 end
 
 
-function get_quartet_type_and_internal_edges(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int})
-    # iterate over the 2^H displayed trees
+"""
+Helper function - `net` MUST be treelike and only contain the leaves named in `taxa` to work as expected.
+    `taxa` must be exactly length 4. Then, `net` is a quartet. This function returns `Tuple{Int, Array{PN.Edge}}`
+    where the `Int` describes the "type" of quartet contained in `net` (see below), and the `Array{PN.Edge}` contains all of
+    the internal edges of the quartet.
+
+    Quartet "types" here mean the following: if `taxa` contains entries ["a", "b", "c", "d"], then type 1 is ab|cd,
+    type 2 is ac|bd, and type 3 is ad|bc.
+"""
+function get_quartet_type_and_internal_edges(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int})::Tuple{Int,Array{PN.Edge}}
     G, W = Graph(net; withweights=true, minoredgeweight=Inf)
     for idx in eachindex(W) W[idx] = (W[idx] == Inf) ? Inf : 1.0 end
     node_to_idx = Dict{PN.Node, Int}(node => j for (j, node) in enumerate(net.node))                                            # these two dicts used later for
@@ -280,6 +288,10 @@ function get_lowest_hybrid(net::HybridNetwork)::Node
     return get_lowest_hybrid_recur(net.hybrid[1])
 end
 
+
+"""
+Helper function for [`get_lowest_hybrid`](@ref) - recursively finds the "lowest" hybrid in a network, starting at `node` - a hybrid node. 
+"""
 function get_lowest_hybrid_recur(node::Node)
     if node.leaf
         return nothing
@@ -378,7 +390,7 @@ end
 
 function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})
     # Relevant data to be returned
-    t = sort(tipLabels(net))
+    t = sort(tiplabels(net))
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
 
     # Relevant loop vars
@@ -424,50 +436,10 @@ end
 
 
 """
-Dynamic programming approach to iteratively reducing the initial hybrid network down to quarnets.
+Finds the quartet equations for the quarnet in `net` containing the taxa in `taxa`. `taxa` must contain exactly 4
+    names of tips that are contained in `net`. `parameter_map` maps edges and gamma parameters in `net` to
+    optimization variable indicies.
 """
-function get_reduced_net(reduced_nets::Dict{Set{String}, HybridNetwork}, taxa::Set{String}, all_taxa::Vector{String})::HybridNetwork
-    haskey(reduced_nets, taxa) && return reduced_nets[taxa]
-
-    next_taxa::String = all_taxa[findfirst(t -> !(t in taxa), all_taxa)]
-    push!(taxa, next_taxa)
-    parent_net::HybridNetwork = get_reduced_net(reduced_nets, taxa, all_taxa)
-    
-    net::HybridNetwork = deepcopy_network(parent_net)
-    PN.deleteleaf!(net, next_taxa, simplify=false, unroot=false, nofuse=true)
-    delete!(taxa, next_taxa)
-    net.numtaxa == length(taxa) || error("$(net.numtaxa) != $(length(taxa))")
-
-    # find and delete degree-2 blobs along external edges
-    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
-    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
-    entryindex = indexin(entry, net.vec_node)
-    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
-    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
-    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
-        # yes if: 1 single exit adjacent to a leaf
-        length(exitnodes[ib]) != 1 && return false
-        ch = getchildren(exitnodes[ib][1])
-        return length(ch) == 1 && ch[1].leaf
-    end
-    for ib in reverse(bloborder)
-        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
-        for he in bcc[ib]
-            he.ismajor && continue
-            # deletion of a hybrid can hide the deletion of another: check that he is still in net
-            any(e -> e===he, net.edge) || continue
-            # delete minor hybrid edge with options unroot=true: to make sure the
-            # root remains of degree 3+, in case a degree-2 blob starts at the root
-            # simplify=true: bc external blob
-            PN.deletehybridedge!(net,he, false,true,false,true,false)
-        end
-    end
-    reduced_nets[deepcopy(taxa)] = net
-
-    return net
-end
-
-
 function find_quartet_equations_4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
     # Let's see if the quartet is tree-like and easy first
     qdat = try_treelike_quartet(net, taxa, parameter_map)
@@ -477,7 +449,7 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::AbstractVector{S
     net = deepcopy_network(net) # deepcopy b/c we need edge numbers to stay the same
 
     # remove all taxa other than those in `taxa`
-    for t in sort(tipLabels(net))
+    for t in sort(tiplabels(net))
         t in taxa && continue
         L = net.leaf[findfirst(l -> l.name == t, net.leaf)]
         PhyloNetworks.deleteleaf!(net, L.number; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
@@ -617,21 +589,8 @@ function find_treelike_mrca_path(a::Node, b::Node)
 end
 
 
-function compute_logPL(N::HybridNetwork, obsCFs)::Float64
-    eqns, _, params, _ = find_quartet_equations(N)
-    total_loss = 0.0
-    for j = 1:size(eqns)[1]
-        for k = 1:3
-            # Loss function
-            total_loss += obsCFs[j].data[k] * log(compute_eCF(eqns[j, k], params, k, Inf) / obsCFs[j].data[k])
-        end
-    end
-    return total_loss
-end
 
-
-
-function from_graph_to_net_edges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})
+function from_graph_to_net_edges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})::Array{PN.Edge}
     net_edges = Array{PN.Edge}(undef, length(internal_graph_edges))
     for (E_idx, E) in enumerate(internal_graph_edges)
         nodei = net.node[E.src]

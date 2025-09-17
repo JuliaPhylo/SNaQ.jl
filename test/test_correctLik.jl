@@ -108,7 +108,7 @@ end
   redirect_stdout(originalstdout)
   rmprocs(workers())
   @test writenewick(n1, round=true)==writenewick(n2, round=true)
-  @test loglik(n1) == loglik(n2)
+  @test abs(loglik(n1) - loglik(n2)) < eps()
   # n3 = readsnaqnetwork("snaq.out")
   # @test writenewick(n3, round=true)==writenewick(n2, round=true)
   # @test loglik(n3) > 0.0

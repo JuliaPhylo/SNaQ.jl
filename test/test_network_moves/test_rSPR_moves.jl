@@ -79,7 +79,7 @@ for j = 1:1000
     prev_newick = writenewick(net)
     params = sample_rSPR_parameters(net, rng)
     perform_rSPR!(net, params...)
-    @test findfirst(tip -> !occursin(tip, writenewick(net)), tipLabels(net)) === nothing
+    @test findfirst(tip -> !occursin(tip, writenewick(net)), tiplabels(net)) === nothing
     @test_nowarn writenewick(net)
     @test prev_newick != writenewick(net)
 end

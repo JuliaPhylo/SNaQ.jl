@@ -23,12 +23,12 @@ true_logPL = compute_loss(net, q)   # -0.00696866191062832
 
 #### FOR LOOP HERE
 for_loop_rt = @elapsed for_loop_best, for_loop_nets, _ = multi_search(deepcopy(gts[1]), q, 1; seed=42, runs=10, maxeval=10000, maxequivPLs=500)
-[hardwiredClusterDistance(for_loop_nets[j], net, false) for j in eachindex(for_loop_nets)]
+[hardwiredclusterdistance(for_loop_nets[j], net, false) for j in eachindex(for_loop_nets)]
 
 @everywhere include("../../src/gradient_optimization/search_API.jl")
 @everywhere __precompile__()
 pmap_rt = @elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; seed=0, runs=10, maxeval=10000, maxequivPLs=500)
-println([hardwiredClusterDistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
+println([hardwiredclusterdistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
 
 
 @everywhere include("../../src/gradient_optimization/search_API.jl")
@@ -37,7 +37,7 @@ println([hardwiredClusterDistance(pmap_nets[j], net, false) for j in eachindex(p
 @elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; propQuartets=1.0, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
 
 
-println([hardwiredClusterDistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
+println([hardwiredclusterdistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
 
 
 
@@ -56,10 +56,10 @@ println([hardwiredClusterDistance(pmap_nets[j], net, false) for j in eachindex(p
 # Correct h
 Random.seed!(42)
 opt_rt = @elapsed best_net, est_nets, logPLs = multi_search(deepcopy(gts[1]), q, 1; runs=10, maxeval=10000, maxequivPLs=500)
-@info [hardwiredClusterDistance(n, net, false) for n in est_nets]
+@info [hardwiredclusterdistance(n, net, false) for n in est_nets]
 
 snaq_rt = @elapsed snaq_net = snaq!(gts[1], df, hmax=1, runs=10)
-@info hardwiredClusterDistance(snaq_net, net, false)
+@info hardwiredclusterdistance(snaq_net, net, false)
 snaq_rt, opt_rt
 
 all_snaq_nets = []
@@ -68,7 +68,7 @@ for line in readlines("snaq.out")[6:(length(readlines("snaq.out"))-2)]
     line = split(line, ", with -loglik")[1]
     push!(all_snaq_nets, readnewick(line))
 end
-[hardwiredClusterDistance(snet, net, false) for snet in all_snaq_nets]
+[hardwiredclusterdistance(snet, net, false) for snet in all_snaq_nets]
 
 @info 2*snaq_rt / opt_rt
 

@@ -10,12 +10,12 @@ tre0 = majortree(net);
 
 
 opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
-@test hardwiredClusterDistance(net, opt_net, false) == 0
+@test hardwiredclusterdistance(net, opt_net, false) == 0
 
 
 t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multi_search(t0s, q, net.numhybrids; runs=length(t0s), seed=5, maxequivPLs = 1000)
-@test hardwiredClusterDistance(net, opt_net, false) == 0
+@test hardwiredclusterdistance(net, opt_net, false) == 0
 
 
 # Test with outgroups
@@ -29,12 +29,12 @@ opt_rt = @elapsed opt_net, _ = multi_search(t0s, q, net.numhybrids; outgroup="b"
 
 t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multi_search(t0s, q, net.numhybrids; outgroup="e", runs=length(t0s), seed=5, maxequivPLs = 1000)
-@test hardwiredClusterDistance(net, opt_net, false) != 0 # "e" is NOT an outgroup, so we should have HWCD > 0
+@test hardwiredclusterdistance(net, opt_net, false) != 0 # "e" is NOT an outgroup, so we should have HWCD > 0
 @test any(t -> t.name == "e", getchildren(getroot(opt_net)))
 
 t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multi_search(t0s, q, net.numhybrids; outgroup="f", runs=length(t0s), seed=5, maxequivPLs = 1000)
-@test hardwiredClusterDistance(net, opt_net, false) != 0 # "f" is NOT an outgroup, so we should have HWCD > 0
+@test hardwiredclusterdistance(net, opt_net, false) != 0 # "f" is NOT an outgroup, so we should have HWCD > 0
 @test any(t -> t.name == "f", getchildren(getroot(opt_net)))
 
 
