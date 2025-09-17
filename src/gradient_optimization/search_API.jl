@@ -94,14 +94,7 @@ function multi_search(
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
-        qtemp::Matrix{Float64} = Matrix{Float64}(undef, q.numQuartets, 3)
-        for j = 1:q.numQuartets
-            for k = 1:3
-                qtemp[j, k] = q.quartet[j].obsCF[k]
-            end
-        end
-        q = qtemp
-        qtemp = Matrix{Float64}(undef, 0, 0)
+        q = gather_expectedCF_matrix(q)
     end
 
     # Generate per-run seeds
