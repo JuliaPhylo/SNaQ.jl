@@ -577,7 +577,8 @@ function search(
     log_text(logfile, "Search complete.\n\n")
     log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
-    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)).")
+    loglik!(N, logPLs[length(logPLs)])
+    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
     return N, logPLs[length(logPLs)]
 
 end
