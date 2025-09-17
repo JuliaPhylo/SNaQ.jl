@@ -433,6 +433,51 @@ end
 
 
 """
+Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
+corresponding to the expected CF values of each quartet
+in `dcf` ordered in the way that `SNaQ` expects internally.
+"""
+function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
+    # Helper function for more legible code later
+    minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
+
+    eCF_matrix = zeros(length(dcf.quartet), 3)
+    qorder = sortperm(dcf.quartet, by = q -> sort(q.taxon))
+
+    iteration_mapping = [1, 2, 3]
+    for (j, qidx) in enumerate(qorder)
+        taxonperm = sortperm(dcf.quartet[qorder[qidx]].taxon)
+        @info taxonperm
+        if minmax(taxonperm[1], taxonperm[2]) == (1, 2) || minmax(taxonperm[1], taxonperm[2]) == (3, 4)
+            iteration_mapping[1] = 1
+        elseif minmax(taxonperm[1], taxonperm[2]) == (1, 3) || minmax(taxonperm[1], taxonperm[2]) == (2, 4)
+            iteration_mapping[1] = 2
+        else
+            iteration_mapping[1] = 3
+        end
+
+        if minmax(taxonperm[1], taxonperm[3]) == (1, 2) || minmax(taxonperm[1], taxonperm[3]) == (3, 4)
+            iteration_mapping[2] = 1
+        elseif minmax(taxonperm[1], taxonperm[3]) == (1, 3) || minmax(taxonperm[1], taxonperm[3]) == (2, 4)
+            iteration_mapping[2] = 2
+        else
+            iteration_mapping[2] = 3
+        end
+
+        if minmax(taxonperm[1], taxonperm[4]) == (1, 2) || minmax(taxonperm[1], taxonperm[4]) == (3, 4)
+            iteration_mapping[3] = 1
+        elseif minmax(taxonperm[1], taxonperm[4]) == (1, 3) || minmax(taxonperm[1], taxonperm[4]) == (2, 4)
+            iteration_mapping[3] = 2
+        else
+            iteration_mapping[3] = 3
+        end
+        eCF_matrix[j, :] .= dcf.quartet[qorder[qidx]].obsCF[iteration_mapping]
+    end
+    return eCF_matrix
+end
+
+
+"""
 Helper function to increment the 4-taxa index within `find_quartet_equations`.
 """
 function incr_taxa_idx!(ts::Vector{Int})::Nothing
