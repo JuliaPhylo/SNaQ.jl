@@ -336,7 +336,7 @@ end
 """
 Assumes that there are 2 leaves below `H` in the quarnet.
 """
-function get_internal_edges_below_lowest_hybrid(H::Node)
+function get_internal_edges_below_lowest_hybrid(H::Node)::Vector{Edge}
     internal_edges = Vector{Edge}()
     c = getchildren(H)
     while length(c) == 1
@@ -347,7 +347,10 @@ function get_internal_edges_below_lowest_hybrid(H::Node)
 end
 
 
-function get_leaves_below_lowest_hybrid(H::Node)
+"""
+Helper function - gets the set of leaves below the hybrid node `H`.
+"""
+function get_leaves_below_lowest_hybrid(H::Node)::Vector{Node}
     queue = Vector{Node}([H])
     leaves = Vector{Node}([])
 
@@ -369,7 +372,7 @@ end
 Gathers a vector of `QuartetData` objects that define the expected
 quartet concordance factors of `net`.
 """
-find_quartet_equations(net::HybridNetwork) =
+find_quartet_equations(net::HybridNetwork)::Tuple{QuartetData,Dict,Vector{Float64},IdxObjMap,Vector{String}} =
     find_quartet_equations(net, 1:nchoose4taxa_length(net))
 
 """
@@ -378,7 +381,7 @@ quartet concordance factors of `net`. `q_idxs` is a `Vector{Int}` that
 must be of length exactly (`net.numtaxa` choose 4). Each index of
 `q_idxs` corresponds to a quartet whose equation will be computed.
 """
-function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})
+function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{QuartetData,Dict,Vector{Float64},IdxObjMap,Vector{String}}
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
@@ -387,7 +390,7 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVe
 end
 
 
-function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})
+function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{QuartetData,Dict,Vector{Float64},IdxObjMap,Vector{String}}
     # Relevant data to be returned
     t = sort(tiplabels(net))
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
@@ -424,7 +427,7 @@ end
 """
 Helper function to increment the 4-taxa index within `find_quartet_equations`.
 """
-function incr_taxa_idx!(ts::Vector{Int})
+function incr_taxa_idx!(ts::Vector{Int})::Nothing
     ind = findfirst(x -> x>1, diff(ts))
     if ind === nothing ind = 4; end
     ts[ind] += 1
@@ -495,7 +498,7 @@ quartet, the corresponding `QuartetData` object is returned. If a hybrid
 is encountered along a given path in this operation, `nothing` is
 returned instead.
 """
-function try_treelike_quartet(net::HybridNetwork, taxa::AbstractVector{String}, param_map::Dict{Int,Int})
+function try_treelike_quartet(net::HybridNetwork, taxa::AbstractVector{String}, param_map::Dict{Int,Int})::Union{QuartetData,Nothing}
     a = net.leaf[findfirst(l -> l.name == taxa[1], net.leaf)]
     b = net.leaf[findfirst(l -> l.name == taxa[2], net.leaf)]
     c = net.leaf[findfirst(l -> l.name == taxa[3], net.leaf)]
@@ -544,9 +547,8 @@ Finds the tree-like path of edges connecting nodes `a` and
 network. If they are connected by a strictly tree-like path
 then this path of edges is returned. Otherwise, `nothing`
 is returned.
-
 """
-function find_treelike_mrca_path(a::Node, b::Node)
+function find_treelike_mrca_path(a::Node, b::Node)::Union{Nothing,Vector{Edge}}
     node_path_a::Vector{Node} = []
     edge_path_a::Vector{Edge} = []
     node_path_b::Vector{Node} = []
@@ -588,7 +590,10 @@ function find_treelike_mrca_path(a::Node, b::Node)
 end
 
 
-
+"""
+Helper function - takes a set of network edges encoded as graph edges in `internal_graph_edges`
+    and returns the corresponding set of `PhyloNetworks.Edge` edge objects in `net.edge`.
+"""
 function from_graph_to_net_edges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})::Array{PN.Edge}
     net_edges = Array{PN.Edge}(undef, length(internal_graph_edges))
     for (E_idx, E) in enumerate(internal_graph_edges)
