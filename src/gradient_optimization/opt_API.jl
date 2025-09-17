@@ -36,7 +36,7 @@ function optimize_topology!(
     rng::TaskLocalRNG,
     α::Float64;
     optargs...
-)::Tuple{Float64, QuartetData}
+)::Tuple{Float64, Vector{QuartetData}}
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, 3*length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
