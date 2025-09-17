@@ -447,7 +447,6 @@ function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
     iteration_mapping = [1, 2, 3]
     for (j, qidx) in enumerate(qorder)
         taxonperm = sortperm(dcf.quartet[qorder[qidx]].taxon)
-        @info taxonperm
         if minmax(taxonperm[1], taxonperm[2]) == (1, 2) || minmax(taxonperm[1], taxonperm[2]) == (3, 4)
             iteration_mapping[1] = 1
         elseif minmax(taxonperm[1], taxonperm[2]) == (1, 3) || minmax(taxonperm[1], taxonperm[2]) == (2, 4)
