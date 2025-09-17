@@ -1,7 +1,6 @@
 import Graphs
 import Graphs: SimpleGraph
 using PhyloNetworks
-const PN = PhyloNetworks;
 
 const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([]);
 const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);

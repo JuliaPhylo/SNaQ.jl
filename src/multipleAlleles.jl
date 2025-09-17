@@ -78,7 +78,7 @@ function mapallelesCFtable!(
     if length(co)==0 co=[1,2,3,4]; end
     allelecol, speciescol = compareTaxaNames(alleleDF,cfDF,co)
     for j in 1:4
-        for ia in 1:size(alleleDF,1) # for all alleles
+        for ia in axes(alleleDF,1) # for all alleles
             cfDF[!,co[j]] = map(x->replace(string(x),
                                          Regex("^$(string(alleleDF[ia,allelecol]))\$") =>
                                          alleleDF[ia,speciescol]),

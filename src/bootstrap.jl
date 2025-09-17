@@ -57,7 +57,7 @@ function sampleCFfromCI!(df::DataFrame, seed=0::Integer)
         println("using seed $(seed) for bootstrap table")
     end
     Random.seed!(seed)
-    for i in 1:size(df,1)
+    for i in axes(df,1)
         c1 = (df[i, 9]-df[i, 8])*rand()+df[i, 8]
         c2 = (df[i,11]-df[i,10])*rand()+df[i,10]
         c3 = (df[i,13]-df[i,12])*rand()+df[i,12]
@@ -272,7 +272,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
         for igene in 1:ngenes
             btr = data[igene]
             length(btr) > 0 || error("no bootstrap trees for $(igene)th gene")
-            for itree in 1:length(btr)
+            for itree in eachindex(btr)
                 btr[itree].numhybrids == 0 || error("network $itree is not a tree for $(igene)th gene")
             end
         end

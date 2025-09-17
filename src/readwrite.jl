@@ -351,7 +351,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
     else
         println("outgroup defined $(outgroup)")
         index = findfirst(n -> outgroup == n.name, net.node)
-        index != nothing ||
+        index !== nothing ||
             error("outgroup $(outgroup) not in net.names $(net.names)")
         node = net.node[index]
         node.leaf || error("outgroup $(outgroup) is not a leaf in net")

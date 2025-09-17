@@ -53,7 +53,7 @@ end
         SNaQ.semidirect_network!(net)
         q, t = countquartetsintrees(gts, showprogressbar=false)
         qstat = Array{Float64}(undef, length(q), 3)
-        for j = 1:length(q)
+        for j in eachindex(q)
             for k = 1:3
                 qstat[j, k] = q[j].data[k]
             end

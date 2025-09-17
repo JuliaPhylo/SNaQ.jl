@@ -37,7 +37,7 @@ end
 
 function apply_rNNI1_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, α::Real=Inf)
     relevant_params = params_below_u_rNNI1(u, param_map)
-    Threads.@threads for j = 1:length(old_qdata)
+    Threads.@threads for j in eachindex(old_qdata)
         if length(old_qdata[j].eqn.divisions) > 0 || recur_fxn_has_params(old_qdata[j].eqn, relevant_params)
             new_qdata[j] = find_quartet_equations_4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
         else
@@ -50,7 +50,7 @@ end
 function apply_rNNI2_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, α::Real=Inf)
     relevant_params = [u.edge[findfirst(e -> t in e.node, u.edge)], s.edge[findfirst(e -> v in e.node, s.edge)]]
     relevant_params = [param_map[e.number] for e in relevant_params]
-    Threads.@threads for j = 1:length(old_qdata)
+    Threads.@threads for j in eachindex(old_qdata)
         if contains_parameter(old_qdata[j], relevant_params)
             new_qdata[j] = find_quartet_equations_4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
         else

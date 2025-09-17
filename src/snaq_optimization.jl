@@ -121,7 +121,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
         ind1 = parse(Int,string(string(qnet.hybrid[1].number),"1"))
         ind2 = parse(Int,string(string(qnet.hybrid[1].number),"2"))
         i = findfirst(isequal(ind1), nhz)
-        i != nothing || error("ind1 not found in nhz")
+        i !== nothing || error("ind1 not found in nhz")
         edges = hybridEdges(qnet.hybrid[1])
         push!(qnhz,i+net.numhybrids-numBad(net)+ntIdent)
         push!(qnhz,i+1+net.numhybrids-numBad(net)+ntIdent)
@@ -134,7 +134,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                 ind1 = parse(Int,string(string(n.number),"1"))
                 ind2 = parse(Int,string(string(n.number),"2"))
                 i = findfirst(isequal(ind1), nhz)
-                i != nothing || error("ind1 not found in nhz")
+                i !== nothing || error("ind1 not found in nhz")
                 edges = hybridEdges(n)
                 push!(qnhz,i+net.numhybrids-numBad(net)+ntIdent)
                 push!(qnhz,i+1+net.numhybrids-numBad(net)+ntIdent)
@@ -167,7 +167,7 @@ function parameters!(qnet::QuartetNetwork, net::HybridNetwork)
                     node = e.node[e.ischild1 ? 1 : 2]
                     node.hybrid || error("strange hybrid edge $(e.number) poiting to tree node $(node.number)")
                     enum_in_nh = findfirst(isequal(e.number), nh)
-                    found = (enum_in_nh != nothing)
+                    found = (enum_in_nh !== nothing)
                     found ? push!(qnh, enum_in_nh) : nothing
                     found ? push!(qindxh, getIndex(e,qnet)) : nothing
                 end
@@ -201,7 +201,7 @@ function update!(qnet::QuartetNetwork,x::Vector{Float64}, net::HybridNetwork)
     length(ch) == length(qnet.hasEdge) || error("changed (length $(length(ch))) and qnet.hasEdge (length $(length(qnet.hasEdge))) should have same length")
     qnet.changed = false
     ntIdent = sum([istIdentifiable(e) ? 1 : 0 for e in net.edge])
-    for i in 1:length(ch)
+    for i in eachindex(ch)
         qnet.changed |= (ch[i] && qnet.hasEdge[i])
     end
     #DEBUGC && @debug "inside update!, qnet.changed is $(qnet.changed), ch $(ch) and qnet.hasEdge $(qnet.hasEdge), $(qnet.quartetTaxon), numHyb $(qnet.numhybrids)"
@@ -660,7 +660,7 @@ function afterOptBL!(
     @debug "begins afterOptBL because of conflicts: flagh,flagt,flaghz=$([flagh,flagt,flaghz])"
     successchange = true
     if(!flagh)
-        for i in 1:length(nh)
+        for i in eachindex(nh)
             if(approxEq(nh[i],0.0) || approxEq(nh[i],1.0))
                 edge = currT.edge[indh[i]]
                 approxEq(edge.gamma,nh[i]) || error("edge $(edge.number) gamma $(edge.gamma) should match the gamma in ht(net) $(nh[i]) and it does not")
@@ -669,7 +669,7 @@ function afterOptBL!(
             end
         end
     elseif(!flagt)
-        for i in 1:length(nt)
+        for i in eachindex(nt)
             if(approxEq(nt[i],0.0))
                 edge = currT.edge[indt[i]]
                 approxEq(edge.length,nt[i]) || error("edge $(edge.number) length $(edge.length) should match the length in ht(net) $(nt[i]) and it does not")
@@ -1521,7 +1521,7 @@ function moveDownLevel!(net::HybridNetwork)
     indhz = index(net)[net.numhybrids - numBad(net) + ntIdent + 1 : length(ht(net))]
     flagh,flagt,flaghz = isValid(nh,nt,nhz)
     if(!flagh)
-        for i in 1:length(nh)
+        for i in eachindex(nh)
             if(approxEq(nh[i],0.0) || approxEq(nh[i],1.0))
                 edge = net.edge[indh[i]]
                 node = edge.node[edge.ischild1 ? 1 : 2];

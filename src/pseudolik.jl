@@ -524,7 +524,7 @@ function extractQuartet!(net::HybridNetwork, quartet::Quartet)
     list = Node[]
     for q in quartet.taxon
         tax_in_net = findfirst(n -> n.name == q, net.node)
-        tax_in_net != nothing || error("taxon $(q) not in network")
+        tax_in_net !== nothing || error("taxon $(q) not in network")
         push!(list, net.node[tax_in_net])
     end
     qnet = extractQuartet(net,list)
@@ -928,7 +928,7 @@ function eliminateTriangle!(qnet::QuartetNetwork, node::Node, other::Node, case:
     middle = qnet.node[findfirst(n -> (inCycle(n) == node.number && size(n.edge,1) == 3 && !isEqual(n,other) && !isEqual(n,node)), qnet.node)]
     #println("middle node is $(middle.number) in eliminateTriangle")
     ind = findfirst(e -> (inCycle(e) == node.number && !isEqual(getOtherNode(e,middle),node)), middle.edge)
-    ind != nothing || error("edge number not found in middle edge")
+    ind !== nothing || error("edge number not found in middle edge")
     edge = middle.edge[ind]
     #println("edge is $(edge.number) with length $(edge.length) in eliminateTriangle, will do deleteIntLeaf from middle through edge")
     deleteIntLeafWhile!(qnet,edge,middle)

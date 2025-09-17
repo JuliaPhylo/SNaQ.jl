@@ -158,7 +158,7 @@ function readtableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false
         co = collect(eachindex(co)) # 1:7 or 1:8
     end                         # we cannot move to mapallelesCFtable because we need repSpecies in here
     quartets = Quartet[]
-    for i in 1:size(df,1)
+    for i in axes(df, 1)
         push!(quartets,Quartet(i,string(df[i,co[1]]),string(df[i,co[2]]),string(df[i,co[3]]),string(df[i,co[4]]),
                                [df[i,co[5]],df[i,co[6]],df[i,co[7]]]))
         if withngenes
@@ -206,7 +206,7 @@ Assumptions:
   basically: the DataCF should have been created from the data frame by `readtableCF!(df, colums)`
 """
 function readtableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
-    for i in 1:size(df,1)
+    for i in axes(df, 1)
         for j in 1:3
             datcf.quartet[i].obsCF[j] = df[i,cols[j]]
         end
@@ -842,7 +842,7 @@ function updateBL!(net::HybridNetwork,d::DataCF)
                 :CF => (x -> -log(3/2*(1. - mean(x)))) => :edgeL)
     edges = x[!,:edge]
     lengths = x[!,:edgeL]
-    for i in 1:length(edges)
+    for i in eachindex(edges)
         ind = getIndexEdge(edges[i],net) # helpful error if not found
         if net.edge[ind].length < 0.0 || net.edge[ind].length==1.0
             # readnewicklevel1 changes missing branch length to 1.0
@@ -990,7 +990,7 @@ function extractQuartetTree(q::Quartet, M::Matrix{Int},S::Union{Vector{<:Abstrac
     end
     subM = M[:, inds.+1]
     @debug "subM: $(subM)"
-    for r in 1:size(subM,1) #rows in subM
+    for r in axes(subM,1) #rows in subM
         @debug "subM[r,:]: $(subM[r,:])"
         if subM[r,:] == [0,0,1,1] || subM[r,:] == [1,1,0,0]
             return 1

@@ -119,9 +119,9 @@ function isCk(N::HybridNetwork)::Tuple{Bool, Int}
         # hybrids in the blob.
         lnodes = unique([getchild(e) for e in blob if getchild(e).hybrid])
         Y_l = getleavesbelow(lnodes)
-        for l = 1:length(Y_l)
+        for l in eachindex(Y_l)
             bloblet = deepcopy_network(N)
-            for i = 1:length(Y_l)
+            for i in eachindex(Y_l)
                 if i == l continue end
                 deleteleaf!(bloblet, Y_l[i].name; simplify=true, nofuse=false, multgammas=false)
             end

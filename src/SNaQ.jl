@@ -28,7 +28,7 @@ module SNaQ
     global CHECKNET = false # for debugging only
 
 
-    import PhyloNetworks: HybridNetwork, Edge, Node, Network, Partition,
+    import PhyloNetworks: HybridNetwork, Network, Partition,
         tiplabels,
         isEqual, approxEq,
         assignhybridnames!, 

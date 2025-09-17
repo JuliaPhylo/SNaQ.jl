@@ -393,7 +393,7 @@ function sorttaxa!(df::DataFrame, co=Int[]::Vector{Int})
     ptax = Array{Int8}(undef, 4)
     pCF  = Array{Int8}(undef, 3)
     taxnam = Array{eltype(df[!,co[1]])}(undef, 4)
-    for i in 1:size(df,1)
+    for i in axes(df,1)
         for j=1:4 taxnam[j] = df[i,co[j]]; end
         sortperm!(ptax, taxnam)
         sorttaxaCFperm!(pCF, ptax) # update permutation pCF according to taxon permutation
