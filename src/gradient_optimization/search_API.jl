@@ -315,11 +315,11 @@ function timeelapsed(totaltime::Float64)::String
     days::Int    = seconds ÷ 86400
     seconds      = seconds % 60
     if days > 0
-        return "$days days, $hours hours, $minutes minutes, and $seconds seconds"
+        return "$days days, $hours hours, $minutes minutes and $seconds seconds"
     elseif hours > 0
-        return "$hours hours, $minutes minutes, and $seconds seconds"
+        return "$hours hours, $minutes minutes and $seconds seconds"
     elseif minutes > 0
-        return "$minutes minutes, and $seconds seconds"
+        return "$minutes minutes and $seconds seconds"
     else
         return "$seconds seconds"
     end
