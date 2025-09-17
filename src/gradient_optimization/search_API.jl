@@ -336,8 +336,6 @@ end
         α::Real=Inf,
         propQuartets::Real=1.0,
         preopt::Bool=false,
-        prehybprob::Real=0.0,
-        prehybattempts::Int=5,
         probST::Real=0.3,
         maxeval::Int=Int(1e8),
         maxequivPLs::Int=1500,
@@ -360,8 +358,6 @@ of branch lengths and inheritance probabilities.
 - `α::Real=Inf`: Dirichlet parameter for gene tree heterogeneity model.
 - `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
-- `prehybprob::Real=0.0`: Probability of attempting pre-optimization hybrid attachments.
-- `prehybattempts::Int=5`: Number of attempts for pre-optimization hybrid attachments.
 - `probST::Real=0.3`: Probability of performing a subtree move before searching.
 - `maxeval::Int=Int(1e8)`: Maximum number of evaluations.
 - `maxequivPLs::Int=1500`: Maximum number of equivalent pseudo-likelihood scores to consider.
@@ -383,9 +379,6 @@ function search(
     propQuartets::Real=1.0,
     #preopt::Bool=true,
     preopt::Bool=false,
-    #prehybprob::Real=0.3,
-    prehybprob::Real=0.0,
-    prehybattempts::Int=5,
     probST::Real=0.3,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=1500,
@@ -405,8 +398,6 @@ function search(
     0 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
-    0 ≤ prehybprob ≤ 1 || error("prehybprob must be in range [0, 1] (prehybprob = $(prehybprob))")
-    0 ≤ prehybattempts ≤ Inf || error("prehybattempts must be ≥ 0 (prehybattempts = $(prehybattempts))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
 
     # Initial logging message
@@ -439,17 +430,9 @@ function search(
             probST=0.0,
             maxeval=1000,
             opt_maxeval=opt_maxeval,
-            prehybattempts=0,
             maxequivPLs=50
         )
         restrictions(N) || error("N does not meet restrictions after preopt")
-    end
-
-    # Try many different ways of adding hybrids and pick the best
-    if prehybattempts > 0 && rand(rng) < prehybprob
-        @debug "Attempting pre-opt hybrid attachments"
-        attempt_prehybs(N, q, hmax, restrictions, prehybattempts, rng)
-        restrictions(N) || error("N does not meet restrictions after prehyb")
     end
 
     # Data used throughout the optimization process
@@ -584,44 +567,6 @@ function search(
 end
 
 
-function attempt_prehybs(net::HybridNetwork, q, hmax::Int, restrictions::Function, attempts::Int, rng::TaskLocalRNG; optargs...)
-    best_net = deepcopy_network(net)
-    last_net = best_net
-    best_PL = optimize_bls!(net, q; optargs...)
-
-    for nhyb = net.numhybrids:hmax
-        best_PL = -Inf
-
-        for j = 1:attempts
-            local N0::HybridNetwork
-            found_valid_move = false
-            
-            # Try to add a hybrid that complies w/ the given restrictions 100 times
-            # If none are found, we just skip
-            for restr_attempt = 1:100
-                N0 = deepcopy_network(last_net)
-                apply_move!(N0, :add_hybrid, Tuple(sample_add_hybrid_parameters(N0, rng)))
-                if restrictions(N0)
-                    found_valid_move = true
-                    break
-                end
-            end
-            found_valid_move || continue
-
-            new_PL = optimize_bls!(N0, q; optargs...)
-            if new_PL > best_PL
-                best_PL = new_PL
-                best_net = N0
-            end
-        end
-
-        best_net == last_net && break   # Couldn't find a move that is valid under `restrictions`
-        last_net = best_net
-    end
-    return best_net, best_PL
-end
-
-
 """
 Applies the move `move` on parameters `params` to network `N`.
 """
@@ -657,7 +602,7 @@ parameters, so this function repeatedly samples until a move with valid
 parameters is selected. Also, makes sure the proposed move is not present in
 `moves_attempted`, and appends the returned move to this vector.
 """
-function generate_move_proposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)
+function generate_move_proposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
     retries::Int = 0
     move, params = sample_move_proposal(N, hmax, rng)
 
@@ -701,7 +646,7 @@ end
 """
 Randomly samples a move to generate a new topology from `N`.
 """
-function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)
+function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
 
     if N.numhybrids < hmax && rand(rng) < 0.05
         @debug "SELECTED: add_random_hybrid!"

@@ -36,9 +36,7 @@ function optimize_topology!(
     rng::TaskLocalRNG,
     α::Float64;
     optargs...
-)
-
-
+)::Tuple{Float64, QuartetData}
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, 3*length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
@@ -87,9 +85,9 @@ function optimize_bls!(
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
     α::Real=Inf;
     maxeval::Int=25
-)
+)::Float64
     obsCF_static = Array{Float64}(undef, length(observed_CFs), 3)
-    for j = 1:length(observed_CFs)
+    for j in eachindex(observed_CFs)
         for k = 1:3
             obsCF_static[j, k] = observed_CFs[j].data[k]
         end
@@ -126,7 +124,7 @@ function optimize_bls!(
     ftolAbs::Float64=1e-12,
     xtolRel::Float64=1e-8,
     xtolAbs::Float64=1e-8
-)
+)::Float64
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
@@ -177,13 +175,13 @@ function optimize_bls!(
 
     return minf
 end
-optimize_bls!(net::HybridNetwork, oCFs; kwargs...) = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
+optimize_bls!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
 
 
 """
 The objective function that is maximized during network optimization.
 """
-function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::Float64 where T<:Float64
+function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::T where T<:Float64
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
@@ -197,8 +195,8 @@ Sets the branch lengths and γ values of edges in `net` according
 to the values provided in `X` and the index-to-object map
 provided in `idx_obj_map`.
 """
-function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map::IdxObjMap)
-    for j = 1:length(X)
+function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map::IdxObjMap)::Nothing
+    for j in eachindex(X)
         obj::Union{Node, Edge} = idx_obj_map[j]
         if typeof(obj) <: PN.Node
             E_major = getparentedge(obj)
@@ -294,26 +292,11 @@ function gather_params(net::HybridNetwork)::Array{Float64}
 end
 
 
-function compute_gradient(net::HybridNetwork, obsCFs)
-    blocks, _, params, _ = find_quartet_equations(net)
-    
-    grad = zeros(length(params))
-    for j = 1:size(blocks)[1]
-        for k = 1:3
-            iter_eCF = compute_eCF(blocks[j, k], params, k, Inf)
-            block_derivs = compute_block_derivs(blocks[j, k], params, k, Inf)
-            grad .+= obsCFs[j].data[k] .* block_derivs ./ iter_eCF
-        end
-    end
-    return grad
-end
-
-
 """
 Computes the expected concordance factors of `net` with the inheritance
 correlation parameter `α` (default=`Inf`).
 """
-function compute_eCFs(net::HybridNetwork, α::Real=Inf)
+function compute_eCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
     eqns, _, params, _ = find_quartet_equations(net)
     eCFs = zeros(length(eqns), 3)
     for j = 1:size(eCFs)[1]
@@ -327,10 +310,10 @@ end
 """
 Creates a DataCF object containing the expected CFs for each quartet in `net`.
 """
-function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)
+function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
     eqns, _, params, _ = find_quartet_equations(net);
     d = DataCF()
-    for j = 1:length(eqns)
+    for j in eachindex(eqns)
         eCF1, eCF2 = compute_eCF(eqns[j], params, α)
         push!(d.quartet, Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2])))
     end
