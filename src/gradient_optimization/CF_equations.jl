@@ -6,7 +6,12 @@ const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([
 const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);
 
 """
-
+Recursively builds the quartet CF equations for the quarnet in
+    `net` containing the taxa in `taxa`. `taxa` should contain
+    exactly 4 strings. `parameter_map` is a `Dict` that maps
+    edge and hybrid node numbers (e.g. `node.number`) to a unique
+    index - used for optimization. `α` is the inheritance correlation
+    parameter.
 """
 function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
 
@@ -390,6 +395,9 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVe
 end
 
 
+"""
+See [`find_quartet_equations`](@ref)
+"""
 function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
     # Relevant data to be returned
     t = sort(tiplabels(net))
