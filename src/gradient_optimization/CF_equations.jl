@@ -372,7 +372,7 @@ end
 Gathers a vector of `QuartetData` objects that define the expected
 quartet concordance factors of `net`.
 """
-find_quartet_equations(net::HybridNetwork)::Tuple{QuartetData,Dict,Vector{Float64},IdxObjMap,Vector{String}} =
+find_quartet_equations(net::HybridNetwork)::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}} =
     find_quartet_equations(net, 1:nchoose4taxa_length(net))
 
 """
@@ -381,7 +381,7 @@ quartet concordance factors of `net`. `q_idxs` is a `Vector{Int}` that
 must be of length exactly (`net.numtaxa` choose 4). Each index of
 `q_idxs` corresponds to a quartet whose equation will be computed.
 """
-function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{QuartetData,Dict,Vector{Float64},IdxObjMap,Vector{String}}
+function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
     all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
@@ -390,7 +390,7 @@ function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVe
 end
 
 
-function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{QuartetData,Dict,Vector{Float64},IdxObjMap,Vector{String}}
+function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
     # Relevant data to be returned
     t = sort(tiplabels(net))
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
