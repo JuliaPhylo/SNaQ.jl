@@ -441,12 +441,22 @@ function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
     # Helper function for more legible code later
     minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
 
+    # This sorting function is what we use to take the set of
+    # quartets in `dcf` as they appear and quickly determine
+    # the rearrangement that SNaQ's API is expecting
+    function label_sorter(a::String, b::String)::Bool
+        for j = 4:-1:1
+            a[j] < b[j] && return true
+            b[j] < a[j] && return false
+        end
+    end
+
     eCF_matrix = zeros(length(dcf.quartet), 3)
-    qorder = sortperm(dcf.quartet, by = q -> sort(q.taxon))
+    qorder = sortperm(dcf.quartet, lt = label_sorter)
 
     iteration_mapping = [1, 2, 3]
     for (j, qidx) in enumerate(qorder)
-        taxonperm = sortperm(dcf.quartet[qorder[qidx]].taxon)
+        taxonperm = sortperm(dcf.quartet[qidx].taxon)
         if minmax(taxonperm[1], taxonperm[2]) == (1, 2) || minmax(taxonperm[1], taxonperm[2]) == (3, 4)
             iteration_mapping[1] = 1
         elseif minmax(taxonperm[1], taxonperm[2]) == (1, 3) || minmax(taxonperm[1], taxonperm[2]) == (2, 4)
@@ -470,7 +480,7 @@ function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
         else
             iteration_mapping[3] = 3
         end
-        eCF_matrix[j, :] .= dcf.quartet[qorder[qidx]].obsCF[iteration_mapping]
+        eCF_matrix[j, :] .= dcf.quartet[qidx].obsCF[iteration_mapping]
     end
     return eCF_matrix
 end
