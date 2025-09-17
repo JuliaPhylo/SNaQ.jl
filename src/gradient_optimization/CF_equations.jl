@@ -387,7 +387,7 @@ function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractV
     t_idx::Int = 1
     ts::Vector{Int} = Vector{Int}([1,2,3,4])
 
-    for _ = 1:length(sampled_quartets)
+    Threads.@threads for _ = 1:length(sampled_quartets)
         # Define a local variable b/c using `q_idx` would lead to race conditions
         this_iter_idx::Int = 0
         iter_taxa::AbstractVector{String} = String["", "", "", ""]
