@@ -300,6 +300,9 @@ within Julia, use arrows to scroll down and type `q` to quit viewing the files.
   network per run, includes also the pseudolikelihood score and the
   computation time.
 
+Additionally there is a folder that ends in `_runs` (in this case, `net1_runs`) that
+contains information about each independent run performed. There will be two files for each run:
+
 - The `.log` file contains a description of each run, convergence criterion, and seed information.
 
 - The `.err` file has seed information on runs that failed, empty when nothing failed.

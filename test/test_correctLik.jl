@@ -133,8 +133,7 @@ end
   @test loglik(n1) == loglik(n2)
   rm("snaq.out")
   rm("snaq.networks")
-  rm("snaq.log") # .log and .err should be git-ignored, but still
-  rm("snaq.err")
+  rm("snaq_runs",recursive=true) # .log and .err should be git-ignored, but still
 end
 
 @testset "snaq! in serial and in parallel w/ different probQR and propQuartets values" begin
@@ -172,8 +171,7 @@ end
   @test hardwiredclusterdistance(n2, n3, false) == 0
   rm("snaq.out")
   rm("snaq.networks")
-  rm("snaq.log") # .log and .err should be git-ignored, but still
-  rm("snaq.err")
+  rm("snaq_runs",recursive=true) # .log and .err should be git-ignored, but still
 end
 
 @testset "throws warning when seed is set and using >1 threads" begin
