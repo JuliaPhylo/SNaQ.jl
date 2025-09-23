@@ -169,6 +169,15 @@ function multi_search(
         println(f, "-----------------------------------")
     end
 
+    # Clean up: the edges above roots have leftover values in them right now -
+    #           we can't actually infer the lengths of those edges, so we clean
+    #           those up here.
+    for n in all_nets
+        for L in n.leaf
+            getparentedge(L).length = -1
+        end
+    end
+
     # Return
     return bestnet, all_nets[sort_idx], all_logPLs[sort_idx]
 end
