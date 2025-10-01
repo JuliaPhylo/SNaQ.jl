@@ -281,7 +281,6 @@ in the estimated network, see the section
 
 We can also check the output files created by `snaq!`:
 ```julia
-less("net1.err") # would provide info about errors, if any
 less("net1.out") # main output file with the estimated network from each run
 less("net1.networks") # extra info
 ```
