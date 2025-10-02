@@ -1995,17 +1995,20 @@ Uninformative quartets are those with concordance factors sufficiently close to 
 expected concordance factors from the star tree (one-third for all topologies). 
 Default parameters are are in parentheses:
 - `qinfTest` (false): if true, then look for uninformative quartets to discard.
-- `qtolAbs` (1e-4): The tolerence for identifying uninformative concordance factors.
-Uninformative concordance factors are (1/3)±`qtolAbs`
+- `qtolAbs` (1e-4): The tolerance for identifying uninformative concordance factors. Uninformative concordance factors are (1/3)±`qtolAbs`
 
 See also: [`topologymaxQpseudolik!`](@ref) to optimize parameters on a fixed topology,
 and [`topologyQpseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
 of a fixed topology with fixed parameters.
 
-Reference:  
+References:
+  
 Claudia Solís-Lemus and Cécile Ané (2016).
 Inferring phylogenetic networks with maximum pseudolikelihood under incomplete lineage sorting.
 [PLoS Genetics 12(3):e1005896](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896)
+
+Kolbow, N, Kong, K, Chafin, T, Justison, J, Ane, C, Solis-Lemus, C (2025).
+SNaQ.jl: Improved scalability for phylogenetic network inference.
 """
 function snaq!(
     currT0::HybridNetwork,

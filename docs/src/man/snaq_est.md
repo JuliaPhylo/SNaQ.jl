@@ -23,6 +23,8 @@ SNaQ (v1.0) implements the statistical inference method in
 The procedure involves a numerical optimization of branch lengths and inheritance
 probabilities and a heuristic search in the space of phylogenetic networks.
 
+SNaQ (v1.1) implements the scalability improvements described in [Kolbow et al 2025](). These functionalities can be found in the [Improving runtimes section](https://juliaphylo.github.io/SNaQ.jl/stable/man/parallelcomputation/).
+
 We suggest that you create a special directory for running these examples,
 where input files can be downloaded and where output files will be
 created (with estimated networks for instance). Enter this directory
