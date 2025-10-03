@@ -1626,19 +1626,16 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
                      outgroup::AbstractString, rootname::AbstractString, seed::Integer, probST::Float64,
                      probQR::Float64, propQuartets::Float64)
     writelog = true
-    writelog_1proc = false
     if (rootname != "")
         julialog = string(rootname,".log")
         logfile = open(julialog,"w")
-        juliaout = string(rootname,".out")
-        if Distributed.nprocs() == 1 || runs == 1
-            writelog_1proc = true
-            juliaerr = string(rootname,".err")
-            errfile = open(juliaerr,"w")
-        end
+        juliaout = string(rootname,".out") 
+        runs_path = string(rootname,"_runs/") # this will store all the individual run logs and error reports
+        mkpath(runs_path)      
     else
       writelog = false
       logfile = stdout # used in call to optTopRun1!
+      runfile = stdout
     end
     str = """optimization of topology, BL and inheritance probabilities in SNaQ.jl using:
               hmax = $(hmax),
@@ -1673,7 +1670,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     else print(stdout,"\nmain seed $(seed)\n"); end
     Random.seed!(seed)
     seeds = [seed;round.(Integer,floor.(rand(runs-1)*100000))]
-    if writelog && !writelog_1proc
+    if writelog
         for i in 1:runs # workers won't write to logfile
             write(logfile, "seed: $(seeds[i]) for run $(i)\n")
         end
@@ -1685,9 +1682,14 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
         logstr = "seed: $(seeds[i]) for run $(i), $(Dates.format(Dates.now(), "yyyy-mm-dd H:M:S.s"))\n"
         print(stdout, logstr)
         msg = "\nBEGIN SNaQ for run $(i), seed $(seeds[i]) and hmax $(hmax)"
-        if writelog_1proc # workers can't write on streams opened by master
-            write(logfile, logstr * msg)
-            flush(logfile)
+        #create new log and error files for Run
+        if writelog
+            runlog = string(runs_path,"run$i.log")
+            runfile = open(runlog,"w")
+            juliaerr = string(runs_path,"run$i.err")
+            errfile = open(juliaerr,"w")
+            write(runfile, logstr * msg)
+            flush(runfile)
         end
         verbose && print(stdout, msg)
         GC.gc();
@@ -1699,32 +1701,36 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
             end
             
             best = optTopRun1!(currT0, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs,
-                       verbose, closeN , Nmov0,seeds[i],logfile,writelog_1proc,probST,probQR);
+                       verbose, closeN , Nmov0,seeds[i],runfile,writelog,probST,probQR);
             logstr *= "\nFINISHED SNaQ for run $(i), -loglik of best $(loglik(best))\n"
             verbose && print(stdout, logstr)
-            if writelog_1proc
+            if writelog
               logstr = writenewick_level1(best,outgroup=outgroup, printID=true, multall=!isempty(d.repSpecies)) ## printID=true calls setNonIdBL
               logstr *= "\n---------------------\n"
-              write(logfile, logstr)
-              flush(logfile)
+              write(runfile, logstr)
+              flush(runfile)
             end
             return best
         catch(err)
             rethrow(err)
             msg = "\nERROR found on SNaQ for run $(i) seed $(seeds[i]): $(err)\n"
             logstr = msg * "\n---------------------\n"
-            if writelog_1proc
-                write(logfile, logstr)
-                flush(logfile)
+            if writelog
+                write(runfile, logstr)
+                flush(runfile)
                 write(errfile, msg)
                 flush(errfile)
             end
             @warn msg # returns: nothing
+        finally #always close files
+            if writelog
+                close(errfile)
+                close(runfile)
+            end
         end
     end
     tend = time_ns() # in nanoseconds
     telapsed = round(convert(Int, tend-tstart) * 1e-9, digits=2) # in seconds
-    writelog_1proc && close(errfile)
     msg = "\n" * Dates.format(Dates.now(), "yyyy-mm-dd H:M:S.s")
     if writelog
         write(logfile, msg)
@@ -1733,8 +1739,8 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     end
     filter!(n -> n !== nothing, bestnet) # remove "nothing", failed runs
     if length(bestnet)>0
-        ind = sortperm([loglik(n) for n in bestnet])
-        bestnet = bestnet[ind]
+        max_ind = sortperm([loglik(n) for n in bestnet])
+        bestnet = bestnet[max_ind]
         maxNet = bestnet[1]::HybridNetwork # tell type to compiler
     else
         error("all runs failed")
@@ -1802,8 +1808,8 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
     end
 
     writelog &&
-    write(logfile,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(loglik(maxNet))\n")
-    print(stdout,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(loglik(maxNet))\n")
+    write(logfile,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(loglik(maxNet)) \nfrom run number $(max_ind[1])\n")
+    print(stdout,"\nMaxNet is $(writenewick_level1(maxNet,printID=true, multall=!isempty(d.repSpecies))) \nwith -loglik $(loglik(maxNet)) \nfrom run number $(max_ind[1])\n")
 
     s = writelog ? open(juliaout,"w") : stdout
     str = writenewick_level1(maxNet, printID=true,multall=!isempty(d.repSpecies)) * """

@@ -26,8 +26,7 @@ then we need to re-load it again so that all processors have access to it:
 After that, running the `snaq!(...)` command will use
 different cores for the different independent runs specified by 
 optional `runs` argument, as processors become available.
-Fewer details are printed to the log file when multiple cores
-are used in parallel.
+
 
 When running [`bootsnaq`](@ref), the analysis of each bootstrap replicate
 will use multiple cores to parallelize separate runs of that particular

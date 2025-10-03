@@ -283,7 +283,6 @@ in the estimated network, see the section
 
 We can also check the output files created by `snaq!`:
 ```julia
-less("net1.err") # would provide info about errors, if any
 less("net1.out") # main output file with the estimated network from each run
 less("net1.networks") # extra info
 ```
@@ -301,6 +300,9 @@ within Julia, use arrows to scroll down and type `q` to quit viewing the files.
 - The `.out` file contains the best network among all runs, and the best
   network per run, includes also the pseudolikelihood score and the
   computation time.
+
+Additionally there is a folder that ends in `_runs` (in this case, `net1_runs`) that
+contains information about each independent run performed. There will be two files for each run:
 
 - The `.log` file contains a description of each run, convergence criterion, and seed information.
 
