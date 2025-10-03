@@ -144,12 +144,6 @@ julia --threads=8 #use 8 threads
 SNaQ then automatically multi-threads quartet likelihoods, if given the opportunity. 
 Setting `--threads=auto` uses all avaliable CPU threads.
 
-!!! warning
-    The `seed` argument will not be used when multithreading,
-    thus results may not be reproducible. 
-    Due to issues with seeds and random number generation,
-    each run may use the seeded numbers in a different order when running multithreaded computations.
-    This could lead to different results between runs, even when using the same seed.
 
 ## Quartet subsampling
 
