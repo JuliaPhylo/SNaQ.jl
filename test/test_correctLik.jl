@@ -69,7 +69,7 @@ end
                        false,true,Int[], 54, stdout,false,0.3,0.0)
   # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
   # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-  @test loglik(estNet) ≈ 0.110086447939308 || abs(loglik(estNet) - 0.002162891949473132) < 1e-8 # former is what RNG on my machine finds, latter is what GitHub actions finds
+  @test loglik(estNet) ≈ 0.110086447939308 
 end
 
 @testset "network estimation h=1 probQR=0.5" begin
@@ -87,7 +87,7 @@ end
                        false,true,Int[], 54, stdout,false,0.3,0.75)
   # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
   # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-  @test loglik(estNet) ≈ 0.110086447939308 || abs(loglik(estNet) - 0.002162891949473132) < 1e-8 # former is what RNG on my machine finds, latter is what GitHub actions finds
+  @test loglik(estNet) ≈ 0.110086447939308 
 end
 
 @testset "snaq! in serial and in parallel" begin
