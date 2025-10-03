@@ -29,11 +29,10 @@ for i=1:13 @test size(boottrees[i])==(10,) end # 10 bootstrap trees for each of 
 addprocs(1)
 @everywhere using SNaQ
 # using Distributed; @everywhere begin; using Pkg; Pkg.activate("."); using PhyloNetworks; end
-originalstdout = stdout
-redirect_stdout(devnull)
-bootnet = bootsnaq(T,boottrees,nrep=2,runs=2,otherNet=net1,seed=1234,
+bootnet = safely_redirect_output() do
+    bootsnaq(T,boottrees,nrep=2,runs=2,otherNet=net1,seed=1234,
                    prcnet=0.5,filename="",Nfail=2,ftolAbs=1e-3,ftolRel=1e-3)
-redirect_stdout(originalstdout)
+end
 rmprocs(workers())
 @test size(bootnet)==(2,)
 @test all(n -> n.numhybrids==1, bootnet)
