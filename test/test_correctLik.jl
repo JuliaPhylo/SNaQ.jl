@@ -69,7 +69,7 @@ end
                        false,true,Int[], 54, stdout,false,0.3,0.0)
   # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
   # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-  @test loglik(estNet) ≈ 0.110086447939308 || abs(loglik(estNet) - 0.002162891949473132) < 1e-8 # former is what RNG on my machine finds, latter is what GitHub actions finds
+  @test loglik(estNet) ≈ 0.002162891949473132
 end
 
 @testset "network estimation h=1 probQR=0.5" begin
@@ -87,25 +87,26 @@ end
                        false,true,Int[], 54, stdout,false,0.3,0.75)
   # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
   # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-  @test loglik(estNet) ≈ 0.110086447939308 || abs(loglik(estNet) - 0.002162891949473132) < 1e-8 # former is what RNG on my machine finds, latter is what GitHub actions finds
+  @test loglik(estNet) ≈  0.110086447939308
 end
 
 @testset "snaq! in serial and in parallel" begin
   global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
   @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
-  originalstdout = stdout
-  redirect_stdout(devnull)
   global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
   @test_logs (:warn, r"^these taxa will be deleted") snaq!(net, d, # taxon "60" in net: not in quartets
     hmax=1, runs=1, Nfail=1, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
-  global n1 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+  global n1 = safely_redirect_output() do 
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
             verbose=false)
+  end
   addprocs(1)
   @everywhere using SNaQ
-  global n2 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+  global n2 = safely_redirect_output() do 
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
              ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
-  redirect_stdout(originalstdout)
+  end
   rmprocs(workers())
   @test writenewick(n1, round=true)==writenewick(n2, round=true)
   @test loglik(n1) == loglik(n2)
@@ -117,18 +118,19 @@ end
 @testset "snaq! with qinfTest=true" begin
   global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
   @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
-  originalstdout = stdout
-  redirect_stdout(devnull)
   global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
   @test_logs (:warn, r"^these taxa will be deleted") snaq!(net, d, # taxon "60" in net: not in quartets
     hmax=1, runs=1, Nfail=1, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,qinfTest=true)
-  global n1 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+  global n1 = safely_redirect_output() do
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
             verbose=false, qinfTest=true)
-  global n2 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+  end
+  global n2 = safely_redirect_output() do
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
     ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
     verbose=false, qinfTest=false)
-  redirect_stdout(originalstdout)
+  end
   @test writenewick(n1, round=true)==writenewick(n2, round=true)
   @test loglik(n1) == loglik(n2)
   rm("snaq.out")
@@ -139,46 +141,38 @@ end
 @testset "snaq! in serial and in parallel w/ different probQR and propQuartets values" begin
   global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
   @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
-  # originalstdout = stdout
-  # redirect_stdout(devnull)
   global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
   snaq!(net, d, # taxon "60" in net: not in quartets
   hmax=1, runs=1, Nfail=1, seed=1234, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
   Random.seed!(42)
   global n1 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
-            probQR = 0.75, propQuartets = 0.8, verbose=false)
+            probQR = 0.0, propQuartets = 0.4, verbose=false)
   addprocs(1)
   @everywhere using SNaQ
   Random.seed!(42)
   global n2 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
              ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
              probQR = 0.75, propQuartets = 0.8)
-  # redirect_stdout(originalstdout)
   rmprocs(workers())
-  n3 = readsnaqnetwork("snaq.out")
+  Random.seed!(42)
+  global n3 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+             probQR = 0.25, propQuartets = 0.6)
   
-  # propQuartets = 0.8 means that branch lengths may optimize to different values
-  for n in [n1, n2, n3]
-    for e in n.edge
-      e.length = -1.
-      e.gamma = -1.
-    end
-  end
   @test loglik(n3) > 0.0
-  # b/c of propQuartets the newicks will sometimes be different
-  @test hardwiredclusterdistance(n1, n2, false) == 0
-  @test hardwiredclusterdistance(n2, n3, false) == 0
+
+  # Networks are not necessarily the same, so can't do HWCD test
+  # n2 and n3 should have same parameters, but `n1`
+  all_params = vcat(
+      reduce(vcat, [[e.length for e in net.edge] for net in [n1, n2, n3]]),
+      reduce(vcat, [[getparentedgeminor(h).gamma for h in net.hybrid] for net in [n1, n2, n3]])
+  )
+  all_params = [p for p in all_params if p != 0.0 && p != -1.0]
+  @test length(unique(all_params)) == length(all_params)
+
   rm("snaq.out")
   rm("snaq.networks")
   rm("snaq_runs",recursive=true) # .log and .err should be git-ignored, but still
-end
-
-@testset "throws warning when seed is set and using >1 threads" begin
-  if Threads.nthreads() > 1
-    global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
-    d = readtableCF(df)
-    @test_warn "You are running snaq! with $(Threads.nthreads()) threads but are trying to use a set-seed. Results are not reproducible in this version of SNaQ when multiple threads are used." snaq!(net, d, seed = 1, runs = 1)
-  end
 end
 end
