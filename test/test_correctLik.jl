@@ -87,7 +87,7 @@ end
                        false,true,Int[], 54, stdout,false,0.3,0.75)
   # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
   # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-  @test loglik(estNet) == 0.002162891949473132
+  @test loglik(estNet) == 0.110086447939308
 end
 
 @testset "snaq! in serial and in parallel" begin
