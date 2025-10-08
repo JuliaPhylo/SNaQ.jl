@@ -1,7 +1,7 @@
 name = "SNaQ"
 uuid = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
 authors = ["Claudia Solis-Lemus <crsl4@users.noreply.github.com>", "Paul Bastide <pbastide@users.noreply.github.com>", "Cecile Ane <cecileane@users.noreply.github.com>", "and contributors"]
-version = "1.0.0"
+version = "1.1.0"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -33,4 +33,4 @@ julia = "1.5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "PhyloNetworks"]
+test = ["Test"]

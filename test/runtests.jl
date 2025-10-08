@@ -30,7 +30,8 @@ import SNaQ: checkNet,
     isBadDiamondI!, isBadDiamondII!, isExtBadTriangle!, isVeryBadTriangle!,
     k!, typeHyb!, gammaz!,
     visited!, edges_changed!, nodes_changed!, ht!, numht!,
-    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
+    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!,
+    chooseEdgesGamma, deleteHybrid!
 
 
 import PhyloNetworks:
@@ -48,6 +49,7 @@ import PhyloNetworks:
 end
 
 
+include("test_output_helper.jl")
 SNaQ.setCHECKNET(true)
 @testset "SNaQ.jl" begin
     include("test_5taxon_readTopology.jl")
@@ -67,5 +69,14 @@ SNaQ.setCHECKNET(true)
     include("test_readInputData.jl")
     include("test_hasEdge.jl")
     include("test_undirectedOtherNetworks.jl")
-end
 
+    # Clean up some extra files that are created at some point in testing
+    for filename in [
+        "rand12Quartets.txt", "rand1Quartets.txt", "rand2Quartets.txt",
+        "rand3Quartets.txt", "rand7Quartets.txt", "snaq.err", "snaq.log",
+        "snaq.networks", "snaq.out", "summaryTreesQuartets.txt", "tableCF.txt"]
+        if isfile(filename)
+            rm(filename)
+        end
+    end
+end

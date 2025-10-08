@@ -47,6 +47,26 @@ To get help, check
   [github issues](https://github.com/JuliaPhylo/SNaQ.jl/issues) and
   post a new issue to post a question or a report potential bugs.
 
+## Overview
+
+SNaQ implements the statistical inference method in Sol&iacute;s-Lemus and An&eacute;
+[(2016)](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1005896).
+The procedure involves a numerical optimization of branch lengths and
+inheritance probabilities, and a heuristic search in the space of
+level-1 phylogenetic networks.
+
+To get help, check
+
+- the latest [SNaQ documentation](https://juliaphylo.github.io/SNaQ.jl/dev)
+- the latest [PhyloNetworks documentation](https://juliaphylo.github.io/PhyloNetworks.jl/dev)
+- a [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki) for a
+  step-by-step tutorial with background on networks (last revised 2022)
+- [tutorial](https://cecileane.github.io/networkPCM-workshop/) for
+  comparative methods, including network calibration (2023 workshop)
+- the [google group](https://groups.google.com/g/juliaphylo-users)
+  for common questions. Join the group to post/email your questions,
+  or to receive information on new versions, bugs fixed, etc.
+
 ## Citing
 
 For the SNaQ method in particular, please cite

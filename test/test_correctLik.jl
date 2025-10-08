@@ -55,6 +55,7 @@ global currT = readnewicklevel1(tree);
 # real network: Case H
 global df=DataFrame(t1=["6","6","10","6","6"],t2=["7","7","7","10","7"],t3=["4","10","4","4","4"],t4=["8","8","8","8","10"],CF1234=[0.13002257237728915, 0.36936019721747243, 0.34692592933269173, 0.12051951084152591, 0.11095702789935982], CF1324=[0.7399548552454217, 0.28371387344983595, 0.28371387344983595, 0.7589609783169482, 0.7780859442012804],CF1423=[0.13002257237728915, 0.34692592933269173, 0.36936019721747243, 0.12051951084152591, 0.11095702789935982])
 global d = readtableCF(df)
+d.numTrees = 1
 
 @testset "lik of network" begin
 extractQuartet!(currT,d)
@@ -64,38 +65,122 @@ lik = logPseudoLik(d)
 end
 
 @testset "network estimation h=1" begin
-estNet = optTopRun1!(currT, 0.01,75, d,1, 1e-5,1e-6,1e-3,1e-4,
-                     false,true,Int[], 54, stdout,false,0.3)
-# topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
-# verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
-@test loglik(estNet) < 0.00217
+  estNet = optTopRun1!(currT, 0.01,75, d,1, 1e-5,1e-6,1e-3,1e-4,
+                       false,true,Int[], 54, stdout,false,0.3,0.0)
+  # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
+  # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
+  @test loglik(estNet) == 0.002162891949473132
+end
+
+@testset "network estimation h=1 probQR=0.5" begin
+  Random.seed!(42)
+  estNet = optTopRun1!(currT, 0.01,75, d,1, 1e-5,1e-6,1e-3,1e-4,
+                       false,true,Int[], 54, stdout,false,0.3,0.5)
+  # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
+  # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
+  @test loglik(estNet) ≈ 1.941159212747682e-7
+end
+
+@testset "network estimation h=1 probQR=0.75" begin
+  Random.seed!(42)
+  estNet = optTopRun1!(currT, 0.01,75, d,1, 1e-5,1e-6,1e-3,1e-4,
+                       false,true,Int[], 54, stdout,false,0.3,0.75)
+  # topology, likAbs,Nfail, data,hmax, fRel,fAbs,xRel,xAbs,
+  # verbose,closeN,numMoves, seed, logfile,writelog,probST,sout)
+  @test loglik(estNet) == 0.110086447939308
 end
 
 @testset "snaq! in serial and in parallel" begin
   global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
   @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
-  originalstdout = stdout
-  redirect_stdout(devnull)
   global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
   @test_logs (:warn, r"^these taxa will be deleted") snaq!(net, d, # taxon "60" in net: not in quartets
-    hmax=1, runs=1, Nfail=1, seed=1234, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
-  global n1 = snaq!(currT, d, hmax=1, runs=1, Nfail=1, seed=123,
-             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
-             verbose=true)
+    hmax=1, runs=1, Nfail=1, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
+  global n1 = safely_redirect_output() do 
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+            ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+            verbose=false)
+  end
   addprocs(1)
   @everywhere using SNaQ
-  global n2 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+  global n2 = safely_redirect_output() do 
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
              ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
-  redirect_stdout(originalstdout)
+  end
   rmprocs(workers())
   @test writenewick(n1, round=true)==writenewick(n2, round=true)
   @test loglik(n1) == loglik(n2)
   n3 = readsnaqnetwork("snaq.out")
   @test writenewick(n3, round=true)==writenewick(n2, round=true)
   @test loglik(n3) > 0.0
+end
+
+@testset "snaq! with qinfTest=true" begin
+  global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
+  @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
+  global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
+  @test_logs (:warn, r"^these taxa will be deleted") snaq!(net, d, # taxon "60" in net: not in quartets
+    hmax=1, runs=1, Nfail=1, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,qinfTest=true)
+  global n1 = safely_redirect_output() do
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+            ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+            verbose=false, qinfTest=true)
+  end
+  global n2 = safely_redirect_output() do
+    snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+    ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+    verbose=false, qinfTest=false)
+  end
+  @test writenewick(n1, round=true)==writenewick(n2, round=true)
+  @test loglik(n1) == loglik(n2)
   rm("snaq.out")
   rm("snaq.networks")
-  rm("snaq.log") # .log and .err should be git-ignored, but still
-  rm("snaq.err")
+  rm("snaq_runs",recursive=true) # .log and .err should be git-ignored, but still
+end
+
+@testset "snaq! in serial and in parallel w/ different probQR and propQuartets values" begin
+  global tree = readnewick("((((6:0.1,4:1.5),9)1:0.1,8),10:0.1);")
+  @test_throws ErrorException snaq!(tree, d) # some taxa are in quartets, not in tree
+  global net = readnewick("((((6:0.1,4:1.5)1:0.2,((7,60))11#H1)5:0.1,(11#H1,8)),10:0.1);")
+  snaq!(net, d, # taxon "60" in net: not in quartets
+  hmax=1, runs=1, Nfail=1, seed=1234, ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2)
+  Random.seed!(42)
+  global n1 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+            ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+            probQR = 0.0, propQuartets = 0.4, verbose=false)
+  addprocs(1)
+  @everywhere using SNaQ
+  Random.seed!(42)
+  global n2 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+             probQR = 0.75, propQuartets = 0.8)
+  rmprocs(workers())
+  Random.seed!(42)
+  global n3 = snaq!(currT, d, hmax=1, runs=2, Nfail=1, seed=123,
+             ftolRel=1e-2,ftolAbs=1e-2,xtolAbs=1e-2,xtolRel=1e-2,
+             probQR = 0.25, propQuartets = 0.6)
+  
+  @test loglik(n3) > 0.0
+
+    #ensure the results of n1,n2,and n3 are stable
+  @test loglik(n1) ≈ 2.0224140882086706e-9
+  @test loglik(n2) ≈ 0.6376806298043407
+  @test loglik(n3) ≈ 0.31733502576782413
+
+  @test writenewick(n1,round=true) == "(#H111:4.795::0.072,8,(10,(7,((6,4)1:0.0)#H111:1.473::0.928)5:0.097):2.139);"
+  @test writenewick(n2,round=true) == "(6,4,((10,(#H111:::0.215,8):0.0):0.073,(7)#H111:::0.785)5:0.935)1;"
+  @test writenewick(n3,round=true) == "(6,4,(#H111:::0.172,(((7)#H111:::0.828,8):0.0,10):0.378)5:0.639)1;"
+
+  ##all networks should have unique parameters because of subsampling of quartets
+  all_params = vcat(
+      reduce(vcat, [[e.length for e in net.edge] for net in [n1, n2, n3]]),
+      reduce(vcat, [[getparentedgeminor(h).gamma for h in net.hybrid] for net in [n1, n2, n3]])
+  )
+  all_params = [p for p in all_params if p != 0.0 && p != -1.0]
+  @test length(unique(all_params)) == length(all_params)
+
+  rm("snaq.out")
+  rm("snaq.networks")
+  rm("snaq_runs",recursive=true) # .log and .err should be git-ignored, but still
 end
 end

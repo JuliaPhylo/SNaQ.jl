@@ -1,16 +1,20 @@
-# Parallel computations
+# Improving runtimes
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+## Parallel runs
 
 For network estimation, multiple runs can done in parallel.
 For example, if your machine has 4 or more processors (or cores),
-you can tell julia to use 4 processors by starting julia with `julia -p 4`,
+you can tell julia to use 4 processors by starting julia with `julia -p3`,
 or by starting julia the usual way (`julia`) and then adding processors with:
 
 ```julia
 using Distributed
-addprocs(4)
+addprocs(3)
 ```
+
+!!! note
+    The `-p` argument for `julia` denotes *additional* processors. So,
+    `julia -p3` will start Julia with *4* processors.
 
 If we load a package (`using SNaQ`) before adding processors,
 then we need to re-load it again so that all processors have access to it:
@@ -19,10 +23,10 @@ then we need to re-load it again so that all processors have access to it:
 @everywhere using PhyloNetworks, SNaQ
 ```
 
-After that, running any of the `snaq!(...)` command will use
-different cores for different runs, as processors become available.
-Fewer details are printed to the log file when multiple cores
-are used in parallel.
+After that, running the `snaq!(...)` command will use
+different cores for the different independent runs specified by 
+optional `runs` argument, as processors become available.
+
 
 When running [`bootsnaq`](@ref), the analysis of each bootstrap replicate
 will use multiple cores to parallelize separate runs of that particular
@@ -84,7 +88,7 @@ net0 = readnewick("astraltree.tre");
 using DataFrames, CSV
 df_sp = CSV.read("tableCF_speciesNames.csv", DataFrame; pool=false);
 d_sp = readtableCF!(df_sp);
-net = snaq!(net0, d_sp, hmax=h, filename=outputfile, seed=seed, runs=nruns)
+net = snaq!(net0, d_sp, hmax=2, filename=outputfile, seed=seed, runs=nruns)
 ```
 
 When julia is called on a script, whatever comes after "julia scriptname"
@@ -124,4 +128,58 @@ echo "start of SNaQ parallel runs on $(hostname)"
 echo "end of SNaQ run ..."
 ```
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
+## Parallel quartet likelihood 
+
+This section describes the functionalities for scalability improvements in [Kolbow et al 2025]() for SNaQ (v1.1).
+
+Each step of optimization involves computing the likelihood of each quartet.
+Since SNaQ treats quartet likelihoods as independent,
+their likelihoods can be computed in parallel with multi-threading. 
+To enable multi-threading, the user needs to specify how many threads are
+avaliable when starting a Julia session with the `--threads` flag:
+```bash
+julia --threads=8 #use 8 threads
+```
+SNaQ then automatically multi-threads quartet likelihoods, if given the opportunity. 
+Setting `--threads=auto` uses all avaliable CPU threads.
+
+
+## Quartet subsampling
+
+For a network with $N$ taxa, there are $\binom{N}{4}$ different quartets,
+meaning that the complexity of likelihood computation balloons quartically with respect to the number of taxa. 
+In cases where the number of taxa causes network estimation to be prohibitively slow,
+we implemented a strategy that only uses a fraction of all quartets when computing the likelihood.
+For a network with $\binom{N}{4}$ quartets, the optional `propQuartets` argument can be used to randomly sample
+$\lceil \binom{N}{4} \cdot$ `propQuartets` $\rceil$ quartets.
+Although we lose some information when subsampling quartets, using `propQuartets` as low as `0.5`
+has been shown to not signifcantly decrease accuracy.
+
+We can run the same analysis as the [Estimating a network](@ref) section and comapre the two networks
+when we use only a fraction of the quartets. 
+
+```julia
+raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
+raxmlCF = readtrees2CF(raxmltrees)
+astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
+astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
+
+net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
+```
+
+
+
+
+### Removing uninformative quartets
+
+We can further reduce computational costs with minimal detriment to accuracy by
+ignoring uniformative quartets.
+A star tree would give concordance factors of $\frac{1}{3}$ for all quartet topologies,
+thus, quartets with CFs near $\frac{1}{3}$ may not be informative of the overall species topology.
+We can check for and remove uninformative quartets by setting
+ the optional keyword argument `qinfTest` to `true`.
+Any quartets with concordance factors sufficiently close to $\frac{1}{3}$ will be removed when
+ computing the composite likelihood. 
+Further, the optional keyword argument `qtolAbs` can be used to specify the tolerence for determining
+what concordance factors are "close enough" to $\frac{1}{3}$.
+

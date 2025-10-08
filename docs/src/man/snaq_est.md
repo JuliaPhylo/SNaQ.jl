@@ -23,13 +23,14 @@ SNaQ (v1.0) implements the statistical inference method in
 The procedure involves a numerical optimization of branch lengths and inheritance
 probabilities and a heuristic search in the space of phylogenetic networks.
 
+SNaQ (v1.1) implements the scalability improvements described in [Kolbow et al 2025](). These functionalities can be found in the [Improving runtimes section](https://juliaphylo.github.io/SNaQ.jl/stable/man/parallelcomputation/).
+
 We suggest that you create a special directory for running these examples,
 where input files can be downloaded and where output files will be
 created (with estimated networks for instance). Enter this directory
 and run Julia from there.
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)
 
 ## Inputs for SNaQ 
 
@@ -282,7 +283,6 @@ in the estimated network, see the section
 
 We can also check the output files created by `snaq!`:
 ```julia
-less("net1.err") # would provide info about errors, if any
 less("net1.out") # main output file with the estimated network from each run
 less("net1.networks") # extra info
 ```
@@ -295,11 +295,14 @@ within Julia, use arrows to scroll down and type `q` to quit viewing the files.
   of one reticulation at a time, by moving the placement of one hybrid node to another
   node inside the same cycle.
   For each modified network, the pseudolikelihood score was calculated
-  (the `loglik` or `-Ploglik` values give a pseudo deviance actually).
+  (the `loglik` or `-Ploglik` values give a pseudo-deviance actually).
 
 - The `.out` file contains the best network among all runs, and the best
   network per run, includes also the pseudolikelihood score and the
   computation time.
+
+Additionally there is a folder that ends in `_runs` (in this case, `net1_runs`) that
+contains information about each independent run performed. There will be two files for each run:
 
 - The `.log` file contains a description of each run, convergence criterion, and seed information.
 
@@ -356,7 +359,7 @@ and this output for net3 (again, only 1 hybrid found):
     MaxNet is (D,C,((O,(E,#H7:::0.19558839257941849):0.3135243301652981):0.6640664138384673,(B,(A)#H7:::0.8044116074205815):10.0):10.0);
     with -loglik 28.315067218909626
 
-Each network has a `loglik` attribute, which is its log pseudo deviance:
+Each network has an `fscore` attribute, which contains its log pseudo-deviance:
 a multiple of the negative log-likelihood up to a constant (the constant is
 such that the score is 0 if the network fits the data perfectly).
 The lower the better. We can plot these scores across hybrid values:
@@ -414,7 +417,6 @@ to networks with few taxa:
   arguments to the script are passed to Julia as a vector called `ARGS`.
   See the example script `runSNaQ.jl` in the `examples` folder of SNaQ,
   or the file located [here](https://github.com/juliaphylo/SNaQ/blob/main/examples/runSNaQ.jl).
-  More on this topic in here: [Parallel computations](@ref)
+  More on this topic in here: [Improving runtimes](@ref)
 
 
-> This documentation pertains to SNaQ v1.0 as originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896)

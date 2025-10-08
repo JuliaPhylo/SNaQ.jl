@@ -2,36 +2,36 @@
 ## when I added the test for readNexusTrees. So, I was not sure if they were
 ## not included for a reason (slow test?)
 
-## @testset "test: read CF data" begin
-## # d=readInputData("1.ms"); #tableCF0.txt
-## d = (@test_logs PhyloNetworks.readInputData("1.ms",:all,0,["1","2","3","4","5","6"],false,"none",false,false);) #tableCF0.txt
-## d = PhyloNetworks.readInputData("1.ms",:all,0,false); # writes summaryTreesQuartets.txt
-## d=readInputData("1.ms",:rand,10); #tableCF3.txt
-## d=readInputData("1.ms",[1,2,3,4,5]); #tableCF4.txt
+@testset "Read CF data" begin
+  examp_dir = joinpath(@__DIR__, "..", "examples")
+  d = readtableCF(joinpath(examp_dir, "tableCF.txt"))
+  d = readtableCF(joinpath(examp_dir, "tableCF_species.csv"))
+  d = readtableCF(joinpath(examp_dir, "tableCFCI.csv"))
 
-## d=readInputData("1.ms","allQuartets.txt"); #tableCF1.txt
-## d=readInputData("1.ms","allQuartets.txt",:rand,10); #tableCF2.txt
-## d=readInputData("1.ms","allQuartets.txt",true,"try4.txt"); #try4.txt
+  sixtreestr = ["(E,((A,B),(C,D)),O);","(((A,B),(C,D)),(E,O));","(A,B,((C,D),(E,O)));",
+              "(B,((C,D),(E,O)));","((C,D),(A,(B,E)),O);","((C,D),(A,B,E),O);"]
+  sixtrees = readnewick.(sixtreestr)
+  d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false)))
+  @test nrow(d) > 0
+  d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false, whichQ="rand")))
+  @test nrow(d) > 0
 
-## descData(d)
+  for nq in [1, 3, 7, 12]
+    d = DataFrame(tablequartetCF(readtrees2CF(sixtrees, writeTab=false, writeSummary=false, whichQ="rand", numQ=nq)))
+    @test nrow(d) == nq
+  end
 
+  d = readtrees2CF(sixtrees)
+  SNaQ.descData(d)
+end
 
-## d = readtrees2CF("1.ms");
-## d = readtrees2CF("1.ms",filename="try.txt");
-## d = readtrees2CF("1.ms","allQuartets.txt",filename="hola.txt");
-## d = readtrees2CF("1.ms","allQuartets.txt",whichQ=:rand,numQ=10,filename="hola.txt");
-
-## d= readtableCF("tableCF.txt");
-## d2= readtableCF("tableCFbad.txt")
-## end
 
 #Test consistency of writing/reading. Moved from test_relaxed_reading. Now only in PN. 
 net = readnewicklevel1("(E,((B)#H1:::.5,((D,C),(#H1:::.5,A))));");
 @test writenewick(net) == "(D:1.0,C:1.0,((#H1:1.0::0.5,A:1.0):1.0,((B:1.0)#H1:1.0::0.5,E:1.0):1.0):1.0);"
-originalstdout = stdout
-redirect_stdout(devnull) # requires julia v1.6
-@test_logs SNaQ.printEverything(net)
-redirect_stdout(originalstdout)
+safely_redirect_output() do
+  @test_logs SNaQ.printEverything(net)
+end
 
 @testset "test: reading nexus file" begin
 # with translate table, hybrids, failed γ in net 2, bad net 3, v2 format in net 4
