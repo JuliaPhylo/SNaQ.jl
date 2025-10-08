@@ -162,8 +162,16 @@ end
   
   @test loglik(n3) > 0.0
 
-  # Networks are not necessarily the same, so can't do HWCD test
-  # n2 and n3 should have same parameters, but `n1`
+    #ensure the results of n1,n2,and n3 are stable
+  @test loglik(n1) ≈ 6.107937495516101e-9
+  @test loglik(n2) ≈ 0.545342150386895
+  @test loglik(n3) ≈ 0.5162284009487654
+
+  @test writenewick(n1,round=true) == "(6,4,(#H111:::0.002,((10,(8)#H111:::0.998):0.076,7)5:0.945):0.0)1;"
+  @test writenewick(n2,round=true) == "(6,4,((7)#H111:::1.0,((#H111:::0.0,8):0.0,10):0.05)5:1.001)1;"
+  @test writenewick(n3,round=true) == "(6,4,(#H111:::0.22,(((7)#H111:::0.78,8):0.0,10):0.281)5:0.806)1;"
+
+  ##all networks should have unique parameters because of subsampling of quartets
   all_params = vcat(
       reduce(vcat, [[e.length for e in net.edge] for net in [n1, n2, n3]]),
       reduce(vcat, [[getparentedgeminor(h).gamma for h in net.hybrid] for net in [n1, n2, n3]])
