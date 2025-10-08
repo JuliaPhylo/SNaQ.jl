@@ -1679,6 +1679,8 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
 
     tstart = time_ns()
     bestnet = Distributed.pmap(1:runs) do i # for i in 1:runs
+        Random.seed!(seeds[i]);
+
         logstr = "seed: $(seeds[i]) for run $(i), $(Dates.format(Dates.now(), "yyyy-mm-dd H:M:S.s"))\n"
         print(stdout, logstr)
         msg = "\nBEGIN SNaQ for run $(i), seed $(seeds[i]) and hmax $(hmax)"
