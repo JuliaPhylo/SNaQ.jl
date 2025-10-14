@@ -416,13 +416,23 @@ function search(
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
     if rand(rng) < probST
-        try
-            perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
-        catch
+        found_different_net::Bool = false
+        for j = 1:10
+            try
+                perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
+                if restrictions(N)
+                    found_different_net = true
+                    break
+                end
+            catch
+            finally
+                if !found_different_net
+                    N = readnewick(writenewick(N));
+                    semidirect_network!(N)
+                end
+            end
         end
-        if !restrictions(N)
-            N = readnewick(writenewick(N));
-            semidirect_network!(N)
+        if !found_different_net(N)
             @warn "Initial probST move led to a network that did not meet the given restrictions. Using the provided network instead."
         end
     end
