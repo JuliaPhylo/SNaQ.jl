@@ -432,7 +432,7 @@ function search(
                 end
             end
         end
-        if !found_different_net(N)
+        if !found_different_net
             @warn "Initial probST move led to a network that did not meet the given restrictions. Using the provided network instead."
         end
     end
