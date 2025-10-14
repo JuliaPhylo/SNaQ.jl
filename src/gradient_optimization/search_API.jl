@@ -420,6 +420,11 @@ function search(
             perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
         catch
         end
+        if !restrictions(N)
+            N = readnewick(writenewick(N));
+            semidirect_network!(N)
+            @warn "Initial probST move led to a network that did not meet the given restrictions. Using the provided network instead."
+        end
     end
     restrictions(N) || error("N does not meet restrictions after probST")
 
