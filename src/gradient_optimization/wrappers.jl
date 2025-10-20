@@ -29,7 +29,6 @@ function snaq!(
     # - `filename`
     # - `updateBL`
     # - `probQR`
-    # - `propQuartets`
     # - `qinfTest`
     # - `qtolAbs`
 
