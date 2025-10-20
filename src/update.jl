@@ -429,7 +429,7 @@ function updateSubsetQuartets!(quartets::Vector{Quartet}, prop::Float64)
 
     #randomly sample numQuartets*propQuartets quartets
     to_sample = Int(round(numQuartets*prop))
-    sampled = sample(indices, to_sample, replace=false)
+    sampled = prop == 1.0 ? indices : sample(indices, to_sample, replace=false)
     for s in sampled 
         quartets[s].sampled = true
     end
