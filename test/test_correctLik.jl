@@ -163,13 +163,13 @@ end
   @test loglik(n3) > 0.0
 
     #ensure the results of n1,n2,and n3 are stable
-  @test loglik(n1) ≈ 2.0224140882086706e-9
-  @test loglik(n2) ≈ 0.6376806298043407
-  @test loglik(n3) ≈ 0.31733502576782413
+  @test loglik(n1) ≈ 0.005286911785715772
+  @test loglik(n2) ≈ 0.8643250955298982
+  @test loglik(n3) ≈ 0.8643250954488176
 
-  @test writenewick(n1,round=true) == "(#H111:4.795::0.072,8,(10,(7,((6,4)1:0.0)#H111:1.473::0.928)5:0.097):2.139);"
-  @test writenewick(n2,round=true) == "(6,4,((10,(#H111:::0.215,8):0.0):0.073,(7)#H111:::0.785)5:0.935)1;"
-  @test writenewick(n3,round=true) == "(6,4,(#H111:::0.172,(((7)#H111:::0.828,8):0.0,10):0.378)5:0.639)1;"
+  @test writenewick(n1,round=true) == "(#H111:7.173::0.063,8,(10,(7,((6,4)1:0.0)#H111:1.433::0.937)5:0.096):6.249);"
+  @test writenewick(n2,round=true) == "(6,4,((10,(#H111:::0.0,8):0.0):0.052,(7)#H111:::1.0)5:1.001)1;"
+  @test writenewick(n3,round=true) == "(6,4,((7)#H111:::1.0,((#H111:::0.0,8):0.002,10):0.052)5:1.001)1;"
 
   ##all networks should have unique parameters because of subsampling of quartets
   all_params = vcat(

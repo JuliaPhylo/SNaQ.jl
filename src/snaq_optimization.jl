@@ -1704,6 +1704,16 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
             
             best = optTopRun1!(currT0, liktolAbs, Nfail, d, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs,
                        verbose, closeN , Nmov0,seeds[i],runfile,writelog,probST,probQR);
+
+            if propQuartets < 1.0
+                # Do one parameter optimization with all quartets so that loglik values are standardized
+                updateSubsetQuartets!(d, 1.0)
+                writelog && write(logfile, "\nre-optimizing branch lengths with ALL quartets")
+                optBL!(best, d, verbose, fRelBL, fAbsBL, xRelBL, xAbsBL)
+
+                writelog && write(logfile,"\nEND propQuartets<1.0 post-search BL optimization: found minimizer topology with -loglik=$(round(loglik(best), digits=5))")
+            end
+
             logstr *= "\nFINISHED SNaQ for run $(i), -loglik of best $(loglik(best))\n"
             verbose && print(stdout, logstr)
             if writelog
