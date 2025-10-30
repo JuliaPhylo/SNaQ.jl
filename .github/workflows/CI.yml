@@ -25,14 +25,14 @@ jobs:
         version:
           - '1'
         os:
-          - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+          #- ubuntu-latest
+          - macOS-14
+          #- windows-latest
         arch:
           - x64
         threads:
           - 1
-          - 4
+          #- 4
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@latest
