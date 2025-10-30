@@ -26,7 +26,7 @@ jobs:
           - '1'
         os:
           - ubuntu-latest
-          - macOS-14
+          - macos-latest
           - windows-latest
         threads:
           - 1
