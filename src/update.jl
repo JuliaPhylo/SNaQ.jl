@@ -415,16 +415,18 @@ updateSampledQuartetsAll!(d::DataCF) = updateSampledQuartetsAll!(d.quartet, true
 updateSubsetQuartets!
 Function to randomly sample a proportion of quartets, and update in-place 
     Quartet.sampled = true. Number of quartets to sample is defined 
-    as the supplied proportion (prop::Float64) * the number of informative 
+    as the supplied proportion (prop::Float64).
+    If update_uninformative is false, then we instead sample 
+    the supplied proportion of informative 
     quartets (i.e., where Quartet.uninformative==false)
 Output: None, quartets vector is modified in-place 
 """
-function updateSubsetQuartets!(quartets::Vector{Quartet}, prop::Float64)
+function updateSubsetQuartets!(quartets::Vector{Quartet}, prop::Float64,update_uninformative::Bool=false)
     #reset Quartet.samples for all informative quartets
     updateSampledQuartetsAll!(quartets, false)
 
     #get count of informative quartets
-    indices = [i for (i, q) in enumerate(quartets) if q.uninformative==false]
+    indices = [i for (i, q) in enumerate(quartets) if (update_uninformative || !q.uninformative)]
     numQuartets = size(indices, 1)
 
     #randomly sample numQuartets*propQuartets quartets
@@ -434,4 +436,4 @@ function updateSubsetQuartets!(quartets::Vector{Quartet}, prop::Float64)
         quartets[s].sampled = true
     end
 end
-updateSubsetQuartets!(d::DataCF, prop::Float64) = updateSubsetQuartets!(d.quartet, prop)
+updateSubsetQuartets!(d::DataCF, prop::Float64,update_uninformative::Bool=false) = updateSubsetQuartets!(d.quartet, prop, update_uninformative)

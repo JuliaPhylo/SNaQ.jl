@@ -1707,7 +1707,7 @@ function optTopRuns!(currT0::HybridNetwork, liktolAbs::Float64, Nfail::Integer, 
 
             if propQuartets < 1.0
                 # Do one parameter optimization with all quartets so that loglik values are standardized
-                updateSubsetQuartets!(d, 1.0)
+                updateSubsetQuartets!(d, 1.0,true)
                 if writelog
                     write(runfile, "\nre-optimizing branch lengths with ALL quartets")
                     flush(runfile)
