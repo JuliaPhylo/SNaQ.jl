@@ -163,13 +163,36 @@ end
   @test loglik(n3) > 0.0
 
     #ensure the results of n1,n2,and n3 are stable
-  @test loglik(n1) ≈ 2.0224140882086706e-9
-  @test loglik(n2) ≈ 0.6376806298043407
-  @test loglik(n3) ≈ 0.31733502576782413
+  @test loglik(n1) ≈ 0.005286911785715772
+  @test loglik(n2) ≈ 0.8643250955298982
+  @test loglik(n3) ≈ 0.8643250954488176
 
-  @test writenewick(n1,round=true) == "(#H111:4.795::0.072,8,(10,(7,((6,4)1:0.0)#H111:1.473::0.928)5:0.097):2.139);"
-  @test writenewick(n2,round=true) == "(6,4,((10,(#H111:::0.215,8):0.0):0.073,(7)#H111:::0.785)5:0.935)1;"
-  @test writenewick(n3,round=true) == "(6,4,(#H111:::0.172,(((7)#H111:::0.828,8):0.0,10):0.378)5:0.639)1;"
+  #test that branch lengths and gammas are as expected 
+  n1_bl =  [-1.0, -1.0, 0.0, 1.4328670073515855, 7.172595948984188, -1.0, 6.249115892774974, -1.0, 0.09631058675670329, -1.0]
+  n1_gammas =  [1.0,1.0,1.0,0.9373292928420479,0.06267070715795212,1.0,1.0,1.0,1.0,1.0]
+  n2_bl =  [ -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,2.9921172118024813e-5,-1.0,0.052363633369246314,1.0005326659090306]
+  n2_gammas =  [1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0]
+  n3_bl = [ -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,0.0015443938702141983,-1.0,0.05236390138676052,1.0005338164741053]
+  n3_gammas = [ 1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0]
+
+  @test [e.length for e in n1.edge] ≈ n1_bl
+  @test [e.gamma for e in n1.edge] ≈ n1_gammas
+  @test [e.length for e in n2.edge] ≈ n2_bl
+  @test [e.gamma for e in n2.edge] ≈ n2_gammas
+  @test [e.length for e in n3.edge] ≈ n3_bl
+  @test [e.gamma for e in n3.edge] ≈ n3_gammas
+
+  ##Set branchs/gammas to -1 so we can test newick strings without branch lengths 
+  (x-> x.length = -1.0).(n1.edge)
+  (x-> x.length = -1.0).(n2.edge)
+  (x-> x.length = -1.0).(n3.edge)
+  (x-> x.gamma = -1.0).(n1.edge)
+  (x-> x.gamma = -1.0).(n2.edge)
+  (x-> x.gamma = -1.0).(n3.edge) 
+
+  @test writenewick(n1) == "(#H111,8,(10,(7,((6,4)1)#H111)5));"
+  @test writenewick(n2) == "(6,4,((10,(#H111,8)),(7)#H111)5)1;"
+  @test writenewick(n3) == "(6,4,((7)#H111,((#H111,8),10))5)1;"
 
   ##all networks should have unique parameters because of subsampling of quartets
   all_params = vcat(
