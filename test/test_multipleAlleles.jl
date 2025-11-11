@@ -1,4 +1,4 @@
-include("test_output_helper.jl")
+# include("test_output_helper.jl") # already done in runtests.jl
 @testset "multiple alleles" begin
 import SNaQ: sorttaxa!
 global tree, df, d, net, currT
