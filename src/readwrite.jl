@@ -435,9 +435,11 @@ function readsnaqnetwork(file::AbstractString)
     end
 end
 
-# function to change negative branch lengths to 1.0 for starting topology
-# and to change big branch lengths to 10.0
-# also uses setLength for all edges
+#= cleanBL! changes:
+- negative branch lengths to 1: including 'missing' branch lengths coded as -1
+- large branch lengths to 10 (this is also done by setLength!)
+- uses setLength for all edges, which synchronizes y = exp(-l) and z=1-y
+=#
 function cleanBL!(net::HybridNetwork)
     ##println("missing branch lengths will be set to 1.0")
     for e in net.edge

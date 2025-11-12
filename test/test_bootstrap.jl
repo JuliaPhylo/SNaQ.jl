@@ -2,7 +2,7 @@
 # include("test_output_helper.jl") # already done in runtests.jl
 
 exdir = joinpath(@__DIR__,"..","examples")
-# exdir = joinpath(dirname(pathof(PhyloNetworks)), "..","examples")
+# exdir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 
 
 

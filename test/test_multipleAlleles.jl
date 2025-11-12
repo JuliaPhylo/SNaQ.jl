@@ -13,7 +13,7 @@ global tree, df, d, net, currT
     CSV.write("tmp.csv", alleleDF);
     df = (@test_logs (:warn, r"^not all alleles were mapped") mapallelesCFtable("tmp.csv",
       joinpath(@__DIR__, "..", "examples", "tableCFCI.csv"),
-      # joinpath(dirname(pathof(PhyloNetworks)), "..", "examples", "tableCFCI.csv"),
+      # joinpath(dirname(pathof(SNaQ)), "..", "examples", "tableCFCI.csv"),
       filename="CFmapped.csv"))
     rm("CFmapped.csv")
     rm("tmp.csv")
