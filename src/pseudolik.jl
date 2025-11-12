@@ -218,15 +218,6 @@ function deleteLeaf!(net::Network, leaf::Node)
                     setEdge!(other1,edge2)
                     gammaz(other3) != -1 || error("hybrid node $(other1.number) is bad diamond, but for node $(other3.number), gammaz is not well updated, it is $(gammaz(other3))")
                     DEBUGC && @debug "entro a cambiar length en edge $(edge2.number) con gammaz $(gammaz(other3))"
-                    if gammaz(other3)<0
-                        @info """, deleteLeaf!
-                        hybrid node $(other1.number) is bad diamond, but for node $(other3.number),
-                        gammaz is not well updated, it is $(gammaz(other3))"""
-                        @show other1
-                        @show [(e.number, e.gamma, e.length, e.y, e.z) for e in other1.edge]
-                        @show other3
-                        @show [(e.number, e.gamma, e.length, e.y, e.z) for e in other3.edge]
-                    end
                     setLength!(edge2,-log(1-gammaz(other3)))
                     edge2.number = parse(Int,string(string(other1.number),string(ind)))
                     DEBUGC && @debug "edge2 is $(edge2.number) should be not identifiable now $(istIdentifiable(edge2))"
@@ -944,12 +935,6 @@ function eliminateTriangle!(qnet::QuartetNetwork, node::Node, other::Node, case:
     #println("after deleteIntLeaf, edge $(edge.number) has length $(edge.length)")
     isEqual(getOtherNode(edge,middle),other) || error("middle node $(middle.number) and other node $(other.number) are not connected by an edge")
     if(case == 1)
-        if (hybedge.gamma<0 || edge.z<0)
-            @info "oops, case1"
-            @show hybedge
-            @show edge
-            @show (edge.y, edge.z)
-        end
         setLength!(edge,-log(1 - hybedge.gamma*edge.z))
         #println("Case 1: edge $(edge.number) length is $(edge.length) after updating")
         removeEdge!(middle,otheredge)
@@ -963,13 +948,6 @@ function eliminateTriangle!(qnet::QuartetNetwork, node::Node, other::Node, case:
         deleteNode!(qnet,node)
     elseif(case == 2)
         (hybedge.hybrid && otheredge.hybrid) || error("hybedge $(hybedge.number) and otheredge $(otheredge.number) should by hybrid edges in eliminateTriangle Case 2")
-        if (otheredge.gamma*otheredge.gamma*otheredge.y + hybedge.gamma*otheredge.gamma*(3-edge.y) + hybedge.gamma*hybedge.gamma*hybedge.y <
-                -0.4054651081081644)
-            @info "oops, case2"
-            @show hybedge
-            @show otheredge
-            @show (hybedge.y, otheredge.y, edge.y)
-        end
         setLength!(hybedge, -log(otheredge.gamma*otheredge.gamma*otheredge.y + hybedge.gamma*otheredge.gamma*(3-edge.y) + hybedge.gamma*hybedge.gamma*hybedge.y), true)
         #println("Case 2: edge $(edge.number) length is $(edge.length) after updating")
         removeEdge!(middle,otheredge)
