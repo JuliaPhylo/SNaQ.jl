@@ -16,7 +16,7 @@
 [aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
 
-[codecov-img]: https://codecov.io/gh/JuliaPhylo/SNaQ.jl/branch/master/graph/badge.svg
+[codecov-img]: https://codecov.io/gh/JuliaPhylo/SNaQ.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaPhylo/SNaQ.jl
 
 [style-img]: https://img.shields.io/badge/code%20style-blue-4495d1.svg
