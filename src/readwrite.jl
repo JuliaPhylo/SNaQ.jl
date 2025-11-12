@@ -36,7 +36,8 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
             if !n.hybrid
                 if size(n.edge,1) > 3
                     @debug "warning: polytomy found in node $(n.number), random resolution chosen"
-                    resolvetreepolytomy!(net,n);
+                    enew = resolvetreepolytomy!(net,n)
+                    update_yz!(enew)
                 end
                 hyb = count([e.hybrid for e in n.edge])
                 if hyb == 1
@@ -365,6 +366,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
             max_edge = maximum([e.number for e in net.edge]);
             max_node = maximum([e.number for e in net.node]);
             newedge = Edge(max_edge+1) #fixit: maybe this edge not identifiable, need to add that check
+            update_yz!(newedge)
             newnode = Node(max_node+1,false,false,[edge,newedge])
             if(cleaned(net) && !isTree(net) && !isempty(net.partition)) # fixit: this will crash if network estimated with snaq, and then manipulated
                 part = whichpartition(net,edge)

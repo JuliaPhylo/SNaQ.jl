@@ -105,20 +105,25 @@ end
 
 # ----------------------------------------------------------------------------------------
 
+function update_yz!(edge::Edge)
+    y = exp(-edge.length)
+    edge.y = y
+    edge.z = 1.0 - y
+    return nothing
+end
 # setLength
 # warning: allows to change edge length for istIdentifiable=false
 #          but issues a warning
 # negative=true means it allows negative branch lengths (useful in qnet typeHyb=4)
 function setLength!(edge::Edge, new_length::Number, negative::Bool)
     (negative || new_length >= 0) || error("length has to be nonnegative: $(new_length), cannot set to edge $(edge.number)")
-    new_length >= -0.4054651081081644 || error("length can be negative, but not too negative (greater than -log(1.5)) or majorCF<0: new length is $(new_length)")
-    #println("setting length $(new_length) to edge $(edge.number)")
-    if(new_length > 10.0)
-        new_length = 10.0;
+    new_length >= -0.4054651081081644 ||
+        error("length can be negative, but not too negative (greater than -log(1.5)) or majorCF<0: new length is $(new_length)")
+    if new_length > 10.0
+        new_length = 10.0
     end
-    edge.length = new_length;
-    edge.y = exp(-new_length);
-    edge.z = 1.0 - edge.y;
+    edge.length = new_length
+    update_yz!(edge)
     #istIdentifiable(edge) || @warn "set edge length for edge $(edge.number) that is not identifiable"
     return nothing
 end

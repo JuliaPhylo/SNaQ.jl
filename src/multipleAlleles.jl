@@ -184,7 +184,9 @@ function expandLeaves!(
                 max_node = maximum([e.number for e in tree.node]);
                 max_edge = maximum([e.number for e in tree.edge]);
                 e1 = Edge(max_edge+1,0.0)
+                update_yz!(e1)
                 e2 = Edge(max_edge+2,0.0)
+                update_yz!(e2)
                 n1 = Node(max_node+1,true,false,[e1])
                 n2 = Node(max_node+2,true,false,[e2])
                 setNode!(e1,n1)
