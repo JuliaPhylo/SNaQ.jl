@@ -72,7 +72,6 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
                         for i in (old_num_e+1):net.numedges
                             update_yz!(net.edge[i])
                         end
-                    else
                     end
                     suma = sum([e.hybrid ? e.gamma : 0.0 for e in n.edge]);
                     # synchronizepartnersdata! already made suma ≈ 1.0, when non-missing,
