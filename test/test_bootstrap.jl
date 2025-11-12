@@ -1,8 +1,8 @@
 # test the functions in src/bootstrap.jl
-include("test_output_helper.jl")
+# include("test_output_helper.jl") # already done in runtests.jl
 
 exdir = joinpath(@__DIR__,"..","examples")
-# exdir = joinpath(dirname(pathof(PhyloNetworks)), "..","examples")
+# exdir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 
 
 

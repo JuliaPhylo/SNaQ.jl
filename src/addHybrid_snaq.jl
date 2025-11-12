@@ -27,6 +27,7 @@ function createHybrid!(edge1::Edge, edge2::Edge, edge3::Edge, edge4::Edge, net::
     max_edge = maximum([e.number for e in net.edge]);
     gamma < 0.5 || @warn "adding a major hybrid edge with gamma $(gamma), this can cause problems when updating incycle"
     hybrid_edge = Edge(max_edge+1,0.0,true,gamma,gamma>=0.5);
+    update_yz!(hybrid_edge)
     pushEdge!(net,hybrid_edge);
     hybrid_node = Node(max_node+1,false,true,[edge2,hybrid_edge,edge4]);
     tree_node = Node(max_node+2,false,false,[edge1,edge3,hybrid_edge]);
@@ -212,12 +213,16 @@ function parameters4createHybrid!(edge1::Edge, edge2::Edge,net::HybridNetwork)
     max_edge = maximum([e.number for e in net.edge]);
     t1 = rand()*edge1.length;
     t3 = edge1.length - t1;
-    edge3 = Edge(max_edge+1,t3);
+    edge3 = Edge(max_edge+1,t3)
+    update_yz!(edge3)
     edge1.length = t1;
+    # update_yz!(edge1)
     t1 = rand()*edge2.length;
     t3 = edge2.length - t1;
-    edge4 = Edge(max_edge+2,t3);
+    edge4 = Edge(max_edge+2,t3)
+    update_yz!(edge4)
     edge2.length = t1;
+    # update_yz!(edge2)
     edge3.containroot = edge1.containroot
     edge4.containroot = edge2.containroot
     return edge3, edge4

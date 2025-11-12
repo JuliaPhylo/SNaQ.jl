@@ -36,7 +36,8 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
             if !n.hybrid
                 if size(n.edge,1) > 3
                     @debug "warning: polytomy found in node $(n.number), random resolution chosen"
-                    resolvetreepolytomy!(net,n);
+                    enew = resolvetreepolytomy!(net,n)
+                    update_yz!(enew)
                 end
                 hyb = count([e.hybrid for e in n.edge])
                 if hyb == 1
@@ -62,10 +63,15 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
                 else # 2 hybrid edges
                     if tre == 0 #hybrid leaf
                         @warn "hybrid node $(n.number) is a leaf, so we add an extra child"
-                        addChild!(net,n);
+                        addChild!(net,n) # new edge added last
+                        update_yz!(net.edge[end])
                     elseif tre > 1
                         @warn "hybrid node $(n.number) has more than one child so we need to expand with another node"
-                        expandChild!(net,n);
+                        old_num_e = net.numedges
+                        expandChild!(net,n) # may add 1 or more edges
+                        for i in (old_num_e+1):net.numedges
+                            update_yz!(net.edge[i])
+                        end
                     end
                     suma = sum([e.hybrid ? e.gamma : 0.0 for e in n.edge]);
                     # synchronizepartnersdata! already made suma ≈ 1.0, when non-missing,
@@ -365,6 +371,7 @@ function updateRoot!(net::HybridNetwork, outgroup::AbstractString)
             max_edge = maximum([e.number for e in net.edge]);
             max_node = maximum([e.number for e in net.node]);
             newedge = Edge(max_edge+1) #fixit: maybe this edge not identifiable, need to add that check
+            update_yz!(newedge)
             newnode = Node(max_node+1,false,false,[edge,newedge])
             if(cleaned(net) && !isTree(net) && !isempty(net.partition)) # fixit: this will crash if network estimated with snaq, and then manipulated
                 part = whichpartition(net,edge)
@@ -435,9 +442,11 @@ function readsnaqnetwork(file::AbstractString)
     end
 end
 
-# function to change negative branch lengths to 1.0 for starting topology
-# and to change big branch lengths to 10.0
-# also uses setLength for all edges
+#= cleanBL! changes:
+- negative branch lengths to 1: including 'missing' branch lengths coded as -1
+- large branch lengths to 10 (this is also done by setLength!)
+- uses setLength for all edges, which synchronizes y = exp(-l) and z=1-y
+=#
 function cleanBL!(net::HybridNetwork)
     ##println("missing branch lengths will be set to 1.0")
     for e in net.edge

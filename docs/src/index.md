@@ -29,7 +29,7 @@ For PhyloNetworks package:
 
 
 See the references in
-[bibtex format](https://github.com/juliaphylo/SNaQ.jl/blob/master/CITATION.bib).
+[bibtex format](https://github.com/juliaphylo/SNaQ.jl/blob/main/CITATION.bib).
 
 ## Manual
 

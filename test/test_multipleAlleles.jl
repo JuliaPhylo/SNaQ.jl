@@ -1,4 +1,4 @@
-include("test_output_helper.jl")
+# include("test_output_helper.jl") # already done in runtests.jl
 @testset "multiple alleles" begin
 import SNaQ: sorttaxa!
 global tree, df, d, net, currT
@@ -13,7 +13,7 @@ global tree, df, d, net, currT
     CSV.write("tmp.csv", alleleDF);
     df = (@test_logs (:warn, r"^not all alleles were mapped") mapallelesCFtable("tmp.csv",
       joinpath(@__DIR__, "..", "examples", "tableCFCI.csv"),
-      # joinpath(dirname(pathof(PhyloNetworks)), "..", "examples", "tableCFCI.csv"),
+      # joinpath(dirname(pathof(SNaQ)), "..", "examples", "tableCFCI.csv"),
       filename="CFmapped.csv"))
     rm("CFmapped.csv")
     rm("tmp.csv")
