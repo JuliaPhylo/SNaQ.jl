@@ -68,9 +68,6 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
                     elseif tre > 1
                         @warn "hybrid node $(n.number) has more than one child so we need to expand with another node"
                         expandChild!(net,n) # may add 1 or more edges
-                        for e in net.edge
-                            update_yz!(e)
-                        end
                     end
                     suma = sum([e.hybrid ? e.gamma : 0.0 for e in n.edge]);
                     # synchronizepartnersdata! already made suma ≈ 1.0, when non-missing,
@@ -88,6 +85,7 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
         end
     end
     for e in net.edge
+        update_yz!(e)
         if e.hybrid
           if e.gamma < 0.0 || e.gamma > 1.0 # no -1.0 (missing) γ's by now
             error("hybrid edge $(e.number) with γ = $(e.gamma) outside of [0,1]")
