@@ -171,7 +171,7 @@ cleanAfterReadAll!(net::HybridNetwork) = cleanAfterReadAll!(net,false)
 # warning: if leaveRoot=true, net should not be used outside plotting, things will crash
 function readTopologyUpdate(file::AbstractString, leaveRoot::Bool,verbose::Bool)
     @debug "readnewick -----"
-    net = readnewick(file,verbose)
+    net = readnewick(file)
     cleanAfterReadAll!(net,leaveRoot)
     return net
 end
