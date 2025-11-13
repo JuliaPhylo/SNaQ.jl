@@ -37,7 +37,7 @@ function multi_search(
     hmax::Int;
     # Basic arguments
     runs::Int=10,
-    seed::Int=42,
+    seed::Int=rand(Int),
     logprefix::String="",
     filename::String="snaq",
     outgroup::String="none",
