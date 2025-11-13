@@ -86,10 +86,10 @@ const THREAD_LOCAL_GRAD_BUFFER::Dict{Int, Array{Float64}} = Dict{Int, Array{Floa
 
 function get_or_create_buffers(params_len::Int)
     if !haskey(THREAD_LOCAL_GRAD_BUFFER, params_len)
-        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads())
-        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.nthreads())
-        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads())
-        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.nthreads())
+        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads()+1)
+        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.nthreads()+1)
+        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads()+1)
+        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.nthreads()+1)
     end
     return THREAD_ITER_GRAD_BUFFER[params_len], THREAD_BV_BUFFER[params_len], THREAD_RUNNING_GRAD_BUFFER[params_len], THREAD_LOCAL_GRAD_BUFFER[params_len]
 end
