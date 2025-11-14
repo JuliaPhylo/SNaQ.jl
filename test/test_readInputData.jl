@@ -44,7 +44,7 @@ vnet = (@test_logs (:warn, r"^hybrid edge") (:warn,r"^skipped") readnexus_treebl
 # example without translate table and without reticulations
 nexusfile = joinpath(@__DIR__, "..", "examples", "test.nex")
 # nexusfile = joinpath(dirname(pathof(SNaQ)), "..","examples","test.nex")
-vnet = readnexus_treeblock(nexusfile, SNaQ.readTopologyUpdate, false, false; reticulate=false);
+vnet = readnexus_treeblock(nexusfile, SNaQ.readTopologyUpdate, false; reticulate=false);
 @test length(vnet) == 10
 @test length(vnet[10].edge) == 9
 @test vnet[10].edge[7].length ≈ 0.00035
