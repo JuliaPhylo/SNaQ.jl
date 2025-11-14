@@ -169,14 +169,12 @@ cleanAfterReadAll!(net::HybridNetwork) = cleanAfterReadAll!(net,false)
 # leaveRoot=true if the root will not be deleted even if it has only 2 edges
 # used for plotting (default=false)
 # warning: if leaveRoot=true, net should not be used outside plotting, things will crash
-function readTopologyUpdate(file::AbstractString, leaveRoot::Bool,verbose::Bool)
+function readTopologyUpdate(file::AbstractString, leaveRoot::Bool=false)
     @debug "readnewick -----"
-    net = readnewick(file,verbose)
+    net = readnewick(file)
     cleanAfterReadAll!(net,leaveRoot)
     return net
 end
-readTopologyUpdate(file::AbstractString) = readTopologyUpdate(file, false, true)
-readTopologyUpdate(file::AbstractString,verbose::Bool) = readTopologyUpdate(file, false, verbose)
 
 
 """
@@ -193,7 +191,7 @@ If the network has a bad diamond II (in which edge lengths are γ's are not iden
 and if the edge below this diamond has a length `t` different from 0, then this length is
 set back to 0 and the major parent hybrid edge is lengthened by `t`.
 """
-readnewicklevel1(file::AbstractString) = readTopologyUpdate(file, false, true)
+readnewicklevel1(file::AbstractString) = readTopologyUpdate(file, false)
 
 # to read multiple topologies: readmultinewicklevel1 is defined in readquartetdata.jl
 # It calls readTopologyUpdate defined here, for level 1 networks.

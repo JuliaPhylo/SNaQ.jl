@@ -700,7 +700,7 @@ function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractStri
                       taxa::AbstractVector=Vector{String}(),
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
     trees = (nexus ?
-             readnexus_treeblock(treefile, readTopologyUpdate, false, false; reticulate=false) :
+             readnexus_treeblock(treefile, readTopologyUpdate, false; reticulate=false) :
              readmultinewicklevel1(treefile))
     if length(taxa)==0        # tiplabels(trees) NOT default argument:
       taxa = tiplabels(trees) # otherwise: tree file is read twice
