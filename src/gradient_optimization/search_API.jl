@@ -436,7 +436,6 @@ function search(
             @warn "Initial probST move led to a network that did not meet the given restrictions. Using the provided network instead."
         end
     end
-    restrictions(N) || error("N does not meet restrictions after probST")
 
     # Initial pre-opt search
     if preopt
