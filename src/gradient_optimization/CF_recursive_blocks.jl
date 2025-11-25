@@ -86,10 +86,10 @@ const THREAD_LOCAL_GRAD_BUFFER::Dict{Int, Array{Float64}} = Dict{Int, Array{Floa
 
 function get_or_create_buffers(params_len::Int)
     if !haskey(THREAD_LOCAL_GRAD_BUFFER, params_len)
-        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.maxthreadid())
-        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.maxthreadid())
-        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.maxthreadid())
-        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.maxthreadid())
+        THREAD_ITER_GRAD_BUFFER[params_len] = zeros(params_len, 3, Threads.maxthreadid())
+        THREAD_BV_BUFFER[params_len] = falses(params_len, Threads.maxthreadid())
+        THREAD_RUNNING_GRAD_BUFFER[params_len] = zeros(params_len, 3, Threads.maxthreadid())
+        THREAD_LOCAL_GRAD_BUFFER[params_len] = zeros(params_len, Threads.maxthreadid())
     end
     return THREAD_ITER_GRAD_BUFFER[params_len], THREAD_BV_BUFFER[params_len], THREAD_RUNNING_GRAD_BUFFER[params_len], THREAD_LOCAL_GRAD_BUFFER[params_len]
 end
@@ -130,15 +130,15 @@ Computes expected concordance factors and gradients by recursively passing throu
         fill!(running_grad, 1.0)
 
         eCF1::Float64, eCF2::Float64 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
-        eCF3::Float64 = 1 - eCF1 - eCF2
+        eCF3::Float64 = 1.0 - eCF1 - eCF2
 
-        eCF1 = max(eCF1, 1e-9)
-        eCF2 = max(eCF2, 1e-9)
-        eCF3 = max(eCF3, 1e-9)
+        eCF1::Float64 = max(eCF1, 1e-9)
+        eCF2::Float64 = max(eCF2, 1e-9)
+        eCF3::Float64 = max(eCF3, 1e-9)
 
-        inv_eCF1::Float64 = 1 / eCF1
-        inv_eCF2::Float64 = 1 / eCF2
-        inv_eCF3::Float64 = 1 / eCF3
+        inv_eCF1::Float64 = 1.0 / eCF1
+        inv_eCF2::Float64 = 1.0 / eCF2
+        inv_eCF3::Float64 = 1.0 / eCF3
 
         total_loss_incr::Float64 = 
             ((q[j, 1] > 0) ? q[j, 1] * log(eCF1 / q[j, 1]) : 0.0) +
