@@ -132,9 +132,9 @@ Computes expected concordance factors and gradients by recursively passing throu
         eCF1::Float64, eCF2::Float64 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
         eCF3::Float64 = 1.0 - eCF1 - eCF2
 
-        eCF1::Float64 = max(eCF1, 1e-9)
-        eCF2::Float64 = max(eCF2, 1e-9)
-        eCF3::Float64 = max(eCF3, 1e-9)
+        eCF1 = max(eCF1, 1e-9)
+        eCF2 = max(eCF2, 1e-9)
+        eCF3 = max(eCF3, 1e-9)
 
         inv_eCF1::Float64 = 1.0 / eCF1
         inv_eCF2::Float64 = 1.0 / eCF2
