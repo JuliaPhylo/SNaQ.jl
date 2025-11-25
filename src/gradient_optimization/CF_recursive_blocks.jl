@@ -86,10 +86,10 @@ const THREAD_LOCAL_GRAD_BUFFER::Dict{Int, Array{Float64}} = Dict{Int, Array{Floa
 
 function get_or_create_buffers(params_len::Int)
     if !haskey(THREAD_LOCAL_GRAD_BUFFER, params_len)
-        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads()+1)
-        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.nthreads()+1)
-        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads()+1)
-        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.nthreads()+1)
+        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.maxthreadid())
+        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.maxthreadid())
+        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.maxthreadid())
+        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.maxthreadid())
     end
     return THREAD_ITER_GRAD_BUFFER[params_len], THREAD_BV_BUFFER[params_len], THREAD_RUNNING_GRAD_BUFFER[params_len], THREAD_LOCAL_GRAD_BUFFER[params_len]
 end
@@ -105,12 +105,21 @@ Computes expected concordance factors and gradients by recursively passing throu
     total_loss = Threads.Atomic{Float64}(0.0)
     np::Int = length(params)
 
+    threadidmap = zeros(Int, Threads.maxthreadid())
+    j = 1
+    for tid = 1:Threads.maxthreadid()
+        if Threads.threadpool(tid) != :foreign
+            threadidmap[tid] = j
+            j += 1
+        end
+    end
+
     iter_grad_buffer::Array{Float64}, bv_buffer::BitMatrix, running_grad_buffer::Array{Float64}, local_grad_buffer::Array{Float64} =
         get_or_create_buffers(np)
     fill!(local_grad_buffer, 0.0)
 
     Threads.@threads for j = 1:length(qdata)
-        tid = Threads.threadid()
+        tid = threadidmap[Threads.threadid()]
 
         iter_grad::Array{Float64} = iter_grad_buffer[:,:,tid]
         bv::BitVector = bv_buffer[:, tid]
