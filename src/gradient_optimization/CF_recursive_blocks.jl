@@ -120,7 +120,6 @@ Computes expected concordance factors and gradients by recursively passing throu
 
     Threads.@threads for j = 1:length(qdata)
         tid = threadidmap[Threads.threadid()]
-
         iter_grad::Array{Float64} = iter_grad_buffer[:,:,tid]
         bv::BitVector = bv_buffer[:, tid]
         running_grad::Array{Float64} = running_grad_buffer[:, :, tid]
@@ -232,7 +231,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         @inbounds @simd for division_idx = 1:4
             split_grad::Float64 = quad_split_probability_gradient(division_idx, γ, α)
             split_prob::Float64 = quad_split_probability(division_idx, γ, α)
-            prev_gamma_grad::Vector{Float64} = running_gradient[eqn.division_H, :]   # store here in case `split_grad` is 0.0
+            prev_running_grad::Array{Float64} = running_gradient[:, :]
 
             # apply running gradient changes
             @inbounds @simd for param_idx = 1:length(params)
@@ -249,16 +248,9 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             recur_probs::Tuple{Float64, Float64} = compute_eCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
 
             # revert running gradient changes so that the next iteration is unbothered by them
-            @inbounds @simd for e in eqn.coal_edges
-                running_gradient[e, :] .*= -1.
-            end
-            @inbounds @simd for param_idx = 1:length(params)
-                if param_idx == eqn.division_H
-                    running_gradient[eqn.division_H, :] .= prev_gamma_grad
-                else
-                    running_gradient[param_idx, :] ./= split_prob
-                end
-            end
+            # previously here we just did ./= split_grad and ./= split_prob, but BOTH of those
+            # have a change of being 0, so we just store the entire previous gradient now
+            running_gradient = prev_running_grad
 
             recur_probs = early_coal_exp_sum * split_prob .* recur_probs
 
