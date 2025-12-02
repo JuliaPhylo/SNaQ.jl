@@ -141,9 +141,17 @@ function optimize_bls!(
     opt.upper_bounds = UB
 
     x0::Vector{Float64} = [min(ub / 2.0, val) for (ub, val) in zip(UB, params)]
+    x0 = min.(UB .- 1e-12, x0)
+    x0 = max.(LB .+ 1e-12, x0)
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, x0)
-    ret == :FAILURE && error("ERROR: optimization returned :FAILURE")
+    @show minf, minx, ret
+    if ret == :FAILURE
+        @show objective(minx, zeros(length(minx)), net, eqns, observed_CFs, idx_obj_map, α)
+        @error("ERROR: optimization returned :FAILURE")
+        error("ERROR: optimization returned :FAILURE")
+    end
+    
     setX!(net, minx, idx_obj_map)
     if minf == -Inf
         @show writenewick(net, round=true)
@@ -186,6 +194,7 @@ function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Arra
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
+    @show grad
     return loss
 end
 

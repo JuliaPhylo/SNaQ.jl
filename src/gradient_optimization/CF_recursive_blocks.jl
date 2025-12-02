@@ -203,6 +203,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         before = params_seen
 
         early_coal_exp_sum::Float64 = exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
+        early_coal_exp_sum = max(early_coal_exp_sum, 1e-9)
         if eqn.can_coalesce_here
             # eCF contribution
             if eqn.which_coal == 1
@@ -275,6 +276,8 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         !eqn.can_coalesce_here || error("Can coalesce w/ 1 taxa splitting at a single hybrid??")
 
         γ = params[eqn.division_H]
+        γ = max(1e-9, γ)
+        γ = min(1.0 - 1e-9, γ)
         params_seen[eqn.division_H] = true
 
         # apply running gradient changes
