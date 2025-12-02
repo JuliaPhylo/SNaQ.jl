@@ -143,6 +143,7 @@ function optimize_bls!(
     x0::Vector{Float64} = [min(ub / 2.0, val) for (ub, val) in zip(UB, params)]
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, x0)
+    ret == :FAILURE && error("ERROR: optimization returned :FAILURE")
     setX!(net, minx, idx_obj_map)
     if minf == -Inf
         @show writenewick(net, round=true)
