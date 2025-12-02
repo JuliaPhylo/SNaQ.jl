@@ -242,15 +242,10 @@ function optimize_bls_staticγ!(
 
     NLopt.max_objective!(opt, (x, grad) -> objective_staticγ(parameters_with_statics(x), grad, net, eqns, observed_CFs, idx_obj_map, incl_idxs, α))
 
-    @show x0
-    @show narg_NLopt
-    @show objective_staticγ(parameters_with_statics(x0), zeros(narg_NLopt), net, eqns, observed_CFs, idx_obj_map, incl_idxs, α)
     (minf, minx, ret) = NLopt.optimize(opt, x0)
     if ret == :FAILURE
         @warn "ERROR: optimization returned :FAILURE"
     end
-    @show minx
-    @show parameters_with_statics(minx)
     setX!(net, parameters_with_statics(minx), idx_obj_map)
 
     return minf
@@ -279,7 +274,6 @@ function objective_staticγ(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, e
     temp_grad = zeros(length(X))
     loss = compute_loss_and_gradient!(eqns, X, temp_grad, obsCFs, α)
     grad .= temp_grad[include_idxs]
-    @show grad
     return loss
 end
 
