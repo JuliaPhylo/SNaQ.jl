@@ -145,11 +145,8 @@ function optimize_bls!(
     x0 = max.(LB .+ 1e-12, x0)
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, x0)
-    @show minf, minx, ret
     if ret == :FAILURE
-        @show objective(minx, zeros(length(minx)), net, eqns, observed_CFs, idx_obj_map, α)
-        @error("ERROR: optimization returned :FAILURE")
-        error("ERROR: optimization returned :FAILURE")
+        @warn "ERROR: optimization returned :FAILURE"
     end
     
     setX!(net, minx, idx_obj_map)
