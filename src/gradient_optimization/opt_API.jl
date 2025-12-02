@@ -191,7 +191,6 @@ function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Arra
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
-    @show grad
     return loss
 end
 
