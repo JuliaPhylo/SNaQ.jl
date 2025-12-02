@@ -185,12 +185,101 @@ optimize_bls!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize_bls!(net,
 
 
 """
+WARNING: COMPLETELY EXPERIMENTAL AND UNSUPPORTED.
+"""
+function optimize_bls_staticγ!(
+    net::HybridNetwork,
+    eqns::Array{QuartetData},
+    observed_CFs::Matrix{Float64},
+    α::Real=Inf;
+    maxeval::Int=10,
+    ftolRel::Float64=1e-12,
+    ftolAbs::Float64=1e-12,
+    xtolRel::Float64=1e-8,
+    xtolAbs::Float64=1e-8
+)::Float64
+
+    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
+
+    # Figure out static parameters
+    @show idx_obj_map
+    @show keys(idx_obj_map)
+    static_map::Dict{Int, Float64} = Dict(findfirst(idx -> idx_obj_map[idx] == hyb, collect(keys(idx_obj_map))) => getparentedgeminor(hyb).gamma for hyb in net.hybrid)
+    @inline function parameters_with_statics(x::Vector{Float64})
+        xout::Vector{Float64} = zeros(length(x) + length(static_map)) .- 1.0
+        for idx in keys(static_map)
+            xout[idx] = static_map[idx]
+        end
+        xidx = 1
+        for idx in eachindex(xout)
+            if xout[idx] == -1.0
+                xout[idx] = x[xidx]
+                xidx += 1
+            end
+        end
+        any(xout .< 0.0) && error("Error mapping static parameters.")
+        return xout
+    end
+
+    incl_idxs = sort([j for j in keys(idx_obj_map) if typeof(idx_obj_map[j]) <: Edge])
+    narg_NLopt = narg - length(static_map)
+    opt = Opt(NLopt.LD_LBFGS, narg_NLopt)     # faster, but less accurate
+    opt.maxeval = maxeval
+    opt.ftol_rel = ftolRel
+    opt.ftol_abs = ftolAbs
+    opt.xtol_rel = xtolRel
+    opt.xtol_abs = xtolAbs
+
+    initial_step!(opt, init_steps[incl_idxs])
+    opt.lower_bounds = LB[incl_idxs]
+    opt.upper_bounds = UB[incl_idxs]
+
+    x0::Vector{Float64} = [min(ub / 2.0, val) for (ub, val) in zip(UB, params[incl_idxs])]
+    x0 = min.(UB[incl_idxs] .- 1e-12, x0)
+    x0 = max.(LB[incl_idxs] .+ 1e-12, x0)
+
+    # Establish a map for fixing some static parameters
+
+    NLopt.max_objective!(opt, (x, grad) -> objective_staticγ(parameters_with_statics(x), grad, net, eqns, observed_CFs, idx_obj_map, incl_idxs, α))
+
+    @show x0
+    @show narg_NLopt
+    @show objective_staticγ(parameters_with_statics(x0), zeros(narg_NLopt), net, eqns, observed_CFs, idx_obj_map, incl_idxs, α)
+    (minf, minx, ret) = NLopt.optimize(opt, x0)
+    if ret == :FAILURE
+        @warn "ERROR: optimization returned :FAILURE"
+    end
+    @show minx
+    @show parameters_with_statics(minx)
+    setX!(net, parameters_with_statics(minx), idx_obj_map)
+
+    return minf
+end
+
+
+"""
 The objective function that is maximized during network optimization.
 """
 function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::T where T<:Float64
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
     loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
+    return loss
+end
+
+
+"""
+WARNING: COMPLETELY EXPERIMENTAL AND UNSUPPORTED.
+
+The objective function that is maximized during network optimization.
+Provided γ value indices are static and therefore their gradients are not returned.
+"""
+function objective_staticγ(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, include_idxs::Vector{Int}, α::Float64)::T where T<:Float64
+    setX!(net, X, idx_obj_map)
+    temp_grad = zeros(length(X))
+    loss = compute_loss_and_gradient!(eqns, X, temp_grad, obsCFs, α)
+    grad .= temp_grad[include_idxs]
+    @show grad
     return loss
 end
 
