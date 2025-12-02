@@ -202,8 +202,6 @@ function optimize_bls_staticγ!(
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
 
     # Figure out static parameters
-    @show idx_obj_map
-    @show keys(idx_obj_map)
     static_map::Dict{Int, Float64} = Dict(findfirst(idx -> idx_obj_map[idx] == hyb, collect(keys(idx_obj_map))) => getparentedgeminor(hyb).gamma for hyb in net.hybrid)
     @inline function parameters_with_statics(x::Vector{Float64})
         xout::Vector{Float64} = zeros(length(x) + length(static_map)) .- 1.0
