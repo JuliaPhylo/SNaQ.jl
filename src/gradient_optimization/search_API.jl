@@ -37,7 +37,7 @@ function multi_search(
     hmax::Int;
     # Basic arguments
     runs::Int=10,
-    seed::Int=42,
+    seed::Int=rand(Int),
     logprefix::String="",
     filename::String="snaq",
     outgroup::String="none",
@@ -167,6 +167,15 @@ function multi_search(
             println(f, " $(writenewick(all_nets[j])), with -loglik $(loglik(all_nets[j]))")
         end
         println(f, "-----------------------------------")
+    end
+
+    # Clean up: the edges above roots have leftover values in them right now -
+    #           we can't actually infer the lengths of those edges, so we clean
+    #           those up here.
+    for n in all_nets
+        for L in n.leaf
+            getparentedge(L).length = -1
+        end
     end
 
     # Return
@@ -407,12 +416,26 @@ function search(
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
     if rand(rng) < probST
-        try
-            perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
-        catch
+        found_different_net::Bool = false
+        for j = 1:10
+            try
+                perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
+                if restrictions(N)
+                    found_different_net = true
+                    break
+                end
+            catch
+            finally
+                if !found_different_net
+                    N = readnewick(writenewick(N));
+                    semidirect_network!(N)
+                end
+            end
+        end
+        if !found_different_net
+            @warn "Initial probST move led to a network that did not meet the given restrictions. Using the provided network instead."
         end
     end
-    restrictions(N) || error("N does not meet restrictions after probST")
 
     # Initial pre-opt search
     if preopt

@@ -86,10 +86,10 @@ const THREAD_LOCAL_GRAD_BUFFER::Dict{Int, Array{Float64}} = Dict{Int, Array{Floa
 
 function get_or_create_buffers(params_len::Int)
     if !haskey(THREAD_LOCAL_GRAD_BUFFER, params_len)
-        THREAD_ITER_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads())
-        THREAD_BV_BUFFER[params_len] = BitArray(undef, params_len, Threads.nthreads())
-        THREAD_RUNNING_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, 3, Threads.nthreads())
-        THREAD_LOCAL_GRAD_BUFFER[params_len] = Array{Float64}(undef, params_len, Threads.nthreads())
+        THREAD_ITER_GRAD_BUFFER[params_len] = zeros(params_len, 3, Threads.maxthreadid())
+        THREAD_BV_BUFFER[params_len] = falses(params_len, Threads.maxthreadid())
+        THREAD_RUNNING_GRAD_BUFFER[params_len] = zeros(params_len, 3, Threads.maxthreadid())
+        THREAD_LOCAL_GRAD_BUFFER[params_len] = zeros(params_len, Threads.maxthreadid())
     end
     return THREAD_ITER_GRAD_BUFFER[params_len], THREAD_BV_BUFFER[params_len], THREAD_RUNNING_GRAD_BUFFER[params_len], THREAD_LOCAL_GRAD_BUFFER[params_len]
 end
@@ -105,13 +105,21 @@ Computes expected concordance factors and gradients by recursively passing throu
     total_loss = Threads.Atomic{Float64}(0.0)
     np::Int = length(params)
 
+    threadidmap = zeros(Int, Threads.maxthreadid())
+    j = 1
+    for tid = 1:Threads.maxthreadid()
+        if Threads.threadpool(tid) != :foreign
+            threadidmap[tid] = j
+            j += 1
+        end
+    end
+
     iter_grad_buffer::Array{Float64}, bv_buffer::BitMatrix, running_grad_buffer::Array{Float64}, local_grad_buffer::Array{Float64} =
         get_or_create_buffers(np)
     fill!(local_grad_buffer, 0.0)
 
     Threads.@threads for j = 1:length(qdata)
-        tid = Threads.threadid()
-
+        tid = threadidmap[Threads.threadid()]
         iter_grad::Array{Float64} = iter_grad_buffer[:,:,tid]
         bv::BitVector = bv_buffer[:, tid]
         running_grad::Array{Float64} = running_grad_buffer[:, :, tid]
@@ -121,15 +129,15 @@ Computes expected concordance factors and gradients by recursively passing throu
         fill!(running_grad, 1.0)
 
         eCF1::Float64, eCF2::Float64 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
-        eCF3::Float64 = 1 - eCF1 - eCF2
+        eCF3::Float64 = 1.0 - eCF1 - eCF2
 
         eCF1 = max(eCF1, 1e-9)
         eCF2 = max(eCF2, 1e-9)
         eCF3 = max(eCF3, 1e-9)
 
-        inv_eCF1::Float64 = 1 / eCF1
-        inv_eCF2::Float64 = 1 / eCF2
-        inv_eCF3::Float64 = 1 / eCF3
+        inv_eCF1::Float64 = 1.0 / eCF1
+        inv_eCF2::Float64 = 1.0 / eCF2
+        inv_eCF3::Float64 = 1.0 / eCF3
 
         total_loss_incr::Float64 = 
             ((q[j, 1] > 0) ? q[j, 1] * log(eCF1 / q[j, 1]) : 0.0) +
@@ -195,6 +203,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         before = params_seen
 
         early_coal_exp_sum::Float64 = exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
+        early_coal_exp_sum = max(early_coal_exp_sum, 1e-9)
         if eqn.can_coalesce_here
             # eCF contribution
             if eqn.which_coal == 1
@@ -223,7 +232,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         @inbounds @simd for division_idx = 1:4
             split_grad::Float64 = quad_split_probability_gradient(division_idx, γ, α)
             split_prob::Float64 = quad_split_probability(division_idx, γ, α)
-            prev_gamma_grad::Vector{Float64} = running_gradient[eqn.division_H, :]   # store here in case `split_grad` is 0.0
+            prev_running_grad::Array{Float64} = running_gradient[:, :]
 
             # apply running gradient changes
             @inbounds @simd for param_idx = 1:length(params)
@@ -240,16 +249,9 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             recur_probs::Tuple{Float64, Float64} = compute_eCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
 
             # revert running gradient changes so that the next iteration is unbothered by them
-            @inbounds @simd for e in eqn.coal_edges
-                running_gradient[e, :] .*= -1.
-            end
-            @inbounds @simd for param_idx = 1:length(params)
-                if param_idx == eqn.division_H
-                    running_gradient[eqn.division_H, :] .= prev_gamma_grad
-                else
-                    running_gradient[param_idx, :] ./= split_prob
-                end
-            end
+            # previously here we just did ./= split_grad and ./= split_prob, but BOTH of those
+            # have a change of being 0, so we just store the entire previous gradient now
+            running_gradient = prev_running_grad
 
             recur_probs = early_coal_exp_sum * split_prob .* recur_probs
 
@@ -274,6 +276,8 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         !eqn.can_coalesce_here || error("Can coalesce w/ 1 taxa splitting at a single hybrid??")
 
         γ = params[eqn.division_H]
+        γ = max(1e-9, γ)
+        γ = min(1.0 - 1e-9, γ)
         params_seen[eqn.division_H] = true
 
         # apply running gradient changes
