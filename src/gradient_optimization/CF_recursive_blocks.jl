@@ -169,7 +169,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 
     if eqn.division_H == -1
 
-        exp_sum = eqn.coal_edges == EMPTY_INT_VEC ? 1 : exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
+        exp_sum = eqn.coal_edges == EMPTY_INT_VEC ? 1 : exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]; init=0.0))
 
         # Gradient computation
         @inbounds @simd for param_idx = 1:length(params)
@@ -200,9 +200,8 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 
         eqn_eCF1::Float64 = 0.0
         eqn_eCF2::Float64 = 0.0
-        before = params_seen
 
-        early_coal_exp_sum::Float64 = exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]))
+        early_coal_exp_sum::Float64 = exp(-sum(params[j] for j = 1:length(params_seen) if eqn.coal_mask[j]; init=0.0))
         early_coal_exp_sum = max(early_coal_exp_sum, 1e-9)
         if eqn.can_coalesce_here
             # eCF contribution
@@ -251,7 +250,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             # revert running gradient changes so that the next iteration is unbothered by them
             # previously here we just did ./= split_grad and ./= split_prob, but BOTH of those
             # have a change of being 0, so we just store the entire previous gradient now
-            running_gradient = prev_running_grad
+            running_gradient .= prev_running_grad
 
             recur_probs = early_coal_exp_sum * split_prob .* recur_probs
 
@@ -265,9 +264,6 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             params_seen[e] = false
         end
         params_seen[eqn.division_H] = false
-        if !all(params_seen .== before)
-            error("params_seen changed")
-        end
 
         return eqn_eCF1, eqn_eCF2
 
