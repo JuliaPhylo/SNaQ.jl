@@ -122,14 +122,22 @@ function multi_search(
         """)
     end
 
+    # Make sure the log files can be created
+    runs_path::String = ""
+    if filename != ""
+        runs_path = string(filename, "_runs/")
+        mkpath(runs_path)
+    end
+    filenames = [filename == "" ? "" : "$(runs_path)run$(j)" for j = 1:runs]
+
     # Do the runs distributed
     starttime = time()
     nets_and_PLs = pmap(
         j -> search(
             length(Ns) == 1 ? Ns[1] : Ns[j],
             q, hmax; seed = run_seeds[j], restrictions=restrictions,
-            logfile = logprefix == "" ? "" : "$(logprefix)$(run_seeds[j])",
-            filename = filename,
+            logfile = logprefix == "" ? "" : "$(logprefix)$(j)",
+            filename = filenames[j],
             outgroup=outgroup, kwargs...
         ),
         1:runs
@@ -366,7 +374,7 @@ of branch lengths and inheritance probabilities.
 - `opt_maxeval::Int=10`: Maximum evaluations for optimization.
 - `seed::Int=abs(rand(Int) % 100000)`: Random seed for reproducibility.
 - `verbose::Bool=false`: Whether to print verbose output.
-- `logfile::String=""`: File to log detailed progress (mostly used for debugging).
+- `logfile::String=""`: File to log detailed progress (used for debugging, but can also be used to examine convergence).
 
 # Returns
 - `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
@@ -404,6 +412,7 @@ function search(
 
     # Initial logging message
     starttime = time()
+    open(string(filename, ".log"), "w+") do f end # clear any pre-existing text in the log file
     logmessage(filename, """
     BEGIN: search with seed $(seed) at $(currenttime())
            starting topology: $(writenewick(N, round=true))""")
@@ -572,12 +581,23 @@ function search(
             break
         end
     end
+    loglik!(N, logPLs[length(logPLs)])
 
-    log_text(logfile, "Search complete.\n\n")
+    if propQuartets != 1.0
+        logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
+        if typeof(q) <: DataCF
+            loglik!(N, compute_loss(N, gather_expectedCF_matrix(q)))
+        else
+            loglik!(N, compute_loss(N, q))
+        end
+        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with -loglik=$(round(loglik(N), digits=5))")
+    end
+
+    log_text(logfile, "Search complete at $(currenttime()).\n\n")
     log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
-    loglik!(N, logPLs[length(logPLs)])
     logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
+    logmessage(filename, writenewick(N))
     return N, logPLs[length(logPLs)]
 
 end
