@@ -43,8 +43,8 @@ contains_parameter(qdata::QuartetData, param_idxs::Vector{Int})::Bool = any(
 )
 
 
-function compute_eCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
-    return compute_eCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α, ones(length(params), 3))
+function compute_expectedCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
+    return compute_expectedCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α, ones(length(params), 3))
 end
 
 
@@ -52,12 +52,12 @@ end
 Helper function (primarily for the `QuartetNetworkGoodnessFit.jl` package) used
 to compute the expected CFs of the quartet consisting of `taxa` in `net`.
 """
-function compute_eCF_4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, α::Real)::Tuple{Float64,Float64,Float64}
+function compute_expectedCF_4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, α::Real)::Tuple{Float64,Float64,Float64}
     # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
     param_map, params = gather_optimization_info(net)[[2,4]]
 
     qdata = SNaQ.find_quartet_equations_4taxa(net, taxa, param_map)
-    eCF1, eCF2 = SNaQ.compute_eCF(qdata, params, α)
+    eCF1, eCF2 = SNaQ.compute_expectedCF(qdata, params, α)
     
     return eCF1, eCF2, 1-eCF1-eCF2
 end
@@ -128,7 +128,7 @@ Computes expected concordance factors and gradients by recursively passing throu
         fill!(bv, false)
         fill!(running_grad, 1.0)
 
-        eCF1::Float64, eCF2::Float64 = compute_eCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
+        eCF1::Float64, eCF2::Float64 = compute_expectedCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
         eCF3::Float64 = 1.0 - eCF1 - eCF2
 
         eCF1 = max(eCF1, 1e-9)
@@ -157,10 +157,10 @@ end
 
 
 """
-Recursive helper function that does the actual computations for [`compute_eCFs_and_gradient!`](@ref).
+Recursive helper function that does the actual computations for [`compute_loss_and_gradient!`](@ref).
 Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 """
-@fastmath function compute_eCF_and_gradient_recur!(
+@fastmath function compute_expectedCF_and_gradient_recur!(
     eqn::RecursiveCFEquation, params::Vector{Float64},
     gradient_storage::Matrix{Float64},
     params_seen::BitVector,
@@ -245,7 +245,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
                 running_gradient[e, :] .*= -1.
             end
 
-            recur_probs::Tuple{Float64, Float64} = compute_eCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
+            recur_probs::Tuple{Float64, Float64} = compute_expectedCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
 
             # revert running gradient changes so that the next iteration is unbothered by them
             # previously here we just did ./= split_grad and ./= split_prob, but BOTH of those
@@ -283,7 +283,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             end
         end
 
-        eqn_eCF1, eqn_eCF2 = γ .* compute_eCF_and_gradient_recur!(eqn.divisions[1], params, gradient_storage, params_seen, α, running_gradient)
+        eqn_eCF1, eqn_eCF2 = γ .* compute_expectedCF_and_gradient_recur!(eqn.divisions[1], params, gradient_storage, params_seen, α, running_gradient)
 
         # revert running gradient changes
         @inbounds @simd for param_idx = 1:length(params)
@@ -302,7 +302,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             end
         end
 
-        secondary_probs = (1 - γ) .* compute_eCF_and_gradient_recur!(eqn.divisions[2], params, gradient_storage, params_seen, α, running_gradient)
+        secondary_probs = (1 - γ) .* compute_expectedCF_and_gradient_recur!(eqn.divisions[2], params, gradient_storage, params_seen, α, running_gradient)
 
         # revert running gradient changes
         @inbounds @simd for param_idx = 1:length(params)

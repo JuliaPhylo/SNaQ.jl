@@ -382,17 +382,25 @@ end
 
 """
 Computes the expected concordance factors of `net` with the inheritance
-correlation parameter `α` (default=`Inf`).
+correlation parameter `α` (default=`Inf`). The returned `Matrix{Float64}`
+object is unlabelled. See also [`ExpectedDataCF`](@ref) for a `DataCF` object
+with corresponding taxa information.
 """
-function compute_eCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
+function compute_expectedCF_matrix(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
     eqns, _, params, _ = find_quartet_equations(net)
     eCFs = zeros(length(eqns), 3)
     for j = 1:size(eCFs)[1]
-        eCFs[j, 1], eCFs[j, 2] = compute_eCF(eqns[j], params, α)
+        eCFs[j, 1], eCFs[j, 2] = compute_expectedCF(eqns[j], params, α)
         eCFs[j, 3] = 1 - eCFs[j, 1] - eCFs[j, 2]
     end
     return eCFs
 end
+
+"""
+Deprecated. Internal use only - used for backward compatibility.
+"""
+compute_eCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
+    compute_expectedCF_matrix(net, α)
 
 
 """
@@ -402,7 +410,7 @@ function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
     eqns, _, params, _ = find_quartet_equations(net);
     d = DataCF()
     for j in eachindex(eqns)
-        eCF1, eCF2 = compute_eCF(eqns[j], params, α)
+        eCF1, eCF2 = compute_expectedCF(eqns[j], params, α)
         push!(d.quartet, Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2])))
     end
     d.numQuartets = length(eqns)
