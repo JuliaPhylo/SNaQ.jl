@@ -118,7 +118,7 @@ function multi_search(
             outgroup = $outgroup,
             restrictions = $restrictionmsg
         Root name for log files: $filename (absolute path $(abspath(filename)))
-        Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").\n
+        Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").
         """)
     end
 
@@ -156,7 +156,7 @@ function multi_search(
 
     # Log results
     logmessage(filename, """
-    \nFinished optimizing topology at $(currenttime()) after $(elapsed).
+    Finished optimizing topology at $(currenttime()) after $(elapsed).
     Optimal network: $(writenewick(bestnet, round=true))
     Optimal -loglik: $(-loglik(bestnet))
     To view all $runs inferred networks and their associated -loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
