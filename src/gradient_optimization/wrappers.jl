@@ -22,14 +22,14 @@ function snaq!(
     probQR::Float64=0.0,
     qtolAbs::Float64=qAbs,
     qinfTest::Bool=false,
-    propQuartets::Float64=1.0
+    propQuartets::Float64=1.0,
+    restrictions::Function=SNaQ.knownidentifiable
 )
 
     # kwargs not implemented that should be implemented:
     # - `filename`
     # - `updateBL`
     # - `probQR`
-    # - `propQuartets`
     # - `qinfTest`
     # - `qtolAbs`
 
@@ -43,7 +43,7 @@ function snaq!(
         seed=seed,
         probST=probST,
         outgroup=outgroup,
-        restrictions=restrictionset(max_level=1),
+        restrictions=restrictions,
         ftolRel=ftolRel,
         ftolAbs=ftolAbs,
         xtolRel=xtolRel,
