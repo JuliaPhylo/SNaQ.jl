@@ -490,6 +490,7 @@ function search(
         prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
         last_move = prop_move
         apply_move!(Nprime, prop_move, prop_params)
+        @debug "Proposed move: $(prop_move), parameters: $(prop_params)"
         push!(moves_attempted, (prop_move, prop_params))
         @debug "Proposed: $(writenewick(Nprime, round=true))"
 
