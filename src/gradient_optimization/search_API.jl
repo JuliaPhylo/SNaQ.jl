@@ -421,6 +421,11 @@ function search(
     rng = Random.seed!(seed)
 
     N = readnewick(writenewick(N));
+    for node in N.node
+        if !node.leaf && !node.hybrid
+            node.name = ""
+        end
+    end
     semidirect_network!(N)
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
