@@ -126,6 +126,13 @@ function optimize_bls!(
     xtolAbs::Float64=1e-8
 )::Float64
 
+    # Make sure there are no NaNs in the network's edge lengths
+    # This is a bug that only seems to happen on Linux for some reason,
+    # so it is hard for me to track down the source of the error
+    for edge in net.edge
+        if isnan(edge.length) edge.length = 0.0 end
+    end
+
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
     opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
