@@ -599,6 +599,18 @@ function search(
         logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with -loglik=$(round(loglik(N), digits=5))")
     end
 
+    # Remove internal node names that are not hybrids
+    for node in N.node
+        if !node.leaf && !node.hybrid
+            node.name = ""
+        end
+    end
+
+    # Rename hybrids to be from 1-H
+    for (iH, H) in enumerate(N.hybrid)
+        H.name = "H$iH"
+    end
+
     log_text(logfile, "Search complete at $(currenttime()).\n\n")
     log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
