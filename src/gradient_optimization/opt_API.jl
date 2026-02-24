@@ -129,6 +129,7 @@ function optimize_bls!(
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
     opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
+    OGNET = SNaQ.deepcopy_network(net);
 
     opt.maxeval = maxeval
     opt.ftol_rel = ftolRel
@@ -146,7 +147,9 @@ function optimize_bls!(
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, x0)
     if ret == :FAILURE
-        @warn "ERROR: optimization returned :FAILURE"
+        @warn "Parameter optimization returned :FAILURE"
+        @show OGNET
+        @info writenewick(OGNET)
         objective(minx, zeros(length(minx)), net, eqns, observed_CFs, idx_obj_map, α)
     end
     
