@@ -252,7 +252,7 @@ function readmultinewicklevel1(file::AbstractString)
         c = isempty(line) ? "" : line[1]
         if(c == '(')
            try
-               push!(vnet, readTopologyUpdate(line,false))
+               push!(vnet, readTopologyUpdate(line))
            catch(err)
                error("could not read tree in line $(numl). The error is $(err)")
            end
@@ -500,7 +500,7 @@ function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{Hy
         sum13 = 0
         sum14 = 0
         for t in trees
-            isTree(t) || error("gene tree found in file that is a network $(writenewick(t))")
+            t.numhybrids == 0 || error("gene tree found in file that is a network $(writenewick(t))")
             if sameTaxa(q,t)
                 M = tree2Matrix(t,taxa) #fixit: way to reuse M? length(t.edge) will be different across trees
                 res = extractQuartetTree(q,M,taxa)
@@ -833,7 +833,7 @@ new branch length = `-log(3/2(1-mean(CF observed in d)))`.
 `net` is assumed to be a tree, such that the above equation holds.
 """
 function updateBL!(net::HybridNetwork,d::DataCF)
-    if !isTree(net)
+    if net.numhybrids != 0
         @error "updateBL! was created for a tree, and net here is not a tree, so no branch lengths updated"
     end
     parts = edgesParts(net)

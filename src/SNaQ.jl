@@ -48,20 +48,15 @@ module SNaQ
         ## types & network definition
         DataCF,
         Quartet,
-        readnewicklevel1,
-        readmultinewicklevel1,
         # quartet CF
         readtrees2CF,
         readtableCF,
         readtableCF!,
         mapallelesCFtable,
         summarizedataCF,
-        fittedquartetCF,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
-        topologymaxQpseudolik!,
-        topologyQpseudolik!,
         bootsnaq,
         # functions to access relevant object variables
         loglik,
@@ -79,20 +74,11 @@ module SNaQ
 
 
     include("types.jl")
-    include("addHybrid_snaq.jl")
     include("auxiliary.jl")
     include("bootstrap.jl")
-    include("deleteHybrid.jl")
-    include("descriptive.jl")
-    include("moves_snaq.jl")
-    include("manipulateNet.jl")
     include("multipleAlleles.jl")
-    include("pseudolik.jl")
     include("readquartetdata.jl")
     include("readwrite.jl")
-    include("snaq_optimization.jl")
-    include("undo.jl")
-    include("update.jl")
     ############ NEW STUFF
     include("gradient_optimization/CF_recursive_blocks.jl")
     include("gradient_optimization/misc.jl")

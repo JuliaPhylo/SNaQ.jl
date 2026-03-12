@@ -132,7 +132,7 @@ function multi_search(
 
     # Do the runs distributed
     starttime = time()
-    nets_and_PLs = pmap(
+    all_nets = pmap(
         j -> search(
             length(Ns) == 1 ? Ns[1] : Ns[j],
             q, hmax; seed = run_seeds[j], restrictions=restrictions,
@@ -145,12 +145,7 @@ function multi_search(
     elapsed = timeelapsed(time() - starttime)
 
     # Consolidate return data
-    all_nets = Array{HybridNetwork}(undef, runs)
-    all_logPLs = zeros(Float64, runs)
-    for j = 1:runs
-        all_nets[j], all_logPLs[j] = nets_and_PLs[j]
-        loglik!(all_nets[j], all_logPLs[j])
-    end
+    all_logPLs = loglik.(all_nets)
     sort_idx = sortperm(all_logPLs, rev=true)
     bestnet = all_nets[sort_idx[1]]
 
@@ -187,7 +182,7 @@ function multi_search(
     end
 
     # Return
-    return bestnet, all_nets[sort_idx], all_logPLs[sort_idx]
+    return bestnet, all_nets[sort_idx]
 end
 
 
@@ -390,6 +385,7 @@ function search(
     #preopt::Bool=true,
     preopt::Bool=false,
     probST::Real=0.3,
+    probQR::Float64=0.0,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=1500,
     liktolAbs::Float64=1e-8,
@@ -407,6 +403,7 @@ function search(
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
     0 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
+    0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $(probQR))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
 
@@ -416,6 +413,11 @@ function search(
     logmessage(filename, """
     BEGIN: search with seed $(seed) at $(currenttime())
            starting topology: $(writenewick(N, round=true))""")
+
+    # Convert q to a Matrix if it is a DataCF
+    if typeof(q) <: DataCF
+        q = gather_expectedCF_matrix(q)
+    end
 
     # Set the seed
     rng = Random.seed!(seed)
@@ -454,7 +456,7 @@ function search(
     # Initial pre-opt search
     if preopt
         @debug "Pre-optimizing"
-        N, _ = search(N, q, hmax;
+        N = search(N, q, hmax;
             restrictions=restrictions,
             preopt=false,
             probST=0.0,
@@ -616,7 +618,7 @@ function search(
 
     logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
     logmessage(filename, writenewick(N))
-    return N, logPLs[length(logPLs)]
+    return N
 
 end
 

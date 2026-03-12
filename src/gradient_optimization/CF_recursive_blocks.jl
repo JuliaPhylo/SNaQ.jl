@@ -73,6 +73,9 @@ function compute_loss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float
     qdata, _, params, _, _ = find_quartet_equations(N)
     return compute_loss(qdata, params, q, α)
 end
+function compute_loss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
+    return compute_loss(N, gather_expectedCF_matrix(dcf), α)
+end
 function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
     return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
 end

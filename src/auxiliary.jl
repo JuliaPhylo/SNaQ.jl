@@ -2,20 +2,7 @@
 # originally in functions.jl
 # Claudia February 2015
 #####################
-
-function setCHECKNET(b::Bool)
-    global CHECKNET
-    CHECKNET = b
-    CHECKNET && @warn "SNaQ.CHECKNET is true: will slow snaq! down."
-    b || @info "SNaQ.CHECKNET set to false"
-end
-
 # ----- aux general functions ---------------
-
-#based in coupon's collector: E+sqrt(V)
-function coupon(n::Number)
-    return n*log(n) + n
-end
 
 function binom(n::Number,k::Number)
     n >= k || return 0
@@ -24,6 +11,10 @@ function binom(n::Number,k::Number)
     binom(n-1,k-1) + binom(n-1,k) #recursive call
 end
 
+function isInternalEdge(edge::Edge)
+    length(edge.node) == 2 || error("edge $(edge.number) has $(length(edge.node)) nodes, should be 2")
+    return !edge.node[1].leaf && !edge.node[2].leaf
+end
 
 
 """
@@ -57,14 +48,13 @@ function deleteNode!(net::QuartetNetwork, n::Node)
     end
 end
 
+
 """
     deleteEdge!(net::QuartetNetwork, e::Edge)
 
 Delete edge `e` from `net.edge` and update `net.numedges`.
 If `part` is true, update the network's partition field.
 """
-
-
 # function to delete an Edge in net.edge and
 # update numedges from a QuartetNetwork
 function deleteEdge!(net::QuartetNetwork, e::Edge)
@@ -75,32 +65,6 @@ function deleteEdge!(net::QuartetNetwork, e::Edge)
     net.numedges -= 1;
 end
 
-
-
-
-
-"""
-    printedges([io::IO,] quartetnet)
-
-Print information on the edges of a `QuartetNetwork` object `quartetnet`:
-- edge number
-- numbers of nodes attached to it
-- edge length
-- whether it's a hybrid edge
-- whether it's a major edge
-- its γ inheritance value
-- if it could contain the root (this field is not always updated, though)
-- in which cycle it is contained (-1 if no cycle)
-- if its length is identifiable from quartet concordance factors.
-"""
-function printedges(io::IO, net::QuartetNetwork)
-    println(io, "edge parent child  length  hybrid ismajor gamma   containroot inCycle istIdentitiable")
-    for e in net.edge
-        @printf(io, "%-4d %-6d %-6d ", e.number, getparent(e).number, getchild(e).number)
-        @printf(io, "%-7.3f %-6s %-7s ", e.length, e.hybrid, e.ismajor)
-        @printf(io, "%-7.4g %-11s %-7d %-5s\n", e.gamma, e.containroot, inCycle(e), istIdentifiable(e))
-    end
-end
 
 
 # ----------------------------------------------------------------------------------------
@@ -205,155 +169,6 @@ function isPartitionInNet(net::HybridNetwork,partition::Partition)
         end
     end
     return false
-end
-
-# function to check that everything matches in a network
-# in particular, cycles, partitions and containroot
-# fixit: need to add check on identification of bad diamonds, triangles
-# and correct computation of gammaz
-# light=true: it will not collapse with nodes with 2 edges, will return a flag of true
-# returns true if found egde with BL -1.0 (only when light=true, ow error)
-# added checkPartition for undirectedOtherNetworks that do not need correct hybrid node number
-function checkNet(net::HybridNetwork, light::Bool; checkPartition=true::Bool)
-    @debug "checking net"
-    net.numhybrids == length(net.hybrid) || error("discrepant number on net.numhybrids (net.numhybrids) and net.hybrid length $(length(net.hybrid))")
-    net.numtaxa == length(net.leaf) || error("discrepant number on net.numtaxa (net.numtaxa) and net.leaf length $(length(net.leaf))")
-    net.numnodes == length(net.node) || error("discrepant number on net.numnodes (net.numnodes) and net.node length $(length(net.node))")
-    net.numedges == length(net.edge) || error("discrepant number on net.numedges (net.numedges) and net.edge length $(length(net.edge))")
-    if(isTree(net))
-        all(x->x.containroot,net.edge) || error("net is a tree, but not all edges can contain root")
-        all(x->x.ismajor,net.edge) || error("net is a tree, but not all edges are major")
-        all(x->!(x.hybrid),net.edge) || error("net is a tree, but not all edges are tree")
-        all(x->!(x.hybrid),net.node) || error("net is a tree, but not all nodes are tree")
-        all(x->!(hasHybEdge(x)),net.node) || error("net is a tree, but not all nodes hasHybEdge=false")
-        all(x->(x.gamma == 1.0 ? true : false),net.edge) || error("net is a tree, but not all edges have gamma 1.0")
-    end
-    for h in net.hybrid
-        if(checkIsBadTriangle(h))
-            @debug "hybrid $(h.number) is very bad triangle"
-            hasVeryBadTriangle(net) || error("hybrid node $(h.number) is very bad triangle, but hasVeryBadTriangle(net) is $(hasVeryBadTriangle(net))")
-            isVeryBadTriangle(h) || isExtBadTriangle(h) || error("hybrid node $(h.number) is very bad triangle but it does not know it")
-        end
-        nocycle,edges,nodes = identifyInCycle(net,h)
-        for e in edges
-            inCycle(e) == h.number || error("edge $(e.number) is in cycle of hybrid node $(h.number) but its inCycle attribute is $(inCycle(e))")
-            if(e.length == -1.0)
-                if(light)
-                    return true
-                else
-                    error("found edge with BL -1.0")
-                end
-            end
-            if(e.hybrid)
-                !e.containroot || error("hybrid edge $(e.number) should not contain root") # fixit: disagree
-                o = getOtherNode(e,h)
-                hasHybEdge(o) || error("found node $(o.number) attached to hybrid edge but hasHybEdge=$(hasHybEdge(o))")
-            end
-        end
-        for n in nodes
-            inCycle(n) == h.number || error("node $(n.number) is in cycle of hybrid node $(h.number) but its inCycle attribute is $(inCycle(n))")
-            e1,e2,e3 = hybridEdges(n)
-            i = 0
-            for e in [e1,e2,e3]
-                if(isa(e,Nothing) && k(h) != 2)
-                    error("edge found that is Nothing, and hybrid node $(h.number) k is $(k(h)). edge as nothing can only happen when k=2")
-                elseif(!isa(e,Nothing))
-                    if(inCycle(e) == -1)
-                        i += 1
-                        desc = [e]
-                        cycleNum = [h.number]
-                        getDescendants!(getOtherNode(e,n),e,desc,cycleNum)
-                        if(checkPartition && !isPartitionInNet(net,desc,cycleNum))
-                            printpartitions(net)
-                            error("partition with cycle $(cycleNum) and edges $([e.number for e in desc]) not found in net.partition")
-                        end
-                    end
-                end
-            end
-            i == 1 || error("strange node $(n.number) incycle $(h.number) but with $(i) edges not in cycle, should be only one")
-            edgesRoot = identifyContainRoot(net,h)
-            for edge in edgesRoot
-                if edge.containroot
-                    @debug begin printEverything(net); "printed everything" end
-                    error("edge $(edge.number) should not contain root")
-                end
-            end
-        end
-    end
-    for n in net.node
-        if(n.leaf)
-            length(n.edge) == 1 || error("leaf $(n.number) with $(length(n.edge)) edges instead of 1")
-        else
-            if(light)
-                if(length(n.edge) != 3)
-                    @debug "warning: node $(n.number) with $(length(n.edge)) edges instead of 3"
-                    return true
-                end
-            else
-                length(n.edge) == 3 || error("node $(n.number) with $(length(n.edge)) edges instead of 3")
-            end
-        end
-    end
-    for e in net.edge
-        if(e.length == -1.0)
-            if(light)
-                return true
-            else
-                error("edge found with BL -1.0")
-            end
-        end
-    end
-    @debug "no errors in checking net"
-    return false
-end
-
-checkNet(net::HybridNetwork) = checkNet(net, false)
-
-
-# function to print everything for a given net
-# this is used a lot inside snaq to debug, so need to use level1 attributes
-# and not change the network: with writenewick_level1
-function printEverything(net::HybridNetwork)
-    printedges(net)
-    printnodes(net)
-    printpartitions(net)
-    println("$(writenewick_level1(net))")
-end
-
-# function to check if a node is very or ext bad triangle
-function checkIsBadTriangle(node::Node)
-    node.hybrid || return false #error("cannot check if node $(node.number) is very bad triangle because it is not hybrid")
-    if(k(node) == 3)
-        edgemaj, edgemin, treeedge = hybridEdges(node)
-        othermaj = getOtherNode(edgemaj,node)
-        othermin = getOtherNode(edgemin,node)
-        treenode = getOtherNode(treeedge,node)
-        edges1 = hybridEdges(othermaj)
-        o1 = getOtherNode(edges1[3],othermaj)
-        edges2 = hybridEdges(othermin)
-        o2 = getOtherNode(edges2[3],othermin)
-        leaves = sum([n.leaf ? 1 : 0 for n in [treenode,o1,o2]])
-        if(leaves == 1 || leaves == 2)
-            return true
-        else
-            return false
-        end
-    else
-        return false
-    end
-end
-
-
-# function to switch a hybrid node in a network to another node in the cycle
-function switchHybridNode!(net::HybridNetwork, hybrid::Node, newHybrid::Node)
-    hybrid.hybrid || error("node $(hybrid.number) has to be hybrid to switch to a different hybrid")
-    inCycle(newHybrid) == hybrid.number || error("new hybrid needs to be in the cycle of old hybrid: $(hybrid.number)")
-    !newHybrid.hybrid || error("strange hybrid node $(newHybrid.number) in cycle of another hybrid $(hybrid.number)")
-    newHybrid.hybrid = true
-    hasHybEdge!(newHybrid, true)
-    newHybrid.name = hybrid.name
-    pushHybrid!(net,newHybrid)
-    makeNodeTree!(net,hybrid)
 end
 
 """

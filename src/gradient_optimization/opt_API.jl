@@ -97,6 +97,16 @@ end
 
 
 """
+This version is just a helper function for more clear tests. In the context of the
+algorithm, this function recomputes values and wastes time.
+"""
+function optimize_topology!(net::HybridNetwork, d::DataCF)
+    eqns = SNaQ.find_quartet_equations(net)[1];
+    return optimize_bls!(net, eqns, gather_expectedCF_matrix(d); maxeval=500)
+end
+
+
+"""
 Optimizes the branch lengths (and γ parameters) of network `net`.
 
 # Required Arguments:
@@ -108,7 +118,7 @@ Optimizes the branch lengths (and γ parameters) of network `net`.
 
 # Optional Arguments:
 - `α::Float64=Inf`: the inheritance correlation parameter with which the network is optimized. (Default=`Inf`)
-- `maxeval::Int=10`: the maximum number of loss evaluations during optimization. (Default=`10`)
+- `maxeval::Int=25`: the maximum number of loss evaluations during optimization. (Default=`10`)
 - `ftolRel::Float64=1e-12`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-12`)
 - `ftolAbs::Float64=1e-12`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-12`)
 - `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-8`)
@@ -119,7 +129,7 @@ function optimize_bls!(
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
     α::Real=Inf;
-    maxeval::Int=10,
+    maxeval::Int=25,
     ftolRel::Float64=1e-12,
     ftolAbs::Float64=1e-12,
     xtolRel::Float64=1e-8,
@@ -203,7 +213,7 @@ function optimize_bls_staticγ!(
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
     α::Real=Inf;
-    maxeval::Int=10,
+    maxeval::Int=100,
     ftolRel::Float64=1e-12,
     ftolAbs::Float64=1e-12,
     xtolRel::Float64=1e-8,
