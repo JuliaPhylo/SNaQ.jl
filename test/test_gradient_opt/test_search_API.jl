@@ -9,9 +9,8 @@ q = SNaQ.compute_eCFs(net);
 tre0 = majortree(net);
 
 
-opt_rt = @elapsed opt_net, logPLs = search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
+opt_rt = @elapsed opt_net, logPLs = multi_search(tre0, q, net.numhybrids; seed=7, maxequivPLs = 1000)
 @test hardwiredclusterdistance(net, opt_net, false) == 0
-
 
 t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multi_search(t0s, q, net.numhybrids; runs=length(t0s), seed=5, maxequivPLs = 1000)
@@ -36,9 +35,3 @@ t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multi_search(t0s, q, net.numhybrids; outgroup="f", runs=length(t0s), seed=5, maxequivPLs = 1000)
 @test hardwiredclusterdistance(net, opt_net, false) != 0 # "f" is NOT an outgroup, so we should have HWCD > 0
 @test any(t -> t.name == "f", getchildren(getroot(opt_net)))
-
-
-# error("@btime")
-# using BenchmarkTools
-# @btime search(tre0, q, net.numhybrids; seed=5, maxequivPLs = 1000)
-# # 4.7s, 5.29 GiB

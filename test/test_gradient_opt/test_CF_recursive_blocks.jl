@@ -56,7 +56,7 @@ end
     # For a tree with topology ((A,B),(C,D)) with one internal edge,
     # we expect eCF1 (AB|CD) to be dominant
     params = [0.5]  # Branch length of 0.5
-    ecfs = compute_eCF(qdata, params, Inf)
+    ecfs = SNaQ.compute_expectedCF(qdata, params, Inf)
     
     # Check that eCF1 (AB|CD) > eCF2 (AC|BD) = eCF3 (AD|BC)
     @test ecfs[1] > ecfs[2]
@@ -119,7 +119,7 @@ end
     running_gradient = ones(1, 3)
     
     # Compute eCFs and gradient
-    ecf1, ecf2 = compute_eCF_and_gradient_recur!(eqn_treelike, params, gradient, params_seen, Inf, running_gradient)
+    ecf1, ecf2 = SNaQ.compute_expectedCF_and_gradient_recur!(eqn_treelike, params, gradient, params_seen, Inf, running_gradient)
     
     # Check eCFs
     @test ecf1 ≈ 1 - 2/3 * exp(-0.5)

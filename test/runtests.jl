@@ -14,17 +14,7 @@ using PhyloCoalSimulations
 include("test_inplace_updates/misc.jl")
 
 ## Import internal functions that are directly used in tests. There has got to be a better way
-import SNaQ: checkNet,
-    extractQuartet!, identifyQuartet!,
-    eliminateHybridization!,
-    updateSplit!, updateFormula!,
-    calculateExpCF!, calculateExpCFAll!, logPseudoLik,
-    updateInCycle!, updateContainRoot!, updateGammaz!,
-    parameters!, update!, optTopRun1!,
-    writeExpCF, writenewick_level1, descData,
-    addHybridizationUpdate!, deleteHybridizationUpdate!,
-    cleanBL!, cleanAfterRead!, identifyInCycle,
-    updatePartition!, optBL!,undirectedOtherNetworks,hybridatnode!,
+import SNaQ: writeExpCF, descData,
     # field getters
     istIdentifiable, fromBadDiamondI, inCycle, hasHybEdge,
     isBadDiamondI, isBadDiamondII, isExtBadTriangle, isVeryBadTriangle,
@@ -36,8 +26,7 @@ import SNaQ: checkNet,
     isBadDiamondI!, isBadDiamondII!, isExtBadTriangle!, isVeryBadTriangle!,
     k!, typeHyb!, gammaz!,
     visited!, edges_changed!, nodes_changed!, ht!, numht!,
-    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!,
-    chooseEdgesGamma, deleteHybrid!
+    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
 
 import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs,
     is_valid_add_hybrid,
@@ -55,8 +44,7 @@ import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs,
     apply_move!, perform_rSPR!, is_valid_rSPR, semidirect_network!,
     sample_rSPR_parameters
 
-import PhyloNetworks:
-    Node, Edge,
+import PhyloNetworks: Node, Edge,
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,
@@ -79,25 +67,13 @@ function runtestfile(testfile::String)
 end
 
 
-SNaQ.setCHECKNET(true)
 @testset "SNaQ.jl" begin
-    # runtestfile("test_5taxon_readTopology.jl")
-    # runtestfile("test_add2hyb.jl")
-    # runtestfile("test_badDiamII.jl")
-    # runtestfile("test_bootstrap.jl") 
-    # runtestfile("test_calculateExpCF.jl")
-    # runtestfile("test_calculateExpCF2.jl")
-    # runtestfile("test_correctLik.jl")
-    # runtestfile("test_deleteHybridizationUpdate.jl")
-    # runtestfile("test_multipleAlleles.jl")
-    # runtestfile("test_optBLparts.jl")
-    # runtestfile("test_parameters.jl")
-    # runtestfile("test_partition.jl")
-    # runtestfile("test_partition2.jl")
-    # runtestfile("test_perfectData.jl")
-    # runtestfile("test_readInputData.jl")
-    # runtestfile("test_hasEdge.jl")
-    # runtestfile("test_undirectedOtherNetworks.jl")
+    runtestfile("test_bootstrap.jl")
+    runtestfile("test_multipleAlleles.jl")
+    runtestfile("test_perfectData.jl")
+    runtestfile("test_readInputData.jl")
+
+
     runtestfile("test_gradient_opt/test_opt_API.jl")
     runtestfile("test_gradient_opt/test_search_API.jl")
     runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")
