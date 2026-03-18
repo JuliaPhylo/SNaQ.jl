@@ -166,6 +166,9 @@ function readtableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false
         end
     end
     d = DataCF(quartets)
+    if "ngenes" in names(df)
+        d.numTrees = Int64(minimum(df.ngenes))
+    end
     if(!isempty(repSpecies))
         d.repSpecies = repSpecies
     end

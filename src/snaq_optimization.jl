@@ -1155,7 +1155,7 @@ function proposedTop!(move::Integer, newT::HybridNetwork,random::Bool, count::In
     N::Integer, movescount::Vector{Int}, movesfail::Vector{Int}, multall::Bool, probQR::Float64, d::DataCF)
     global CHECKNET
     1 <= move <= 6 || error("invalid move $(move)") #fixit: if previous move rejected, do not redo it!
-    probQR == 0.0 || d.numTrees != -1 || error("If probQR is not 0.0, d must not be an empty DataCF")
+    probQR == 0.0 || d.numQuartets > 0 || error("If probQR is not 0.0, d must not be an empty DataCF")
     @debug "current move: $(int2move[move])"
     if(move == 1)
         success = addHybridizationUpdateSmart!(newT, N, probQR, d)
