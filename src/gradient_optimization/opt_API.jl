@@ -37,7 +37,7 @@ function optimize_topology!(
     α::Float64;
     optargs...
 )::Tuple{Float64, Vector{QuartetData}}
-    Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, 3*length(old_eqns))
+    Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
         _, param_map, idxobjmap, _ = gather_optimization_info(Nprime, true)
@@ -48,8 +48,8 @@ function optimize_topology!(
     end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_eqns = Nprime_eqns[1:length(old_eqns)]
-    Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q, α; maxeval=opt_maxeval, optargs...)
+    #Nprime_eqns = Nprime_eqns[1:length(old_eqns)]
+    Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
 
     return Nprime_logPL, Nprime_eqns
 end

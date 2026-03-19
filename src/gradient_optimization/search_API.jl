@@ -460,7 +460,7 @@ function search(
             restrictions=restrictions,
             preopt=false,
             probST=0.0,
-            maxeval=1000,
+            maxeval=100,
             opt_maxeval=opt_maxeval,
             maxequivPLs=50
         )

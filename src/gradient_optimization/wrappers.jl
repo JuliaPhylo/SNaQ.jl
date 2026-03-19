@@ -16,7 +16,7 @@ function snaq!(
     runs::Integer=10,
     outgroup::AbstractString="none",
     filename::AbstractString="snaq",
-    seed::Integer=0,
+    seed::Integer=rand(Int),
     probST::Float64=0.3,
     updateBL::Bool=true,
     probQR::Float64=0.0,
