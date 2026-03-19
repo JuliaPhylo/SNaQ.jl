@@ -594,9 +594,9 @@ function search(
     if propQuartets != 1.0
         logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
         if typeof(q) <: DataCF
-            loglik!(N, compute_loss(N, gather_expectedCF_matrix(q)))
+            loglik!(N, optimize_bls!(N, gather_expectedCF_matrix(q)))
         else
-            loglik!(N, compute_loss(N, q))
+            loglik!(N, optimize_bls!(N, q))
         end
         logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with -loglik=$(round(loglik(N), digits=5))")
     end
