@@ -556,7 +556,7 @@ function search(
         # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
-        (Nprime_logPL === NaN || abs(Nprime_logPL) < eps()) && error("""
+        isnan(Nprime_logPL) && error("""
             Nprime_logPL = $(Nprime_logPL)
             $(writenewick(Nprime, round=true))
         """)

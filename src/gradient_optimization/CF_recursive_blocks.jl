@@ -81,6 +81,17 @@ function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Ma
 end
 
 
+"""
+Debugging function - not to be used internally because it will recompute many things.
+"""
+function compute_gradient(net::HybridNetwork, obsCFs::Matrix{Float64}, α::Float64=Inf)::Vector{Float64}
+    params = gather_params(net);
+    grad = zeros(length(params))
+    compute_loss_and_gradient!(find_quartet_equations(net)[1], params, grad, obsCFs, α)
+    return grad
+end
+
+
 # Global thread buffers
 const THREAD_ITER_GRAD_BUFFER::Dict{Int, Array{Float64, 3}} = Dict{Int, Array{Float64, 3}}()
 const THREAD_BV_BUFFER::Dict{Int, BitMatrix} = Dict{Int, BitMatrix}()

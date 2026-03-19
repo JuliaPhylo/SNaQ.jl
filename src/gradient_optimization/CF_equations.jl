@@ -387,7 +387,7 @@ must be of length exactly (`net.numtaxa` choose 4). Each index of
 `q_idxs` corresponds to a quartet whose equation will be computed.
 """
 function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
-    all(e -> e.length >= 0.0, net.edge) || error("net has negative edges")
+    all(e -> getchild(e).leaf || e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
 

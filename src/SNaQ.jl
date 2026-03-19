@@ -62,12 +62,14 @@ module SNaQ
         loglik,
         loglik!,
         ########## New optimization functions
-        multi_search,
-        search,
-        optimize_bls!,
-        BFS,
+        optimize_bls!,  # fixit: TODO: fix this name - it opts more than just BLs!
+        compute_loss,   # fixit: TODO: make this name in line with Julia conventions
+        compute_expectedCF_matrix,  # fixit: TODO: no underscores in fxn names!!
+        ExpectedDataCF,             # fixit: TODO: again, not Julian naming convensions
         ########## New identifiability/restriction functions
-        defaultrestrictions,
+        defaultrestrictions,    # fixit: TODO: some of these functions are called like
+                                # restrictions=fxn(), while others are called like
+                                # restirctions=fxn - standardize this
         norestrictions,
         knownidentifiable,
         restrictionset

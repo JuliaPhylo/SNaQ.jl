@@ -42,7 +42,7 @@ import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs,
     all_valid_rNNI_nodes, perform_random_rNNI!, semidirect_network!,
     all_valid_rNNI1_nodes, all_valid_rNNI2_nodes,
     apply_move!, perform_rSPR!, is_valid_rSPR, semidirect_network!,
-    sample_rSPR_parameters
+    sample_rSPR_parameters, multi_search, search
 
 import PhyloNetworks: Node, Edge,
     setNode!,setEdge!,
@@ -59,6 +59,7 @@ end
 
 
 function runtestfile(testfile::String)
+    @info testfile
     originalstdout = stdout
     originalstderr = stderr
     include(testfile)
@@ -73,7 +74,7 @@ end
     runtestfile("test_perfectData.jl")
     runtestfile("test_readInputData.jl")
 
-
+    runtestfile("test_propQuartets.jl")
     runtestfile("test_gradient_opt/test_opt_API.jl")
     runtestfile("test_gradient_opt/test_search_API.jl")
     runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")

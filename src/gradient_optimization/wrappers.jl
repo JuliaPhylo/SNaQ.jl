@@ -4,12 +4,12 @@ function snaq!(
     currT0::HybridNetwork,
     d::DataCF;
     hmax::Integer=1,
-    liktolAbs::Float64=1e-10,
+    liktolAbs::Float64=1e-8,
     Nfail::Integer=3000,
-    ftolRel::Float64=1e-10,
-    ftolAbs::Float64=1e-10,
-    xtolRel::Float64=1e-10,
-    xtolAbs::Float64=1e-10,
+    ftolRel::Float64=1e-8,
+    ftolAbs::Float64=1e-8,
+    xtolRel::Float64=1e-8,
+    xtolAbs::Float64=1e-8,
     verbose::Bool=false,
     closeN::Bool=true,
     Nmov0::Vector{Int}=Int[],
@@ -23,7 +23,8 @@ function snaq!(
     qtolAbs::Float64=1e-4,
     qinfTest::Bool=false,
     propQuartets::Float64=1.0,
-    restrictions::Function=SNaQ.knownidentifiable
+    restrictions::Function=SNaQ.knownidentifiable,
+    kwargs...
 )
 
     # kwargs not implemented that should be implemented:

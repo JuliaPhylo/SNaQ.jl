@@ -22,7 +22,12 @@ end
             opt_net = deepcopy(net)
             for E in opt_net.edge
                 if E.length != 0.0 E.length = rand()*L end
-                if E.gamma != -1.0 E.gamma = 0.5 end
+            end
+            for H in opt_net.hybrid
+                γ = rand()
+                γ = max(γ, 1.0 - γ)
+                getparentedge(H).gamma = γ
+                getparentedgeminor(H).gamma = 1.0 - γ
             end
 
             optimize_bls!(opt_net, q; maxeval=100000)

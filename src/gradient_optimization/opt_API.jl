@@ -48,7 +48,6 @@ function optimize_topology!(
     end
 
     @debug "\tOptimizing branch lengths."
-    #Nprime_eqns = Nprime_eqns[1:length(old_eqns)]
     Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
 
     return Nprime_logPL, Nprime_eqns
@@ -119,10 +118,10 @@ Optimizes the branch lengths (and γ parameters) of network `net`.
 # Optional Arguments:
 - `α::Float64=Inf`: the inheritance correlation parameter with which the network is optimized. (Default=`Inf`)
 - `maxeval::Int=25`: the maximum number of loss evaluations during optimization. (Default=`10`)
-- `ftolRel::Float64=1e-12`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-12`)
-- `ftolAbs::Float64=1e-12`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-12`)
-- `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-8`)
-- `xtolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer. (Default=`1e-8`)
+- `ftolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
+- `ftolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
+- `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
+- `xtolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 """
 function optimize_bls!(
     net::HybridNetwork,
@@ -132,8 +131,8 @@ function optimize_bls!(
     maxeval::Int=25,
     ftolRel::Float64=1e-12,
     ftolAbs::Float64=1e-12,
-    xtolRel::Float64=1e-8,
-    xtolAbs::Float64=1e-8
+    xtolRel::Float64=1e-12,
+    xtolAbs::Float64=1e-12
 )::Float64
 
     # Make sure there are no NaNs in the network's edge lengths
@@ -141,6 +140,15 @@ function optimize_bls!(
     # so it is hard for me to track down the source of the error
     for edge in net.edge
         if isnan(edge.length) edge.length = 0.0 end
+        getchild(edge).leaf && continue
+        edge.length = max(edge.length, 1e-5)    # starting optimization on a boundary can lead to failure
+    end
+
+    # Make sure γ values don't start on boundaries (this should never be
+    # the case, but doing this check is free and may avoid errors)
+    for H in net.hybrid
+        γ = getparentedge(H).gamma
+        γ = min(γ, 1.0 - 1e-5)
     end
 
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
@@ -158,31 +166,15 @@ function optimize_bls!(
     opt.lower_bounds = LB
     opt.upper_bounds = UB
 
-    x0::Vector{Float64} = [min(ub / 2.0, val) for (ub, val) in zip(UB, params)]
+    x0::Vector{Float64} = [min(ub, val) for (ub, val) in zip(UB, params)]
     x0 = min.(UB .- 1e-12, x0)
     x0 = max.(LB .+ 1e-12, x0)
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
     (minf, minx, ret) = NLopt.optimize(opt, x0)
-    if ret == :FAILURE
-        @warn "Parameter optimization returned :FAILURE"
-        @show OGNET
-        @info writenewick(OGNET)
-        objective(minx, zeros(length(minx)), net, eqns, observed_CFs, idx_obj_map, α)
-    end
     
     setX!(net, minx, idx_obj_map)
     if minf == -Inf
-        @show writenewick(net, round=true)
-        @info "\n\n\n"
-        @show minf
-        @show minx
-        @show ret
-        @show params
-        @show UB
-        @show LB
-        @show UB .- LB
-        @show objective(minx, fill(0.0, length(minx)), net, eqns, observed_CFs, idx_obj_map, α)
-        error("minf == -Inf")
+        error("Optimization error: minf == -Inf")
     end
 
     # The major/minor property of some hybrid edges may need to be changed at this point
@@ -420,6 +412,12 @@ end
 Deprecated. Internal use only - used for backward compatibility.
 """
 compute_eCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
+    compute_expectedCF_matrix(net, α)
+
+"""
+Deprecated. Internal use only - used for backward compatibility.
+"""
+compute_expectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
     compute_expectedCF_matrix(net, α)
 
 
