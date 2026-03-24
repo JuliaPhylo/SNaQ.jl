@@ -4,13 +4,6 @@
 #####################
 # ----- aux general functions ---------------
 
-function binom(n::Number,k::Number)
-    n >= k || return 0
-    n == 1 && return 1
-    k == 0 && return 1
-    binom(n-1,k-1) + binom(n-1,k) #recursive call
-end
-
 function isInternalEdge(edge::Edge)
     length(edge.node) == 2 || error("edge $(edge.number) has $(length(edge.node)) nodes, should be 2")
     return !edge.node[1].leaf && !edge.node[2].leaf

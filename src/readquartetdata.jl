@@ -336,7 +336,7 @@ end
 function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::Integer, writeFile::Bool)
     randquartets = Quartet[]
     n = length(taxon)
-    ntotal = binom(n,4)
+    ntotal = binomial(n,4)
     num <= ntotal || error("you cannot choose a sample of $(num) quartets when there are $(ntotal) in total")
     # indx = [rep(1,num);rep(0,ntotal-num)] # requires much more memory than necessary:
     # indx = indx[sortperm(randn(ntotal))]  # several arrays of size ntotal !!
@@ -1009,11 +1009,11 @@ end
 # returns vector of int, e.g. 1234
 function whichQuartet(n::Int, q::Int)
     p = 4
-    q <= binom(n,p) || error("the index for the quartet $(q) needs to be less than choose(n,4)=$(binom(n,p))")
+    q <= binomial(n,p) || error("the index for the quartet $(q) needs to be less than choose(n,4)=$(binomial(n,p))")
     n > 4 || error("there must be at least 5 taxa, not $(n)")
     quartet = Int[]
     while(n > 1)
-        abs = binom(n-1,p) #fixit: we don't want to compute this, we want to look for it in a table
+        abs = binomial(n-1,p) #fixit: we don't want to compute this, we want to look for it in a table
         if(q > abs)
             push!(quartet,n)
             n -= 1
