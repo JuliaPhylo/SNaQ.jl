@@ -147,7 +147,7 @@ function sample_rNNI_parameters(N::HybridNetwork, type::Int, rng::TaskLocalRNG)
     1 ≤ type ≤ 4 || error("`type` must be 1, 2, 3, or 4.")
 
     valid_stuvs = type == 1 ? all_valid_rNNI1_nodes(N) :
-        type == 2 ? all_valid_rNNI2_nodes(N) :
+        type == 2 ? allvalidrNNI2nodes(N) :
         type == 3 ? all_valid_rNNI3_nodes(N) :
         all_valid_rNNI4_nodes(N)
     
@@ -172,7 +172,7 @@ function perform_random_rNNI!(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector
         s, t, u, v = sample(rng, valid_stuvs)
         return perform_rNNI1!(N, s, t, u, v)
     elseif r < probs[1] + probs[2]
-        valid_stuvs = all_valid_rNNI2_nodes(N)
+        valid_stuvs = allvalidrNNI2nodes(N)
         if length(valid_stuvs) == 0
             p134 = probs[1] + probs[3] + probs[4]
             return perform_random_rNNI!(N, rng, [probs[1], 0, probs[3], probs[4]] ./ p134)

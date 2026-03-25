@@ -65,7 +65,7 @@ function all_valid_rNNI_nodes(N::HybridNetwork, type::Int)
     if type == 1
         return all_valid_rNNI1_nodes(N)
     elseif type == 2
-        return all_valid_rNNI2_nodes(N)
+        return allvalidrNNI2nodes(N)
     elseif type == 3
         return all_valid_rNNI3_nodes(N)
     else
@@ -118,7 +118,7 @@ function all_valid_rNNI1_nodes(N::HybridNetwork)
     return stuv_combos
 end
 
-function all_valid_rNNI2_nodes(N::HybridNetwork)
+function allvalidrNNI2nodes(N::HybridNetwork)
     valid_vs = [node for node in N.node if node.hybrid];
     length(valid_vs) > 0 || return []
 

@@ -13,14 +13,14 @@ Recursively builds the quartet CF equations for the quarnet in
     index - used for optimization. `α` is the inheritance correlation
     parameter.
 """
-function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
+function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
 
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
         qdat = try_treelike_quartet(net, taxa, parameter_map)
         qdat !== nothing && return qdat.eqn
         
-        quartet_type, int_edges = get_quartet_type_and_internal_edges(net, taxa, parameter_map)
+        quartet_type, int_edges = getquartettypeandinternaledges(net, taxa, parameter_map)
         return RecursiveCFEquation(
             true, [parameter_map[int_e.number] for int_e in int_edges], quartet_type, -1,
             EMPTY_EQN_VEC, length(parameter_map)
@@ -40,8 +40,8 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{St
 
 
     # If >= 1 hybrids, we need to keep recursing
-    lowest_H = get_lowest_hybrid(net)
-    n_below_H = n_leaves_below_lowest_hybrid(lowest_H)
+    lowest_H = getlowesthybrid(net)
+    n_below_H = nleavesbelowlowesthybrid(lowest_H)
     if n_below_H == 1 && getparent(getparentedge(lowest_H)) != getparent(getparentedgeminor(lowest_H))
         # If there is only 1 leaf below this retic && the minor and major parents are the same,
         # we can just default to the final `else` case here and delete `lowest_H` b/c it has
@@ -98,8 +98,8 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{St
         # @info "DIV_MAJOR AFTER: $(dmajnew)"
         # dminnew = writenewick(div_minor, round=true)
         # @info "DIV_MINOR AFTER: $(dminnew)"
-        r1 = get_4taxa_quartet_equations(div_minor, taxa, parameter_map)
-        r2 = get_4taxa_quartet_equations(div_major, taxa, parameter_map)
+        r1 = get4taxaquartetequations(div_minor, taxa, parameter_map)
+        r2 = get4taxaquartetequations(div_major, taxa, parameter_map)
         return RecursiveCFEquation(
             false, EMPTY_INT_VEC, 0, parameter_map[lowest_H.number],
             [r1, r2], length(parameter_map)
@@ -110,8 +110,8 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{St
         #error("Implemented 2/4 cases where there are 2 leaves below hybrid so far - need to implement remaining 2 cases.")
 
         # @info net
-        int_edges = get_internal_edges_below_lowest_hybrid(lowest_H)
-        leaves_below_H = get_leaves_below_lowest_hybrid(lowest_H)
+        int_edges = getinternaledgesbelowlowesthybrid(lowest_H)
+        leaves_below_H = getleavesbelowlowesthybrid(lowest_H)
         leaf_names = sort([leaves_below_H[1].name, leaves_below_H[2].name])
 
         #### DEBUG STUFF##########################################################################
@@ -215,10 +215,10 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{St
             leaf_names[2] == taxa[3] ? 3 : 2
         ) : 1
         recurrences::Array{RecursiveCFEquation} = Array{RecursiveCFEquation}(undef, 4)
-        recurrences[1] = get_4taxa_quartet_equations(div1, taxa, parameter_map)
-        recurrences[2] = get_4taxa_quartet_equations(div2, taxa, parameter_map)
-        recurrences[3] = get_4taxa_quartet_equations(div3, taxa, parameter_map)
-        recurrences[4] = get_4taxa_quartet_equations(div4, taxa, parameter_map)
+        recurrences[1] = get4taxaquartetequations(div1, taxa, parameter_map)
+        recurrences[2] = get4taxaquartetequations(div2, taxa, parameter_map)
+        recurrences[3] = get4taxaquartetequations(div3, taxa, parameter_map)
+        recurrences[4] = get4taxaquartetequations(div4, taxa, parameter_map)
         # @info "$(parameter_map[lowest_H.number]) -> $([eqn.division_H for eqn in recurrences])"
 
         return RecursiveCFEquation(
@@ -228,7 +228,7 @@ function get_4taxa_quartet_equations(net::HybridNetwork, taxa::AbstractVector{St
     else    # n_below_H is 3 or 4
         # 3 or 4 leaves below this hybrid, so it has no effect on eCFs!
         PN.deletehybridedge!(net, getparentedgeminor(lowest_H), false, true, false, true, false)    # params taken from blob deleting code
-        return get_4taxa_quartet_equations(net, taxa, parameter_map)
+        return get4taxaquartetequations(net, taxa, parameter_map)
     end
 
 end
@@ -243,7 +243,7 @@ Helper function - `net` MUST be treelike and only contain the leaves named in `t
     Quartet "types" here mean the following: if `taxa` contains entries ["a", "b", "c", "d"], then type 1 is ab|cd,
     type 2 is ac|bd, and type 3 is ad|bc.
 """
-function get_quartet_type_and_internal_edges(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int})::Tuple{Int,Array{PN.Edge}}
+function getquartettypeandinternaledges(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int})::Tuple{Int,Array{PN.Edge}}
     G, W = Graph(net; withweights=true, minoredgeweight=Inf)
     for idx in eachindex(W) W[idx] = (W[idx] == Inf) ? Inf : 1.0 end
     node_to_idx = Dict{PN.Node, Int}(node => j for (j, node) in enumerate(net.node))                                            # these two dicts used later for
@@ -269,15 +269,15 @@ function get_quartet_type_and_internal_edges(net::HybridNetwork, taxa::Vector{St
 
     if length(intersect(path_12, path_34)) == 0
         internal_graph_edges = intersect(path_13, path_24)    # 12|34 is displayed, so these paths must cross ONLY on the displayed edge portion
-        internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
+        internal_net_edges = fromgraphtonetedges(net, internal_graph_edges)
         return 1, internal_net_edges
     elseif length(intersect(path_13, path_24)) == 0
         internal_graph_edges = intersect(path_12, path_34)    # 13|24 is displayed, so these paths must cross ONLY on the displayed edge portion
-        internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
+        internal_net_edges = fromgraphtonetedges(net, internal_graph_edges)
         return 2, internal_net_edges
     else
         internal_graph_edges = intersect(path_12, path_34)    # 14|23 is displayed, so these paths must cross ONLY on the displayed edge portion
-        internal_net_edges = from_graph_to_net_edges(net, internal_graph_edges)
+        internal_net_edges = fromgraphtonetedges(net, internal_graph_edges)
         return 3, internal_net_edges
     end
 end
@@ -287,23 +287,23 @@ end
 Gets the "lowest" hybrid, i.e. one of potentially multiple hybrids that do not have any other hybrids in their descendants.
 Function assumes that extraneous retics have already been removed (i.e. retics on external quartet branches).
 """
-function get_lowest_hybrid(net::HybridNetwork)::Node
+function getlowesthybrid(net::HybridNetwork)::Node
     if net.numhybrids == 1 return net.hybrid[1] end
-    return get_lowest_hybrid_recur(net.hybrid[1])
+    return getlowesthybridrecur(net.hybrid[1])
 end
 
 
 """
 Helper function for [`get_lowest_hybrid`](@ref) - recursively finds the "lowest" hybrid in a network, starting at `node` - a hybrid node. 
 """
-function get_lowest_hybrid_recur(node::Node)
+function getlowesthybridrecur(node::Node)
     if node.leaf
         return nothing
     end
 
     children = getchildren(node)
     for child in children
-        child_val = get_lowest_hybrid_recur(child)
+        child_val = getlowesthybridrecur(child)
         if child_val !== nothing return child_val end
     end
 
@@ -320,7 +320,7 @@ Gets the number of leaves in a quarnet below the lowest hybrid in the quarnet.
 Assumes that reticulations on external edges are removed. HOWEVER there may
 still be more than 2 leaves below a hybrid.
 """
-function n_leaves_below_lowest_hybrid(H::Node)
+function nleavesbelowlowesthybrid(H::Node)
     queue = getchildren(H)
     leaves_found::Int = 0
     while length(queue) > 0
@@ -341,7 +341,7 @@ end
 """
 Assumes that there are 2 leaves below `H` in the quarnet.
 """
-function get_internal_edges_below_lowest_hybrid(H::Node)::Vector{Edge}
+function getinternaledgesbelowlowesthybrid(H::Node)::Vector{Edge}
     internal_edges = Vector{Edge}()
     c = getchildren(H)
     while length(c) == 1
@@ -355,7 +355,7 @@ end
 """
 Helper function - gets the set of leaves below the hybrid node `H`.
 """
-function get_leaves_below_lowest_hybrid(H::Node)::Vector{Node}
+function getleavesbelowlowesthybrid(H::Node)::Vector{Node}
     queue = Vector{Node}([H])
     leaves = Vector{Node}([])
 
@@ -377,8 +377,8 @@ end
 Gathers a vector of `QuartetData` objects that define the expected
 quartet concordance factors of `net`.
 """
-find_quartet_equations(net::HybridNetwork)::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}} =
-    find_quartet_equations(net, 1:nchoose4taxa_length(net))
+findquartetequations(net::HybridNetwork)::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}} =
+    findquartetequations(net, 1:nchoose4taxa_length(net))
 
 """
 Gathers a vector of `QuartetData` objects that define the expected
@@ -386,19 +386,19 @@ quartet concordance factors of `net`. `q_idxs` is a `Vector{Int}` that
 must be of length exactly (`net.numtaxa` choose 4). Each index of
 `q_idxs` corresponds to a quartet whose equation will be computed.
 """
-function find_quartet_equations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
+function findquartetequations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
     all(e -> getchild(e).leaf || e.length >= 0.0, net.edge) || error("net has negative edges")
     all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
     all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
 
-    return find_quartet_equations!(net, sampled_quartets, Array{QuartetData}(undef, length(sampled_quartets)))
+    return findquartetequations!(net, sampled_quartets, Array{QuartetData}(undef, length(sampled_quartets)))
 end
 
 
 """
 See [`find_quartet_equations`](@ref)
 """
-function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
+function findquartetequations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
     # Relevant data to be returned
     t = sort(tiplabels(net))
     narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
@@ -419,13 +419,13 @@ function find_quartet_equations!(net::HybridNetwork, sampled_quartets::AbstractV
             q_idx += 1
             next_t_idx::Int = sampled_quartets[q_idx]
             while t_idx < next_t_idx
-                incr_taxa_idx!(ts)
+                incrtaxaidx!(ts)
                 t_idx += 1
             end
             this_iter_idx = q_idx
             iter_taxa = t[ts]
         end
-        N_eqns[this_iter_idx] = find_quartet_equations_4taxa(net, iter_taxa, param_map)
+        N_eqns[this_iter_idx] = findquartetequations4taxa(net, iter_taxa, param_map)
     end
 
     return N_eqns, param_map, params, idx_obj_map, t
@@ -437,14 +437,14 @@ Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
 corresponding to the expected CF values of each quartet
 in `dcf` ordered in the way that `SNaQ` expects internally.
 """
-function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
+function gatherexpectedCFmatrix(dcf::DataCF)::Matrix{Float64}
     # Helper function for more legible code later
     minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
 
     # This sorting function is what we use to take the set of
     # quartets in `dcf` as they appear and quickly determine
     # the rearrangement that SNaQ's API is expecting
-    function label_sorter(a::Vector{String}, b::Vector{String})::Bool
+    function labelsorter(a::Vector{String}, b::Vector{String})::Bool
         for j = 4:-1:1
             a[j] < b[j] && return true
             b[j] < a[j] && return false
@@ -452,7 +452,7 @@ function gather_expectedCF_matrix(dcf::DataCF)::Matrix{Float64}
     end
 
     eCF_matrix = zeros(length(dcf.quartet), 3)
-    qorder = sortperm(dcf.quartet, lt = (a, b) -> label_sorter(sort(a.taxon), sort(b.taxon)))
+    qorder = sortperm(dcf.quartet, lt = (a, b) -> labelsorter(sort(a.taxon), sort(b.taxon)))
 
     iteration_mapping = [1, 2, 3]
     for (j, qidx) in enumerate(qorder)
@@ -489,7 +489,7 @@ end
 """
 Helper function to increment the 4-taxa index within `find_quartet_equations`.
 """
-function incr_taxa_idx!(ts::Vector{Int})::Nothing
+function incrtaxaidx!(ts::Vector{Int})::Nothing
     ind = findfirst(x -> x>1, diff(ts))
     if ind === nothing ind = 4; end
     ts[ind] += 1
@@ -504,7 +504,7 @@ Finds the quartet equations for the quarnet in `net` containing the taxa in `tax
     names of tips that are contained in `net`. `parameter_map` maps edges and gamma parameters in `net` to
     optimization variable indicies.
 """
-function find_quartet_equations_4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
+function findquartetequations4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
     # Let's see if the quartet is tree-like and easy first
     qdat = try_treelike_quartet(net, taxa, parameter_map)
     qdat !== nothing && return qdat
@@ -545,7 +545,7 @@ function find_quartet_equations_4taxa(net::HybridNetwork, taxa::AbstractVector{S
     end
 
     return QuartetData(
-        get_4taxa_quartet_equations(net, taxa, parameter_map, α),
+        get4taxaquartetequations(net, taxa, parameter_map, α),
         [parameter_map[obj.number] for obj in vcat(net.edge, net.hybrid)
             if haskey(parameter_map, obj.number)],
         taxa
@@ -656,7 +656,7 @@ end
 Helper function - takes a set of network edges encoded as graph edges in `internal_graph_edges`
     and returns the corresponding set of `PhyloNetworks.Edge` edge objects in `net.edge`.
 """
-function from_graph_to_net_edges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})::Array{PN.Edge}
+function fromgraphtonetedges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})::Array{PN.Edge}
     net_edges = Array{PN.Edge}(undef, length(internal_graph_edges))
     for (E_idx, E) in enumerate(internal_graph_edges)
         nodei = net.node[E.src]

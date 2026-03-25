@@ -38,7 +38,7 @@ defaultrestrictions() = (net) -> knownidentifiable(net)
 norestrictions() = (net) -> true
 
 
-function meets_constraints(net::HybridNetwork, constraints::Vector{Function})
+function meetsconstraints(net::HybridNetwork, constraints::Vector{Function})
     for F in constraints
         if !F(net) return false end
     end

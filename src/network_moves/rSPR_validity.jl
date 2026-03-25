@@ -4,7 +4,7 @@
 Checks whether the rSPR move utilizing the given nodes is valid
 according to the naming conventions in Figure 6 of [this paper](https://doi.org/10.1371/journal.pcbi.1005611).
 """
-function is_valid_rSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::Node)
+function isvalidrSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::Node)
     # If type 1 (upper half of Fig 6): w must be child of z
     # If type 2 (lower ...): z must be child of w
     z.hybrid ? z in getchildren(w) : w in getchildren(z) || return false

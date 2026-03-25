@@ -4,8 +4,8 @@ import PhyloNetworks: breakedge!, fuseedgesat!, removeHybrid!, pushHybrid!
 """
 Performs an rSPR move according to the procedure defined [here in Figure 6](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005611).
 """
-function perform_rSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::Node)
-    is_valid_rSPR(w, x, y, z, xprime, yprime) || error("Topological conditions for rSPR not met.")
+function performrSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::Node)
+    isvalidrSPR(w, x, y, z, xprime, yprime) || error("Topological conditions for rSPR not met.")
 
     which_case = (z.hybrid) ? 2 : 1 # 1 corresponds to the upper half of Figure 6
                                     # 2 corresponds to the lower half of Figure 6
@@ -63,7 +63,7 @@ Samples a set of nodes randomly that are valid parameters for the
 `perform_rSPR!` function. Returns nothing if it fails to find a 
 valid set of parameters.
 """
-function sample_rSPR_parameters(N::HybridNetwork, rng::TaskLocalRNG)
+function samplerSPRparameters(N::HybridNetwork, rng::TaskLocalRNG)
     attempts::Int = 0
     while true
         attempts += 1
@@ -83,11 +83,11 @@ function sample_rSPR_parameters(N::HybridNetwork, rng::TaskLocalRNG)
             w = getparent(getparentedgeminor(z))
             x = getparent(getparentedge(z))
             y = getchild(z)
-            is_valid_rSPR(w, x, y, z, xprime, yprime) && return (w, x, y, z, xprime, yprime)
+            isvalidrSPR(w, x, y, z, xprime, yprime) && return (w, x, y, z, xprime, yprime)
         elseif length(getchildren(z)) == 2
             w, y = getchildren(z)
             x = getparent(z)
-            is_valid_rSPR(w, x, y, z, xprime, yprime) && return (w, x, y, z, xprime, yprime)
+            isvalidrSPR(w, x, y, z, xprime, yprime) && return (w, x, y, z, xprime, yprime)
         else
             continue
         end

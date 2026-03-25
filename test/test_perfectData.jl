@@ -7,6 +7,6 @@ for E in net.edge E.length = 0.25 end
 for H in net.hybrid getparentedge(H).gamma = 0.35; getparentedgeminor(H).gamma = 0.65; end
 df = SNaQ.ExpectedDataCF(net)
 
-val = SNaQ.optimize_topology!(net, df)
+val = SNaQ.optimizetopology!(net, df)
 
 @test val ≈ 0.0 atol=1e-10 # || error("not correct likelihood with perfect data")

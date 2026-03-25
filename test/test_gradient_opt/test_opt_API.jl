@@ -13,7 +13,7 @@ end
 
 
 
-@testset "optimize_bls! gets close to truth" begin
+@testset "optimize! gets close to truth" begin
     for L in [0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
         for seed = 1:10
             net, q = get_data(L, seed);
@@ -30,7 +30,7 @@ end
                 getparentedgeminor(H).gamma = 1.0 - γ
             end
 
-            optimize_bls!(opt_net, q; maxeval=100000)
+            optimize!(opt_net, q; maxeval=100000)
             eqns, _, opt_params, idx_obj_map, _ = find_quartet_equations(opt_net);
             if !(sum(mean((opt_params .- params).^2)) < 1.0)
                 @info L
@@ -66,7 +66,7 @@ end
         q = qstat
 
         before_L = SNaQ.compute_loss(net, q)
-        SNaQ.optimize_bls!(net, SNaQ.find_quartet_equations(net)[1], q, maxeval = 10)
+        SNaQ.optimize!(net, SNaQ.find_quartet_equations(net)[1], q, maxeval = 10)
         after_L = SNaQ.compute_loss(net, q)
 
         @test after_L > before_L

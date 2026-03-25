@@ -32,9 +32,9 @@ function BFS(
     # Setup pool variables
     pool::Vector{HybridNetwork} = Vector{HybridNetwork}([deepcopy_network(n) for n in starting_pool])
     for n in pool
-        loglik!(n, optimize_bls!(n, q))
+        loglik!(n, optimize!(n, q))
     end
-    pool_eqns::Vector{Union{Nothing,Array{QuartetData}}} = [find_quartet_equations(n, q_idxs)[1] for n in pool]
+    pool_eqns::Vector{Union{Nothing,Array{QuartetData}}} = [findquartetequations(n, q_idxs)[1] for n in pool]
     nfailures::Vector{Int} = fill(0, length(pool))
     nsuccesses::Vector{Int} = fill(0, length(pool))
     multiplicity::Vector{Int} = fill(1, length(pool))
@@ -42,7 +42,7 @@ function BFS(
     get_effps() = sum(m for (m, nf, fr) in zip(multiplicity, nfailures, forceremoved) if !fr && m > nf; init=0.0)
     get_vidxs() = findall(nfailures .< maxfail .&& nfailures .< multiplicity .&& .!forceremoved .&& nsuccesses .< maxsuccess)
 
-    tPL = optimize_bls!(truenet, q)
+    tPL = optimize!(truenet, q)
     ############# FOR NOW: implement on 1 worker #############
     iter_ii = 0
     while any(j -> nfailures[j] < multiplicity[j] && nfailures[j] < maxfail && !forceremoved[j] && nsuccesses[j] < maxsuccess, 1:length(pool))
@@ -191,7 +191,7 @@ function BFS_single_iter(
         Nprime, prop_move, prop_params = propose_topology(rng, N, hmax, moves_attempted, restrictions);
 
         # 2. Optimize that topology
-        Nprime_logPL, Nprime_eqns = optimize_topology!(
+        Nprime_logPL, Nprime_eqns = optimizetopology!(
             Nprime, net_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
         )
@@ -211,7 +211,7 @@ function BFS_single_iter(
             for H in bad_Hs
                 remove_hybrid!(Nprime, H)
             end
-            Nprime_eqns, _ = find_quartet_equations(Nprime, q_idxs)
+            Nprime_eqns, _ = findquartetequations(Nprime, q_idxs)
         end
         return Nprime, Nprime_eqns
     end

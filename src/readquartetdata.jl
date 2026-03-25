@@ -463,18 +463,18 @@ processing each input tree only once.
 `calculateObsCFAll_noDataCF!` processes each input tree `# quartet` times.
 """
 function calculateObsCFAll!(dat::DataCF, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
-    calculateObsCFAll_noDataCF!(dat.quartet, dat.tree, taxa)
+    calculateObsCFAllnoDataCF!(dat.quartet, dat.tree, taxa)
 end
 
 
 function calculateObsCFAll!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
-    calculateObsCFAll_noDataCF!(quartets, trees, taxa)
+    calculateObsCFAllnoDataCF!(quartets, trees, taxa)
     d = DataCF(quartets, trees)
     return d
 end
 
 
-function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
+function calculateObsCFAllnoDataCF!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
     println("calculating obsCF from $(length(trees)) gene trees and for $(length(quartets)) quartets")
     index = 1
     totalq = length(quartets)

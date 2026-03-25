@@ -27,7 +27,7 @@ end
 A struct that contains:
 1. The initial `RecrusiveCFEquation` struct from which the loss & gradient can be calculated
 2. A list of "internal" parameters (stored as indexed from 1 to `k` where `k` is the total number of
-    parameters optimized during branch length optimization in `optimize_bls!`) that are relevant to
+    parameters optimized during branch length optimization in `optimize!`) that are relevant to
     this quarnet. This INCLUDES edges that DO NOT contribute to the quarnet's expected CF, but that
     ARE internal edges w/in the network as a whole and DO **inscribe** the quarnet in the network.
     I.e., if one of these edges was removed or re-directed, this quarnet's eCF would change.
@@ -56,7 +56,7 @@ function compute_expectedCF_4taxa(net::HybridNetwork, taxa::AbstractVector{<:Abs
     # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
     param_map, params = gather_optimization_info(net)[[2,4]]
 
-    qdata = SNaQ.find_quartet_equations_4taxa(net, taxa, param_map)
+    qdata = SNaQ.findquartetequations4taxa(net, taxa, param_map)
     eCF1, eCF2 = SNaQ.compute_expectedCF(qdata, params, α)
     
     return eCF1, eCF2, 1-eCF1-eCF2
@@ -67,16 +67,16 @@ end
 Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet concordance
 factor data `q` under Dirichlet parameter `α`.
 """
-function compute_loss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float64
+function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float64
     N = deepcopy_network(N)
     semidirect_network!(N)
-    qdata, _, params, _, _ = find_quartet_equations(N)
-    return compute_loss(qdata, params, q, α)
+    qdata, _, params, _, _ = findquartetequations(N)
+    return computeloss(qdata, params, q, α)
 end
-function compute_loss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
-    return compute_loss(N, gather_expectedCF_matrix(dcf), α)
+function computeloss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
+    return computeloss(N, gatherexpectedCFmatrix(dcf), α)
 end
-function compute_loss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
+function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
     return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
 end
 
@@ -87,7 +87,7 @@ Debugging function - not to be used internally because it will recompute many th
 function compute_gradient(net::HybridNetwork, obsCFs::Matrix{Float64}, α::Float64=Inf)::Vector{Float64}
     params = gather_params(net);
     grad = zeros(length(params))
-    compute_loss_and_gradient!(find_quartet_equations(net)[1], params, grad, obsCFs, α)
+    compute_loss_and_gradient!(findquartetequations(net)[1], params, grad, obsCFs, α)
     return grad
 end
 

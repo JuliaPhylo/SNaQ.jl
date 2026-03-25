@@ -24,7 +24,7 @@ Optimizes the branch lengths and γ parameters of the network `Nprime`.
 - `rng::TaskLocalRNG`: `TaskLocalRNG` object from which random numbers are generated. Ensures reproducibility.
 - `α::Float64`: inheritance correlation parameter used in calculating pseudo-likelihoods.
 """
-function optimize_topology!(
+function optimizetopology!(
     Nprime::HybridNetwork,
     old_eqns::Vector{QuartetData},
     move::Symbol,
@@ -44,11 +44,11 @@ function optimize_topology!(
         update_quartet_equations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, α)
     else
         @debug "\tGathering quartet equations."
-        find_quartet_equations!(Nprime, q_idxs, Nprime_eqns);
+        findquartetequations!(Nprime, q_idxs, Nprime_eqns);
     end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_logPL = optimize_bls!(Nprime, Nprime_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
+    Nprime_logPL = optimize!(Nprime, Nprime_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
 
     return Nprime_logPL, Nprime_eqns
 end
@@ -60,12 +60,12 @@ Computes the loss of network `N` given quartet equations `q` sampled from indice
 Returns a tuple `(loss::Float64, qeqns::Vector{QuartetData})` where `loss` is the aforementioned loss
 of network `N` and `qeqns` are the CF equations the define network `N`.
 """
-function compute_loss(N::HybridNetwork, q::Matrix{Float64}, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)::Tuple{Float64, Vector{QuartetData}}
+function computeloss(N::HybridNetwork, q::Matrix{Float64}, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)::Tuple{Float64, Vector{QuartetData}}
     @debug "\tGathering quartet equations."
-    N_qdata, _, N_params, _ = find_quartet_equations(N, q_idxs)
+    N_qdata, _, N_params, _ = findquartetequations(N, q_idxs)
 
     @debug "\tComputing loss."
-    return compute_loss(N_qdata, N_params, q[q_idxs, :], α), N_qdata
+    return computeloss(N_qdata, N_params, q[q_idxs, :], α), N_qdata
 end
 
 
@@ -78,7 +78,7 @@ process. This overloaded function is used as a helper method that can directly t
 Vectors of `PhyloNetworks.QuartetT` as input so that the user doesn't need to handle
 converting the input data.
 """
-function optimize_bls!(
+function optimize!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
@@ -91,17 +91,26 @@ function optimize_bls!(
             obsCF_static[j, k] = observed_CFs[j].data[k]
         end
     end
-    return optimize_bls!(net, eqns, obsCF_static, α, maxeval=maxeval)
+    return optimize!(net, eqns, obsCF_static, α, maxeval=maxeval)
 end
+
+"""
+Deprecated internal function - used for backwards compatibility in niche cases.
+"""
+optimize_bls!(
+    net::HybridNetwork,
+    eqns::Array{QuartetData},
+    observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
+    α::Real=Inf; kwargs...) = optimize!(net, eqns, observed_CFs, α; kwargs...)
 
 
 """
 This version is just a helper function for more clear tests. In the context of the
 algorithm, this function recomputes values and wastes time.
 """
-function optimize_topology!(net::HybridNetwork, d::DataCF)
-    eqns = SNaQ.find_quartet_equations(net)[1];
-    return optimize_bls!(net, eqns, gather_expectedCF_matrix(d); maxeval=500)
+function optimizetopology!(net::HybridNetwork, d::DataCF)
+    eqns = SNaQ.findquartetequations(net)[1];
+    return optimize!(net, eqns, gatherexpectedCFmatrix(d); maxeval=500)
 end
 
 
@@ -123,7 +132,7 @@ Optimizes the branch lengths (and γ parameters) of network `net`.
 - `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 - `xtolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 """
-function optimize_bls!(
+function optimize!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
@@ -194,7 +203,7 @@ function optimize_bls!(
 
     return minf
 end
-optimize_bls!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize_bls!(net, find_quartet_equations(net)[1], oCFs; kwargs...)
+optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findquartetequations(net)[1], oCFs; kwargs...)
 
 
 """
@@ -399,7 +408,7 @@ object is unlabelled. See also [`ExpectedDataCF`](@ref) for a `DataCF` object
 with corresponding taxa information.
 """
 function compute_expectedCF_matrix(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
-    eqns, _, params, _ = find_quartet_equations(net)
+    eqns, _, params, _ = findquartetequations(net)
     eCFs = zeros(length(eqns), 3)
     for j = 1:size(eCFs)[1]
         eCFs[j, 1], eCFs[j, 2] = compute_expectedCF(eqns[j], params, α)
@@ -425,7 +434,7 @@ compute_expectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
 Creates a DataCF object containing the expected CFs for each quartet in `net`.
 """
 function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
-    eqns, _, params, _ = find_quartet_equations(net);
+    eqns, _, params, _ = findquartetequations(net);
     d = DataCF()
     for j in eachindex(eqns)
         eCF1, eCF2 = compute_expectedCF(eqns[j], params, α)

@@ -85,8 +85,8 @@ function move_reticulate_origin!(N::HybridNetwork, hybrid::Node, new_origin::Edg
     xprime = getparent(new_origin)
     yprime = getchild(new_origin)
 
-    is_valid_rSPR(w, x, y, z, xprime, yprime) || error("Invalid `move_reticulate_origin!` move.")
-    return perform_rSPR!(N, w, x, y, z, xprime, yprime)
+    isvalidrSPR(w, x, y, z, xprime, yprime) || error("Invalid `move_reticulate_origin!` move.")
+    return performrSPR!(N, w, x, y, z, xprime, yprime)
 end
 
 
@@ -119,14 +119,14 @@ function is_valid_move_reticulate_origin(hybrid::Node, new_origin::Edge, N::Hybr
     if length(getparents(z)) > 0
         y = length(getchildren(z)) == 1 || getchildren(z)[1] != hybrid ? getchildren(z)[1] : getchildren(z)[2]
         x = getparent(z)
-        return is_valid_rSPR(hybrid, x, y, z, xprime, yprime)
+        return isvalidrSPR(hybrid, x, y, z, xprime, yprime)
     else
         # z is the "root" at the moment - but we ignore this notion
         # because the network is semi-directed
         other_nodes = [getOtherNode(edge, z) for edge in z.edge if getOtherNode(edge, z) != hybrid]
         length(other_nodes) == 2 || return false
         x, y = other_nodes
-        return is_valid_rSPR(hybrid, x, y, z, xprime, yprime)
+        return isvalidrSPR(hybrid, x, y, z, xprime, yprime)
     end 
 end
 
@@ -142,8 +142,8 @@ function move_reticulate_target!(N::HybridNetwork, hybrid::Node, new_target::Edg
     xprime = getparent(new_target)
     yprime = getchild(new_target)
 
-    is_valid_rSPR(w, x, y, hybrid, xprime, yprime) || error("Invalid `move_reticulate_target!` move.")
-    return perform_rSPR!(N, w, x, y, hybrid, xprime, yprime)
+    isvalidrSPR(w, x, y, hybrid, xprime, yprime) || error("Invalid `move_reticulate_target!` move.")
+    return performrSPR!(N, w, x, y, hybrid, xprime, yprime)
 end
 
 
@@ -175,5 +175,5 @@ function is_valid_move_reticulate_target(hybrid::Node, new_target::Edge, N::Hybr
     xprime = getparent(new_target)
     yprime = getchild(new_target)
 
-    return is_valid_rSPR(w, x, y, hybrid, xprime, yprime)
+    return isvalidrSPR(w, x, y, hybrid, xprime, yprime)
 end

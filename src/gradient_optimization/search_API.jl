@@ -94,7 +94,7 @@ function multi_search(
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
-        q = gather_expectedCF_matrix(q)
+        q = gatherexpectedCFmatrix(q)
     end
 
     # Generate per-run seeds
@@ -416,7 +416,7 @@ function search(
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
-        q = gather_expectedCF_matrix(q)
+        q = gatherexpectedCFmatrix(q)
     end
 
     # Set the seed
@@ -470,10 +470,10 @@ function search(
     # Data used throughout the optimization process
     q_idxs = sample_qindices(N, propQuartets, rng)
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
-    neq = find_quartet_equations(N, q_idxs);
+    neq = findquartetequations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
     N_numparams::Int = length(neq[3])
-    logPLs[1] = optimize_bls!(N, N_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
+    logPLs[1] = optimize!(N, N_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
     unchanged_iters = 0
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -548,7 +548,7 @@ function search(
         cannot_do_inplace::Bool = N.numhybrids != Nprime.numhybrids || N_np != Nprime_np
 
         # 4. Optimize branch lengths and compute logPL
-        Nprime_logPL, Nprime_eqns = optimize_topology!(
+        Nprime_logPL, Nprime_eqns = optimizetopology!(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
             opt_maxeval, cannot_do_inplace, rng, α; optargs...
         )
@@ -594,9 +594,9 @@ function search(
     if propQuartets != 1.0
         logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
         if typeof(q) <: DataCF
-            loglik!(N, optimize_bls!(N, gather_expectedCF_matrix(q)))
+            loglik!(N, optimize!(N, gatherexpectedCFmatrix(q)))
         else
-            loglik!(N, optimize_bls!(N, q))
+            loglik!(N, optimize!(N, q))
         end
         logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with -loglik=$(round(loglik(N), digits=5))")
     end
@@ -642,7 +642,7 @@ function apply_move!(N::HybridNetwork, move::Symbol, params::Tuple)
     elseif move == :retic_target || move == :retic_target_local
         return move_reticulate_target!(N, params...)
     elseif move == :rSPR
-        return perform_rSPR!(N, params...)
+        return performrSPR!(N, params...)
     elseif move == :flip_hybrid
         return fliphybrid!(N, params[1])
     end
@@ -719,7 +719,7 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::T
         if r < 0.7
             return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
         else
-            return (:rSPR, sample_rSPR_parameters(N, rng))
+            return (:rSPR, samplerSPRparameters(N, rng))
         end
     end
 
@@ -747,7 +747,7 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::T
     elseif r < sum(probs[1:4])
         return (:rNNI4, sample_rNNI_parameters(N, 4, rng))
     elseif r < sum(probs[1:5])
-        return (:rSPR, sample_rSPR_parameters(N, rng))
+        return (:rSPR, samplerSPRparameters(N, rng))
     elseif r < sum(probs[1:6])
         return (:retic_origin, sample_move_reticulate_origin_parameters(N, rng))
     elseif r < sum(probs[1:7])

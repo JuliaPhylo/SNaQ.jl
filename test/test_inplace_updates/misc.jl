@@ -43,7 +43,7 @@ end
 #     q, t = countquartetsintrees(gts, showprogressbar=false);
 #     blocks, _ = find_quartet_equations(net);
 
-#     return @benchmark optimize_bls!(net, blocks, q)
+#     return @benchmark optimize!(net, blocks, q)
 # end
 
 # function opt_profile(ntaxa::Int=15, nhyb::Int=3, seed::Int=42; nrep::Int=1)
@@ -54,7 +54,7 @@ end
 #     blocks, _ = find_quartet_equations(net);
 
 #     start_time = time()
-#     @profview for _ = 1:nrep optimize_bls!(net, blocks, q) end
+#     @profview for _ = 1:nrep optimize!(net, blocks, q) end
 #     @info "Profiling took $(round(time() - start_time, digits=4)) seconds."
 # end
 
