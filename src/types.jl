@@ -1,4 +1,4 @@
-import Base: getproperty, getfield, getindex, setproperty!
+import Base: getproperty, getfield, getindex, setproperty!, show
 
 
 # Edge getters/setters
@@ -279,4 +279,32 @@ mutable struct EdgeParts
     part2::Vector{Node}
     part3::Vector{Node}
     part4::Vector{Node}
+end
+
+# Pretty-printing for custom structs
+function Base.show(io::IO, net::QuartetNetwork)
+    print(io,"taxa: $(net.quartetTaxon)\n")
+    print(io,"number of hybrid nodes: $(net.numhybrids)\n")
+    if(net.split != [-1,-1,-1,-1])
+        print(io,"split: $(net.split)\n")
+    end
+end
+
+function Base.show(io::IO,d::DataCF)
+    print(io,"Object DataCF\n")
+    print(io,"number of quartets: $(d.numQuartets)\n")
+    if(d.numTrees != -1)
+        print(io,"number of trees: $(d.numTrees)\n")
+    end
+end
+
+function Base.show(io::IO,q::Quartet)
+    print(io,"number: $(q.number)\n")
+    print(io,"taxon names: $(q.taxon)\n")
+    print(io,"observed CF: $(q.obsCF)\n")
+    print(io,"pseudo-deviance under last used network: $(q.logPseudoLik) (meaningless before estimation)\n")
+    print(io,"expected CF under last used network: $(q.qnet.expCF) (meaningless before estimation)\n")
+    if(q.ngenes != -1)
+        print(io,"number of genes used to compute observed CF: $(q.ngenes)\n")
+    end
 end
