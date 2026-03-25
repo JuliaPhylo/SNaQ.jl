@@ -197,14 +197,9 @@ astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
 ```
 
 Instead of a starting tree (`astraltree` in this case), we can start the optimization 
-in SNaQ with a network, but this network needs to be "level-1".
-Note that all trees and all networks with 1 hybridization are of level 1.
-To make sure that a network with 2 or more hybridizations is of level 1,
-we can read it in with
-`readnewicklevel1` (which also unroots the tree, resolves polytomies,
-replaces missing branch lengths by 1 for starting values etc.):
+in SNaQ with a network:
 ```julia
-T=readnewicklevel1("startNetwork.txt")
+T=readnewick("startNetwork.txt")
 ```
 Here `startNetwork.txt` is a hypothetical file: replace this by
 the name of a file that contains your network of interest.

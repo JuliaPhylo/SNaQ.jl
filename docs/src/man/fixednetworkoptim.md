@@ -16,7 +16,7 @@ Following our example in [Estimating a network](@ref),
 we can optimize parameters on the true network
 (the one originally used to simulate the data). 
 Given a table of CFs and a network,
-the function [`topologymaxQpseudolik!`](@ref)
+the function [`optimize!`](@ref)
 returns the same network topology
 but with optimized branch lengths and inheritance values:
 
@@ -32,7 +32,7 @@ raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinew
 
 ```@repl fixednetworkoptim
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
-net1alt = topologymaxQpseudolik!(truenet, raxmlCF);
+net1alt = optimize!(truenet, raxmlCF);
 writenewick(net1alt, round=true)
 loglik(net1alt) # pseudo deviance actually: the lower the better
 ```
@@ -59,7 +59,7 @@ For a more thorough optimization, we could change the arguments for the toleranc
 the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
-net1par = topologymaxQpseudolik!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
+net1par = optimize!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
 loglik(net1par) # pseudo deviance, actually: the lower the better
 ```
 

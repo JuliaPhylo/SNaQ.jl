@@ -41,8 +41,7 @@ There are many optional keyword arguments, including
   along a tree edge with no hybrid neighbor,
   with a possible modification of one reticulation if `T` has one.
 - `updateBL` (default true): If true and if `T` is a tree, the branch lengths in `T`
-  are first optimized roughly with [`updateBL!`](@ref) by using the average CF of
-  all quartets defining each branch and back-calculating the coalescent units.
+  are first optimized.
 
 The following optional keyword arguments control when to stop the optimization of branch
 lengths and γ's on each individual candidate network. Defaults are in parentheses:
@@ -74,8 +73,8 @@ Default parameters are are in parentheses:
 - `qinfTest` (false): if true, then look for uninformative quartets to discard.
 - `qtolAbs` (1e-4): The tolerance for identifying uninformative concordance factors. Uninformative concordance factors are (1/3)±`qtolAbs`
 
-See also: [`topologymaxQpseudolik!`](@ref) to optimize parameters on a fixed topology,
-and [`topologyQpseudolik!`](@ref) to get the deviance (pseudo log-likelihood up to a constant)
+See also: [`optimize!`](@ref) to optimize parameters on a fixed topology,
+and [`computeloss`](@ref) to get the negative log-likelihood
 of a fixed topology with fixed parameters.
 
 References:
@@ -121,7 +120,7 @@ function snaq!(
     # - `qinfTest`
     # - `qtolAbs`
 
-    return multisearch(
+    bestnet = multisearch(
         currT0,
         d,
         hmax;
@@ -140,4 +139,8 @@ function snaq!(
         filename=filename
     )[1]
 
+    # This call to `optimize!` is only to update the DataCF
+    # `d` with the new expected qCFs.
+    optimize!(bestnet, d; maxeval=1)
+    return bestnet
 end

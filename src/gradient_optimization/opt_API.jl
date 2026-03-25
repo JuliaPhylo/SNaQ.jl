@@ -222,12 +222,12 @@ parameters of each quartet in `dcf.quartet`.
 - `maxeval` specifies the maximum number of optimization evaluations that the `NLopt`
   optimizer will perform under the hood (default 100).
 """
-function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100)::Float64
+function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
     eqns, parammap, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
     α = ρ == 0.0 ? Inf : 1.0 / ρ
-    optimize!(net, eqns, obsCFs, α)
+    optimize!(net, eqns, obsCFs, α; maxeval=maxeval, kwargs...)
 
     for q in dcf.quartet
         eqn = findquartetequations4taxa(net, q.taxon, parammap, α)

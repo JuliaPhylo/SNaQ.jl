@@ -388,7 +388,7 @@ function tiplabels(quartets::Vector{Quartet})
     taxa = reduce(union, q.taxon for q in quartets)
     return sort_stringasinteger!(taxa)
 end
-tiplabelsTree(file::AbstractString) = tiplabels(readmultinewicklevel1(file))
+tiplabelsTree(file::AbstractString) = tiplabels(readnewick(file))
 
 tiplabels(d::DataCF) = tiplabels(d.quartet)
 
@@ -524,7 +524,7 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
         end
     end
     println("read input trees from file $(treefile)\nand quartetfile $(quartetfile)")
-    trees = readmultinewicklevel1(treefile)
+    trees = readmultinewick(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
@@ -583,7 +583,7 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
         end
     end
     println("read input trees from file $(treefile). no quartet file given.")
-    trees = readmultinewicklevel1(treefile)
+    trees = readmultinewick(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, tiplabelsTree(treefile), writetab, "none",false, true)
@@ -651,7 +651,7 @@ function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractStri
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
     trees = (nexus ?
              readnexus_treeblock(treefile, readTopologyUpdate, false, false; reticulate=false) :
-             readmultinewicklevel1(treefile))
+             readmultinewick(treefile))
     if length(taxa)==0        # tiplabels(trees) NOT default argument:
       taxa = tiplabels(trees) # otherwise: tree file is read twice
     end

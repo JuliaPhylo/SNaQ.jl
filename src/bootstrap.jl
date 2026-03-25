@@ -243,9 +243,7 @@ Optional arguments include the following, with default values in parentheses:
 - `ftolRel`, `ftolAbs`, `xtolRel`, `xtolAbs`, `liktolAbs`, `Nfail`,
   `probST`, `verbose`, `outgroup`: see `snaq!`, same defaults.
 
-If `T` is a tree, its branch lengths are first optimized roughly with [`updateBL!`](@ref)
-(by using the average CF of all quartets defining each branch and calculating the coalescent units
-corresponding to this quartet CF).
+If `T` is a tree, its branch lengths are first optimized.
 If `T` has one or more reticulations, its branch lengths are taken as is to start the search.
 The branch lengths of `otherNet` are always taken as is to start the search.
 """

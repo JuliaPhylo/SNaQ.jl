@@ -48,43 +48,6 @@ setLength!(edge::Edge, new_length::Number) = setLength!(edge, new_length, false)
 
 
 
-"""
-    setGammaBLfromGammaz!(node, network)
-
-Update the γ values of the two sister hybrid edges in a bad diamond I, given the `gammaz` values
-of their parent nodes, and update the branch lengths t1 and t2 of their parent edges
-(those across from the hybrid nodes), in such a way that t1=t2 and that these branch lengths
-and γ values are consistent with the `gammaz` values in the network.
-
-Similar to the first section of [`undoGammaz!`](@ref),
-but does not update anything else than γ and t's.
-Unlike `undoGammaz!`, no error if non-hybrid `node` or not at bad diamond I.
-"""
-function setGammaBLfromGammaz!(node::Node, net::HybridNetwork)
-    if !isBadDiamondI(node) || !node.hybrid
-        return nothing
-    end
-    edge_maj, edge_min, tree_edge2 = hybridEdges(node);
-    other_maj = getOtherNode(edge_maj,node);
-    other_min = getOtherNode(edge_min,node);
-    edgebla,tree_edge_incycle1,tree_edge = hybridEdges(other_min);
-    edgebla,tree_edge_incycle2,tree_edge = hybridEdges(other_maj);
-    if(approxEq(gammaz(other_maj),0.0) && approxEq(gammaz(other_min),0.0))
-        edge_maj.gamma = 1.0 # γ and t could be anything if both gammaz are 0
-        edge_min.gamma = 0.0 # will set t's to 0 and minor γ to 0.
-        newt = 0.0
-    else
-        ((approxEq(gammaz(other_min),0.0) || gammaz(other_min) >= 0.0) &&
-         (approxEq(gammaz(other_maj),0.0) || gammaz(other_maj) >= 0.0)    ) ||
-            error("bad diamond I in node $(node.number) but missing (or <0) gammaz")
-        ztotal = gammaz(other_maj) + gammaz(other_min)
-        edge_maj.gamma = gammaz(other_maj) / ztotal
-        edge_min.gamma = gammaz(other_min) / ztotal
-        newt = -log(1-ztotal)
-    end
-    setLength!(tree_edge_incycle1,newt)
-    setLength!(tree_edge_incycle2,newt)
-end
 
 # function to find if a given partition is in net.partition
 function isPartitionInNet(net::HybridNetwork,desc::Vector{Edge},cycle::Vector{Int})
