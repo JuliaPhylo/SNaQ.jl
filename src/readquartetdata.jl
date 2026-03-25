@@ -6,8 +6,6 @@ function writeExpCF(quartets::Array{Quartet,1})
                               CF12_34=Float64[],CF13_24=Float64[],CF14_23=Float64[])
     for q in quartets
         length(q.taxon) == 4 || error("quartet $(q.number) does not have 4 taxa")
-        length(q.qnet.expCF) == 3 || error("quartet $(q.number) does have qnet with 3 expCF")
-        push!(df, [q.taxon[1],q.taxon[2],q.taxon[3],q.taxon[4],q.qnet.expCF[1],q.qnet.expCF[2],q.qnet.expCF[3]])
     end
     return df
 end
@@ -43,7 +41,7 @@ function tablequartetCF(quartets::Array{Quartet,1})
 
     for (i,q) in enumerate(quartets)
         length(q.taxon) == 4 || error("quartet $(q.number) does not have 4 taxa")
-        length(q.obsCF) == 3 || error("quartet $(q.number) does have qnet with 3 expCF")
+        length(q.obsCF) == 3 || error("quartet $(q.number) does not have 3 obsCFs")
         
         nt.t1[i] = q.taxon[1]
         nt.t2[i] = q.taxon[2]

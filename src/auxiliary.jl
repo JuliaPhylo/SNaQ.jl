@@ -10,62 +10,12 @@ function isInternalEdge(edge::Edge)
 end
 
 
-"""
-    deleteNode!(net::QuartetNetwork, n::Node)
-
-Delete node `n` from a network, i.e. removes it from
-net.node, and from net.hybrid or net.leaf as appropriate.
-Update attributes `numnodes`, `numtaxa`, `numhybrids`.
-Warning: `net.names` is *not* updated, and this is a feature (not a bug)
-for networks of type QuartetNetwork.
-
-Warning: if the root is deleted, the new root is arbitrarily set to the
-first node in the list. This is intentional to save time because this function
-is used frequently in snaq!, which handles semi-directed (unrooted) networks.
-"""
-
-function deleteNode!(net::QuartetNetwork, n::Node)
-    index = findfirst(no -> no.number == n.number, net.node)
-    # isEqual (from above) checks for more than node number
-    index !== nothing || error("Node $(n.number) not in quartet network");
-    deleteat!(net.node,index);
-    net.numnodes -= 1
-    if n.hybrid
-       removeHybrid!(net,n)
-    end
-    if n.leaf
-        index = findfirst(no -> no === n, net.leaf)
-        index !== nothing || error("node $(n.number) not net.leaf")
-        deleteat!(net.leaf,index)
-        net.numtaxa -= 1
-    end
-end
-
-
-"""
-    deleteEdge!(net::QuartetNetwork, e::Edge)
-
-Delete edge `e` from `net.edge` and update `net.numedges`.
-If `part` is true, update the network's partition field.
-"""
-# function to delete an Edge in net.edge and
-# update numedges from a QuartetNetwork
-function deleteEdge!(net::QuartetNetwork, e::Edge)
-    index = findfirst(x -> x.number == e.number, net.edge)
-    # isEqual (from above) checks for more than edge number
-    index !== nothing || error("edge not in quartet network");
-    deleteat!(net.edge,index);
-    net.numedges -= 1;
-end
-
-
-
 # ----------------------------------------------------------------------------------------
 
 # setLength
 # warning: allows to change edge length for istIdentifiable=false
 #          but issues a warning
-# negative=true means it allows negative branch lengths (useful in qnet typeHyb=4)
+# negative=true means it allows negative branch lengths
 function setLength!(edge::Edge, new_length::Number, negative::Bool)
     (negative || new_length >= 0) || error("length has to be nonnegative: $(new_length), cannot set to edge $(edge.number)")
     new_length >= -0.4054651081081644 || error("length can be negative, but not too negative (greater than -log(1.5)) or majorCF<0: new length is $(new_length)")
@@ -176,14 +126,11 @@ Does **not** reorder credibility interval values, if present.
     sorttaxa!(Quartet, permutation_tax, permutation_cf)
 
 Reorder the 4 taxa in each element of the DataCF `quartet`. For a given Quartet,
-reorder the 4 taxa in its fields `taxon` and `qnet.quartetTaxon` (if non-empty)
-and reorder the 3 concordance values accordingly, in `obsCF` and `qnet.expCF`.
+reorder the 4 taxa in its fields `taxon` (if non-empty)
+and reorder the 3 concordance values accordingly, in `obsCF`
 
 `permutation_tax` and `permutation_cf` should be vectors of short integers (Int8) of length 4 and 3
 respectively, whose memory allocation gets reused. Their length is *not checked*.
-
-`qnet.names` is unchanged: the order of taxon names here relates to the order of nodes in the network
-(???)
 """
 function sorttaxa!(dat::DataCF)
     ptax = Array{Int8}(undef, 4) # to hold the sort permutations
@@ -218,11 +165,6 @@ function sorttaxa!(qua::Quartet, ptax::Vector{Int8}, pCF::Vector{Int8})
         sorttaxaCFperm!(pCF, ptax) # update permutation pCF accordingly
         qt[1], qt[2], qt[3], qt[4] = qt[ptax[1]], qt[ptax[2]], qt[ptax[3]], qt[ptax[4]]
         qua.obsCF[1], qua.obsCF[2], qua.obsCF[3] = qua.obsCF[pCF[1]], qua.obsCF[pCF[2]], qua.obsCF[pCF[3]]
-        # do *NOT* modify qua.qnet.quartetTaxon: it points to the same array as qua.taxon
-        eCF = qua.qnet.expCF
-        if length(eCF)==3
-            eCF[1], eCF[2], eCF[3] = eCF[pCF[1]], eCF[pCF[2]], eCF[pCF[3]]
-        end
     elseif length(qt)!=0
         error("Quartet with $(length(qt)) taxa")
     end

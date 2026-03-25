@@ -67,9 +67,7 @@ net = (@test_logs readnewick("(a,((b)#H1,((#H1,c),d)));"));
 sorttaxa!(dat)
 
 @test [q.obsCF for q in dat.quartet] == [[0.6,0.39,0.01] for i in 1:24]
-# @test [q.qnet.expCF for q in dat.quartet] == [[0.6915349833361827,0.12262648039048075,0.1858385362733365] for i in 1:24]
 @test [q.taxon for q in dat.quartet] == [letters for i in 1:24]
-# @test [q.qnet.quartetTaxon for q in dat.quartet] == [letters for i in 1:24]
 
 end # of testset: sorttaxa!
 
