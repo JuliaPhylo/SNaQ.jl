@@ -294,7 +294,7 @@ end
 
 
 """
-Helper function for [`get_lowest_hybrid`](@ref) - recursively finds the "lowest" hybrid in a network, starting at `node` - a hybrid node. 
+Helper function for [`getlowesthybrid`](@ref) - recursively finds the "lowest" hybrid in a network, starting at `node` - a hybrid node. 
 """
 function getlowesthybridrecur(node::Node)
     if node.leaf
@@ -442,7 +442,7 @@ Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
 corresponding to the expected CF values of each quartet
 in `dcf` ordered in the way that `SNaQ` expects internally.
 """
-function gatherexpectedCFmatrix(dcf::DataCF)::Matrix{Float64}
+function gatherCFmatrix(dcf::DataCF)::Matrix{Float64}
     # Helper function for more legible code later
     minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
 

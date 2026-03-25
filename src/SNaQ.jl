@@ -54,6 +54,7 @@ module SNaQ
         readtableCF!,
         mapallelesCFtable,
         summarizedataCF,
+        fittedquartetCF,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
@@ -65,7 +66,7 @@ module SNaQ
         optimize!,  # fixit: TODO: fix this name - it opts more than just BLs!
         computeloss,   # fixit: TODO: make this name in line with Julia conventions
         computeexpectedCFmatrix,  # fixit: TODO: no underscores in fxn names!!
-        ExpectedDataCF,             # fixit: TODO: again, not Julian naming convensions
+        computeexpectedDataCF,             # fixit: TODO: again, not Julian naming convensions
         ########## New identifiability/restriction functions
         defaultrestrictions,    # fixit: TODO: some of these functions are called like
                                 # restrictions=fxn(), while others are called like
@@ -81,6 +82,7 @@ module SNaQ
     include("multipleAlleles.jl")
     include("readquartetdata.jl")
     include("readwrite.jl")
+    include("descriptive.jl")
     ############ NEW STUFF
     include("gradient_optimization/CF_recursive_blocks.jl")
     include("gradient_optimization/misc.jl")

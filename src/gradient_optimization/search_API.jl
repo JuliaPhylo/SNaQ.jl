@@ -94,7 +94,7 @@ function multisearch(
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
-        q = gatherexpectedCFmatrix(q)
+        q = gatherCFmatrix(q)
     end
 
     # Generate per-run seeds
@@ -145,8 +145,7 @@ function multisearch(
     elapsed = timeelapsed(time() - starttime)
 
     # Consolidate return data
-    all_logPLs = loglik.(all_nets)
-    sort_idx = sortperm(all_logPLs, rev=true)
+    sort_idx = sortperm(loglik.(all_nets), rev=true)
     bestnet = all_nets[sort_idx[1]]
 
     # Log results
@@ -170,6 +169,16 @@ function multisearch(
             println(f, " $(writenewick(all_nets[j])), with -loglik $(loglik(all_nets[j]))")
         end
         println(f, "-----------------------------------")
+    end
+
+    open("$(filename).networks", "w+") do f
+        for i in sort_idx
+            write(f, "$(writenewick(all_nets[i])), with -loglik $(loglik(all_nets[i]))")
+            if i == 1
+                write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
+            end
+            write(f, "\n")
+        end
     end
 
     # Clean up: the edges above roots have leftover values in them right now -
@@ -416,7 +425,7 @@ function search(
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
-        q = gatherexpectedCFmatrix(q)
+        q = gatherCFmatrix(q)
     end
 
     # Set the seed
@@ -594,7 +603,7 @@ function search(
     if propQuartets != 1.0
         logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
         if typeof(q) <: DataCF
-            loglik!(N, optimize!(N, gatherexpectedCFmatrix(q)))
+            loglik!(N, optimize!(N, gatherCFmatrix(q)))
         else
             loglik!(N, optimize!(N, q))
         end

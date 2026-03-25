@@ -6,7 +6,7 @@
 # 3. A different set of quartets is chosen during each run when propQuartets < 1.0
 
 truetre = readnewick("(((a,b):0.5,(c,d):0.5):0.5,(e,f):0.5);");
-qcf = ExpectedDataCF(truetre);
+qcf = computeexpectedDataCF(truetre);
 falsetre = readnewick("(((a,c):5.0,(e,b):5.0):1.0,(d,f):1.5);");
 
 

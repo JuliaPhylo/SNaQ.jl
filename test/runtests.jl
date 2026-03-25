@@ -28,7 +28,7 @@ import SNaQ: writeExpCF, descData,
     visited!, edges_changed!, nodes_changed!, ht!, numht!,
     numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
 
-import SNaQ: Node, semidirectnetwork!, findquartetequations, compute_eCFs,
+import SNaQ: Node, semidirectnetwork!, findquartetequations, computeexpectedCFs,
     isvalidaddhybrid,
     addhybrid!, removehybrid!,
     getparentedge, getparent,

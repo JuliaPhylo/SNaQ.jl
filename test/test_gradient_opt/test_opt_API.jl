@@ -1,5 +1,5 @@
 using PhyloNetworks, SNaQ, PhyloCoalSimulations, Test, Random, StatsBase
-import SNaQ: Node, semidirectnetwork!, findquartetequations, compute_eCFs
+import SNaQ: Node, semidirectnetwork!, findquartetequations, computeexpectedCFs
 
 
 function get_data(L::Float64=0.5, seed::Int=42)
@@ -7,7 +7,7 @@ function get_data(L::Float64=0.5, seed::Int=42)
     net = readnewick(joinpath(@__DIR__, "n1.netfile"))
     semidirectnetwork!(net)
     for E in net.edge E.length = (E.length > 0) ? L : 0 end
-    q = compute_eCFs(net)
+    q = computeexpectedCFs(net)
     return net, q
 end
 

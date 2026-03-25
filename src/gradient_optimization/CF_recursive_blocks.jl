@@ -74,7 +74,7 @@ function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float6
     return computeloss(qdata, params, q, α)
 end
 function computeloss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
-    return computeloss(N, gatherexpectedCFmatrix(dcf), α)
+    return computeloss(N, gatherCFmatrix(dcf), α)
 end
 function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
     return computelossandgradient!(qdata, params, zeros(length(params)), q, α)

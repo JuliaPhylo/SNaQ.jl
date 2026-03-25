@@ -1,9 +1,9 @@
 using PhyloNetworks, SNaQ, PhyloCoalSimulations, Test, Random
 import SNaQ: 
     RecursiveCFEquation, QuartetData, contains_parameter,
-    compute_eCF, compute_eCFs, semidirectnetwork!,
+    computeexpectedCF, computeexpectedCFs, semidirectnetwork!,
     findquartetequations, computelossandgradient!, computeloss,
-    compute_eCF_and_gradient_recur!
+    computeexpectedCFandgradientrecur!
 
 @testset "RecursiveCFEquation construction" begin
     # Test basic construction of RecursiveCFEquation
@@ -43,7 +43,7 @@ end
     @test contains_parameter(qdata, [4, 5]) == false
 end
 
-@testset "compute_eCF with RecursiveCFEquation" begin
+@testset "computeexpectedCF with RecursiveCFEquation" begin
     # Create a simple tree-like quartet with no hybridization
     # We'll manually create a RecursiveCFEquation for a simple case
     coal_edges = [1]  # Just one internal edge
@@ -108,7 +108,7 @@ end
     end
 end
 
-@testset "compute_eCF_and_gradient_recur! for simple cases" begin
+@testset "computeexpectedCFandgradientrecur! for simple cases" begin
     # Test a simple treelike case (division_H = -1)
     coal_edges = [1]
     eqn_treelike = RecursiveCFEquation(false, coal_edges, 1, -1, RecursiveCFEquation[], 1)

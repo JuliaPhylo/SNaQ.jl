@@ -122,7 +122,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         newd = readtableCF!(newdf, collect(1:7)) # allocate memory for DataCF object
     end
     if runs1>0 && currT0.numhybrids == 0 # get rough first estimate of branch lengths in startnet
-        optimize!(currT0, findquartetequations(currT0)[1], gatherexpectedCFmatrix(newd))
+        optimize!(currT0, findquartetequations(currT0)[1], gatherCFmatrix(newd))
     end
 
     if seed == 0

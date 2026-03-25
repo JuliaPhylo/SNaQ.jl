@@ -284,5 +284,5 @@ end
 # t = generate_net(20, 4, 1);
 # for E in t.edge E.length = 1.0 end
 # t0s = simulatecoalescent(t, 10, 1);
-# q = SNaQ.compute_eCFs(t);
+# q = SNaQ.computeexpectedCFs(t);
 # rt = @elapsed results = SNaQ.BFS_distributed(t0s, 1, 25, 1, 100, q, 3, t)

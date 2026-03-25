@@ -5,7 +5,7 @@ include(joinpath(@__DIR__, "../test_inplace_updates/misc.jl"))
 
 ### Network example
 net = readnewick(joinpath(@__DIR__, "n1.netfile"))
-q = SNaQ.compute_eCFs(net);
+q = SNaQ.computeexpectedCFs(net);
 tre0 = majortree(net);
 
 

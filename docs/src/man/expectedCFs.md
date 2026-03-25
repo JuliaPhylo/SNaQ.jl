@@ -1,4 +1,7 @@
 ```@setup expCFs
+using Revise
+cd("docs")
+error("REMOVE REVISE ABOVE")
 using PhyloNetworks, SNaQ, DataFrames
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
@@ -33,7 +36,7 @@ optimize!(truenet, raxmlCF);
 df_wide = fittedquartetCF(raxmlCF) # same as fittedquartetCF(raxmlCF, :wide)
 df_long = fittedquartetCF(raxmlCF, :long)
 ```
-It is important to have run `snaq!`, `topologyQpseudolik!` or `topologymaxQpseudolik!`
+It is important to have run `snaq!` and `optimize!`
 before making these tables, or the result would be meaningless.
 These functions update the fitted concordance factors (those expected under the network)
 inside the DataCF object `raxmlCF`.

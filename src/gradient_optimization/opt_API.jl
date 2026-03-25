@@ -110,7 +110,7 @@ algorithm, this function recomputes values and wastes time.
 """
 function optimizetopology!(net::HybridNetwork, d::DataCF)
     eqns = SNaQ.findquartetequations(net)[1];
-    return optimize!(net, eqns, gatherexpectedCFmatrix(d); maxeval=500)
+    return optimize!(net, eqns, gatherCFmatrix(d); maxeval=500)
 end
 
 
@@ -163,7 +163,7 @@ function optimize!(
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gatheroptimizationinfo(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
     opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
-    OGNET = SNaQ.deepcopynetwork(net);
+    # OGNET = SNaQ.deepcopynetwork(net); # used in debugging
 
     opt.maxeval = maxeval
     opt.ftol_rel = ftolRel
@@ -179,11 +179,11 @@ function optimize!(
     x0 = min.(UB .- 1e-12, x0)
     x0 = max.(LB .+ 1e-12, x0)
     NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
-    (minf, minx, ret) = NLopt.optimize(opt, x0)
+    (maxf, maxx, ret) = NLopt.optimize(opt, x0)
     
-    setX!(net, minx, idx_obj_map)
-    if minf == -Inf
-        error("Optimization error: minf == -Inf")
+    setX!(net, maxx, idx_obj_map)
+    if maxf == -Inf
+        error("Optimization error: maxf == -Inf")
     end
 
     # The major/minor property of some hybrid edges may need to be changed at this point
@@ -201,7 +201,8 @@ function optimize!(
         # This way, no updates will be forced.
     end
 
-    return minf
+    loglik!(net, maxf)
+    return maxf
 end
 optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findquartetequations(net)[1], oCFs; kwargs...)
 
@@ -211,7 +212,8 @@ optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findqua
 
 Optimizes the parameters of `net` with the quartet concordance factor data
 in `dcf`. Returns the estimates likelihood of the network, which can also
-be accessed later with `loglik(net)`.
+be accessed later with `loglik(net)`. Also updates the `expCF` and `logPseudolik`
+parameters of each quartet in `dcf.quartet`.
 
 ### Parameters
 - `ρ` is the inheritance correlation parameter which can range from 0 to 1 (default 0).
@@ -222,10 +224,18 @@ be accessed later with `loglik(net)`.
 """
 function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
-    eqns = findquartetequations(net)[1];
-    obsCFs = gatherexpectedCFmatrix(dcf)
+    eqns, parammap, parameters, _ = findquartetequations(net);
+    obsCFs = gatherCFmatrix(dcf)
     α = ρ == 0.0 ? Inf : 1.0 / ρ
     optimize!(net, eqns, obsCFs, α)
+
+    for q in dcf.quartet
+        eqn = findquartetequations4taxa(net, q.taxon, parammap, α)
+        expCF1, expCF2 = computeexpectedCF(eqn, parameters, α)
+        q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
+    end
+
+    return loglik(net)
 end
 
 
@@ -427,7 +437,7 @@ end
 """
 Computes the expected concordance factors of `net` with the inheritance
 correlation parameter `α` (default=`Inf`). The returned `Matrix{Float64}`
-object is unlabelled. See also [`ExpectedDataCF`](@ref) for a `DataCF` object
+object is unlabelled. See also [`computeexpectedDataCF`](@ref) for a `DataCF` object
 with corresponding taxa information.
 """
 function computeexpectedCFmatrix(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
@@ -443,7 +453,7 @@ end
 """
 Deprecated - included for backwards compatibility in niche cases.
 """
-compute_eCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
+computeexpectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
     computeexpectedCFmatrix(net, α)
 
 """
@@ -456,12 +466,14 @@ compute_expectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
 """
 Creates a DataCF object containing the expected CFs for each quartet in `net`.
 """
-function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
+function computeexpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
     eqns, _, params, _ = findquartetequations(net);
     d = DataCF()
     for j in eachindex(eqns)
         eCF1, eCF2 = computeexpectedCF(eqns[j], params, α)
-        push!(d.quartet, Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2])))
+        q = Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2]))
+        q.expCF = q.obsCF
+        push!(d.quartet, q)
     end
     d.numQuartets = length(eqns)
     return d

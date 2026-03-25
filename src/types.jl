@@ -84,6 +84,7 @@ mutable struct Quartet <: AQuartet
     number::Int
     taxon::Array{String,1} # taxa 1234
     obsCF::Array{Float64,1} # three observed CF in order 12|34, 13|24, 14|23
+    expCF::Array{Float64,1} # three expected CF in order 12|34, 13|24, 14|23
     logPseudoLik::Float64 # log pseudolik value for the quartet. 0.0 by default
     ngenes::Float64 # number of gene trees used to compute the obsCV, default -1.; Float in case ngenes is average
     deltaCF::Float64 # sum of absolute differences of obsCF - expCF 
@@ -93,7 +94,7 @@ mutable struct Quartet <: AQuartet
     function Quartet(number::Integer,t1::AbstractString,t2::AbstractString,t3::AbstractString,t4::AbstractString,obsCF::Array{Float64,1})
         size(obsCF,1) != 3 ? error("observed CF vector should have size 3, not $(size(obsCF,1))") : nothing
         0.99 < sum(obsCF) < 1.02 || @warn "observed CF should add up to 1, not $(sum(obsCF))"
-        new(number,[t1,t2,t3,t4],obsCF,0.0,-1.0, 0.0, true, false);
+        new(number,[t1,t2,t3,t4],obsCF,[],0.0,-1.0, 0.0, true, false);
     end
     function Quartet(number::Integer,t1::Array{String,1},obsCF::Array{Float64,1})
         size(obsCF,1) != 3 ? error("observed CF vector should have size 3, not $(size(obsCF,1))") : nothing
@@ -102,9 +103,9 @@ mutable struct Quartet <: AQuartet
         0.0 <= obsCF[1] <= 1.0 || error("obsCF must be between (0,1), but it is $(obsCF[1]) for $(t1)")
         0.0 <= obsCF[2] <= 1.0 || error("obsCF must be between (0,1), but it is $(obsCF[2]) for $(t1)")
         0.0 <= obsCF[3] <= 1.0 || error("obsCF must be between (0,1), but it is $(obsCF[3]) for $(t1)")
-        new(number,t1,obsCF,0.0,-1.0, 0.0, true, false);
+        new(number,t1,obsCF,[],0.0,-1.0, 0.0, true, false);
     end
-    Quartet() = new(0,[],[],0.0,-1.0, 0.0, true, false)
+    Quartet() = new(0,[],[],[],0.0,-1.0, 0.0, true, false)
 end
 
 
@@ -159,6 +160,7 @@ function Base.show(io::IO,q::Quartet)
     print(io,"number: $(q.number)\n")
     print(io,"taxon names: $(q.taxon)\n")
     print(io,"observed CF: $(q.obsCF)\n")
+    print(io,"expected CF: $(round.(q.expCF, digits=8)) (meaningless before estimation)\n")
     print(io,"pseudo-deviance under last used network: $(q.logPseudoLik) (meaningless before estimation)\n")
     if(q.ngenes != -1)
         print(io,"number of genes used to compute observed CF: $(q.ngenes)\n")
