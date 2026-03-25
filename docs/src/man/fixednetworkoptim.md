@@ -32,16 +32,18 @@ raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinew
 
 ```@repl fixednetworkoptim
 truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
-net1alt = optimize!(truenet, raxmlCF);
-writenewick(net1alt, round=true)
-loglik(net1alt) # pseudo deviance actually: the lower the better
+optnet = deepcopy(truenet);
+optimize!(optnet, raxmlCF);
+writenewick(optnet, round=true)
+loglik(optnet) # typically negative, the higher the better
 ```
 ```@example fixednetworkoptim
 using PhyloPlots, RCall
+@show pwd()
 R"name <- function(x) file.path('..', 'assets', 'figures', x)" # hide
 R"svg(name('truenet_opt.svg'), width=4, height=4)" # hide
 R"par"(mar=[0,0,0,0])
-plot(net1alt, showgamma=true);
+plot(optnet, showgamma=true);
 R"dev.off()" # hide
 nothing # hide
 ```
@@ -66,9 +68,9 @@ loglik(net1par) # pseudo deviance, actually: the lower the better
 ## Network score with no optimization
 
 For a network with given branch lengths and γ heritabilies,
-we can compute the pseudolikelihood (well, a pseudo-deviance) with:
+we can compute the negative composite log likelihood with:
 ```@repl fixednetworkoptim
-topologyQpseudolik!(truenet,raxmlCF);
+computeloss(truenet, raxmlCF);
 loglik(truenet) # again, pseudo deviance
 ```
 This function is not maximizing the pseudolikelihood, it is simply computing the

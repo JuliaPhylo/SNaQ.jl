@@ -58,6 +58,10 @@ numht!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int2 = v)
 numBad!(h::HybridNetwork, i::Int) = (h.intg1 = i)
 hasVeryBadTriangle!(h::HybridNetwork, b::Bool) = (h.boolg1 = b)
 index!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int3 = v)
+
+"""
+Sets the negative composite log-likelihood of network `h` to `f`.
+"""
 loglik!(h::HybridNetwork, f::Real) = (h.fscore = f)
 blacklist!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int4 = v)
 cleaned!(h::HybridNetwork, b::Bool) = (h.boolg2 = b)

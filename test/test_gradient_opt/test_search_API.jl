@@ -35,3 +35,9 @@ t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="f", runs=length(t0s), seed=5, maxequivPLs = 100)
 @test hardwiredclusterdistance(net, opt_net, false) != 0 # "f" is NOT an outgroup, so we should have HWCD > 0
 @test any(t -> t.name == "f", getchildren(getroot(opt_net)))
+
+# Now test that the `snaq!` wrapper works as expected
+t0 = simulatecoalescent(tre0, 1, 1)[1];
+dcf = computeexpectedDataCF(net);
+opt_rt = @elapsed snaqnet = snaq!(t0, dcf; hmax=1, propQuartets=0.85, runs=20, Nfail=50)
+@test hardwiredclusterdistance(snaqnet, net, false) == 0

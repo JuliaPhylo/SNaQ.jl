@@ -1,7 +1,4 @@
 ```@setup expCFs
-using Revise
-cd("docs")
-error("REMOVE REVISE ABOVE")
 using PhyloNetworks, SNaQ, DataFrames
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")

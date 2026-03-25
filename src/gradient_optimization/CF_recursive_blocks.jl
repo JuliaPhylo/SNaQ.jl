@@ -71,10 +71,14 @@ function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float6
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
-    return computeloss(qdata, params, q, α)
+    loss = computeloss(qdata, params, q, α)
+    loglik!(N, loss)
+    return loss
 end
 function computeloss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
-    return computeloss(N, gatherCFmatrix(dcf), α)
+    loss = computeloss(N, gatherCFmatrix(dcf), α)
+    loglik!(N, loss)
+    return loss
 end
 function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
     return computelossandgradient!(qdata, params, zeros(length(params)), q, α)
