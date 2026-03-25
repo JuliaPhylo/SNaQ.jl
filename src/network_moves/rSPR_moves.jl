@@ -25,7 +25,7 @@ function performrSPR!(N::HybridNetwork, w::Node, x::Node, y::Node, z::Node, xpri
     # 3. If this is case 2, we need to swap hybrid info before fusing
     if which_case == 2
         edge_xz = z.edge[findfirst(z_edge -> x in z_edge.node, z.edge)]
-        swap_edge_hybrid_info!(edge_xprime_zprime, edge_xz)
+        swapedgehybridinfo!(edge_xprime_zprime, edge_xz)
         zprime.hybrid = true
         pushHybrid!(N, zprime)
     end
@@ -60,7 +60,7 @@ end
 
 """
 Samples a set of nodes randomly that are valid parameters for the
-`perform_rSPR!` function. Returns nothing if it fails to find a 
+`performrSPR!` function. Returns nothing if it fails to find a 
 valid set of parameters.
 """
 function samplerSPRparameters(N::HybridNetwork, rng::TaskLocalRNG)

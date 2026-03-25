@@ -28,21 +28,21 @@ import SNaQ: writeExpCF, descData,
     visited!, edges_changed!, nodes_changed!, ht!, numht!,
     numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
 
-import SNaQ: Node, semidirect_network!, find_quartet_equations, compute_eCFs,
-    is_valid_add_hybrid,
-    add_hybrid!, remove_hybrid!,
+import SNaQ: Node, semidirectnetwork!, findquartetequations, compute_eCFs,
+    isvalidaddhybrid,
+    addhybrid!, removehybrid!,
     getparentedge, getparent,
-    sample_move_reticulate_origin_parameters,
-    is_valid_move_reticulate_origin, move_reticulate_origin!,deepcopy_network, semidirect_network!,
-    generate_move_proposal, apply_move!,
-    move_reticulate_target!, move_reticulate_origin!,
-    semidirect_network!,
-    perform_rNNI!, perform_rNNI1!, perform_rNNI2!, perform_rNNI3!, perform_rNNI4!,
-    is_valid_rNNI1, is_valid_rNNI2, is_valid_rNNI3, is_valid_rNNI4,
-    all_valid_rNNI_nodes, perform_random_rNNI!, semidirect_network!,
-    all_valid_rNNI1_nodes, all_valid_rNNI2_nodes,
-    apply_move!, perform_rSPR!, is_valid_rSPR, semidirect_network!,
-    sample_rSPR_parameters, multi_search, search
+    samplemovereticulateoriginparameters,
+    isvalidmovereticulateorigin, movereticulateorigin!,deepcopynetwork, semidirectnetwork!,
+    generatemoveproposal, applymove!,
+    movereticulatetarget!, movereticulateorigin!,
+    semidirectnetwork!,
+    performrNNI!, performrNNI1!, performrNNI2!, performrNNI3!, performrNNI4!,
+    isvalidrNNI1, isvalidrNNI2, isvalidrNNI3, isvalidrNNI4,
+    allvalidrNNInodes, performrandomrNNI!, semidirectnetwork!,
+    allvalidrNNI1nodes, allvalidrNNI2nodes,
+    applymove!, performrSPR!, isvalidrSPR, semidirectnetwork!,
+    samplerSPRparameters, multisearch, search
 
 import PhyloNetworks: Node, Edge,
     setNode!,setEdge!,
@@ -59,12 +59,16 @@ end
 
 
 function runtestfile(testfile::String)
-    @info testfile
+    printstyled(testfile, color=:blue)
+    starttime = time()
     originalstdout = stdout
     originalstderr = stderr
+    redirect_stdout(devnull)  # when testing for errors, comment these lines
+    redirect_stderr(devnull)  # when testing for errors, comment these lines
     include(testfile)
     redirect_stdout(originalstdout)
     redirect_stderr(originalstderr)
+    printstyled(": $(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
 
 

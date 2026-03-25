@@ -1,12 +1,12 @@
 using PhyloNetworks, Test, StatsBase, Random
 import SNaQ:
-    move_reticulate_target!, move_reticulate_origin!,
-    semidirect_network!
+    movereticulatetarget!, movereticulateorigin!,
+    semidirectnetwork!
 
 #### Helper functions ####
 function reload_labelled_net()
     net = readnewick("((a,b)i1,((c,#H1)i6,(d,((e,f)i5)#H1)i3)i2);")
-    semidirect_network!(net)
+    semidirectnetwork!(net)
     net.hybrid[1].name = "i4"   # do it here so that PhyloNetworks doesn't through a warning
     return net
 end
@@ -25,7 +25,7 @@ net = readnewick("(((c1:0.5,c2:0.5)i3:0.622,((e:0.5,f:0.5)i10:0.206)#Hi4:0.206::
 net.isrooted = false;
 H, i7, Hi4 = get_nodes(net, "H3", "i7", "Hi4");
 E = [e for e in i7.edge if Hi4 in e.node][1];
-move_reticulate_target!(net, H, E)
+movereticulatetarget!(net, H, E)
 @test all([getparentedge(hyb).gamma + getparentedgeminor(hyb).gamma ≈ 1 for hyb in net.hybrid])
 
 
@@ -33,7 +33,7 @@ net = readnewick("(((b:0.75)#H3:0.5::0.972,a:0.96)i15:1.081,(((e:0.5,f:0.5)i10:0
 net.isrooted = false;
 H, i12, i1817 = get_nodes(net, "Hi4", "i12", "i1817");
 E = [e for e in i12.edge if i1817 in e.node][1];
-move_reticulate_origin!(net, H, E)
+movereticulateorigin!(net, H, E)
 @test all([getparentedge(hyb).gamma + getparentedgeminor(hyb).gamma ≈ 1 for hyb in net.hybrid])
 
 
@@ -41,7 +41,7 @@ net = readnewick("((c2:1.162,(((a:1.136,(b:0.548,#H5:0.5::0.043)i8475:0.625)H3:1
 net.isrooted = false;
 H4, i12, i3056 = get_nodes(net, "H4", "i12", "i3056");
 E = [e for e in i12.edge if i3056 in e.node][1];
-move_reticulate_target!(net, H4, E)
+movereticulatetarget!(net, H4, E)
 @test all([getparentedge(hyb).gamma + getparentedgeminor(hyb).gamma ≈ 1 for hyb in net.hybrid])
 
 

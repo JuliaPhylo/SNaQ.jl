@@ -22,15 +22,15 @@ function BFS(
     (d == 1 && propQuartets == 1.0) || error("--")
 
     rng = Random.seed!(seed)
-    q_idxs = sample_qindices(starting_pool[1], propQuartets, rng)
+    q_idxs = sampleqindices(starting_pool[1], propQuartets, rng)
 
     # Semi-direct input networks
     for n in starting_pool
-        semidirect_network!(n)
+        semidirectnetwork!(n)
     end
 
     # Setup pool variables
-    pool::Vector{HybridNetwork} = Vector{HybridNetwork}([deepcopy_network(n) for n in starting_pool])
+    pool::Vector{HybridNetwork} = Vector{HybridNetwork}([deepcopynetwork(n) for n in starting_pool])
     for n in pool
         loglik!(n, optimize!(n, q))
     end
@@ -69,11 +69,11 @@ function BFS(
 
         # Sample from pool
         valid_idxs = get_vidxs()
-        sample_idx = sample(rng, valid_idxs, compute_weights(pool[valid_idxs], multiplicity[valid_idxs]))
+        sample_idx = sample(rng, valid_idxs, computeweights(pool[valid_idxs], multiplicity[valid_idxs]))
         net = pool[sample_idx]
 
         # Perform single iter of search
-        next_net, next_eqns = BFS_single_iter(
+        next_net, next_eqns = BFSsingleiter(
             rng, net, pool_eqns[sample_idx], d, q, q_idxs, hmax, ftolabs, ftolrel; maxequivPLs=maxequivPLs, searchargs...
         )
         
@@ -145,8 +145,8 @@ function BFS(
         # Remove any entries with a less than 1 / (100 * maxpoolsize) chance of being selected
         valid_idxs = get_vidxs()
         length(valid_idxs) == 0 && break
-        sample_idx = sample(rng, valid_idxs, compute_weights(pool[valid_idxs], multiplicity[valid_idxs]))
-        W = compute_weights(pool[valid_idxs], multiplicity[valid_idxs])
+        sample_idx = sample(rng, valid_idxs, computeweights(pool[valid_idxs], multiplicity[valid_idxs]))
+        W = computeweights(pool[valid_idxs], multiplicity[valid_idxs])
     end
     ##########################################################
     
@@ -155,7 +155,7 @@ function BFS(
 end
 
 
-function BFS_single_iter(
+function BFSsingleiter(
     rng::TaskLocalRNG,
     N::HybridNetwork,
     net_eqns::Array{QuartetData},
@@ -180,15 +180,15 @@ function BFS_single_iter(
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
 
     # Copy input net
-    N = deepcopy_network(N);
-    semidirect_network!(N);
+    N = deepcopynetwork(N);
+    semidirectnetwork!(N);
 
     # Perform the search
     moves_attempted::Vector{<:Tuple} = Vector{Tuple}();   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
                             # here so that we don't redo moves
     for j = 1:maxequivPLs
         # 1. Propose a new topology
-        Nprime, prop_move, prop_params = propose_topology(rng, N, hmax, moves_attempted, restrictions);
+        Nprime, prop_move, prop_params = proposetopology(rng, N, hmax, moves_attempted, restrictions);
 
         # 2. Optimize that topology
         Nprime_logPL, Nprime_eqns = optimizetopology!(
@@ -209,7 +209,7 @@ function BFS_single_iter(
         end
         if length(bad_Hs) != 0
             for H in bad_Hs
-                remove_hybrid!(Nprime, H)
+                removehybrid!(Nprime, H)
             end
             Nprime_eqns, _ = findquartetequations(Nprime, q_idxs)
         end
@@ -221,7 +221,7 @@ function BFS_single_iter(
 end
 
 
-function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_attempted::Vector{<:Tuple}, restrictions::Function)
+function proposetopology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_attempted::Vector{<:Tuple}, restrictions::Function)
     j = 0
     while true
         j += 1
@@ -231,14 +231,14 @@ function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_
         Nprime = readnewick(writenewick(N));
 
         # Find a valid move and perform the move
-        prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
-        apply_move!(Nprime, prop_move, prop_params)
+        prop_move, prop_params = generatemoveproposal(Nprime, moves_attempted, hmax, rng)
+        applymove!(Nprime, prop_move, prop_params)
         push!(moves_attempted, (prop_move, prop_params))
 
         # Check that this move meet identifiability requirements
         removedegree2nodes!(Nprime)
         while shrink2cycles!(Nprime) || shrink3cycles!(Nprime) continue end
-        semidirect_network!(Nprime)
+        semidirectnetwork!(Nprime)
 
         # Check if network meets restrictions
         if !restrictions(Nprime) continue end
@@ -248,7 +248,7 @@ function propose_topology(rng::TaskLocalRNG, N::HybridNetwork, hmax::Int, moves_
 end
 
 
-function compute_weights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::Weights{Float64}
+function computeweights(N::Vector{HybridNetwork}, multiplicity::Vector{Int})::Weights{Float64}
     L::Vector{Float64} = [loglik(n) for n in N]
     sumL = sum(L)
     return Weights([m * max(sumL / l, 0.0) for (l, m) in zip(L, multiplicity)])  # weight: (xi / sum(xi)) ^ {-1}
@@ -272,7 +272,7 @@ end
 # net.numhybrids, istreechild(net), getlevel(net)
 # gts = simulatecoalescent(net, 10000, 1);
 # q, t = countquartetsintrees(gts; showprogressbar=false);
-# semidirect_network!(net);
+# semidirectnetwork!(net);
 
 # rt = @elapsed results = BFS_distributed(gts[1:10], 1, 25, 1, 100, q, net.numhybrids, net; restrictions=restrictionset(; require_strongly_tree_child=true))
 

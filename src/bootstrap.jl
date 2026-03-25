@@ -164,7 +164,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i);
                          "rootname set to $rootname"; end
-            net1 = multi_search(currT0, newd, hmax; runs=runs1, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose,
+            net1 = multisearch(currT0, newd, hmax; runs=runs1, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose,
                 maxequivPLs=Nfail, outgroup=outgroup, seed=seeds[i], probST=probST, probQR=probQR, propQuartets=propQuartets)[1]
             if runs2==0
                 net = net1
@@ -177,7 +177,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i,"_startNet2");
                          "rootname set to $rootname"; end
-            net2 = multi_search(currT0, newd, hmax; runs=runs2, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose,
+            net2 = multisearch(currT0, newd, hmax; runs=runs2, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose,
                 maxequivPLs=Nfail, outgroup=outgroup, seed=seedsOtherNet[i], probST=probST, probQR=probQR, propQuartets=propQuartets)[1]
             if runs1==0
                 net = net2
@@ -284,7 +284,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
     runs1 = runs - runs2                       # runs starting from startnet
 
     if runs1>0
-        startnet=SNaQ.deepcopy_network(startnet) # does not modify startnet outside
+        startnet=SNaQ.deepcopynetwork(startnet) # does not modify startnet outside
     end
     runs2 == 0 || otherNet.numtaxa > 0 ||
         error("""otherNet not given and prcnet>0. Please set prcnet to 0 to start optimizations

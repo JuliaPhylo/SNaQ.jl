@@ -17,7 +17,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
 
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
-        qdat = try_treelike_quartet(net, taxa, parameter_map)
+        qdat = trytreelikequartet(net, taxa, parameter_map)
         qdat !== nothing && return qdat.eqn
         
         quartet_type, int_edges = getquartettypeandinternaledges(net, taxa, parameter_map)
@@ -51,7 +51,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         # @info "2 - Following hybrid $(lowest_H.name)"
 
         # Remove the minor edge and all of its references in this copy
-        div_major = deepcopy_network(net)
+        div_major = deepcopynetwork(net)
         div_major_H = div_major.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_major.hybrid)]
         E_minor = getparentedgeminor(div_major_H)
         E_major = getparentedge(div_major_H)
@@ -73,7 +73,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
 
 
         # Remove the major edge and all of its references in this copy
-        div_minor = deepcopy_network(net)
+        div_minor = deepcopynetwork(net)
         div_minor_H = div_minor.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_minor.hybrid)]
         E_minor = getparentedgeminor(div_minor_H)
         E_major = getparentedge(div_minor_H)
@@ -127,7 +127,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         ##########################################################################################
 
         ######## Both taxa take the minor edge ########
-        div1::HybridNetwork = deepcopy_network(net)
+        div1::HybridNetwork = deepcopynetwork(net)
         div1_H = div1.hybrid[findfirst(div1_H -> div1_H.number == lowest_H.number && div1_H.name == lowest_H.name, div1.hybrid)]
         E_minor = getparentedgeminor(div1_H)
         E_major = getparentedge(div1_H)
@@ -146,7 +146,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
 
         ######## Both taxa take the major edge ########
         # Same steps as above but for major instead of minor
-        div2::HybridNetwork = deepcopy_network(net)
+        div2::HybridNetwork = deepcopynetwork(net)
         div2_H = div2.hybrid[findfirst(div2_H -> div2_H.number == lowest_H.number && div2_H.name == lowest_H.name, div2.hybrid)]
         E_minor = getparentedgeminor(div2_H)
         E_major = getparentedge(div2_H)
@@ -165,7 +165,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
 
 
         ######## Lower taxa takes minor, higher takes major ########
-        div3::HybridNetwork = deepcopy_network(net)
+        div3::HybridNetwork = deepcopynetwork(net)
         div3_H = div3.hybrid[findfirst(div3_H -> div3_H.number == lowest_H.number && div3_H.name == lowest_H.name, div3.hybrid)]
         E_minor = getparentedgeminor(div3_H)
         E_major = getparentedge(div3_H)
@@ -185,7 +185,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         new_leaf.name = leaf_names[2]
 
         ######## Lower taxa takes major, higher takes minor ########
-        div4::HybridNetwork = deepcopy_network(net)
+        div4::HybridNetwork = deepcopynetwork(net)
         div4_H = div4.hybrid[findfirst(div4_H -> div4_H.number == lowest_H.number && div4_H.name == lowest_H.name, div4.hybrid)]
         E_minor = getparentedgeminor(div4_H)
         E_major = getparentedge(div4_H)
@@ -378,7 +378,12 @@ Gathers a vector of `QuartetData` objects that define the expected
 quartet concordance factors of `net`.
 """
 findquartetequations(net::HybridNetwork)::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}} =
-    findquartetequations(net, 1:nchoose4taxa_length(net))
+    findquartetequations(net, 1:nchoose4taxalength(net))
+ 
+"""
+Deprecated - included for backwards compatibility in niche cases.
+"""
+find_quartet_equations(net::HybridNetwork) = findquartetequations(net)
 
 """
 Gathers a vector of `QuartetData` objects that define the expected
@@ -396,12 +401,12 @@ end
 
 
 """
-See [`find_quartet_equations`](@ref)
+See [`findquartetequations`](@ref)
 """
 function findquartetequations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
     # Relevant data to be returned
     t = sort(tiplabels(net))
-    narg, param_map, idx_obj_map, params, _ = gather_optimization_info(net)
+    narg, param_map, idx_obj_map, params, _ = gatheroptimizationinfo(net)
 
     # Relevant loop vars
     thread_lock::ReentrantLock = ReentrantLock()
@@ -487,7 +492,7 @@ end
 
 
 """
-Helper function to increment the 4-taxa index within `find_quartet_equations`.
+Helper function to increment the 4-taxa index within `findquartetequations`.
 """
 function incrtaxaidx!(ts::Vector{Int})::Nothing
     ind = findfirst(x -> x>1, diff(ts))
@@ -506,11 +511,11 @@ Finds the quartet equations for the quarnet in `net` containing the taxa in `tax
 """
 function findquartetequations4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
     # Let's see if the quartet is tree-like and easy first
-    qdat = try_treelike_quartet(net, taxa, parameter_map)
+    qdat = trytreelikequartet(net, taxa, parameter_map)
     qdat !== nothing && return qdat
 
     # Above attempt failed, so we have to do it the hard way.
-    net = deepcopy_network(net) # deepcopy b/c we need edge numbers to stay the same
+    net = deepcopynetwork(net) # deepcopy b/c we need edge numbers to stay the same
 
     # remove all taxa other than those in `taxa`
     for t in sort(tiplabels(net))
@@ -560,19 +565,19 @@ quartet, the corresponding `QuartetData` object is returned. If a hybrid
 is encountered along a given path in this operation, `nothing` is
 returned instead.
 """
-function try_treelike_quartet(net::HybridNetwork, taxa::AbstractVector{String}, param_map::Dict{Int,Int})::Union{QuartetData,Nothing}
+function trytreelikequartet(net::HybridNetwork, taxa::AbstractVector{String}, param_map::Dict{Int,Int})::Union{QuartetData,Nothing}
     a = net.leaf[findfirst(l -> l.name == taxa[1], net.leaf)]
     b = net.leaf[findfirst(l -> l.name == taxa[2], net.leaf)]
     c = net.leaf[findfirst(l -> l.name == taxa[3], net.leaf)]
     d = net.leaf[findfirst(l -> l.name == taxa[4], net.leaf)]
 
-    path_ab = find_treelike_mrca_path(a, b)
+    path_ab = findtreelikemrcapath(a, b)
     path_ab === nothing && return nothing
-    path_cd = find_treelike_mrca_path(c, d)
+    path_cd = findtreelikemrcapath(c, d)
     path_cd === nothing && return nothing
-    path_ac = find_treelike_mrca_path(a, c)
+    path_ac = findtreelikemrcapath(a, c)
     path_ac === nothing && return nothing
-    path_bd = find_treelike_mrca_path(b, d)
+    path_bd = findtreelikemrcapath(b, d)
     path_bd === nothing && return nothing
     
     i_abcd = intersect(path_ab, path_cd)
@@ -610,7 +615,7 @@ network. If they are connected by a strictly tree-like path
 then this path of edges is returned. Otherwise, `nothing`
 is returned.
 """
-function find_treelike_mrca_path(a::Node, b::Node)::Union{Nothing,Vector{Edge}}
+function findtreelikemrcapath(a::Node, b::Node)::Union{Nothing,Vector{Edge}}
     node_path_a::Vector{Node} = []
     edge_path_a::Vector{Edge} = []
     node_path_b::Vector{Node} = []

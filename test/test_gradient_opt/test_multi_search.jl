@@ -15,26 +15,26 @@ net.isrooted = false;
 q, t = countquartetsintrees(gts, showprogressbar=false);
 df = readtableCF(DataFrame(tablequartetCF(q, t)));
 tre0 = readnewick(writenewick(gts[1]));
-#perform_random_rNNI!(tre0);
-true_logPL = compute_loss(net, q)   # -0.00696866191062832
+#performrandomrNNI!(tre0);
+true_logPL = computeloss(net, q)   # -0.00696866191062832
 #############
 
 
 
 #### FOR LOOP HERE
-for_loop_rt = @elapsed for_loop_best, for_loop_nets, _ = multi_search(deepcopy(gts[1]), q, 1; seed=42, runs=10, maxeval=10000, maxequivPLs=500)
+for_loop_rt = @elapsed for_loop_best, for_loop_nets, _ = multisearch(deepcopy(gts[1]), q, 1; seed=42, runs=10, maxeval=10000, maxequivPLs=500)
 [hardwiredclusterdistance(for_loop_nets[j], net, false) for j in eachindex(for_loop_nets)]
 
 @everywhere include("../../src/gradient_optimization/search_API.jl")
 @everywhere __precompile__()
-pmap_rt = @elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; seed=0, runs=10, maxeval=10000, maxequivPLs=500)
+pmap_rt = @elapsed pmap_best, pmap_nets, _ = multisearch(deepcopy(gts[1]), q, 1; seed=0, runs=10, maxeval=10000, maxequivPLs=500)
 println([hardwiredclusterdistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
 
 
 @everywhere include("../../src/gradient_optimization/search_API.jl")
 
-@elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; propQuartets=0.5, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
-@elapsed pmap_best, pmap_nets, _ = multi_search(deepcopy(gts[1]), q, 1; propQuartets=1.0, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
+@elapsed pmap_best, pmap_nets, _ = multisearch(deepcopy(gts[1]), q, 1; propQuartets=0.5, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
+@elapsed pmap_best, pmap_nets, _ = multisearch(deepcopy(gts[1]), q, 1; propQuartets=1.0, seed=0, runs=5, maxeval=10000, maxequivPLs=500)
 
 
 println([hardwiredclusterdistance(pmap_nets[j], net, false) for j in eachindex(pmap_nets)])
@@ -55,7 +55,7 @@ println([hardwiredclusterdistance(pmap_nets[j], net, false) for j in eachindex(p
 
 # Correct h
 Random.seed!(42)
-opt_rt = @elapsed best_net, est_nets, logPLs = multi_search(deepcopy(gts[1]), q, 1; runs=10, maxeval=10000, maxequivPLs=500)
+opt_rt = @elapsed best_net, est_nets, logPLs = multisearch(deepcopy(gts[1]), q, 1; runs=10, maxeval=10000, maxequivPLs=500)
 @info [hardwiredclusterdistance(n, net, false) for n in est_nets]
 
 snaq_rt = @elapsed snaq_net = snaq!(gts[1], df, hmax=1, runs=10)

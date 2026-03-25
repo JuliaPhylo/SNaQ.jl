@@ -29,7 +29,7 @@ in the plot will be close to the diagonal (x=y line).
 The following function will create a dataframe with the observed and expected CFs,
 which are all saved in the DataCF object after running snaq:
 ```@repl expCFs
-topologymaxQpseudolik!(truenet, raxmlCF);
+optimize!(truenet, raxmlCF);
 df_wide = fittedquartetCF(raxmlCF) # same as fittedquartetCF(raxmlCF, :wide)
 df_long = fittedquartetCF(raxmlCF, :long)
 ```

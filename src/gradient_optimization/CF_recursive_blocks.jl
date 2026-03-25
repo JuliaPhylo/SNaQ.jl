@@ -43,8 +43,8 @@ contains_parameter(qdata::QuartetData, param_idxs::Vector{Int})::Bool = any(
 )
 
 
-function compute_expectedCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
-    return compute_expectedCF_and_gradient_recur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α, ones(length(params), 3))
+function computeexpectedCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
+    return computeexpectedCFandgradientrecur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α, ones(length(params), 3))
 end
 
 
@@ -52,12 +52,12 @@ end
 Helper function (primarily for the `QuartetNetworkGoodnessFit.jl` package) used
 to compute the expected CFs of the quartet consisting of `taxa` in `net`.
 """
-function compute_expectedCF_4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, α::Real)::Tuple{Float64,Float64,Float64}
+function computeexpectedCF4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, α::Real)::Tuple{Float64,Float64,Float64}
     # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
-    param_map, params = gather_optimization_info(net)[[2,4]]
+    param_map, params = gatheroptimizationinfo(net)[[2,4]]
 
     qdata = SNaQ.findquartetequations4taxa(net, taxa, param_map)
-    eCF1, eCF2 = SNaQ.compute_expectedCF(qdata, params, α)
+    eCF1, eCF2 = SNaQ.computeexpectedCF(qdata, params, α)
     
     return eCF1, eCF2, 1-eCF1-eCF2
 end
@@ -68,8 +68,8 @@ Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet
 factor data `q` under Dirichlet parameter `α`.
 """
 function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float64
-    N = deepcopy_network(N)
-    semidirect_network!(N)
+    N = deepcopynetwork(N)
+    semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
     return computeloss(qdata, params, q, α)
 end
@@ -77,17 +77,28 @@ function computeloss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
     return computeloss(N, gatherexpectedCFmatrix(dcf), α)
 end
 function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
-    return compute_loss_and_gradient!(qdata, params, zeros(length(params)), q, α)
+    return computelossandgradient!(qdata, params, zeros(length(params)), q, α)
 end
+
+"""
+Deprecated - included for backwards compatibility in niche cases.
+"""
+compute_loss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf) = computeloss(N, q, α)
+
+"""
+Deprecated - included for backwards compatibility in niche cases.
+"""
+compute_loss(N::HybridNetwork, dcf::DataCF, α::Real=Inf) = computeloss(N, dcf, α)
+
 
 
 """
 Debugging function - not to be used internally because it will recompute many things.
 """
-function compute_gradient(net::HybridNetwork, obsCFs::Matrix{Float64}, α::Float64=Inf)::Vector{Float64}
-    params = gather_params(net);
+function computegradient(net::HybridNetwork, obsCFs::Matrix{Float64}, α::Float64=Inf)::Vector{Float64}
+    params = gatherparams(net);
     grad = zeros(length(params))
-    compute_loss_and_gradient!(findquartetequations(net)[1], params, grad, obsCFs, α)
+    computelossandgradient!(findquartetequations(net)[1], params, grad, obsCFs, α)
     return grad
 end
 
@@ -98,7 +109,7 @@ const THREAD_BV_BUFFER::Dict{Int, BitMatrix} = Dict{Int, BitMatrix}()
 const THREAD_RUNNING_GRAD_BUFFER::Dict{Int, Array{Float64, 3}} = Dict{Int, Array{Float64, 3}}()
 const THREAD_LOCAL_GRAD_BUFFER::Dict{Int, Array{Float64}} = Dict{Int, Array{Float64}}()
 
-function get_or_create_buffers(params_len::Int)
+function getorcreatebuffers(params_len::Int)
     if !haskey(THREAD_LOCAL_GRAD_BUFFER, params_len)
         THREAD_ITER_GRAD_BUFFER[params_len] = zeros(params_len, 3, Threads.maxthreadid())
         THREAD_BV_BUFFER[params_len] = falses(params_len, Threads.maxthreadid())
@@ -112,7 +123,7 @@ end
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-@fastmath function compute_loss_and_gradient!(qdata::Vector{QuartetData}, params::Vector{T}, gradient_storage::Vector{T}, q::Matrix{T}, α::T=Inf)::T where T<:Float64
+@fastmath function computelossandgradient!(qdata::Vector{QuartetData}, params::Vector{T}, gradient_storage::Vector{T}, q::Matrix{T}, α::T=Inf)::T where T<:Float64
 
     thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
@@ -129,7 +140,7 @@ Computes expected concordance factors and gradients by recursively passing throu
     end
 
     iter_grad_buffer::Array{Float64}, bv_buffer::BitMatrix, running_grad_buffer::Array{Float64}, local_grad_buffer::Array{Float64} =
-        get_or_create_buffers(np)
+        getorcreatebuffers(np)
     fill!(local_grad_buffer, 0.0)
 
     Threads.@threads for j = 1:length(qdata)
@@ -142,7 +153,7 @@ Computes expected concordance factors and gradients by recursively passing throu
         fill!(bv, false)
         fill!(running_grad, 1.0)
 
-        eCF1::Float64, eCF2::Float64 = compute_expectedCF_and_gradient_recur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
+        eCF1::Float64, eCF2::Float64 = computeexpectedCFandgradientrecur!(qdata[j].eqn, params, iter_grad, bv, α, running_grad)
         eCF3::Float64 = 1.0 - eCF1 - eCF2
 
         eCF1 = max(eCF1, 1e-9)
@@ -171,10 +182,10 @@ end
 
 
 """
-Recursive helper function that does the actual computations for [`compute_loss_and_gradient!`](@ref).
+Recursive helper function that does the actual computations for [`computelossandgradient!`](@ref).
 Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 """
-@fastmath function compute_expectedCF_and_gradient_recur!(
+@fastmath function computeexpectedCFandgradientrecur!(
     eqn::RecursiveCFEquation, params::Vector{Float64},
     gradient_storage::Matrix{Float64},
     params_seen::BitVector,
@@ -243,8 +254,8 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
         params_seen[eqn.division_H] = true
         γ::Float64 = params[eqn.division_H]
         @inbounds @simd for division_idx = 1:4
-            split_grad::Float64 = quad_split_probability_gradient(division_idx, γ, α)
-            split_prob::Float64 = quad_split_probability(division_idx, γ, α)
+            split_grad::Float64 = quadsplitprobabilitygradient(division_idx, γ, α)
+            split_prob::Float64 = quadsplitprobability(division_idx, γ, α)
             prev_running_grad::Array{Float64} = running_gradient[:, :]
 
             # apply running gradient changes
@@ -259,7 +270,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
                 running_gradient[e, :] .*= -1.
             end
 
-            recur_probs::Tuple{Float64, Float64} = compute_expectedCF_and_gradient_recur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
+            recur_probs::Tuple{Float64, Float64} = computeexpectedCFandgradientrecur!(eqn.divisions[division_idx], params, gradient_storage, params_seen, α, running_gradient)
 
             # revert running gradient changes so that the next iteration is unbothered by them
             # previously here we just did ./= split_grad and ./= split_prob, but BOTH of those
@@ -297,7 +308,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             end
         end
 
-        eqn_eCF1, eqn_eCF2 = γ .* compute_expectedCF_and_gradient_recur!(eqn.divisions[1], params, gradient_storage, params_seen, α, running_gradient)
+        eqn_eCF1, eqn_eCF2 = γ .* computeexpectedCFandgradientrecur!(eqn.divisions[1], params, gradient_storage, params_seen, α, running_gradient)
 
         # revert running gradient changes
         @inbounds @simd for param_idx = 1:length(params)
@@ -316,7 +327,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
             end
         end
 
-        secondary_probs = (1 - γ) .* compute_expectedCF_and_gradient_recur!(eqn.divisions[2], params, gradient_storage, params_seen, α, running_gradient)
+        secondary_probs = (1 - γ) .* computeexpectedCFandgradientrecur!(eqn.divisions[2], params, gradient_storage, params_seen, α, running_gradient)
 
         # revert running gradient changes
         @inbounds @simd for param_idx = 1:length(params)
@@ -338,7 +349,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 end
 
 
-function quad_split_probability(type::Int, γ::Real, α::Real)::Float64
+function quadsplitprobability(type::Int, γ::Real, α::Real)::Float64
     if α == Inf
         # Strictly independent
         if type == 1
@@ -374,7 +385,7 @@ function quad_split_probability(type::Int, γ::Real, α::Real)::Float64
 end
 
 
-function quad_split_probability_gradient(type::Int, γ::Real, α::Real)::Float64
+function quadsplitprobabilitygradient(type::Int, γ::Real, α::Real)::Float64
     if α == Inf
         # Strictly independent
         if type == 1

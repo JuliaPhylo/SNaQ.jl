@@ -1,8 +1,8 @@
 using PhyloNetworks, SNaQ, PhyloCoalSimulations, Test, Random
 import SNaQ: 
     RecursiveCFEquation, QuartetData, contains_parameter,
-    compute_eCF, compute_eCFs, semidirect_network!,
-    find_quartet_equations, compute_loss_and_gradient!, compute_loss,
+    compute_eCF, compute_eCFs, semidirectnetwork!,
+    findquartetequations, computelossandgradient!, computeloss,
     compute_eCF_and_gradient_recur!
 
 @testset "RecursiveCFEquation construction" begin
@@ -56,7 +56,7 @@ end
     # For a tree with topology ((A,B),(C,D)) with one internal edge,
     # we expect eCF1 (AB|CD) to be dominant
     params = [0.5]  # Branch length of 0.5
-    ecfs = SNaQ.compute_expectedCF(qdata, params, Inf)
+    ecfs = SNaQ.computeexpectedCF(qdata, params, Inf)
     
     # Check that eCF1 (AB|CD) > eCF2 (AC|BD) = eCF3 (AD|BC)
     @test ecfs[1] > ecfs[2]
@@ -64,25 +64,25 @@ end
     @test ecfs[1] ≈ 1 - 2/3 * exp(-0.5)
 end
 
-@testset "compute_loss_and_gradient! calculation" begin
+@testset "computelossandgradient! calculation" begin
     # Set up a simple network and compute its gradient
     Random.seed!(42)
     net = readnewick("((A,(B)#H1),((C,D), #H1));"); # Simple network with one hybrid node
     for E in net.edge E.length = 1.0; E.gamma = !E.hybrid ? -1 : 0.5 end
-    semidirect_network!(net)
+    semidirectnetwork!(net)
     
     # Simulate quartet frequencies
     true_q = [0.6, 0.2, 0.2]  # Some arbitrary frequencies
     q = reshape(true_q, 1, 3)
     
     # Get QuartetData and parameters
-    qdata, _, params, _, _ = find_quartet_equations(net)
+    qdata, _, params, _, _ = findquartetequations(net)
     
     # Create gradient storage
     gradient = zeros(length(params))
     
     # Compute loss and gradient
-    loss = compute_loss_and_gradient!(qdata, params, gradient, q)
+    loss = computelossandgradient!(qdata, params, gradient, q)
     
     # The loss should be non-negative
     @test loss ≈ -0.20561335094444322
@@ -96,8 +96,8 @@ end
         params_minus = copy(params)
         params_minus[i] -= epsilon
         
-        loss_plus = compute_loss(qdata, params_plus, q)
-        loss_minus = compute_loss(qdata, params_minus, q)
+        loss_plus = computeloss(qdata, params_plus, q)
+        loss_minus = computeloss(qdata, params_minus, q)
         
         numerical_grad = (loss_plus - loss_minus) / (2 * epsilon)
         
@@ -119,7 +119,7 @@ end
     running_gradient = ones(1, 3)
     
     # Compute eCFs and gradient
-    ecf1, ecf2 = SNaQ.compute_expectedCF_and_gradient_recur!(eqn_treelike, params, gradient, params_seen, Inf, running_gradient)
+    ecf1, ecf2 = SNaQ.computeexpectedCFandgradientrecur!(eqn_treelike, params, gradient, params_seen, Inf, running_gradient)
     
     # Check eCFs
     @test ecf1 ≈ 1 - 2/3 * exp(-0.5)

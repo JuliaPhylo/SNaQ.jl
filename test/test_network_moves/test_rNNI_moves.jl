@@ -1,14 +1,14 @@
 using PhyloNetworks, Test, StatsBase, Random
 import SNaQ:
-    perform_rNNI!, perform_rNNI1!, perform_rNNI2!, perform_rNNI3!, perform_rNNI4!,
-    is_valid_rNNI1, is_valid_rNNI2, is_valid_rNNI3, is_valid_rNNI4,
-    all_valid_rNNI_nodes, perform_random_rNNI!, semidirect_network!,
-    all_valid_rNNI1_nodes, all_valid_rNNI2_nodes
+    performrNNI!, performrNNI1!, performrNNI2!, performrNNI3!, performrNNI4!,
+    isvalidrNNI1, isvalidrNNI2, isvalidrNNI3, isvalidrNNI4,
+    allvalidrNNInodes, performrandomrNNI!, semidirectnetwork!,
+    allvalidrNNI1nodes, allvalidrNNI2nodes
 
 #### Helper functions ####
 function reload_labelled_net()
     net = readnewick("((a,b)i1,((c,#H1)i6,(d,((e,f)i5)#H1)i3)i2);")
-    semidirect_network!(net)
+    semidirectnetwork!(net)
     net.hybrid[1].name = "i4"   # do it here so that PhyloNetworks doesn't through a warning
     return net
 end
@@ -21,24 +21,24 @@ get_nodes(net::HybridNetwork, names::String...) = [
 ###############################################################
 
 net = reload_labelled_net();
-perform_rNNI1!(net, get_nodes(net, "i6", "i4", "i2", "i3")...);
+performrNNI1!(net, get_nodes(net, "i6", "i4", "i2", "i3")...);
 @test writenewick(net) == "(((e,f)i5)#i4,(d,(c,#i4)i6)i3,(a,b)i1)i2;"
 
 net = reload_labelled_net();
-perform_rNNI2!(net, get_nodes(net, "i2", "i3", "i6", "i4")...);
+performrNNI2!(net, get_nodes(net, "i2", "i3", "i6", "i4")...);
 @test writenewick(net) == "(((e,f)i5)#i4,(d,(c,#i4)i6)i3,(a,b)i1)i2;"
 
 net = reload_labelled_net();
-perform_rNNI3!(net, get_nodes(net, "i6", "f", "i4", "i5")...)
+performrNNI3!(net, get_nodes(net, "i6", "f", "i4", "i5")...)
 @test writenewick(net) == "((c,#H5)i6,(d,((e)#H5,f)i4)i3,(a,b)i1)i2;"
 
 net = reload_labelled_net();
-perform_rNNI4!(net, get_nodes(net, "d", "i6", "i3", "i4")...)
+performrNNI4!(net, get_nodes(net, "d", "i6", "i3", "i4")...)
 @test writenewick(net) == "((c,#H3)i6,(((e,f)i5,d)i4)#H3,(a,b)i1)i2;"
 
 net = reload_labelled_net();
-perform_rNNI4!(net, get_nodes(net, "c", "i3", "i6", "i4")...)
-@test is_valid_rNNI4(get_nodes(net, "i1", "i3", "i2", "H6")...)
+performrNNI4!(net, get_nodes(net, "c", "i3", "i6", "i4")...)
+@test isvalidrNNI4(get_nodes(net, "i1", "i3", "i2", "H6")...)
 
 
 ##########################################################
@@ -56,15 +56,15 @@ net2 = reload_labelled_net();
 ##### rNNI (1) #####
 for j = 1:100
     # Perform the move
-    perform_rNNI1!(net1, get_nodes(net1, "d", "i5", "i3", "i4")...)
+    performrNNI1!(net1, get_nodes(net1, "d", "i5", "i3", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI1!(net2, get_nodes(net2, "d", "i5", "i3", "i4")...)
+    performrNNI1!(net2, get_nodes(net2, "d", "i5", "i3", "i4")...)
     @test writenewick(net1) == writenewick(net2)
 
     # Reverse the move
-    perform_rNNI1!(net1, get_nodes(net1, "i5", "d", "i3", "i4")...)
+    performrNNI1!(net1, get_nodes(net1, "i5", "d", "i3", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI1!(net2, get_nodes(net2, "i5", "d", "i3", "i4")...)
+    performrNNI1!(net2, get_nodes(net2, "i5", "d", "i3", "i4")...)
     @test writenewick(net1) == writenewick(net2)
     @test writenewick(net1) == writenewick(net0)
 end
@@ -79,15 +79,15 @@ net2 = reload_labelled_net()
 
 for j = 1:100
     # Perform the move
-    perform_rNNI2!(net1, get_nodes(net1, "i2", "i3", "i6", "i4")...)
+    performrNNI2!(net1, get_nodes(net1, "i2", "i3", "i6", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI2!(net2, get_nodes(net2, "i2", "i3", "i6", "i4")...)
+    performrNNI2!(net2, get_nodes(net2, "i2", "i3", "i6", "i4")...)
     @test writenewick(net1) == writenewick(net2)
 
     # Reverse the move
-    perform_rNNI2!(net1, get_nodes(net1, "i3", "i2", "i6", "i4")...)
+    performrNNI2!(net1, get_nodes(net1, "i3", "i2", "i6", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI2!(net2, get_nodes(net2, "i3", "i2", "i6", "i4")...)
+    performrNNI2!(net2, get_nodes(net2, "i3", "i2", "i6", "i4")...)
     @test writenewick(net1) == writenewick(net2)
     @test writenewick(net1) == writenewick(net0)
 end
@@ -103,10 +103,10 @@ net2 = reload_labelled_net()
 for j = 1:100
     # Perform the move
     s1, t1, u1, v1 = get_nodes(net1, "i6", "f", "i4", "i5")
-    perform_rNNI3!(net1, s1, t1, u1, v1)
+    performrNNI3!(net1, s1, t1, u1, v1)
     @test writenewick(net1) != writenewick(net2)
     s2, t2, u2, v2 = get_nodes(net2, "i6", "f", "i4", "i5")
-    perform_rNNI3!(net2, s2, t2, u2, v2)
+    performrNNI3!(net2, s2, t2, u2, v2)
     @test writenewick(net1) == writenewick(net2)
 
     s1.name = "i6"
@@ -115,9 +115,9 @@ for j = 1:100
     v2.name = "i5"
 
     # Reverse the move
-    perform_rNNI4!(net1, t1, s1, u1, v1)
+    performrNNI4!(net1, t1, s1, u1, v1)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI4!(net2, t2, s2, u2, v2)
+    performrNNI4!(net2, t2, s2, u2, v2)
 
     u1.name = "i4"
     u2.name = "i4"
@@ -137,19 +137,19 @@ net2 = reload_labelled_net()
 for j = 1:100
     # Perform the move
     s1, t1, u1, v1 = get_nodes(net1, "d", "i6", "i3", "i4")
-    perform_rNNI4!(net1, s1, t1, u1, v1)
+    performrNNI4!(net1, s1, t1, u1, v1)
     @test writenewick(net1) != writenewick(net2)
     s2, t2, u2, v2 = get_nodes(net2, "d", "i6", "i3", "i4")
-    perform_rNNI4!(net2, s2, t2, u2, v2)
+    performrNNI4!(net2, s2, t2, u2, v2)
     @test writenewick(net1) == writenewick(net2)
 
     u1.name = "i3"
     u2.name = "i3"
 
     # Reverse the move
-    perform_rNNI3!(net1, get_nodes(net1, "i6", "d", "i3", "i4")...)
+    performrNNI3!(net1, get_nodes(net1, "i6", "d", "i3", "i4")...)
     @test writenewick(net1) != writenewick(net2)
-    perform_rNNI3!(net2, get_nodes(net2, "i6", "d", "i3", "i4")...)
+    performrNNI3!(net2, get_nodes(net2, "i6", "d", "i3", "i4")...)
 
     v1.name = "i4"
     v2.name = "i4"
@@ -171,15 +171,15 @@ for rNNI_type = 1:4
     for j = 1:100
         global net
         prev_newick = writenewick(net)
-        valid_stuvs = all_valid_rNNI_nodes(net, rNNI_type)
+        valid_stuvs = allvalidrNNInodes(net, rNNI_type)
         if length(valid_stuvs) == 0
             net = reload_labelled_net()
-            valid_stuvs = all_valid_rNNI_nodes(net, rNNI_type)
+            valid_stuvs = allvalidrNNInodes(net, rNNI_type)
             prev_newick = ""
         end
         s, t, u, v = sample(valid_stuvs)
 
-        @test_nowarn perform_rNNI!(net, s, t, u, v, rNNI_type)
+        @test_nowarn performrNNI!(net, s, t, u, v, rNNI_type)
         @test_nowarn writenewick(net)
         @test prev_newick != writenewick(net)
 
@@ -204,7 +204,7 @@ for j = 1:10000
         prev_newick = ""
     end
     prev_newick = writenewick(net)
-    perform_random_rNNI!(net, rng)
+    performrandomrNNI!(net, rng)
     @test_nowarn writenewick(net)
     @test prev_newick != writenewick(net)
 end
@@ -216,50 +216,50 @@ end
 ##############################################################################
 
 net = readnewick("(b:1.098,((((f:0.551,(e:0.276)#H1:0.276::0.75)i5:1.146,(c1:2.109,c2:1.557)i6:0.037)i7:0.926,((d1:1.602,d2:1.602)i10:0.086,a:1.687)i12:1.385)i13:1.585,#H1:0.0::0.25)i5554:1.585)i15;")
-semidirect_network!(net)
-@test !is_valid_rNNI4(get_nodes(net, "i13", "i5", "i5554", "H1")...)
+semidirectnetwork!(net)
+@test !isvalidrNNI4(get_nodes(net, "i13", "i5", "i5554", "H1")...)
 
 
 net = readnewick("(((d1:1.602,d2:1.602)i10:0.086,c2:1.687)i12:1.385,b:4.267,(((c1:2.109,a:1.557)i6:0.037,((e:0.551,f:0.551)i5:0.573)#H1:0.573::0.75)i7:0.463,#H1:0.0::0.25)i-6079:0.463)i13;");
 net.isrooted = false;
-@test_nowarn all_valid_rNNI1_nodes(net)
+@test_nowarn allvalidrNNI1nodes(net)
 
 
 net = readnewick("((a:1.146,((c1:2.109,(e:0.551,(f:0.276)#H1:0.5::0.765)i5:0.924)i6:0.005,#H1:0.5::0.235)i8004:0.002)i7:0.0,((d1:1.602,c2:1.602)i10:0.947,d2:1.687)i12:0.0,b:4.267)i13;");
 net.isrooted = false;
-@test is_valid_rNNI1(get_nodes(net, "i6", "f", "i8004", "H1")...)
+@test isvalidrNNI1(get_nodes(net, "i6", "f", "i8004", "H1")...)
 
 
 net = readnewick("(a:1.146,(c1:2.109,((e:0.551,(f:0.276)#H1:0.5::0.501)i5:0.425,#H1:0.5::0.499)i3841:0.425)i6:0.007,(c2:0.947,(b:0.947,(d1:1.602,d2:1.602)i10:0.947)i12:0.0)i13:0.0)i7;");
 net.isrooted = false;
-@test !is_valid_rNNI2(get_nodes(net, "i6", "i5", "i3841", "H1")...)
+@test !isvalidrNNI2(get_nodes(net, "i6", "i5", "i3841", "H1")...)
 
 
 net = readnewick("((d1:1.602,d2:1.602)i10:0.947,((a:1.146,((c1:2.109,(f:0.551,(e:0.276)#H1:0.5::0.682)i5:1.12)i6:0.0,#H1:0.5::0.318)i-8938:0.007)i7:0.0,c2:1.687)i12:0.0,b:4.267)i13;");
 net.isrooted = false;
-@test !is_valid_rNNI4(get_nodes(net, "i6", "i5", "i-8938", "H1")...)
+@test !isvalidrNNI4(get_nodes(net, "i6", "i5", "i-8938", "H1")...)
 
 
 net = readnewick("(((b:0.5,(((#H1:0.227::0.491,(c2:0.5,c1:0.875)i3:0.47)i12:0.396,(((d2:0.5,d1:0.75)i7:0.471,((e:0.5,f:1.0)Hi4:0.227)#H1:0.227::0.509)i6216:0.239)#H3:0.239::0.681)i4:0.521,#H3:0.239::0.319)i10076:0.615)i15:0.5,#H2:0.5::0.5)i7554:0.5,(a:0.261)#H2:0.5::0.5)i16;");
 net.isrooted = false;
-@test_nowarn all_valid_rNNI2_nodes(net)
+@test_nowarn allvalidrNNI2nodes(net)
 
 
 net = readnewick("((((c1:0.219,c2:1.277)i5355:0.773,((e:0.551,f:0.551)i5:0.48,(#H1:0.5::0.091,(d1:0.65,d2:0.5)i10443:0.052)i8641:0.846)i6:0.126)i7793:1.435,(b:0.441)#H1:0.5::0.909)i7:0.5,a:2.634)i13;");
 net.isrooted = false;
 s, t, u, v = get_nodes(net, "i13", "i8641", "i7", "H1");
-@test !is_valid_rNNI2(s, t, u, v)
+@test !isvalidrNNI2(s, t, u, v)
 
 net = readnewick("(((b:0.5,(((#H1:0.227::0.491,(c2:0.5,c1:0.875)i3:0.47)i12:0.396,(((d2:0.5,d1:0.75)i7:0.471,((e:0.5,f:1.0)Hi4:0.227)#H1:0.227::0.509)i6216:0.239)#H3:0.239::0.681)i4:0.521,#H3:0.239::0.319)i10076:0.615)i15:0.5,#H2:0.5::0.5)i7554:0.5,(a:0.261)#H2:0.5::0.5)i16;");
 net.isrooted = false;
-@test_nowarn all_valid_rNNI2_nodes(net)
+@test_nowarn allvalidrNNI2nodes(net)
 
 
 net = readnewick("((((c1:0.219,c2:1.277)i5355:0.773,((e:0.551,f:0.551)i5:0.48,(#H1:0.5::0.091,(d1:0.65,d2:0.5)i10443:0.052)i8641:0.846)i6:0.126)i7793:1.435,(b:0.441)#H1:0.5::0.909)i7:0.5,a:2.634)i13;");
 net.isrooted = false;
 s, t, u, v = get_nodes(net, "i13", "i8641", "i7", "H1");
-@test !is_valid_rNNI2(s, t, u, v)
+@test !isvalidrNNI2(s, t, u, v)
 
 net = readnewick("(a:1.146,(b:1.687,((((e:0.776,f:0.855)i5:0.49,(c1:0.289,(c2:0.482)#H1:0.5::0.905)i13:0.978)i6:0.125,(d1:1.602,d2:1.301)i10:0.818)i1346:0.789,#H1:0.5::0.095)i10616:0.417)i12:0.5)i7;");
 net.isrooted = false;
-@test !is_valid_rNNI2(get_nodes(net, "i12", "i13", "i10616", "H1")...)
+@test !isvalidrNNI2(get_nodes(net, "i12", "i13", "i10616", "H1")...)

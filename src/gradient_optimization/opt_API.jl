@@ -16,7 +16,7 @@ Optimizes the branch lengths and γ parameters of the network `Nprime`.
 - `q::Matrix{Float64}`: the set of quartet concordance factors used to optimize the network's parameters.
     Should be a matrix with the same number of rows as the length of `old_eqns` and 3 columns.
 - `q_idxs::Vector{Int}`: indices corresponding to the set of quartets that are being used for optimization.
-    I.e., when `propQuartets` in [`search`](@ref) is 1.0, this contains all integers from 1 to [`nchoose4taxa_length`](@ref).
+    I.e., when `propQuartets` in [`search`](@ref) is 1.0, this contains all integers from 1 to [`nchoose4taxalength`](@ref).
     When `propQuartets` is 0.1, it contains 10% as many integers, randomly selected in this range.
 - `opt_maxeval::Int`: maximum number of evaluations when optimizing parameters.
 - `force_resample_all::Bool`: if `true`, ignore `move` and `params` and re-calculate *every* quartet CF
@@ -40,8 +40,8 @@ function optimizetopology!(
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
-        _, param_map, idxobjmap, _ = gather_optimization_info(Nprime, true)
-        update_quartet_equations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, α)
+        _, param_map, idxobjmap, _ = gatheroptimizationinfo(Nprime, true)
+        updatequartetequations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, α)
     else
         @debug "\tGathering quartet equations."
         findquartetequations!(Nprime, q_idxs, Nprime_eqns);
@@ -160,10 +160,10 @@ function optimize!(
         γ = min(γ, 1.0 - 1e-5)
     end
 
-    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
+    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gatheroptimizationinfo(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
     opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
-    OGNET = SNaQ.deepcopy_network(net);
+    OGNET = SNaQ.deepcopynetwork(net);
 
     opt.maxeval = maxeval
     opt.ftol_rel = ftolRel
@@ -207,6 +207,29 @@ optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findqua
 
 
 """
+    optimize!(net::HybridNetwork, dcf::DataCF)
+
+Optimizes the parameters of `net` with the quartet concordance factor data
+in `dcf`. Returns the estimates likelihood of the network, which can also
+be accessed later with `loglik(net)`.
+
+### Parameters
+- `ρ` is the inheritance correlation parameter which can range from 0 to 1 (default 0).
+  A value of 0 corresponds to independent inheritance, whereas a value of 1 corresponds
+  to completely dependent inheritance.
+- `maxeval` specifies the maximum number of optimization evaluations that the `NLopt`
+  optimizer will perform under the hood (default 100).
+"""
+function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100)::Float64
+    0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
+    eqns = findquartetequations(net)[1];
+    obsCFs = gatherexpectedCFmatrix(dcf)
+    α = ρ == 0.0 ? Inf : 1.0 / ρ
+    optimize!(net, eqns, obsCFs, α)
+end
+
+
+"""
 WARNING: COMPLETELY EXPERIMENTAL AND UNSUPPORTED.
 """
 function optimize_bls_staticγ!(
@@ -221,11 +244,11 @@ function optimize_bls_staticγ!(
     xtolAbs::Float64=1e-8
 )::Float64
 
-    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gather_optimization_info(net, false)
+    narg, param_map, idx_obj_map, params, LB, UB, init_steps = gatheroptimizationinfo(net, false)
 
     # Figure out static parameters
     static_map::Dict{Int, Float64} = Dict(findfirst(idx -> idx_obj_map[idx] == hyb, 1:length(keys(idx_obj_map))) => getparentedgeminor(hyb).gamma for hyb in net.hybrid)
-    @inline function parameters_with_statics(x::Vector{Float64})
+    @inline function parameterswithstatics(x::Vector{Float64})
         xout::Vector{Float64} = zeros(length(x) + length(static_map)) .- 1.0
         for idx in keys(static_map)
             xout[idx] = static_map[idx]
@@ -260,13 +283,13 @@ function optimize_bls_staticγ!(
 
     # Establish a map for fixing some static parameters
 
-    NLopt.max_objective!(opt, (x, grad) -> objective_staticγ(parameters_with_statics(x), grad, net, eqns, observed_CFs, idx_obj_map, incl_idxs, α))
+    NLopt.max_objective!(opt, (x, grad) -> objective_staticγ(parameterswithstatics(x), grad, net, eqns, observed_CFs, idx_obj_map, incl_idxs, α))
 
     (minf, minx, ret) = NLopt.optimize(opt, x0)
     if ret == :FAILURE
         @warn "ERROR: optimization returned :FAILURE"
     end
-    setX!(net, parameters_with_statics(minx), idx_obj_map)
+    setX!(net, parameterswithstatics(minx), idx_obj_map)
 
     return minf
 end
@@ -278,7 +301,7 @@ The objective function that is maximized during network optimization.
 function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::T where T<:Float64
     setX!(net, X, idx_obj_map)
     fill!(grad, 0.0)
-    loss = compute_loss_and_gradient!(eqns, X, grad, obsCFs, α)
+    loss = computelossandgradient!(eqns, X, grad, obsCFs, α)
     return loss
 end
 
@@ -292,7 +315,7 @@ Provided γ value indices are static and therefore their gradients are not retur
 function objective_staticγ(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, include_idxs::Vector{Int}, α::Float64)::T where T<:Float64
     setX!(net, X, idx_obj_map)
     temp_grad = zeros(length(X))
-    loss = compute_loss_and_gradient!(eqns, X, temp_grad, obsCFs, α)
+    loss = computelossandgradient!(eqns, X, temp_grad, obsCFs, α)
     grad .= temp_grad[include_idxs]
     return loss
 end
@@ -323,7 +346,7 @@ end
 Helper function to gather necessary information about `net` to
 perform optimization.
 """
-function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
+function gatheroptimizationinfo(net::HybridNetwork, change_numbers::Bool=true)
     param_map = Dict{Int, Int}()
     idx_obj_map::IdxObjMap = IdxObjMap();
     uq_ID = net.numedges
@@ -349,7 +372,7 @@ function gather_optimization_info(net::HybridNetwork, change_numbers::Bool=true)
         param_idx += 1
     end
 
-    params = gather_params(net, param_map)
+    params = gatherparams(net, param_map)
     narg = length(param_map)
     LB = Array{Float64}(undef, narg)
     UB = Array{Float64}(undef, narg)
@@ -376,10 +399,10 @@ end
 
 """
 Helper function that takes a network `net` and its `param_map` (provided
-by [`gather_optimization_info`](@ref)) and gathers each of the associated
+by [`gatheroptimizationinfo`](@ref)) and gathers each of the associated
 parameters.
 """
-function gather_params(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Float64}
+function gatherparams(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Float64}
     params = zeros(length(param_map))
     for obj in vcat(net.hybrid, net.edge)
         if haskey(param_map, obj.number)
@@ -392,12 +415,12 @@ end
 
 """
 Helper function that takes a network `net` and its `param_map` (provided
-by [`gather_optimization_info`](@ref)) and gathers each of the associated
+by [`gatheroptimizationinfo`](@ref)) and gathers each of the associated
 parameters.
 """
-function gather_params(net::HybridNetwork)::Array{Float64}
-    param_map = gather_optimization_info(net, true)[2]
-    return gather_params(net, param_map)
+function gatherparams(net::HybridNetwork)::Array{Float64}
+    param_map = gatheroptimizationinfo(net, true)[2]
+    return gatherparams(net, param_map)
 end
 
 
@@ -407,27 +430,27 @@ correlation parameter `α` (default=`Inf`). The returned `Matrix{Float64}`
 object is unlabelled. See also [`ExpectedDataCF`](@ref) for a `DataCF` object
 with corresponding taxa information.
 """
-function compute_expectedCF_matrix(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
+function computeexpectedCFmatrix(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
     eqns, _, params, _ = findquartetequations(net)
     eCFs = zeros(length(eqns), 3)
     for j = 1:size(eCFs)[1]
-        eCFs[j, 1], eCFs[j, 2] = compute_expectedCF(eqns[j], params, α)
+        eCFs[j, 1], eCFs[j, 2] = computeexpectedCF(eqns[j], params, α)
         eCFs[j, 3] = 1 - eCFs[j, 1] - eCFs[j, 2]
     end
     return eCFs
 end
 
 """
-Deprecated. Internal use only - used for backward compatibility.
+Deprecated - included for backwards compatibility in niche cases.
 """
 compute_eCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
-    compute_expectedCF_matrix(net, α)
+    computeexpectedCFmatrix(net, α)
 
 """
 Deprecated. Internal use only - used for backward compatibility.
 """
 compute_expectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
-    compute_expectedCF_matrix(net, α)
+    computeexpectedCFmatrix(net, α)
 
 
 """
@@ -437,7 +460,7 @@ function ExpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
     eqns, _, params, _ = findquartetequations(net);
     d = DataCF()
     for j in eachindex(eqns)
-        eCF1, eCF2 = compute_expectedCF(eqns[j], params, α)
+        eCF1, eCF2 = computeexpectedCF(eqns[j], params, α)
         push!(d.quartet, Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2])))
     end
     d.numQuartets = length(eqns)

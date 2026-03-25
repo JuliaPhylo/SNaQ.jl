@@ -22,7 +22,7 @@ function knownidentifiable(N::HybridNetwork)::Bool
     !N.isrooted || return false
     N.numhybrids == 0 && return true
 
-    N = deepcopy_network(N)
+    N = deepcopynetwork(N)
     (shrink2cycles!(N) || shrink3cycles!(N)) && return false
 
     if getlevel(N) == 1
@@ -106,7 +106,7 @@ Returns `(false, 0)` if network `N` is not of any class Ck and
     returns `(true, k)` otherwise.
 """
 function isCk(N::HybridNetwork)::Tuple{Bool, Int}
-    N = deepcopy_network(N)
+    N = deepcopynetwork(N)
     isgallednetwork(N) || return (false, 0)
     istreechild(N)[3] || return (false, 0)
     if shrink2cycles!(N) return (false, 0) end
@@ -120,7 +120,7 @@ function isCk(N::HybridNetwork)::Tuple{Bool, Int}
         lnodes = unique([getchild(e) for e in blob if getchild(e).hybrid])
         Y_l = getleavesbelow(lnodes)
         for l in eachindex(Y_l)
-            bloblet = deepcopy_network(N)
+            bloblet = deepcopynetwork(N)
             for i in eachindex(Y_l)
                 if i == l continue end
                 deleteleaf!(bloblet, Y_l[i].name; simplify=true, nofuse=false, multgammas=false)
@@ -177,20 +177,20 @@ end
 
 # # c3 is NOT identifiable
 # c3 = readnewick("((c,#H1),((((g)#H1,(d,#H4)),#H3),(#H2,((b2)#H4,((f)#H2,((b1)#H3,a))))));")
-# SNaQ.semidirect_network!(c3)
+# SNaQ.semidirectnetwork!(c3)
 # @test !SNaQ.knownidentifiable(c3)
 
 # # c4 is NOT identifiable
 # c4 = deepcopy(not_c4); deleteleaf!(c4, "f")
-# SNaQ.semidirect_network!(c4)
+# SNaQ.semidirectnetwork!(c4)
 # @test !SNaQ.knownidentifiable(c4)
 
 # # c6 is identifiable
 # c6 = readnewick("(((((((a1,a2))#H1,g),f),#H2),e),(((((b1,b2))#H2,c),#H1),d));")
-# SNaQ.semidirect_network!(c6)
+# SNaQ.semidirectnetwork!(c6)
 # @test SNaQ.knownidentifiable(c6)
 
 # # dianet is identifiable
 # dianet = readnewick("((a,(b,#H1)),(((c,d))#H1,(e,f)));");
-# SNaQ.semidirect_network!(dianet);
+# SNaQ.semidirectnetwork!(dianet);
 # @test SNaQ.knownidentifiable(dianet)

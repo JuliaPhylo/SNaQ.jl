@@ -1,5 +1,5 @@
 """
-    multi_search(
+    multisearch(
         N::HybridNetwork,
         q::Union{DataCF, AbstractArray{Float64}},
         hmax::Int;
@@ -31,7 +31,7 @@ that fit the observed quartet concordance factors.
 - This function uses distributed computing to perform searches in parallel.
 - It returns the best network found across all runs.
 """
-function multi_search(
+function multisearch(
     N::Union{HybridNetwork, AbstractVector{HybridNetwork}},
     q::Union{DataCF, AbstractMatrix{Float64}},
     hmax::Int;
@@ -192,10 +192,10 @@ Modifies the network(s) `N` in-place.
 """
 function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String, restrictions::Function)::Vector{HybridNetwork}
     # Copy the input networks
-    Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopy_network(N)] : [deepcopy_network(n) for n in N]
+    Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopynetwork(N)] : [deepcopynetwork(n) for n in N]
     for (j, n) in enumerate(Ns)
         # Prep data
-        semidirect_network!(Ns[j]);
+        semidirectnetwork!(Ns[j]);
 
         # Make sure all leaf edges have some length so that code later doesn't error
         for E in Ns[j].edge
@@ -238,7 +238,7 @@ end
 """
 Helper function to log the message `msg` to file `logfile`.
 """
-function log_text(logfile::String, msg::String)
+function logtext(logfile::String, msg::String)
     logfile == "" && return
     # get the current time and format it
     timestamp = Dates.format(now(), "yyyy-mm-dd HH:MM:SS")
@@ -252,7 +252,7 @@ end
 """
 Helper function to log proposed and accepted moves to `logfile`.
 """
-function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL::Dict)
+function logmoves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL::Dict)
     all_keys = sort(collect(keys(moves_prop)))
     min_width::Int = maximum([max(length(string(k)), length(string(moves_prop[k])), length(string(moves_acc[k]))) for k in all_keys])+2
     function expand(str::String)::String
@@ -301,7 +301,7 @@ function log_moves(logfile::String, moves_prop::Dict, moves_acc::Dict, moves_PL:
     end
     msg *= " |\n\n"
 
-    log_text(logfile, msg)
+    logtext(logfile, msg)
 end
 
 logmessage(filename::String, msg::String) = remotecall_fetch(writelogmessage, 1, filename, msg)
@@ -428,14 +428,14 @@ function search(
             node.name = ""
         end
     end
-    semidirect_network!(N)
+    semidirectnetwork!(N)
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
     if rand(rng) < probST
         found_different_net::Bool = false
         for j = 1:10
             try
-                perform_rNNI1!(N, sample_rNNI_parameters(N, 1, rng)...);
+                performrNNI1!(N, samplerNNIparameters(N, 1, rng)...);
                 if restrictions(N)
                     found_different_net = true
                     break
@@ -444,7 +444,7 @@ function search(
             finally
                 if !found_different_net
                     N = readnewick(writenewick(N));
-                    semidirect_network!(N)
+                    semidirectnetwork!(N)
                 end
             end
         end
@@ -468,7 +468,7 @@ function search(
     end
 
     # Data used throughout the optimization process
-    q_idxs = sample_qindices(N, propQuartets, rng)
+    q_idxs = sampleqindices(N, propQuartets, rng)
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
     neq = findquartetequations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
@@ -482,10 +482,10 @@ function search(
     moves_logPL = Dict{Symbol,Vector{Float64}}()
     last_move = :nothing
 
-    log_text(logfile, "Entering main loop with -logPL = $(logPLs[1])")
+    logtext(logfile, "Entering main loop with -logPL = $(logPLs[1])")
     for j = 2:maxeval
         if j % 100 == 0
-            log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
+            logmoves(logfile, moves_proposed, moves_accepted, moves_logPL)
         end
 
         verbose && print("\rIteration $(j)/$(maxeval) - in a row=$(unchanged_iters)/$(maxequivPLs)              ")
@@ -494,9 +494,9 @@ function search(
         @debug "Current: $(writenewick(N, round=true))"
         Nprime = readnewick(writenewick(N));
 
-        prop_move, prop_params = generate_move_proposal(Nprime, moves_attempted, hmax, rng)
+        prop_move, prop_params = generatemoveproposal(Nprime, moves_attempted, hmax, rng)
         last_move = prop_move
-        apply_move!(Nprime, prop_move, prop_params)
+        applymove!(Nprime, prop_move, prop_params)
         @debug "Proposed move: $(prop_move), parameters: $(prop_params)"
         push!(moves_attempted, (prop_move, prop_params))
         @debug "Proposed: $(writenewick(Nprime, round=true))"
@@ -519,7 +519,7 @@ function search(
             catch e
                 if typeof(e) <: PN.RootMismatch
                     @debug "Nprime cannot be rooted at outgroup - skipping."
-                    log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (cannot reroot at outgroup)")
+                    logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (cannot reroot at outgroup)")
                     logPLs[j] = logPLs[j-1]
                     continue
                 else
@@ -529,12 +529,12 @@ function search(
         end
 
         # 2.3 After removing some edges above, the root may have 2 edge now instead of 3 - we fix that here
-        semidirect_network!(Nprime)
+        semidirectnetwork!(Nprime)
 
         # 3. Immediately throw away networks that don't meet restrictions 
         if !restrictions(Nprime)
             @debug "Nprime does not meet restrictions - skipping."
-            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
+            logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
             logPLs[j] = logPLs[j-1]
             continue
         end
@@ -543,8 +543,8 @@ function search(
         # We CANNOT do inplace updates if:
         # 1. the number of hybrids changes, OR
         # 2. the number of optimization parameters in the network changed
-        Nprime_np::Int = gather_optimization_info(Nprime)[1]
-        N_np::Int = gather_optimization_info(N)[1]
+        Nprime_np::Int = gatheroptimizationinfo(Nprime)[1]
+        N_np::Int = gatheroptimizationinfo(N)[1]
         cannot_do_inplace::Bool = N.numhybrids != Nprime.numhybrids || N_np != Nprime_np
 
         # 4. Optimize branch lengths and compute logPL
@@ -553,7 +553,7 @@ function search(
             opt_maxeval, cannot_do_inplace, rng, α; optargs...
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
-        # compute_loss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
+        # computeloss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
         isnan(Nprime_logPL) && error("""
@@ -569,7 +569,7 @@ function search(
             push!(moves_logPL[prop_move], logPLs[j] - logPLs[j-1])
 
             # Log acceptance
-            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) ACCEPTED $(prop_move), new -logPL=$(round(logPLs[j], digits=6))")
+            logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) ACCEPTED $(prop_move), new -logPL=$(round(logPLs[j], digits=6))")
 
             # Update tracking vars
             unchanged_iters = 0
@@ -579,7 +579,7 @@ function search(
             unchanged_iters += 1
 
             # Log rejection and reason
-            log_text(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) ($(round(Nprime_logPL, digits=3)) < $(round(logPLs[j], digits=3)))")
+            logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) ($(round(Nprime_logPL, digits=3)) < $(round(logPLs[j], digits=3)))")
         end
 
         # Early stopping checks
@@ -613,8 +613,8 @@ function search(
         H.name = "H$iH"
     end
 
-    log_text(logfile, "Search complete at $(currenttime()).\n\n")
-    log_moves(logfile, moves_proposed, moves_accepted, moves_logPL)
+    logtext(logfile, "Search complete at $(currenttime()).\n\n")
+    logmoves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
     logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
     logmessage(filename, writenewick(N))
@@ -626,21 +626,21 @@ end
 """
 Applies the move `move` on parameters `params` to network `N`.
 """
-function apply_move!(N::HybridNetwork, move::Symbol, params::Tuple)
-    if move == :add_hybrid
-        return add_hybrid!(N, params...)
+function applymove!(N::HybridNetwork, move::Symbol, params::Tuple)
+    if move == :addhybrid
+        return addhybrid!(N, params...)
     elseif move == :rNNI1
-        return perform_rNNI1!(N, params...)
+        return performrNNI1!(N, params...)
     elseif move == :rNNI2
-        return perform_rNNI2!(N, params...)
+        return performrNNI2!(N, params...)
     elseif move == :rNNI3
-        return perform_rNNI3!(N, params...)
+        return performrNNI3!(N, params...)
     elseif move == :rNNI4
-        return perform_rNNI4!(N, params...)
+        return performrNNI4!(N, params...)
     elseif move == :retic_origin || move == :retic_origin_local
-        return move_reticulate_origin!(N, params...)
+        return movereticulateorigin!(N, params...)
     elseif move == :retic_target || move == :retic_target_local
-        return move_reticulate_target!(N, params...)
+        return movereticulatetarget!(N, params...)
     elseif move == :rSPR
         return performrSPR!(N, params...)
     elseif move == :flip_hybrid
@@ -652,18 +652,18 @@ end
 
 
 """
-Randomly generates a move proposal from the function `sample_move_proposal`.
-Sometimes the move sampled in `sample_move_proposal` will not have any valid
+Randomly generates a move proposal from the function `samplemoveproposal`.
+Sometimes the move sampled in `samplemoveproposal` will not have any valid
 parameters, so this function repeatedly samples until a move with valid
 parameters is selected. Also, makes sure the proposed move is not present in
 `moves_attempted`, and appends the returned move to this vector.
 """
-function generate_move_proposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
+function generatemoveproposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
     retries::Int = 0
-    move, params = sample_move_proposal(N, hmax, rng)
+    move, params = samplemoveproposal(N, hmax, rng)
 
-    while params === nothing || already_attempted(moves_attempted, move, params)
-        move, params = sample_move_proposal(N, hmax, rng)
+    while params === nothing || alreadyattempted(moves_attempted, move, params)
+        move, params = samplemoveproposal(N, hmax, rng)
         retries += 1
         if retries >= 1e6
             error("Could not find any valid move proposals after 1e6 attempts.")
@@ -678,7 +678,7 @@ end
 Helper function that determines whether the move `move` with parameters `params` has
 already been attempted (i.e. is stored in the vector `moves_attempted`).
 """
-function already_attempted(moves_attempted::Vector, move::Symbol, params::Tuple)::Bool
+function alreadyattempted(moves_attempted::Vector, move::Symbol, params::Tuple)::Bool
     for (amove, aparams) in moves_attempted
         move == amove || continue
         all_params_match::Bool = true
@@ -702,11 +702,11 @@ end
 """
 Randomly samples a move to generate a new topology from `N`.
 """
-function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
+function samplemoveproposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
 
     if N.numhybrids < hmax && rand(rng) < 0.05
         @debug "SELECTED: add_random_hybrid!"
-        return (:add_hybrid, sample_add_hybrid_parameters(N, rng))
+        return (:addhybrid, sampleaddhybridparameters(N, rng))
     end
 
     # If net has 0 hybrids, we can only do rNNI(1) or rSPR moves
@@ -717,7 +717,7 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::T
 
         r = rand(rng)
         if r < 0.7
-            return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
+            return (:rNNI1, samplerNNIparameters(N, 1, rng))
         else
             return (:rSPR, samplerSPRparameters(N, rng))
         end
@@ -739,25 +739,25 @@ function sample_move_proposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::T
 
     r = rand(rng)
     if r < sum(probs[1:1])
-        return (:rNNI1, sample_rNNI_parameters(N, 1, rng))
+        return (:rNNI1, samplerNNIparameters(N, 1, rng))
     elseif r < sum(probs[1:2])
-        return (:rNNI2, sample_rNNI_parameters(N, 2, rng))
+        return (:rNNI2, samplerNNIparameters(N, 2, rng))
     elseif r < sum(probs[1:3])
-        return (:rNNI3, sample_rNNI_parameters(N, 3, rng))
+        return (:rNNI3, samplerNNIparameters(N, 3, rng))
     elseif r < sum(probs[1:4])
-        return (:rNNI4, sample_rNNI_parameters(N, 4, rng))
+        return (:rNNI4, samplerNNIparameters(N, 4, rng))
     elseif r < sum(probs[1:5])
         return (:rSPR, samplerSPRparameters(N, rng))
     elseif r < sum(probs[1:6])
-        return (:retic_origin, sample_move_reticulate_origin_parameters(N, rng))
+        return (:retic_origin, samplemovereticulateoriginparameters(N, rng))
     elseif r < sum(probs[1:7])
-        return (:retic_target, sample_move_reticulate_target_parameters(N, rng))
+        return (:retic_target, samplemovereticulatetargetparameters(N, rng))
     elseif r < sum(probs[1:8])
-        return (:retic_origin_local, sample_move_reticulate_origin_local_parameters(N, rng))
+        return (:retic_origin_local, samplemovereticulateoriginlocalparameters(N, rng))
     elseif r < sum(probs[1:9])
-        return (:retic_target_local, sample_move_reticulate_target_local_parameters(N, rng))
+        return (:retic_target_local, samplemovereticulatetargetlocalparameters(N, rng))
     else
-        return (:flip_hybrid, sample_flip_hybrid_parameters(N, rng))
+        return (:flip_hybrid, samplefliphybridparameters(N, rng))
     end
 
 end

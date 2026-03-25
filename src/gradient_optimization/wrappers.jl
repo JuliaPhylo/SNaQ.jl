@@ -34,7 +34,7 @@ function snaq!(
     # - `qinfTest`
     # - `qtolAbs`
 
-    return multi_search(
+    return multisearch(
         currT0,
         d,
         hmax;

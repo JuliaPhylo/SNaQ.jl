@@ -2,7 +2,7 @@
 Generates a `Dict` mapping all edges and hybrid nodes w/ an associated γ parameter to their
 index in the vector that is being optimized.
 """
-function generate_optimization_map(net::HybridNetwork)::Tuple{Dict{Union{PN.Edge,PN.Node}, Int}, Dict{Int, Union{PN.Edge,PN.Node}}}
+function generateoptimizationmap(net::HybridNetwork)::Tuple{Dict{Union{PN.Edge,PN.Node}, Int}, Dict{Int, Union{PN.Edge,PN.Node}}}
     ngammas = length(net.hybrid)
     nedges = net.numedges - net.numtaxa
     map = Dict{Union{PN.Edge,PN.Node}, Int}()
@@ -19,15 +19,15 @@ function generate_optimization_map(net::HybridNetwork)::Tuple{Dict{Union{PN.Edge
     end
     return map, Dict{Int, Union{PN.Edge,PN.Node}}(map[key] => key for key in keys(map))
 end
-nopt_params(net::HybridNetwork)::Int = length(generate_optimization_map(net)[1])
+nopt_params(net::HybridNetwork)::Int = length(generateoptimizationmap(net)[1])
 
 
 """
 Function mostly used for debugging, gets the relevant parameters for network `net`.
 """
-function get_params(net::HybridNetwork)
+function getparams(net::HybridNetwork)
     vals = []
-    optmap, _ = generate_optimization_map(net)
+    optmap, _ = generateoptimizationmap(net)
     for key in keys(optmap)
         if typeof(key) <: PN.Node
             push!(vals, getparentedgeminor(key).gamma)
@@ -43,7 +43,7 @@ end
 Helper function that generates a `Vector{Int}` with `n` indices where each
 integer from 1 to `n` has probability `p` of appearing.
 """
-function sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::Vector{Int}
+function sampleqindices(n::Int, p::Real, rng::TaskLocalRNG)::Vector{Int}
     # We take n*p quartets instead of randomly sampling with
     # probability p so that we don't get any bad edge cases
     np = ceil(Int, n*p)
@@ -52,20 +52,20 @@ function sample_qindices(n::Int, p::Real, rng::TaskLocalRNG)::Vector{Int}
     bv = falses(n)
     return sort(sample(rng, 1:n, np, replace=false))
 end
-sample_qindices(net::HybridNetwork, p::Real, rng::TaskLocalRNG)::Vector{Int} =
-    sample_qindices(nchoose4taxa_length(net), p, rng)
+sampleqindices(net::HybridNetwork, p::Real, rng::TaskLocalRNG)::Vector{Int} =
+    sampleqindices(nchoose4taxalength(net), p, rng)
 
 
 """
 Helper function that calculates how many quartet combinations exist.
 """
-@inline function nchoose4taxa_length(net::HybridNetwork)::Int
+@inline function nchoose4taxalength(net::HybridNetwork)::Int
     n = net.numtaxa
     return n * (n-1) * (n-2) * (n-3) ÷ 24
 end
 
 
-function deepcopy_network(net::HybridNetwork)::HybridNetwork
+function deepcopynetwork(net::HybridNetwork)::HybridNetwork
 
     # List of nodes W/O attached edges
     node_map::Dict{Int, Node} = Dict{Int, Node}()

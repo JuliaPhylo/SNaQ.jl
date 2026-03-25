@@ -17,14 +17,14 @@ function isvalidrSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::N
         (length(unique([w, x, y, z, xprime, yprime])) == 5 && (y == xprime || x == xprime)) || return false
     end
 
-    if z.hybrid !(is_descendant_of(w, yprime)) || return false end
-    if !z.hybrid && w.hybrid !(is_descendant_of(xprime, w)) || return false end
+    if z.hybrid !(isdescendantof(w, yprime)) || return false end
+    if !z.hybrid && w.hybrid !(isdescendantof(xprime, w)) || return false end
 
     # See Lemma 6, these conditions are necessary for the move to be valid
     if z.hybrid
-        !is_descendant_of(w, yprime) || return false
+        !isdescendantof(w, yprime) || return false
     else
-        !is_descendant_of(xprime, w) || return false
+        !isdescendantof(xprime, w) || return false
     end
 
     # Must be valid, then

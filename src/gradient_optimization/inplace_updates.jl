@@ -16,7 +16,7 @@ can_update_inplace(m::Symbol) = m in [:rNNI1, :rNNI2]
 Given that the move `move` was applied to network `Nprime` on parameters `params`, this
 function updates `new_eqns` in-place with relevant changes to `old_eqns` where necessary.
 """
-function update_quartet_equations!(
+function updatequartetequations!(
     old_eqns::Array{QuartetData},
     new_eqns::Array{QuartetData},
     Nprime::HybridNetwork,
@@ -26,19 +26,19 @@ function update_quartet_equations!(
     α::Real
 )
     if move == :rNNI1
-        apply_rNNI1_update!(Nprime, old_eqns, new_eqns, param_map, params[3], α)
+        applyrNNI1update!(Nprime, old_eqns, new_eqns, param_map, params[3], α)
     elseif move == :rNNI2
-        apply_rNNI2_update!(Nprime, old_eqns, new_eqns, param_map, params..., α)
+        applyrNNI2update!(Nprime, old_eqns, new_eqns, param_map, params..., α)
     else
         error("Only move that can be updated in place right now is rNNI1 (move = $(move))")
     end
 end
 
 
-function apply_rNNI1_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, α::Real=Inf)
-    relevant_params = params_below_u_rNNI1(u, param_map)
+function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, α::Real=Inf)
+    relevant_params = paramsbelowurNNI1(u, param_map)
     Threads.@threads for j in eachindex(old_qdata)
-        if length(old_qdata[j].eqn.divisions) > 0 || recur_fxn_has_params(old_qdata[j].eqn, relevant_params)
+        if length(old_qdata[j].eqn.divisions) > 0 || recurfxnhasparams(old_qdata[j].eqn, relevant_params)
             new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
         else
             new_qdata[j] = old_qdata[j]
@@ -47,7 +47,7 @@ function apply_rNNI1_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{Qu
 end
 
 
-function apply_rNNI2_update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, α::Real=Inf)
+function applyrNNI2update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, α::Real=Inf)
     relevant_params = [u.edge[findfirst(e -> t in e.node, u.edge)], s.edge[findfirst(e -> v in e.node, s.edge)]]
     relevant_params = [param_map[e.number] for e in relevant_params]
     Threads.@threads for j in eachindex(old_qdata)
@@ -64,7 +64,7 @@ end
 Gets the relevant objects (internal edges and γ's) underneath the node `u` where
 `u` was used in an rNNI(1) move.
 """
-function params_below_u_rNNI1(u::Node, param_map::Dict{Int,Int})::Vector{Int}
+function paramsbelowurNNI1(u::Node, param_map::Dict{Int,Int})::Vector{Int}
     objs_below = Vector{Int}([param_map[getparentedge(u).number]]);
     queue = Vector{Edge}([e for e in u.edge if getparent(e) == u]);
     n_iter::Int = 0
@@ -98,8 +98,8 @@ end
 Helpers function used to check whether any parameters in `param_idxs`
 appear in the equation defined by `q`.
 """
-function recur_fxn_has_params(q::RecursiveCFEquation, param_idxs::Vector{Int})::Bool
+function recurfxnhasparams(q::RecursiveCFEquation, param_idxs::Vector{Int})::Bool
     any(e_idx -> e_idx in q.coal_edges || q.division_H === e_idx, param_idxs) && return true
     length(q.divisions) == 0 && return false
-    return any(rec_q -> recur_fxn_has_params(rec_q, param_idxs), q.divisions)
+    return any(rec_q -> recurfxnhasparams(rec_q, param_idxs), q.divisions)
 end

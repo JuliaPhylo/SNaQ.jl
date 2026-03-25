@@ -26,7 +26,7 @@ function generate_net(n::Int, h::Int, seed::Int=42)
 
     net = generate_tree(n, seed)
     for j = 1:h
-        SNaQ.add_hybrid!(net, SNaQ.sample_add_hybrid_parameters(net, rng)...)
+        SNaQ.addhybrid!(net, SNaQ.sampleaddhybridparameters(net, rng)...)
     end
     for node in net.node
         if node.name == ""
@@ -41,7 +41,7 @@ end
 #     net = generate_net(ntaxa, nhyb, seed)
 #     gts = simulatecoalescent(net, 1000, 1);
 #     q, t = countquartetsintrees(gts, showprogressbar=false);
-#     blocks, _ = find_quartet_equations(net);
+#     blocks, _ = findquartetequations(net);
 
 #     return @benchmark optimize!(net, blocks, q)
 # end
@@ -51,7 +51,7 @@ end
 #     net = generate_net(ntaxa, nhyb, seed)
 #     gts = simulatecoalescent(net, 1000, 1);
 #     q, t = countquartetsintrees(gts, showprogressbar=false);
-#     blocks, _ = find_quartet_equations(net);
+#     blocks, _ = findquartetequations(net);
 
 #     start_time = time()
 #     @profview for _ = 1:nrep optimize!(net, blocks, q) end
@@ -64,7 +64,7 @@ end
 #     net = generate_net(ntaxa, nhyb, seed)
 
 #     start_time = time()
-#     @profview for _ = 1:nrep find_quartet_equations(net) end
+#     @profview for _ = 1:nrep findquartetequations(net) end
 #     @info "Profiling took $(round(time() - start_time, digits=4)) seconds."
 # end
 

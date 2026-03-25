@@ -8,8 +8,8 @@
 # 4) at each step, ensure that every node's name can be found in the networks
 #    newick generated from `writenewick` (helps ensure all nodes are traversable)
 
-import SNaQ: deepcopy_network, semidirect_network!,
-    generate_move_proposal, apply_move!
+import SNaQ: deepcopynetwork, semidirectnetwork!,
+    generatemoveproposal, applymove!
 using Test, Random, StatsBase
 
 for z = 1:500
@@ -18,12 +18,12 @@ for z = 1:500
     ntaxa = sample(rng, 5:40)
     nhyb = sample(rng, 0:ntaxa)
     t0 = generate_tree(ntaxa, rand(rng, Int))
-    t = deepcopy_network(t0)
-    semidirect_network!(t0)
-    semidirect_network!(t)
+    t = deepcopynetwork(t0)
+    semidirectnetwork!(t0)
+    semidirectnetwork!(t)
     # Store previous newick to make sure the topology is actually
     # changing everytime HWCD is very expensive so we don't compute it
-    prev_newick = writenewick(deepcopy_network(t), round = true)
+    prev_newick = writenewick(deepcopynetwork(t), round = true)
 
     # Some relevant info for error messages
     prev_move = :none
@@ -33,10 +33,10 @@ for z = 1:500
         seed = rand(rng, Int)
         Random.seed!(rng, seed)
 
-        t2 = deepcopy_network(t)
+        t2 = deepcopynetwork(t)
         move = params = -1
         try
-            move, params = generate_move_proposal(t2, [], nhyb, rng)
+            move, params = generatemoveproposal(t2, [], nhyb, rng)
         catch e
             @info """
                 \n
@@ -52,7 +52,7 @@ for z = 1:500
         end
 
         try
-            apply_move!(t2, move, params)
+            applymove!(t2, move, params)
 
             # Alterations that are performed in the main search function need to be done here as well
             removedegree2nodes!(t2);
@@ -66,8 +66,8 @@ for z = 1:500
                     continue
                 end
             end
-            semidirect_network!(t2)
-            new_newick = writenewick(deepcopy_network(t2), round = true)
+            semidirectnetwork!(t2)
+            new_newick = writenewick(deepcopynetwork(t2), round = true)
             t = t2
 
             @test move == :rNNI2 || new_newick != prev_newick
@@ -90,7 +90,7 @@ for z = 1:500
 
                 n = readnewick(\"$(prev_newick)\");
                 params = get_nodes(n, \"$(params[1].name)\", \"$(params[2].name)\", \"$(params[3].name)\", \"$(params[4].name)\");
-                apply_move!(n, :rNNI1, Tuple(params))
+                applymove!(n, :rNNI1, Tuple(params))
 
                 Newick prior to move: $(prev_newick)
                 Proposed move: $(move)

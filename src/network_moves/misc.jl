@@ -1,6 +1,6 @@
 
 
-function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
+function semidirectnetwork!(N::HybridNetwork; check_conditions::Bool=true)
     # Semi-directed network attribute that we are enforcing here:
     #   all non-leaf vertices have degree-3
 
@@ -21,11 +21,17 @@ function semidirect_network!(N::HybridNetwork; check_conditions::Bool=true)
         end
         all(length(e.node) == 2 for e in N.edge) || error("Found edge with ≠2 attached nodes.")
     end
-        
 end
 
 
-function is_descendant_of(descendant::Node, ancestor::Node)
+"""
+Deprecated - included for backwards compatibility in niche cases.
+"""
+semidirect_network!(N::HybridNetwork; check_conditions::Bool=true) =
+    semidirectnetwork!(N; check_conditions=check_conditions)
+
+
+function isdescendantof(descendant::Node, ancestor::Node)
     queue = [ancestor]
     iters = 0
     while length(queue) > 0
@@ -37,7 +43,7 @@ function is_descendant_of(descendant::Node, ancestor::Node)
             push!(queue, c)
         end
         iters += 1
-        iters >= 1e5 && error("Looped $(iters) times in `is_descendant_of`")
+        iters >= 1e5 && error("Looped $(iters) times in `isdescendantof`")
     end
     return false
 end
@@ -49,7 +55,7 @@ Helper function that swaps all hybridization-related information between
     ensure that manipulated edges have valid reticulation info.
     `e1` and `e2` needn't be reticulations.
 """
-function swap_edge_hybrid_info!(e1::Edge, e2::Edge)
+function swapedgehybridinfo!(e1::Edge, e2::Edge)
     temp_e2_gamma = e2.gamma
     temp_e2_hybrid = e2.hybrid
     temp_e2_ismajor = e2.ismajor

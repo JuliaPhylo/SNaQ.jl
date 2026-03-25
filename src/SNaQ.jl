@@ -64,7 +64,7 @@ module SNaQ
         ########## New optimization functions
         optimize!,  # fixit: TODO: fix this name - it opts more than just BLs!
         computeloss,   # fixit: TODO: make this name in line with Julia conventions
-        compute_expectedCF_matrix,  # fixit: TODO: no underscores in fxn names!!
+        computeexpectedCFmatrix,  # fixit: TODO: no underscores in fxn names!!
         ExpectedDataCF,             # fixit: TODO: again, not Julian naming convensions
         ########## New identifiability/restriction functions
         defaultrestrictions,    # fixit: TODO: some of these functions are called like

@@ -3,21 +3,21 @@
 Performs an rNNI move on nodes `s,t,u,v` corresponding to those in Figure 4 of https://doi.org/10.1371/journal.pcbi.1005611.
 Only implementing (1)-(4) WITHOUT (*) versions for now.
 """
-function perform_rNNI!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node, type::Int)
+function performrNNI!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node, type::Int)
     if type == 1
-        return perform_rNNI1!(N, s, t, u, v)
+        return performrNNI1!(N, s, t, u, v)
     elseif type == 2
-        return perform_rNNI2!(N, s, t, u, v)
+        return performrNNI2!(N, s, t, u, v)
     elseif type == 3
-        return perform_rNNI3!(N, s, t, u, v)
+        return performrNNI3!(N, s, t, u, v)
     elseif type == 4
-        return perform_rNNI4!(N, s, t, u, v)
+        return performrNNI4!(N, s, t, u, v)
     end
 end
 
 
-function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
-    is_valid_rNNI1(s, t, u, v) || error("Topological conditions for rNNI(1) not met.")
+function performrNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
+    isvalidrNNI1(s, t, u, v) || error("Topological conditions for rNNI(1) not met.")
     @debug "MOVE: rNNI(1) - $((s.name, t.name, u.name, v.name))"
 
     # u: loses s as a child and gains t as a child
@@ -34,7 +34,7 @@ function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
 
     # Swap the hybridization-related info of these edges. That way, if either
     # `s` or `t` are hybrids, they maintain their status
-    swap_edge_hybrid_info!(edge_su, edge_tv)
+    swapedgehybridinfo!(edge_su, edge_tv)
 
     # If `v` is a hybrid, we need to flip the direciton of the edge `uv`
     # if v.hybrid
@@ -46,8 +46,8 @@ function perform_rNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
 end
 
 
-function perform_rNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
-    is_valid_rNNI2(s, t, u, v) || error("Topological conditions for rNNI(2) not met.")
+function performrNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
+    isvalidrNNI2(s, t, u, v) || error("Topological conditions for rNNI(2) not met.")
     @debug "MOVE: rNNI(2) - $((s.name, t.name, u.name, v.name))"
 
     # s: loses u as a child and gains v as a child
@@ -64,13 +64,13 @@ function perform_rNNI2!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
 
     # Swap the hybridization-related info of these edges. That way, if
     # `u` is a hybrid, it maintains its status, and `v` maintains its status as a hybrid
-    swap_edge_hybrid_info!(edge_su, edge_tv)
+    swapedgehybridinfo!(edge_su, edge_tv)
     return 2
 end
 
 
-function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
-    is_valid_rNNI3(s, t, u, v) || error("Topological conditions for rNNI(3) not met.")
+function performrNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
+    isvalidrNNI3(s, t, u, v) || error("Topological conditions for rNNI(3) not met.")
     @debug "MOVE: rNNI(3) - $((s.name, t.name, u.name, v.name))"
 
     # s: loses u as a child and gains v as a child
@@ -93,7 +93,7 @@ function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     #   to any of `s,t,v` is now a hybrid edge
 
     # This is the edge in Figure 4 (3) that is parent to `u` and black (not gray)
-    swap_edge_hybrid_info!(edge_u, edge_uv)
+    swapedgehybridinfo!(edge_u, edge_uv)
     u.hybrid = false
     v.hybrid = true
     v.name = v.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" :
@@ -105,8 +105,8 @@ function perform_rNNI3!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
 end
 
 
-function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
-    is_valid_rNNI4(s, t, u, v) || error("Topological conditions for rNNI(4) not met.")
+function performrNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
+    isvalidrNNI4(s, t, u, v) || error("Topological conditions for rNNI(4) not met.")
     @debug "MOVE: rNNI(4) - $((s.name, t.name, u.name, v.name))"
 
     # t: loses v as a child and gains u as a child
@@ -127,7 +127,7 @@ function perform_rNNI4!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     # - `s,t` should be unchanged
     # - the edge parent to `u` that is not connected
     #   to any of `s,t,v` is now a hybrid edge
-    swap_edge_hybrid_info!(edge_u, edge_uv)
+    swapedgehybridinfo!(edge_u, edge_uv)
     u.hybrid = true
     v.hybrid = false
     u.name = u.name == "" ? "H$(abs(rand(Int) % 10000) + 100)" :
@@ -143,13 +143,13 @@ end
 Samples nodes `s,t,u,v` from `N` to perform the rNNI(X) move where X is given
 by the variable `type`.
 """
-function sample_rNNI_parameters(N::HybridNetwork, type::Int, rng::TaskLocalRNG)
+function samplerNNIparameters(N::HybridNetwork, type::Int, rng::TaskLocalRNG)
     1 ≤ type ≤ 4 || error("`type` must be 1, 2, 3, or 4.")
 
-    valid_stuvs = type == 1 ? all_valid_rNNI1_nodes(N) :
+    valid_stuvs = type == 1 ? allvalidrNNI1nodes(N) :
         type == 2 ? allvalidrNNI2nodes(N) :
-        type == 3 ? all_valid_rNNI3_nodes(N) :
-        all_valid_rNNI4_nodes(N)
+        type == 3 ? allvalidrNNI3nodes(N) :
+        allvalidrNNI4nodes(N)
     
     length(valid_stuvs) == 0 && return nothing
     return sample(rng, valid_stuvs)
@@ -159,42 +159,42 @@ end
 """
 Function used exclusively for testing in `test_rNNI_moves.jl`
 """
-function perform_random_rNNI!(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
+function performrandomrNNI!(N::HybridNetwork, rng::TaskLocalRNG, probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
     (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
     
     r = rand()
     if r < probs[1]
-        valid_stuvs = all_valid_rNNI1_nodes(N)
+        valid_stuvs = allvalidrNNI1nodes(N)
         if length(valid_stuvs) == 0
             p234 = probs[2] + probs[3] + probs[4]
-            return perform_random_rNNI!(N, rng, [0, probs[2], probs[3], probs[4]] ./ p234)
+            return performrandomrNNI!(N, rng, [0, probs[2], probs[3], probs[4]] ./ p234)
         end
         s, t, u, v = sample(rng, valid_stuvs)
-        return perform_rNNI1!(N, s, t, u, v)
+        return performrNNI1!(N, s, t, u, v)
     elseif r < probs[1] + probs[2]
         valid_stuvs = allvalidrNNI2nodes(N)
         if length(valid_stuvs) == 0
             p134 = probs[1] + probs[3] + probs[4]
-            return perform_random_rNNI!(N, rng, [probs[1], 0, probs[3], probs[4]] ./ p134)
+            return performrandomrNNI!(N, rng, [probs[1], 0, probs[3], probs[4]] ./ p134)
         end
         s, t, u, v = sample(rng, valid_stuvs)
-        return perform_rNNI2!(N, s, t, u, v)
+        return performrNNI2!(N, s, t, u, v)
     elseif r < probs[1] + probs[2] + probs[3]
-        valid_stuvs = all_valid_rNNI3_nodes(N)
+        valid_stuvs = allvalidrNNI3nodes(N)
         if length(valid_stuvs) == 0
             p124 = probs[1] + probs[2] + probs[4]
-            return perform_random_rNNI!(N, rng, [probs[1], probs[2], 0, probs[4]] ./ p124)
+            return performrandomrNNI!(N, rng, [probs[1], probs[2], 0, probs[4]] ./ p124)
         end
         s, t, u, v = sample(rng, valid_stuvs)
-        return perform_rNNI3!(N, s, t, u, v)
+        return performrNNI3!(N, s, t, u, v)
     else
-        valid_stuvs = all_valid_rNNI4_nodes(N)
+        valid_stuvs = allvalidrNNI4nodes(N)
         if length(valid_stuvs) == 0
             p123 = probs[1] + probs[2] + probs[3]
-            return perform_random_rNNI!(N, rng, [probs[1], probs[2], probs[3], 0] ./ p123)
+            return performrandomrNNI!(N, rng, [probs[1], probs[2], probs[3], 0] ./ p123)
         end
         s, t, u, v = sample(rng, valid_stuvs)
-        return perform_rNNI4!(N, s, t, u, v)
+        return performrNNI4!(N, s, t, u, v)
     end
 end
 
