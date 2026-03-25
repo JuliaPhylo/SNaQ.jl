@@ -3,8 +3,8 @@ using PhyloNetworks, SNaQ, DataFrames
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)))
-truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
+raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)));
+truenet = readnewick("((((D:0.1,C:0.1):1.2,((A:0.2,B:0.2):0.55)#H1:0.55::0.7):1.0,(#H1:0.0::0.3,(E:0.25,F:0.25):0.5):1.55):5.5,O:7.8);");
 ```
 
 # Quartet test for goodness of fit

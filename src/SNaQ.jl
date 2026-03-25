@@ -29,7 +29,7 @@ module SNaQ
 
 
     import PhyloNetworks: HybridNetwork, Network, Partition,
-        tiplabels,
+        tiplabels, fliphybrid!,
         isEqual, approxEq,
         assignhybridnames!, 
         getOtherNode, getIndex, getIndexEdge, getIndexNode,
