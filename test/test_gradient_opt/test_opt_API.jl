@@ -30,7 +30,9 @@ end
                 getparentedgeminor(H).gamma = 1.0 - γ
             end
 
-            optimize!(opt_net, q; maxeval=100000)
+            firstoptL = optimize!(SNaQ.deepcopynetwork(opt_net), q; maxeval=100000)
+            secondoptL = optimize!(opt_net, SNaQ.findquartetequations(opt_net)[1], q, Inf; maxeval=100000)
+            @test firstoptL ≈ secondoptL atol=1e-12
             eqns, _, opt_params, idx_obj_map, _ = findquartetequations(opt_net);
             if !(sum(mean((opt_params .- params).^2)) < 1.0)
                 @info L
@@ -68,6 +70,40 @@ end
         before_L = SNaQ.computeloss(net, q)
         SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, maxeval = 10)
         after_L = SNaQ.computeloss(net, q)
+
+        @test after_L > before_L
+        ntested += 1
+    end
+end
+
+@testset "-logPL strictly improves with non-Inf α" begin
+    ntested::Int = 0
+    nfail::Int = 0
+    while ntested < 100
+        rng = Random.seed!(ntested + nfail)
+
+        net = generate_net(7, 1, ntested + nfail)
+        while shrink2cycles!(net) || shrink3cycles!(net) continue end
+        if net.numhybrids == 0
+            nfail += 1
+            continue
+        end
+        gts = simulatecoalescent(net, 100, 1)
+        SNaQ.semidirectnetwork!(net)
+        q, t = countquartetsintrees(gts, showprogressbar=false)
+        qstat = Array{Float64}(undef, length(q), 3)
+        for j in eachindex(q)
+            for k = 1:3
+                qstat[j, k] = q[j].data[k]
+            end
+        end
+        q = qstat
+
+        ρ = rand() < 0.5 ? 1.0 : rand()
+        α = ρ == 0.0 ? Inf : (1.0 - ρ) / ρ
+        before_L = SNaQ.computeloss(net, q, α)
+        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, α; maxeval = 10)
+        after_L = SNaQ.computeloss(net, q, α)
 
         @test after_L > before_L
         ntested += 1

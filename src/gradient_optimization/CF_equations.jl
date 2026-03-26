@@ -18,13 +18,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
         qdat = trytreelikequartet(net, taxa, parameter_map)
-        qdat !== nothing && return qdat.eqn
-        
-        quartet_type, int_edges = getquartettypeandinternaledges(net, taxa, parameter_map)
-        return RecursiveCFEquation(
-            true, [parameter_map[int_e.number] for int_e in int_edges], quartet_type, -1,
-            EMPTY_EQN_VEC, length(parameter_map)
-        )
+        return qdat.eqn
     end
 
     # Special case: we may still have hybrids, but 3+ leaves share a parent
@@ -231,55 +225,6 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         return get4taxaquartetequations(net, taxa, parameter_map)
     end
 
-end
-
-
-"""
-Helper function - `net` MUST be treelike and only contain the leaves named in `taxa` to work as expected.
-    `taxa` must be exactly length 4. Then, `net` is a quartet. This function returns `Tuple{Int, Array{PN.Edge}}`
-    where the `Int` describes the "type" of quartet contained in `net` (see below), and the `Array{PN.Edge}` contains all of
-    the internal edges of the quartet.
-
-    Quartet "types" here mean the following: if `taxa` contains entries ["a", "b", "c", "d"], then type 1 is ab|cd,
-    type 2 is ac|bd, and type 3 is ad|bc.
-"""
-function getquartettypeandinternaledges(net::HybridNetwork, taxa::Vector{String}, parameter_map::Dict{Int, Int})::Tuple{Int,Array{PN.Edge}}
-    G, W = Graph(net; withweights=true, minoredgeweight=Inf)
-    for idx in eachindex(W) W[idx] = (W[idx] == Inf) ? Inf : 1.0 end
-    node_to_idx = Dict{PN.Node, Int}(node => j for (j, node) in enumerate(net.node))                                            # these two dicts used later for
-    edge_to_graph_idxs = Dict{PN.Edge,Tuple{Int,Int}}(e => (node_to_idx[e.node[1]], node_to_idx[e.node[2]]) for e in net.edge)  # easier graph weight adjustment
-    
-    # Find which edges form the internal edge of the quartet
-    taxa1_node_idx = findfirst(n -> n.leaf && n.name == taxa[1], net.node)
-    taxa2_node_idx = findfirst(n -> n.leaf && n.name == taxa[2], net.node)
-    taxa3_node_idx = findfirst(n -> n.leaf && n.name == taxa[3], net.node)
-    taxa4_node_idx = findfirst(n -> n.leaf && n.name == taxa[4], net.node)
-
-    path_12 = a_star(G, taxa1_node_idx, taxa2_node_idx, W)
-    path_34 = a_star(G, taxa3_node_idx, taxa4_node_idx, W)
-    path_13 = a_star(G, taxa1_node_idx, taxa3_node_idx, W)
-    path_24 = a_star(G, taxa2_node_idx, taxa4_node_idx, W)
-
-    # edges here have direction, but we don't want them to, so we set (src,dst) = (minidx,maxidx) so the direction is effectively removed
-    for path in [path_12, path_34, path_13, path_24]
-        for (j, edge) in enumerate(path)
-            path[j] = Graphs.SimpleEdge(min(edge.src, edge.dst), max(edge.src, edge.dst))
-        end
-    end
-
-    if length(intersect(path_12, path_34)) == 0
-        internal_graph_edges = intersect(path_13, path_24)    # 12|34 is displayed, so these paths must cross ONLY on the displayed edge portion
-        internal_net_edges = fromgraphtonetedges(net, internal_graph_edges)
-        return 1, internal_net_edges
-    elseif length(intersect(path_13, path_24)) == 0
-        internal_graph_edges = intersect(path_12, path_34)    # 13|24 is displayed, so these paths must cross ONLY on the displayed edge portion
-        internal_net_edges = fromgraphtonetedges(net, internal_graph_edges)
-        return 2, internal_net_edges
-    else
-        internal_graph_edges = intersect(path_12, path_34)    # 14|23 is displayed, so these paths must cross ONLY on the displayed edge portion
-        internal_net_edges = fromgraphtonetedges(net, internal_graph_edges)
-        return 3, internal_net_edges
-    end
 end
 
 

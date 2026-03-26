@@ -422,11 +422,3 @@ function quadsplitprobabilitygradient(type::Int, γ::Real, α::Real)::Float64
 
     error("Found impossible type: $(type) (α = $(α))")
 end
-
-
-
-
-
-
-
-

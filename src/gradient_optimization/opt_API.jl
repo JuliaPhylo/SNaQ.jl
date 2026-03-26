@@ -54,21 +54,6 @@ function optimizetopology!(
 end
 
 
-"""
-Computes the loss of network `N` given quartet equations `q` sampled from indices `q_idxs`.
-
-Returns a tuple `(loss::Float64, qeqns::Vector{QuartetData})` where `loss` is the aforementioned loss
-of network `N` and `qeqns` are the CF equations the define network `N`.
-"""
-function computeloss(N::HybridNetwork, q::Matrix{Float64}, q_idxs::Vector{Int}, rng::TaskLocalRNG, α::Real)::Tuple{Float64, Vector{QuartetData}}
-    @debug "\tGathering quartet equations."
-    N_qdata, _, N_params, _ = findquartetequations(N, q_idxs)
-
-    @debug "\tComputing loss."
-    return computeloss(N_qdata, N_params, q[q_idxs, :], α), N_qdata
-end
-
-
 
 """
 Optimizes the branch lengths of network `net` which is defined by quartet concordance factor
