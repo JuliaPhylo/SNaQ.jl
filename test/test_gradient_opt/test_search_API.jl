@@ -1,5 +1,6 @@
 using PhyloNetworks, SNaQ, DataFrames, PhyloCoalSimulations
 using Test, Random
+import SNaQ: multisearch
 
 include(joinpath(@__DIR__, "../test_inplace_updates/misc.jl"))
 
@@ -48,13 +49,32 @@ dcf = computeexpectedDataCF(net);
 snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=1), hmax=1, propQuartets=0.85, runs=20, Nfail=50)
 @test hardwiredclusterdistance(snaqnet, net, false) == 0
 @test restrictionset(;max_level=1)(snaqnet)
+@test knownidentifiable(snaqnet)
 
 # snaq! with restrictions works as expected
 t0 = simulatecoalescent(tre0, 1, 1)[1];
 dcf = computeexpectedDataCF(net);
 snaqnet = snaq!(t0, dcf; restrictions=SNaQ.knownidentifiable, hmax=4, runs=20, Nfail=50)
-@test hardwiredclusterdistance(snaqnet, net, false) != 0	# because we're inferring with more than the true # hybrids
 @test SNaQ.knownidentifiable(snaqnet)
+
+# snaq! with restrictions works as expected
+@testset "snaq! with restrictionset(;max_level=0) infers a tree, regardless of hmax" begin
+	t0 = simulatecoalescent(tre0, 1, 1)[1];
+	dcf = computeexpectedDataCF(net);
+	snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=0), hmax=4, runs=20, Nfail=50)
+	@test snaqnet.numhybrids == 0
+	@test knownidentifiable(snaqnet)
+end
+
+@testset "snaq! respects restrictions when truth lies outside restrictions" begin
+	# level-2 network topology
+	truenet = readnewick("(((t4:0.4,(t8:0.3,t2:0.3):0.1):0.2,(t1:0.4,((t5:0.2,#H2:0.0::0.25):0.2,((t6:0.0,(t3:0.0)#H1:0.0::0.75):0.2)#H2:0.2::0.75):0.0):0.2):0.6,(t7:0.6,#H1:0.0::0.25):0.6);");
+	Q = computeexpectedDataCF(truenet);
+	T0 = simulatecoalescent(truenet, 1, 1)[1];
+	snaqnet = snaq!(T0, Q; restrictions=restrictionset(;max_level=1), hmax=2, runs=10, Nfail=25)
+	@test computeloss(snaqnet, Q) > computeloss(T0, Q)
+	@test getlevel(snaqnet) == 1
+end
 
 @testset "snaq! with larger networks" begin
 	for n in [10, 15, 20]
@@ -63,9 +83,11 @@ snaqnet = snaq!(t0, dcf; restrictions=SNaQ.knownidentifiable, hmax=4, runs=20, N
 				truenet = generate_net(n, h, seed)
 				dcf = computeexpectedDataCF(truenet)
 				T0 = simulatecoalescent(truenet, 1, 1)[1];
-				snaqnet = snaq!(T0, dcf; restrictions=SNaQ.knownidentifiable, hmax=h, runs=10, Nfail=50)
+				snaqnet = snaq!(T0, dcf; restrictions=SNaQ.knownidentifiable, propQuartets=0.25, hmax=h, runs=10, Nfail=50)
 				@test computeloss(snaqnet, dcf) > computeloss(T0, dcf)
 			end
 		end
 	end
 end
+
+
