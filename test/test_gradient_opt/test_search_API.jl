@@ -90,4 +90,20 @@ end
 	end
 end
 
+@testset "snaq! works with missing edge lengths and gammas in starting topology" begin
+	net = generate_net(10, 2, 8);	# seed 8 is identifiable.
+	dcf = computeexpectedDataCF(net);
+	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
+	for E in net.edge E.length = -1 end
+	for H in net.hybrid
+		getparentedge(H).gamma = -1
+		getparentedgeminor(H).gamma = -1
+	end
+	snaqnet = snaq!(net, dcf; hmax=net.numhybrids, Nfail=20, runs=1, maxeval=10000, probST=0.0);
+	@test hardwiredclusterdistance(net, snaqnet, false) == 0
+	@test computeloss(snaqnet, dcf) ≈ trueloss atol=1e-12
+end
 
+@testset "snaq! with malformed inputs" begin
+	multifurcation = readnewick("((a,b),(c,d),(e,f),(g,(h,i,j)));");
+end

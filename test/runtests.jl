@@ -58,7 +58,7 @@ end
 
 
 function runtestfile(testfile::String)
-    printstyled(testfile, color=:blue)
+    printstyled(testfile, ": ", color=:blue)
     starttime = time()
     originalstdout = stdout
     originalstderr = stderr
@@ -67,7 +67,7 @@ function runtestfile(testfile::String)
     include(testfile)
     redirect_stdout(originalstdout)
     redirect_stderr(originalstderr)
-    printstyled(": $(round(time() - starttime, digits=2))s elapsed\n", color=:black)
+    printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
 
 
