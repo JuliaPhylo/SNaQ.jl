@@ -48,6 +48,7 @@ end
 
 # Faster than PhyloNetworks but not as extensively tested, so we don't use it
 function getnetworklevel(net::HybridNetwork)
+    if net.numhybrids == 0 return 0 end
     bi_comp = [comp for comp in biconnectedcomponents(net) if length(comp) > 1]
     max_level = 1
     for component in bi_comp
