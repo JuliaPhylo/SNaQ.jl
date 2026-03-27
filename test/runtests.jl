@@ -62,8 +62,8 @@ function runtestfile(testfile::String)
     starttime = time()
     originalstdout = stdout
     originalstderr = stderr
-    # redirect_stdout(devnull)  # when testing for errors, comment these lines
-    # redirect_stderr(devnull)  # when testing for errors, comment these lines
+    redirect_stdout(devnull)  # when testing for errors, comment these lines
+    redirect_stderr(devnull)  # when testing for errors, comment these lines
     include(testfile)
     redirect_stdout(originalstdout)
     redirect_stderr(originalstderr)
@@ -71,20 +71,20 @@ function runtestfile(testfile::String)
 end
 
 
-# @testset "SNaQ.jl" begin
-#     runtestfile("test_bootstrap.jl")
-#     runtestfile("test_multipleAlleles.jl")
-#     runtestfile("test_perfectData.jl")
-#     runtestfile("test_readInputData.jl")
+@testset "SNaQ.jl" begin
+    runtestfile("test_bootstrap.jl")
+    runtestfile("test_multipleAlleles.jl")
+    runtestfile("test_perfectData.jl")
+    runtestfile("test_readInputData.jl")
 
-#     runtestfile("test_propQuartets.jl")
-#     runtestfile("test_gradient_opt/test_opt_API.jl")
-#     runtestfile("test_gradient_opt/test_search_API.jl")
-#     runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")
-#     runtestfile("test_network_moves/test_add_remove_retic.jl")
-#     runtestfile("test_network_moves/test_move_target_origin.jl")
-#     runtestfile("test_network_moves/test_rNNI_moves.jl")
-#     runtestfile("test_network_moves/test_rSPR_moves.jl")
-#     runtestfile("test_network_moves/test_all_moves.jl")
-# end
+    runtestfile("test_propQuartets.jl")
+    runtestfile("test_gradient_opt/test_opt_API.jl")
+    runtestfile("test_gradient_opt/test_search_API.jl")
+    runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")
+    runtestfile("test_network_moves/test_add_remove_retic.jl")
+    runtestfile("test_network_moves/test_move_target_origin.jl")
+    runtestfile("test_network_moves/test_rNNI_moves.jl")
+    runtestfile("test_network_moves/test_rSPR_moves.jl")
+    runtestfile("test_network_moves/test_all_moves.jl")
+end
 
