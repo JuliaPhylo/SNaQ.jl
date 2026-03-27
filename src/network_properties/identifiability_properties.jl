@@ -9,7 +9,7 @@ Checklist:
 - Rooted --> root edge lengths are non-identifiable
 - All trees --> identifiable
 - 2-cycles --> non-identifiable topology
-- 3-cycles --> non-identifiable topology
+- 3-cycles --> non-identifiable topology / parameters
 - Level-1:
     - Bad diamonds --> non-identifiable branch lengths
 - Tree-child galled:
@@ -19,8 +19,8 @@ Checklist:
 - Non tree-child galled --> unknown, return false
 """
 function knownidentifiable(N::HybridNetwork)::Bool
-    !N.isrooted || return false
     N.numhybrids == 0 && return true
+    !N.isrooted || return false
 
     N = deepcopynetwork(N)
     (shrink2cycles!(N) || shrink3cycles!(N)) && return false

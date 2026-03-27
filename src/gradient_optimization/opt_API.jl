@@ -209,6 +209,16 @@ parameters of each quartet in `dcf.quartet`.
 """
 function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
+    semidirectnetwork!(net)
+    for E in net.edge
+        E.length = max(E.length, 0.0)
+    end
+    for H in net.hybrid
+        if getparentedge(H).gamma == -1 || getparentedgeminor(H).gamma == -1
+            getparentedge(H).gamma = 0.5
+            getparentedgeminor(H).gamma = 0.5
+        end
+    end
     eqns, parammap, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
     α = ρ == 0.0 ? Inf : 1.0 / ρ

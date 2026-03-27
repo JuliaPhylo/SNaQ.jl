@@ -342,23 +342,6 @@ end
 
 
 """
-    search(
-        N::HybridNetwork,
-        q,
-        hmax::Int;
-        restrictions::Function=defaultrestrictions(),
-        α::Real=Inf,
-        propQuartets::Real=1.0,
-        preopt::Bool=false,
-        probST::Real=0.3,
-        maxeval::Int=Int(1e8),
-        maxequivPLs::Int=1500,
-        opt_maxeval::Int=10,
-        seed::Int=abs(rand(Int) % 100000),
-        verbose::Bool=false,
-        logfile::String=""
-    ) -> Tuple{HybridNetwork, Float64}
-
 Performs a single search for the optimal network topology with gradient-based optimization
 of branch lengths and inheritance probabilities.
 
@@ -375,7 +358,7 @@ of branch lengths and inheritance probabilities.
 - `probST::Real=0.3`: Probability of performing a subtree move before searching.
 - `maxeval::Int=Int(1e8)`: Maximum number of evaluations.
 - `maxequivPLs::Int=1500`: Maximum number of equivalent pseudo-likelihood scores to consider.
-- `opt_maxeval::Int=10`: Maximum evaluations for optimization.
+- `opt_maxeval::Int=30`: Maximum evaluations for optimization.
 - `seed::Int=abs(rand(Int) % 100000)`: Random seed for reproducibility.
 - `verbose::Bool=false`: Whether to print verbose output.
 - `logfile::String=""`: File to log detailed progress (used for debugging, but can also be used to examine convergence).
@@ -391,15 +374,14 @@ function search(
     restrictions::Function=defaultrestrictions(),
     α::Real=Inf,
     propQuartets::Real=1.0,
-    #preopt::Bool=true,
-    preopt::Bool=false,
+    preopt::Bool=true,
     probST::Real=0.3,
     probQR::Float64=0.0,
     maxeval::Int=Int(1e8),
     maxequivPLs::Int=1500,
     liktolAbs::Float64=1e-8,
     liktolRel::Float64=1e-4,
-    opt_maxeval::Int=10,
+    opt_maxeval::Int=30,
     seed::Int=abs(rand(Int) % 100000),
     verbose::Bool=false,
     logfile::String="",
@@ -464,28 +446,23 @@ function search(
         end
     end
 
-    # Initial pre-opt search
-    if preopt
-        @debug "Pre-optimizing"
-        N = search(N, q, hmax;
-            restrictions=restrictions,
-            preopt=false,
-            probST=0.0,
-            maxeval=100,
-            opt_maxeval=opt_maxeval,
-            maxequivPLs=50
-        )
-        restrictions(N) || error("N does not meet restrictions after preopt")
-    end
-
     # Data used throughout the optimization process
     q_idxs = sampleqindices(N, propQuartets, rng)
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
     neq = findquartetequations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
     N_numparams::Int = length(neq[3])
-    logPLs[1] = optimize!(N, N_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
     unchanged_iters = 0
+
+    # Pre-optimizing the network's parameters
+    if preopt
+        @debug "Pre-optimizing"
+        optimize!(N, N_eqns, q[q_idxs, :], α; maxeval=max(opt_maxeval, 500), optargs...)
+        restrictions(N) || error("N does not meet restrictions after preopt")
+        logPLs[1] = loglik(N)
+    else
+        logPLs[1] = computeloss(N_eqns, gatherparams(N), q[q_idxs, :], α)
+    end
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
     moves_proposed = Dict{Symbol,Int}()

@@ -136,7 +136,9 @@ function snaq!(
         xtolRel=xtolRel,
         xtolAbs=xtolAbs,
         propQuartets=propQuartets,
-        filename=filename
+        filename=filename,
+        preopt=updateBL,
+        kwargs...
     )[1]
 
     # This call to `optimize!` is only to update the DataCF
