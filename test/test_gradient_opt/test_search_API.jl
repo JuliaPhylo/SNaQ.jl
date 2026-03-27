@@ -41,3 +41,17 @@ t0 = simulatecoalescent(tre0, 1, 1)[1];
 dcf = computeexpectedDataCF(net);
 opt_rt = @elapsed snaqnet = snaq!(t0, dcf; hmax=1, propQuartets=0.85, runs=20, Nfail=50)
 @test hardwiredclusterdistance(snaqnet, net, false) == 0
+
+# snaq! with restrictions works as expected
+t0 = simulatecoalescent(tre0, 1, 1)[1];
+dcf = computeexpectedDataCF(net);
+snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=1), hmax=1, propQuartets=0.85, runs=20, Nfail=50)
+@test hardwiredclusterdistance(snaqnet, net, false) == 0
+@test restrictionset(;max_level=1)(snaqnet)
+
+# snaq! with restrictions works as expected
+t0 = simulatecoalescent(tre0, 1, 1)[1];
+dcf = computeexpectedDataCF(net);
+snaqnet = snaq!(t0, dcf; restrictions=SNaQ.knownidentifiable, hmax=4, runs=20, Nfail=50)
+@test hardwiredclusterdistance(snaqnet, net, false) != 0	# because we're inferring with more than the true # hybrids
+@test SNaQ.knownidentifiable(snaqnet)
