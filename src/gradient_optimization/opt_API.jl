@@ -368,7 +368,15 @@ function gatheroptimizationinfo(net::HybridNetwork, change_numbers::Bool=true)
     for obj in vcat(net.hybrid, net.edge)[order]
         if typeof(obj) <: Edge
             if getchild(obj).leaf continue end
-            if getchild(obj).hybrid && getchild(getchild(obj)).leaf continue end
+
+            childnode = getchild(obj)
+            if childnode.hybrid
+                childnodechildren = getchildren(childnode)
+                if length(childnodechildren) == 1 && childnodechildren[1].leaf
+                    continue
+                end
+            end
+            # if getchild(obj).hybrid && getchild(getchild(obj)).leaf continue end
         end
 
         haskey(param_map, obj.number) && error("Duplicate object number #$(obj.number).")

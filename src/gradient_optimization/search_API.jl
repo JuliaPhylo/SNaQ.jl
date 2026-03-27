@@ -203,6 +203,22 @@ function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{Hybrid
     # Copy the input networks
     Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopynetwork(N)] : [deepcopynetwork(n) for n in N]
     for (j, n) in enumerate(Ns)
+        # Split multifurcations
+        if any(n -> length(n.edge) > 3, Ns[j].node)
+            @warn "Input network #$(j) has a polytomy. SNaQ only infers binary networks, so this will be automatically resolved before inference."
+            
+            iters = 0
+            while true
+                iters += 1
+                if iters > N.numnodes
+                    error("Got stuck in an infinite loop while resolving polytomies. Please report this bug with your input tree(s) on GitHub.")
+                end
+                multi = findfirst(n -> length(n.edge) > 3, Ns[j].node)
+                if isnothing(multi) break end
+                PhyloNetworks.resolvetreepolytomy!(Ns[j], Ns[j].node[multi])
+            end
+        end
+
         # Prep data
         semidirectnetwork!(Ns[j]);
 
