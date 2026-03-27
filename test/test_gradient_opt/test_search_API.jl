@@ -55,3 +55,17 @@ dcf = computeexpectedDataCF(net);
 snaqnet = snaq!(t0, dcf; restrictions=SNaQ.knownidentifiable, hmax=4, runs=20, Nfail=50)
 @test hardwiredclusterdistance(snaqnet, net, false) != 0	# because we're inferring with more than the true # hybrids
 @test SNaQ.knownidentifiable(snaqnet)
+
+@testset "snaq! with larger networks" begin
+	for n in [10, 15, 20]
+		for h in [0, 3, 6, 9]
+			for seed in 1:10
+				truenet = generate_net(n, h, seed)
+				dcf = computeexpectedDataCF(truenet)
+				T0 = simulatecoalescent(truenet, 1, 1)[1];
+				snaqnet = snaq!(T0, dcf; restrictions=SNaQ.knownidentifiable, hmax=h, runs=10, Nfail=50)
+				@test computeloss(snaqnet, dcf) > computeloss(T0, dcf)
+			end
+		end
+	end
+end
