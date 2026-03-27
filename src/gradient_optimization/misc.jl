@@ -66,7 +66,6 @@ end
 
 
 function deepcopynetwork(net::HybridNetwork)::HybridNetwork
-
     # List of nodes W/O attached edges
     node_map::Dict{Int, Node} = Dict{Int, Node}()
     nodec = Array{Node}(undef, net.numnodes)

@@ -431,7 +431,8 @@ function search(
     # Set the seed
     rng = Random.seed!(seed)
 
-    N = readnewick(writenewick(N));
+    # N = readnewick(writenewick(N));
+    N = deepcopynetwork(N);
     for node in N.node
         if !node.leaf && !node.hybrid
             node.name = ""
@@ -452,7 +453,8 @@ function search(
             catch
             finally
                 if !found_different_net
-                    N = readnewick(writenewick(N));
+                    # N = readnewick(writenewick(N));
+                    N = deepcopynetwork(N);
                     semidirectnetwork!(N)
                 end
             end
@@ -501,7 +503,8 @@ function search(
 
         # 1. Propose a new topology
         @debug "Current: $(writenewick(N, round=true))"
-        Nprime = readnewick(writenewick(N));
+        #Nprime = readnewick(writenewick(N));
+        Nprime = deepcopynetwork(N);
 
         prop_move, prop_params = generatemoveproposal(Nprime, moves_attempted, hmax, rng)
         last_move = prop_move
@@ -628,7 +631,6 @@ function search(
     logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
     logmessage(filename, writenewick(N))
     return N
-
 end
 
 
