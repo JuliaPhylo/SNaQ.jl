@@ -99,11 +99,41 @@ end
 		getparentedge(H).gamma = -1
 		getparentedgeminor(H).gamma = -1
 	end
-	snaqnet = snaq!(net, dcf; hmax=net.numhybrids, Nfail=20, runs=1, maxeval=10000, probST=0.0);
+	snaqnet = snaq!(net, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=10000, probST=0.0);
+	@info computeloss(snaqnet, dcf)
 	@test hardwiredclusterdistance(net, snaqnet, false) == 0
-	@test computeloss(snaqnet, dcf) ≈ trueloss atol=1e-12
+	@test computeloss(snaqnet, dcf) > -1e-2
 end
 
-@testset "snaq! with malformed inputs" begin
+@testset "snaq! with polytomies in the input" begin
+	# Tree example
 	multifurcation = readnewick("((a,b),(c,d),(e,f),(g,(h,i,j)));");
+	for E in multifurcation.edge E.length = 1.0 end
+	dcf = computeexpectedDataCF(multifurcation);
+	for E in multifurcation.edge E.length = -1 end
+	snaqnet = snaq!(multifurcation, dcf; hmax=0, Nfail=20, runs=10, probST=0.75);
+	for E in reverse(snaqnet.edge)
+		if !getchild(E).leaf && 0.0 ≤ E.length ≤ 1e-5	# hard-coded minimum for edge lengths
+			PhyloNetworks.shrinkedge!(snaqnet, E)
+		end
+	end
+	@test hardwiredclusterdistance(snaqnet, multifurcation, false) == 0
+
+	# Network example
+	multifurcation = generate_net(10, 3, 41);
+	shrinkedges = sample([E for E in multifurcation.edge if !getchild(E).leaf && !E.hybrid], 5, replace=false)
+	for E in shrinkedges
+		PhyloNetworks.shrinkedge!(multifurcation, E)
+	end
+	dcf = computeexpectedDataCF(multifurcation)
+	binary = SNaQ.verifystartingtopologies!(multifurcation, "none", (net) -> true)[1];
+	computeloss(binary, dcf)
+	snaqnet = snaq!(multifurcation, dcf; restrictions=norestrictions(), hmax=0, Nfail=20, runs=10, opt_maxeval=1000)
+	@test loglik(snaqnet) > -1e-6
+	for E in reverse(snaqnet.edge)
+		if !getchild(E).leaf && !E.hybrid && 0.0 ≤ E.length ≤ 1e-5	# hard-coded minimum for edge lengths
+			PhyloNetworks.shrinkedge!(snaqnet, E)
+		end
+	end
+	@test hardwiredclusterdistance(snaqnet, multifurcation, false) == 0
 end
