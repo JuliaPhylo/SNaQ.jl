@@ -30,20 +30,11 @@ end
 
 
 """
-Randomly samples a hybrid node from network `N`.
-"""
-function sampleremovehybridparameters(N::HybridNetwork, rng::TaskLocalRNG)
-    return sample(rng, N.hybrid)
-end
-
-
-"""
 Randomly selects pairs of edges to use with `addhybrid!` until a valid pair is found.
 Returns that pair of nodes, or `nothing` if no valid pair is found (this should
 never happen).
 """
 function sampleaddhybridparameters(N::HybridNetwork, rng::TaskLocalRNG)
-
     niter::Int = 0
     e1::Edge = N.edge[1]    # placeholders
     e2::Edge = N.edge[1]
@@ -54,9 +45,7 @@ function sampleaddhybridparameters(N::HybridNetwork, rng::TaskLocalRNG)
         isvalidaddhybrid(e2, e1, N) && return (e2, e1)
         niter += 1
     end
-
     return nothing
-
 end
 
 
@@ -72,13 +61,3 @@ function isvalidaddhybrid(from_edge::Edge, to_edge::Edge, N::HybridNetwork)::Boo
     getparent(from_edge) == getparent(to_edge) && isrootof(getparent(from_edge), N) && return false
     return true
 end
-
-
-# INVALID example
-
-
-
-
-
-
-

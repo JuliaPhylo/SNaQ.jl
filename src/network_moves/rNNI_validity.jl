@@ -73,21 +73,6 @@ function allvalidrNNInodes(N::HybridNetwork, type::Int)
     end
 end
 
-function samplevalidrNNInodes(N::HybridNetwork; probs::Vector{<:Real}=[0.25, 0.25, 0.25, 0.25])
-    (length(probs) == 4 && sum(probs) ≈ 1) || error("`probs` must have length 4 and sum to 1.")
-    
-    r = rand()
-    if r < probs[1]
-        return sample_valid_rNNI1_nodes(N)
-    elseif r < probs[1] + probs[2]
-        return sample_valid_rNNI2_nodes(N)
-    elseif r < probs[1] + probs[2] + probs[3]
-        return sample_valid_rNNI3_nodes(N)
-    else
-        return sample_valid_rNNI4_nodes(N)
-    end
-end
-
 function allvalidrNNI1nodes(N::HybridNetwork)
     valid_us = [node for node in N.node if !node.leaf && length(getchildren(node)) == 2];
     length(valid_us) > 0 || return []

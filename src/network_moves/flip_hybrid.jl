@@ -18,8 +18,3 @@ function samplefliphybridparameters(N::HybridNetwork, rng::TaskLocalRNG)
     end
     return nothing
 end
-
-
-
-
-

@@ -172,25 +172,3 @@ function getleavesbelow(nodes::Vector{Node})::Vector{Node}
     end
     return leaves
 end
-
-
-
-# # c3 is NOT identifiable
-# c3 = readnewick("((c,#H1),((((g)#H1,(d,#H4)),#H3),(#H2,((b2)#H4,((f)#H2,((b1)#H3,a))))));")
-# SNaQ.semidirectnetwork!(c3)
-# @test !SNaQ.knownidentifiable(c3)
-
-# # c4 is NOT identifiable
-# c4 = deepcopy(not_c4); deleteleaf!(c4, "f")
-# SNaQ.semidirectnetwork!(c4)
-# @test !SNaQ.knownidentifiable(c4)
-
-# # c6 is identifiable
-# c6 = readnewick("(((((((a1,a2))#H1,g),f),#H2),e),(((((b1,b2))#H2,c),#H1),d));")
-# SNaQ.semidirectnetwork!(c6)
-# @test SNaQ.knownidentifiable(c6)
-
-# # dianet is identifiable
-# dianet = readnewick("((a,(b,#H1)),(((c,d))#H1,(e,f)));");
-# SNaQ.semidirectnetwork!(dianet);
-# @test SNaQ.knownidentifiable(dianet)
