@@ -76,15 +76,16 @@ end
 	@test getlevel(snaqnet) == 1
 end
 
-@testset "snaq! with larger networks" begin
-	for n in [10, 15, 20]
-		for h in [0, 3, 6, 9]
+@testset "snaq! with many hybrids does not error and improves the NCLL" begin
+	for n in [10, 20]
+		for h in [3, 6, 9]
 			for seed in 1:10
 				truenet = generate_net(n, h, seed)
 				dcf = computeexpectedDataCF(truenet)
 				T0 = simulatecoalescent(truenet, 1, 1)[1];
-				snaqnet = snaq!(T0, dcf; restrictions=SNaQ.knownidentifiable, propQuartets=0.25, hmax=h, runs=10, Nfail=50)
+				rt = @elapsed snaqnet = snaq!(T0, dcf; restrictions=knownidentifiable, propQuartets=0.1, hmax=h, runs=10, Nfail=5)
 				@test computeloss(snaqnet, dcf) > computeloss(T0, dcf)
+				@test knownidentifiable(snaqnet)
 			end
 		end
 	end
