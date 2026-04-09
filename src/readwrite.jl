@@ -36,7 +36,7 @@ function cleanAfterRead!(net::HybridNetwork, leaveRoot::Bool)
             if !n.hybrid
                 if size(n.edge,1) > 3
                     @debug "warning: polytomy found in node $(n.number), random resolution chosen"
-                    enew = resolvetreepolytomy!(net,n)
+                    enew = PhyloNetworks.resolvetreepolytomy!(net,n)
                     update_yz!(enew)
                 end
                 hyb = count([e.hybrid for e in n.edge])
