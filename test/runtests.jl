@@ -64,9 +64,16 @@ function runtestfile(testfile::String)
     originalstderr = stderr
     redirect_stdout(devnull)  # when testing for errors, comment these lines
     redirect_stderr(devnull)  # when testing for errors, comment these lines
-    include(testfile)
-    redirect_stdout(originalstdout)
-    redirect_stderr(originalstderr)
+    try
+        include(testfile)
+    catch e
+        redirect_stdout(originalstdout)
+        redirect_stderr(originalstderr)
+        rethrow(e)
+    finally
+        redirect_stdout(originalstdout)
+        redirect_stderr(originalstderr)
+    end
     printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
 

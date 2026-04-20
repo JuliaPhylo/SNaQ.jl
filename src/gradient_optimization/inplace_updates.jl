@@ -65,7 +65,17 @@ Gets the relevant objects (internal edges and γ's) underneath the node `u` wher
 `u` was used in an rNNI(1) move.
 """
 function paramsbelowurNNI1(u::Node, param_map::Dict{Int,Int})::Vector{Int}
-    objs_below = Vector{Int}([param_map[getparentedge(u).number]]);
+    objs_below = Vector{Int}();
+    upars = getparents(u)
+    if length(upars) > 0
+        push!(objs_below, param_map[getparentedge(u).number])
+    else
+        for e in u.edge
+            haskey(param_map, e.number) || continue
+            push!(objs_below, param_map[e.number])
+        end
+    end
+
     queue = Vector{Edge}([e for e in u.edge if getparent(e) == u]);
     n_iter::Int = 0
 

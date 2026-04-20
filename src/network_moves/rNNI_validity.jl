@@ -8,18 +8,33 @@ is_valid_rNNI(s::Node, t::Node, u::Node, v::Node, type::Int) = type == 1 ? isval
     type == 3 ? isvalidrNNI3(s, t, u, v) :
     type == 4 ? isvalidrNNI4(s, t, u, v) : error("`type` must be in [1, 2, 3, 4], received $(type).")
 
+function areconnected(n1::Node, n2::Node)::Bool
+    return any(e -> length(e.node) == 2 && (
+        (e.node[1] == n1 && e.node[2] == n2) ||
+        (e.node[1] == n2 && e.node[2] == n1)
+    ), n1.edge)
+end
 
 function isvalidrNNI1(s::Node, t::Node, u::Node, v::Node)
     (s == t || s == u || s == v || t == u || t == v || u == v) && return false
 
-    cu = getchildren(u)
-    (s in cu && v in cu) || return false
+    # If any of s, t, u, v are hybrids, then we need to enforce directionality
+    if s.hybrid || t.hybrid || u.hybrid || v.hybrid
+        cu = getchildren(u)
+        (s in cu && v in cu) || return false
 
-    !isdescendantof(s, v) || return false
-    cv = getchildren(v)
+        !isdescendantof(s, v) || return false
+        cv = getchildren(v)
 
-    (!(s in cv) && !(v in getchildren(s))) || return false
-    return true
+        (!(s in cv) && !(v in getchildren(s))) || return false
+    end
+
+    # Directionality doesn't matter b/c we aren't actually rooted;
+    # what matters is that the edges that need to be present are
+    # indeed present (su, uv, tv) AND v is not a hybrid
+    return areconnected(u, v) &&
+        areconnected(s, u) &&
+        areconnected(t, v)
 end
 
 function isvalidrNNI2(s::Node, t::Node, u::Node, v::Node)
@@ -73,34 +88,61 @@ function allvalidrNNInodes(N::HybridNetwork, type::Int)
     end
 end
 
-function allvalidrNNI1nodes(N::HybridNetwork)
-    valid_us = [node for node in N.node if !node.leaf && length(getchildren(node)) == 2];
-    length(valid_us) > 0 || return []
+function allvalidrNNI1nodes(N::HybridNetwork)::Vector{NTuple{4, Node}}
+    nonleaves = [node for node in N.node if !node.leaf && !node.hybrid]
+    stuv_combos = Vector{NTuple{4, Node}}();
 
-    stuv_combos = [];
-    for u in valid_us
-        u == getroot(N) && continue
-        children = getchildren(u)
-        (isdescendantof(children[1], children[2]) || isdescendantof(children[2], children[1])) && continue
-        children[1] == children[2] && continue
+    for i = 1:(length(nonleaves)-1)
+        u = nonleaves[i]
+        u.hybrid && continue
+        for j = (i+1):length(nonleaves)
+            v = nonleaves[j]
+            v.hybrid && continue
+            areconnected(u, v) || continue
 
-        if !children[1].leaf && !(children[2] in getchildren(children[1]))
-            for t in getchildren(children[1])
-                children[2].hybrid && children[1] in getparents(children[2]) && continue
-                push!(stuv_combos, (children[2], t, u, children[1]))
-            end
-        end
-
-        if !children[2].leaf && !(children[1] in getchildren(children[2]))
-            for t in getchildren(children[2])
-                children[1].hybrid && children[2] in getparents(children[1]) && continue
-                push!(stuv_combos, (children[1], t, u, children[2]))
+            for se in u.edge
+                s = getOtherNode(se, u)
+                s == v && continue
+                s.hybrid && continue
+                for te in v.edge
+                    t = getOtherNode(te, v)
+                    t == u && continue
+                    t.hybrid && continue
+                    push!(stuv_combos, (s, t, u, v))
+                end
             end
         end
     end
-    all([isvalidrNNI1(s, t, u, v) for (s, t, u, v) in stuv_combos]) || error("Some generated combos weren't valid...")
-
     return stuv_combos
+
+    ####### Out-dated #########
+    # valid_us = [node for node in N.node if !node.leaf && length(getchildren(node)) == 2];
+    # length(valid_us) > 0 || return []
+
+    # stuv_combos = [];
+    # for u in valid_us
+    #     u == getroot(N) && continue
+    #     children = getchildren(u)
+    #     (isdescendantof(children[1], children[2]) || isdescendantof(children[2], children[1])) && continue
+    #     children[1] == children[2] && continue
+
+    #     if !children[1].leaf && !(children[2] in getchildren(children[1]))
+    #         for t in getchildren(children[1])
+    #             children[2].hybrid && children[1] in getparents(children[2]) && continue
+    #             push!(stuv_combos, (children[2], t, u, children[1]))
+    #         end
+    #     end
+
+    #     if !children[2].leaf && !(children[1] in getchildren(children[2]))
+    #         for t in getchildren(children[2])
+    #             children[1].hybrid && children[2] in getparents(children[1]) && continue
+    #             push!(stuv_combos, (children[1], t, u, children[2]))
+    #         end
+    #     end
+    # end
+    # all([isvalidrNNI1(s, t, u, v) for (s, t, u, v) in stuv_combos]) || error("Some generated combos weren't valid...")
+
+    # return stuv_combos
 end
 
 function allvalidrNNI2nodes(N::HybridNetwork)

@@ -19,6 +19,7 @@ end
 function performrNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     isvalidrNNI1(s, t, u, v) || error("Topological conditions for rNNI(1) not met.")
     @debug "MOVE: rNNI(1) - $((s.name, t.name, u.name, v.name))"
+    newick_before = writenewick(N; round=true)
 
     # u: loses s as a child and gains t as a child
     # v: loses t as a child and gains s as a child
@@ -30,11 +31,19 @@ function performrNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     replace!(edge_tv.node, t => s)
     replace!(s.edge, edge_su => edge_tv)
     replace!(t.edge, edge_tv => edge_su)
-    #edge_sv::Edge = s.edge[findfirst(e -> v in e.node, s.edge)]
+
+    # Make sure hybrid edges still point at hybrid nodes
+    if s.hybrid && getchild(edge_tv) != s
+        edge_tv.node = [edge_tv.node[2], edge_tv.node[1]]
+    end
+    if t.hybrid && getchild(edge_su) != t
+        edge_su.node = [edge_su.node[2], edge_su.node[1]]
+    end
 
     # Swap the hybridization-related info of these edges. That way, if either
     # `s` or `t` are hybrids, they maintain their status
     swapedgehybridinfo!(edge_su, edge_tv)
+    directedges!(N)
 
     # If `v` is a hybrid, we need to flip the direciton of the edge `uv`
     # if v.hybrid
