@@ -217,6 +217,7 @@ function readtableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
 end
 
 
+
 # ---------------- read input gene trees and calculate obsCF ----------------------
 
 """
@@ -726,6 +727,119 @@ function readtrees2CF(trees::Vector{HybridNetwork};
     else
         readInputData(trees, quartetfile, Symbol(whichQ), numQ, writeTab, CFfile, writeQ, writeSummary)
     end
+end
+
+
+# Function for calculating confidence intervals for qartet CFs
+# G. A. Ballen, 2026-05-05
+"""
+    confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, verbose::Bool)
+
+Calculate confidence intervals for quartet concordance factors to generate
+a data frame with observed concordance factors and their 95% confidence
+intervals. Confidence intervals are calculated using bootstrap.
+The input arguments are:
+
+- `gt_mles` A String with the path to the multiphylo with the gene trees, for instance
+  from IQTREE or RAxML.
+- `gt_boots` A string with the path to the text file pointing to the
+  bootstrapped gene trees, one multiphylo of bootstrap trees per gene tree.
+- `level` A Float64 with the confidence level for the confidence interval, typically 0.95.
+- `verbose` A Bool with the instruction whether to return verbose output
+  through execution.
+
+The function will calculate observed CFs for each combination of gene tree
+bootstrap iteration, and then use the resulting vectors to calculate the
+95% confidence intervals. This means at some point we have a multidimensional
+array of dimensions nquartets * nCFs (3) * nbootstraps. This can be large
+and may generate issues with RAM allocated for such an object. An error is
+thrown when the expected lower bound of the object size (in Gbs) exceeds
+the available memory (also in Gbs).
+
+The function returns a `DataFrame` with columns `t1`, `t2`, `t3`, `t4`,
+`CF12_34`, `CF12_34_lo`, `CF12_34_hi`, `CF13_24`, `CF13_24_lo`, `CF13_24_hi`,
+`CF14_23`, `CF14_23_lo`, `CF14_23_hi`, and `ngenes`. The user may either use
+it as the input for the bootsnaq function, or write it to a CSV for later use.
+
+The function [snaq!](@ref) uses `DataCF` as input, so the resulting `DataFrame` will need to be
+converted to it with [readtableCF](@ref).
+The function [bootsnaq](@ref) takes a `DataFrame` as input, so you can just use the resulting
+object straight away.
+"""
+function confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, verbose::Bool)
+    # read in the MLE gene trees
+    trees = readmultinewick(gt_mles);
+    if verbose
+        println("Finished reading gene tree MLEs.")
+    end
+    q,t = countquartetsintrees(trees; showprogressbar=verbose);
+    nt = tablequartetCF(q,t;)
+    cfs = DataFrame(nt, copycols=false);
+    bootTrees = readmultinewick_files(gt_boots);
+    if verbose
+        println("Finished reading gene bootstrap trees.")
+    end
+    # prototyping the bootstrap of cfs
+    # first iter
+    q,t = countquartetsintrees(map(x -> x[1], bootTrees); showprogressbar=verbose);
+    nt = tablequartetCF(q,t);
+    df = DataFrame(nt, copycols=false);
+    # initialise the array and assign the values in the first iter element-wise
+    arr = df[:, 6:end-1]
+    if verbose
+        println("There are $(size(arr)[1]) CFs in the dataset.")
+    end
+    # calculate memory
+    freememGb = Sys.free_memory()/(1024^3)
+    arrexpmemGb = (size(arr)[1] * size(arr)[2] * length(bootTrees[1]) * 8) / (1024^3)
+    if freememGb < arrexpmemGb
+        error("The CF multidmiensional array requires at least $arrexpmemGb Gb of RAM but only has $freememGb Gb available.")
+    end
+    arr_boot = Array{Float64}(undef, size(arr)[1], size(arr)[2], length(bootTrees[1]))
+    arrmemGb = Base.summarysize(arr_boot)/(1024^3)
+    if verbose
+        println("The multidimensional array requires $arrmemGb Gb of memory and has $freememGb Gb of RAM available.")
+        #println("The expected arr size is $arrexpmemGb Gb and its actual size is $arrmemGb Gb.")
+    end
+    arr_boot[:,:,1] .= arr
+    # start for loop and get the length from the first gt vector
+    for iboot in 2:length(bootTrees[1])
+        q,t = countquartetsintrees(map(x -> x[iboot], bootTrees); showprogressbar=verbose);
+        nt = tablequartetCF(q,t);
+        df = DataFrame(nt, copycols=false);
+        arr = df[:, 6:end-1]
+        arr_boot[:,:,iboot] .= arr
+    end
+    if verbose
+        println("Finished calculating quartets in $(length(bootTrees[1])) gene trees.")
+    end
+    cf_cis = Matrix{Float64}(undef, size(arr_boot)[1], 3*2)
+    # start calculating quantiles on the vectors for each combination of quartet and observed cf across the bootstrap replicates
+    lower = (1.0-level)/2.0
+    upper = 1.0 - lower
+    for iquartet in 1:size(arr_boot)[1]
+        for jcf in 1:3
+            quants = quantile(arr_boot[iquartet,jcf,:], [lower, upper])
+            cf_cis[iquartet, (jcf*2-1)] = quants[1]
+            cf_cis[iquartet, (jcf*2)] = quants[2]
+        end
+    end
+    if verbose
+        println("Finished calculating quantiles for each combination of quartet and observed cf over bootstrap replicates.")
+    end
+    # construct the output DF
+    cf_final = cfs[:,2:5]
+    cf_final.CF12_34 = cfs[:,6]
+    cf_final.CF12_34_lo = cf_cis[:,1]
+    cf_final.CF12_34_hi = cf_cis[:,2]
+    cf_final.CF13_24 = cfs[:,7]
+    cf_final.CF13_24_lo = cf_cis[:,3]
+    cf_final.CF13_24_hi = cf_cis[:,4]
+    cf_final.CF14_23 = cfs[:,8]
+    cf_final.CF14_23_lo = cf_cis[:,5]
+    cf_final.CF14_23_hi = cf_cis[:,6]
+    cf_final.ngenes = cfs[:,9]
+    return cf_final
 end
 
 # ---------------------- descriptive stat for input data ----------------------------------

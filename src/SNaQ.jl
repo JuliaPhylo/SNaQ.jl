@@ -54,6 +54,7 @@ module SNaQ
         mapallelesCFtable,
         summarizedataCF,
         fittedquartetCF,
+        confintqCF_bootgts,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
