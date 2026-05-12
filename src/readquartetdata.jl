@@ -730,19 +730,19 @@ function readtrees2CF(trees::Vector{HybridNetwork};
 end
 
 
-# Function for calculating confidence intervals for qartet CFs
+# Function for calculating confidence intervals for quartet CFs
 # G. A. Ballen, 2026-05-05
 """
-    confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, verbose::Bool)
+    confintqCF_genetrees(pointestimates::String, replicates::String, level::Float64, verbose::Bool)
 
 Calculate confidence intervals for quartet concordance factors to generate
-a data frame with observed concordance factors and their 95% confidence
-intervals. Confidence intervals are calculated using bootstrap.
+a data frame with observed concordance factors and their confidence
+intervals of any desired confidence level. Confidence intervals are calculated using bootstrap.
 The input arguments are:
 
-- `gt_mles` A String with the path to the multiphylo with the gene trees, for instance
+- `pointestimates` A String with the path to the multiphylo with the gene trees, for instance
   from IQTREE or RAxML.
-- `gt_boots` A string with the path to the text file pointing to the
+- `replicates` A string with the path to the text file pointing to the
   bootstrapped gene trees, one multiphylo of bootstrap trees per gene tree.
 - `level` A Float64 with the confidence level for the confidence interval, typically 0.95.
 - `verbose` A Bool with the instruction whether to return verbose output
@@ -766,16 +766,16 @@ converted to it with [readtableCF](@ref).
 The function [bootsnaq](@ref) takes a `DataFrame` as input, so you can just use the resulting
 object straight away.
 """
-function confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, verbose::Bool)
+function confintqCF_genetrees(pointestimates::String, replicates::String, level::Float64, verbose::Bool)
     # read in the MLE gene trees
-    trees = readmultinewick(gt_mles);
+    trees = readmultinewick(pointestimates);
     if verbose
         println("Finished reading gene tree MLEs.")
     end
     q,t = countquartetsintrees(trees; showprogressbar=verbose);
     nt = tablequartetCF(q,t;)
     cfs = DataFrame(nt, copycols=false);
-    bootTrees = readmultinewick_files(gt_boots);
+    bootTrees = readmultinewick_files(replicates);
     if verbose
         println("Finished reading gene bootstrap trees.")
     end
