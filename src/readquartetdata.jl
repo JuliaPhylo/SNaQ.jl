@@ -768,22 +768,16 @@ converted to it with [readtableCF](@ref).
 The function [bootsnaq](@ref) takes a `DataFrame` as input, so you can just use the resulting
 object straight away.
 """
-function confintqCF_genetrees(pointestimates::String, replicates::String, level::Float64, verbose::Bool)
+function confintqCF_genetrees(pointestimates::Vector{HybridNetwork}, replicates::Vector{Vector{HybridNetwork}}, level::Float64, verbose::Bool)
     # read in the MLE gene trees
-    trees = readmultinewick(pointestimates);
-    if verbose
-        println("Finished reading gene tree MLEs.")
-    end
-    q,t = countquartetsintrees(trees; showprogressbar=verbose);
+
+    q,t = countquartetsintrees(pointestimates; showprogressbar=verbose);
     nt = tablequartetCF(q,t;)
     cfs = DataFrame(nt, copycols=false);
-    bootTrees = readmultinewick_files(replicates);
-    if verbose
-        println("Finished reading gene bootstrap trees.")
-    end
+
     # prototyping the bootstrap of cfs
     # first iter
-    q,t = countquartetsintrees(map(x -> x[1], bootTrees); showprogressbar=verbose);
+    q,t = countquartetsintrees(map(x -> x[1], replicates); showprogressbar=verbose);
     nt = tablequartetCF(q,t);
     df = DataFrame(nt, copycols=false);
     # initialise the array and assign the values in the first iter element-wise
@@ -793,11 +787,11 @@ function confintqCF_genetrees(pointestimates::String, replicates::String, level:
     end
     # calculate memory
     freememGb = Sys.free_memory()/(1024^3)
-    arrexpmemGb = (size(arr)[1] * size(arr)[2] * length(bootTrees[1]) * 8) / (1024^3)
+    arrexpmemGb = (size(arr)[1] * size(arr)[2] * length(replicates[1]) * 8) / (1024^3)
     if freememGb < arrexpmemGb
         error("The CF multidmiensional array requires at least $arrexpmemGb Gb of RAM but only has $freememGb Gb available.")
     end
-    arr_boot = Array{Float64}(undef, size(arr)[1], size(arr)[2], length(bootTrees[1]))
+    arr_boot = Array{Float64}(undef, size(arr)[1], size(arr)[2], length(replicates[1]))
     arrmemGb = Base.summarysize(arr_boot)/(1024^3)
     if verbose
         println("The multidimensional array requires $arrmemGb Gb of memory and has $freememGb Gb of RAM available.")
@@ -805,15 +799,15 @@ function confintqCF_genetrees(pointestimates::String, replicates::String, level:
     end
     arr_boot[:,:,1] .= arr
     # start for loop and get the length from the first gt vector
-    for iboot in 2:length(bootTrees[1])
-        q,t = countquartetsintrees(map(x -> x[iboot], bootTrees); showprogressbar=verbose);
+    for iboot in 2:length(replicates[1])
+        q,t = countquartetsintrees(map(x -> x[iboot], replicates); showprogressbar=verbose);
         nt = tablequartetCF(q,t);
         df = DataFrame(nt, copycols=false);
         arr = df[:, 6:end-1]
         arr_boot[:,:,iboot] .= arr
     end
     if verbose
-        println("Finished calculating quartets in $(length(bootTrees[1])) gene trees.")
+        println("Finished calculating quartets in $(length(replicates[1])) gene trees.")
     end
     cf_cis = Matrix{Float64}(undef, size(arr_boot)[1], 3*2)
     # start calculating quantiles on the vectors for each combination of quartet and observed cf across the bootstrap replicates
