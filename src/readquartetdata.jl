@@ -740,10 +740,12 @@ a data frame with observed concordance factors and their confidence
 intervals of any desired confidence level. Confidence intervals are calculated using bootstrap.
 The input arguments are:
 
-- `pointestimates` A String with the path to the multiphylo with the gene trees, for instance
-  from IQTREE or RAxML.
-- `replicates` A string with the path to the text file pointing to the
-  bootstrapped gene trees, one multiphylo of bootstrap trees per gene tree.
+- `pointestimates` Point estimates of the gene trees. This may either be a `String` with the path
+  to the multiphylo with the gene trees or a vector of tree objects `Vector{HybridNetwork}`.
+- `replicates` Sampled estimates for each gene tree, for example, bootstrap or posterior samples. 
+  This may either be vector of vectors of gene trees `Vector{Vector{HybridNetwork}} or 
+  a `String` with the path to the text file pointing to the sampled gene trees,
+  one multiphylo of bootstrap trees per gene tree.
 - `level` A Float64 with the confidence level for the confidence interval, typically 0.95.
 - `verbose` A Bool with the instruction whether to return verbose output
   through execution.
@@ -840,6 +842,20 @@ function confintqCF_genetrees(pointestimates::String, replicates::String, level:
     cf_final.CF14_23_hi = cf_cis[:,6]
     cf_final.ngenes = cfs[:,9]
     return cf_final
+end
+function confintqCF_genetrees(pointestimates, replicates::String, level::Float64, verbose::Bool)
+    bootTrees = readmultinewick_files(replicates);
+    if verbose
+        println("Finished reading gene bootstrap trees.")
+    end
+    return confintqCF_genetrees(pointestimates,bootTrees,level,verbose)
+end
+function confintqCF_genetrees(pointestimates::String, replicates, level::Float64, verbose::Bool)
+    trees = readmultinewick(pointestimates);
+    if verbose
+        println("Finished reading gene tree MLEs.")
+    end
+    return confintqCF_genetrees(trees,replicates,level,verbose)
 end
 
 # ---------------------- descriptive stat for input data ----------------------------------
