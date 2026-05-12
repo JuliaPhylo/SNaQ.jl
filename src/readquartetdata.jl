@@ -843,7 +843,7 @@ function confintqCF_genetrees(pointestimates::String, replicates::String, level:
     cf_final.ngenes = cfs[:,9]
     return cf_final
 end
-function confintqCF_genetrees(pointestimates, replicates::String, level::Float64, verbose::Bool)
+function confintqCF_genetrees(pointestimates::Vector{HybridNetwork}, replicates::String, level::Float64, verbose::Bool)
     bootTrees = readmultinewick_files(replicates);
     if verbose
         println("Finished reading gene bootstrap trees.")
