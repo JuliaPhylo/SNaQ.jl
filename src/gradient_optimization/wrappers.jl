@@ -91,7 +91,7 @@ function snaq!(
     d::DataCF;
     hmax::Integer=1,
     liktolAbs::Float64=1e-8,
-    Nfail::Integer=3000,
+    Nfail::Integer=100,
     ftolRel::Float64=1e-8,
     ftolAbs::Float64=1e-8,
     xtolRel::Float64=1e-8,
