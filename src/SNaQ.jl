@@ -72,7 +72,7 @@ module SNaQ
                                 # restrictions=fxn(), while others are called like
                                 # restirctions=fxn - standardize this
         norestrictions,
-        knownidentifiable,
+        tcgidentifiable,
         restrictionset
 
 

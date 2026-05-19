@@ -34,7 +34,7 @@ restrictgalledtree() = (net) -> getnetworklevel(net) <= 1
 restrictrootedtreechild() = (net) -> PhyloNetworks.istreechild(net)[1]
 restrictweaklytreechild() = (net) -> PhyloNetworks.istreechild(net)[2]
 restrictstronglytreechild() = (net) -> PhyloNetworks.istreechild(net)[3]
-defaultrestrictions() = (net) -> knownidentifiable(net)
+defaultrestrictions() = (net) -> tcgidentifiable(net)
 norestrictions() = (net) -> true
 
 

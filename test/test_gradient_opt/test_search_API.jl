@@ -49,13 +49,13 @@ dcf = computeexpectedDataCF(net);
 snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=1), hmax=1, propQuartets=0.85, runs=20, Nfail=50)
 @test hardwiredclusterdistance(snaqnet, net, false) == 0
 @test restrictionset(;max_level=1)(snaqnet)
-@test knownidentifiable(snaqnet)
+@test tcgidentifiable(snaqnet)
 
 # snaq! with restrictions works as expected
 t0 = simulatecoalescent(tre0, 1, 1)[1];
 dcf = computeexpectedDataCF(net);
-snaqnet = snaq!(t0, dcf; restrictions=SNaQ.knownidentifiable, hmax=4, runs=20, Nfail=50)
-@test SNaQ.knownidentifiable(snaqnet)
+snaqnet = snaq!(t0, dcf; restrictions=SNaQ.tcgidentifiable, hmax=4, runs=20, Nfail=50)
+@test SNaQ.tcgidentifiable(snaqnet)
 
 # snaq! with restrictions works as expected
 @testset "snaq! with restrictionset(;max_level=0) infers a tree, regardless of hmax" begin
@@ -63,7 +63,7 @@ snaqnet = snaq!(t0, dcf; restrictions=SNaQ.knownidentifiable, hmax=4, runs=20, N
 	dcf = computeexpectedDataCF(net);
 	snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=0), hmax=4, runs=20, Nfail=50)
 	@test snaqnet.numhybrids == 0
-	@test knownidentifiable(snaqnet)
+	@test tcgidentifiable(snaqnet)
 end
 
 @testset "snaq! respects restrictions when truth lies outside restrictions" begin
@@ -83,9 +83,9 @@ end
 				truenet = generate_net(n, h, seed)
 				dcf = computeexpectedDataCF(truenet)
 				T0 = simulatecoalescent(truenet, 1, 1)[1];
-				rt = @elapsed snaqnet = snaq!(T0, dcf; restrictions=knownidentifiable, propQuartets=0.1, hmax=h, runs=10, Nfail=5)
+				rt = @elapsed snaqnet = snaq!(T0, dcf; restrictions=tcgidentifiable, propQuartets=0.1, hmax=h, runs=10, Nfail=5)
 				@test computeloss(snaqnet, dcf) > computeloss(T0, dcf)
-				@test knownidentifiable(snaqnet)
+				@test tcgidentifiable(snaqnet)
 			end
 		end
 	end

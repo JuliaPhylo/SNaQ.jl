@@ -109,7 +109,7 @@ function snaq!(
     qtolAbs::Float64=1e-4,
     qinfTest::Bool=false,
     propQuartets::Float64=1.0,
-    restrictions::Function=SNaQ.knownidentifiable,
+    restrictions::Function=SNaQ.tcgidentifiable,
     kwargs...
 )
 

@@ -18,7 +18,7 @@ Checklist:
     - Otherwise --> unknown, return false
 - Non tree-child galled --> unknown, return false
 """
-function knownidentifiable(N::HybridNetwork)::Bool
+function tcgidentifiable(N::HybridNetwork)::Bool
     N.numhybrids == 0 && return true
     !N.isrooted || return false
 
@@ -61,7 +61,11 @@ function knownidentifiable(N::HybridNetwork)::Bool
     end
     return true
 end
-
+@deprecate knownidentifiable(args...) tcgidentifiable(args...);
+function knownidentifiable(N::HybridNetwork)::Bool
+    @warn "`knownidentifiable` is deprecated, please use `tcgidentifiable` instead."
+    return tcgidentifiable(N)
+end
 
 """
 Gets the `n0,n1,n2,n3` taxa counts associated with the 4-cycle `cycle`.
