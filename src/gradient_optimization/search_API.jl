@@ -736,29 +736,30 @@ function samplemoveproposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tup
     # rSPR:         5%
     # origin:       10%
     # target:       10%
-    # loc origin:   20%
-    # loc target:   15%
+    # local origin: 20%
+    # local target: 15%
     # fliphybrid:   15%
     probs = [0.15, 0.0, 0.0, 0.1, 0.05, 0.1, 0.1, 0.2, 0.15, 0.15]
+    cumprobs = cumsum(probs)
 
     r = rand(rng)
-    if r < sum(probs[1:1])
+    if r <= sum(cumprobs[1])
         return (:rNNI1, samplerNNIparameters(N, 1, rng))
-    elseif r < sum(probs[1:2])
+    elseif r <= sum(cumprobs[2])
         return (:rNNI2, samplerNNIparameters(N, 2, rng))
-    elseif r < sum(probs[1:3])
+    elseif r <= sum(cumprobs[3])
         return (:rNNI3, samplerNNIparameters(N, 3, rng))
-    elseif r < sum(probs[1:4])
+    elseif r <= sum(cumprobs[4])
         return (:rNNI4, samplerNNIparameters(N, 4, rng))
-    elseif r < sum(probs[1:5])
+    elseif r <= sum(cumprobs[5])
         return (:rSPR, samplerSPRparameters(N, rng))
-    elseif r < sum(probs[1:6])
+    elseif r <= sum(cumprobs[6])
         return (:retic_origin, samplemovereticulateoriginparameters(N, rng))
-    elseif r < sum(probs[1:7])
+    elseif r <= sum(cumprobs[7])
         return (:retic_target, samplemovereticulatetargetparameters(N, rng))
-    elseif r < sum(probs[1:8])
+    elseif r <= sum(cumprobs[8])
         return (:retic_origin_local, samplemovereticulateoriginlocalparameters(N, rng))
-    elseif r < sum(probs[1:9])
+    elseif r <= sum(cumprobs[9])
         return (:retic_target_local, samplemovereticulatetargetlocalparameters(N, rng))
     else
         return (:flip_hybrid, samplefliphybridparameters(N, rng))
