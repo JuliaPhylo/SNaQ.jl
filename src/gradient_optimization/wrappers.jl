@@ -87,7 +87,7 @@ Kolbow, N, Kong, K, Chafin, T, Justison, J, Ane, C, Solis-Lemus, C (2025).
 SNaQ.jl: Improved scalability for phylogenetic network inference.
 """
 function snaq!(
-    currT0::HybridNetwork,
+    currT0::Union{HybridNetwork, Vector{HybridNetwork}},
     d::DataCF;
     hmax::Integer=1,
     liktolAbs::Float64=1e-8,
