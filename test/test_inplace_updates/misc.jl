@@ -33,6 +33,19 @@ function generate_net(n::Int, h::Int, seed::Int=42)
             node.name = "i$(abs(rand(rng, Int)) % 10000)"
         end
     end
+    for E in net.edge
+        if E.length < 0
+            E.length = rand()
+        end
+    end
+    for H in net.hybrid
+        if getparentedge(H).gamma < 0 || getparentedgeminor(H).gamma < 0
+            γ = rand()
+            γ = min(γ, 1.0 - γ)
+            getparentedge(H).gamma = 1.0 - γ
+            getparentedgeminor(H).gamma = γ
+        end
+    end
     return net
 end
 

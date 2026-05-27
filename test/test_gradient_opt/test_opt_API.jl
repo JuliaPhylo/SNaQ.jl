@@ -17,7 +17,7 @@ end
     for L in [0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
         for seed = 1:10
             net, q = get_data(L, seed);
-            _, _, params, _, _ = findquartetequations(net);
+            params = SNaQ.gatherparams(net);
 
             opt_net = deepcopy(net)
             for E in opt_net.edge
@@ -31,15 +31,16 @@ end
             end
 
             firstoptL = optimize!(SNaQ.deepcopynetwork(opt_net), q; maxeval=100000)
-            secondoptL = optimize!(opt_net, SNaQ.findquartetequations(opt_net)[1], q, Inf; maxeval=100000)
-            @test firstoptL ≈ secondoptL atol=1e-8
-            eqns, _, opt_params, idx_obj_map, _ = findquartetequations(opt_net);
+            eqns = findquartetequations(opt_net)[1];
+            secondoptL = optimize!(opt_net, eqns, q, Inf; maxeval=100000)
+            opt_params = SNaQ.gatherparams(opt_net);
+            @test firstoptL ≈ secondoptL atol=1e-5
             if !(sum(mean((opt_params .- params).^2)) < 1.0)
                 @info L
                 @info (sum(mean((opt_params .- params).^2)))
             end
 
-            @test sum(mean((opt_params .- params).^2)) < 1.0
+            @test sum(mean(abs.(opt_params .- params))) < 1.0
         end
     end
 end

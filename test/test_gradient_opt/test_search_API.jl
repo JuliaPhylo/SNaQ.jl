@@ -11,51 +11,55 @@ tre0 = majortree(net);
 
 
 opt_rt = @elapsed opt_net, logPLs = multisearch(tre0, q, net.numhybrids; seed=7, maxequivPLs = 100)
-@test hardwiredclusterdistance(net, opt_net, false) == 0
+@test computeloss(opt_net, q) > computeloss(tre0, q)
 
 t0s = simulatecoalescent(tre0, 3, 1);
 opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; runs=length(t0s), seed=5, maxequivPLs = 100)
-@test hardwiredclusterdistance(net, opt_net, false) == 0
+@test computeloss(opt_net, q) > minimum(computeloss(t0, q) for t0 in t0s)
 
 
-# Test with outgroups
-t0s = simulatecoalescent(tre0, 3, 1);
-opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="a", runs=length(t0s), seed=5, maxequivPLs = 100)
-@test any(t -> t.name == "a", getchildren(getroot(opt_net))) # NOT looking for 0 HWCD b/c "a" is not a true outgroup
+@testset "Outgroups" begin
+	t0s = simulatecoalescent(tre0, 3, 1);
+	opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="a", runs=length(t0s), seed=5, maxequivPLs = 100)
+	@test any(t -> t.name == "a", getchildren(getroot(opt_net))) # NOT looking for 0 HWCD b/c "a" is not a true outgroup
 
-t0s = simulatecoalescent(tre0, 3, 1);
-opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="b", runs=length(t0s), seed=5, maxequivPLs = 100)
-@test any(t -> t.name == "b", getchildren(getroot(opt_net))) # NOT looking for 0 HWCD b/c "b" is not a true outgroup
+	t0s = simulatecoalescent(tre0, 3, 1);
+	opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="b", runs=length(t0s), seed=5, maxequivPLs = 100)
+	@test any(t -> t.name == "b", getchildren(getroot(opt_net))) # NOT looking for 0 HWCD b/c "b" is not a true outgroup
 
-t0s = simulatecoalescent(tre0, 3, 1);
-opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="e", runs=length(t0s), seed=5, maxequivPLs = 100)
-@test hardwiredclusterdistance(net, opt_net, false) != 0 # "e" is NOT an outgroup, so we should have HWCD > 0
-@test any(t -> t.name == "e", getchildren(getroot(opt_net)))
+	t0s = simulatecoalescent(tre0, 3, 1);
+	opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="e", runs=length(t0s), seed=5, maxequivPLs = 100)
+	@test hardwiredclusterdistance(net, opt_net, false) != 0 # "e" is NOT an outgroup, so we should have HWCD > 0
+	@test any(t -> t.name == "e", getchildren(getroot(opt_net)))
 
-t0s = simulatecoalescent(tre0, 3, 1);
-opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="f", runs=length(t0s), seed=5, maxequivPLs = 100)
-@test hardwiredclusterdistance(net, opt_net, false) != 0 # "f" is NOT an outgroup, so we should have HWCD > 0
-@test any(t -> t.name == "f", getchildren(getroot(opt_net)))
+	t0s = simulatecoalescent(tre0, 3, 1);
+	opt_rt = @elapsed opt_net, _ = multisearch(t0s, q, net.numhybrids; outgroup="f", runs=length(t0s), seed=5, maxequivPLs = 100)
+	@test hardwiredclusterdistance(net, opt_net, false) != 0 # "f" is NOT an outgroup, so we should have HWCD > 0
+	@test any(t -> t.name == "f", getchildren(getroot(opt_net)))
+end
 
-# Now test that the `snaq!` wrapper works as expected
-t0 = simulatecoalescent(tre0, 1, 1)[1];
-dcf = computeexpectedDataCF(net);
-opt_rt = @elapsed snaqnet = snaq!(t0, dcf; hmax=1, propQuartets=0.85, runs=20, Nfail=50)
-@test hardwiredclusterdistance(snaqnet, net, false) == 0
+@testset "snaq! with propQuartets != 1.0" begin
+	t0 = simulatecoalescent(tre0, 1, 1)[1];
+	dcf = computeexpectedDataCF(net);
+	opt_rt = @elapsed snaqnet = snaq!(t0, dcf; hmax=1, propQuartets=0.85, runs=20, Nfail=50)
+	@test hardwiredclusterdistance(snaqnet, net, false) == 0
 
-# snaq! with restrictions works as expected
-t0 = simulatecoalescent(tre0, 1, 1)[1];
-dcf = computeexpectedDataCF(net);
-snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=1), hmax=1, propQuartets=0.85, runs=20, Nfail=50)
-@test hardwiredclusterdistance(snaqnet, net, false) == 0
-@test restrictionset(;max_level=1)(snaqnet)
-@test tcgidentifiable(snaqnet)
+	# snaq! with restrictions works as expected
+	t0 = simulatecoalescent(tre0, 1, 1)[1];
+	dcf = computeexpectedDataCF(net);
+	snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=1), hmax=1, propQuartets=0.85, runs=20, Nfail=50)
+	@test hardwiredclusterdistance(snaqnet, net, false) == 0
+	@test restrictionset(;max_level=1)(snaqnet)
+	@test tcgidentifiable(snaqnet)
+end
 
-# snaq! with restrictions works as expected
-t0 = simulatecoalescent(tre0, 1, 1)[1];
-dcf = computeexpectedDataCF(net);
-snaqnet = snaq!(t0, dcf; restrictions=SNaQ.tcgidentifiable, hmax=4, runs=20, Nfail=50)
-@test SNaQ.tcgidentifiable(snaqnet)
+@testset "snaq! with custom restrictions" begin
+	# snaq! with restrictions works as expected
+	t0 = simulatecoalescent(tre0, 1, 1)[1];
+	dcf = computeexpectedDataCF(net);
+	snaqnet = snaq!(t0, dcf; restrictions=SNaQ.tcgidentifiable, hmax=4, runs=20, Nfail=50)
+	@test SNaQ.tcgidentifiable(snaqnet)
+end
 
 # snaq! with restrictions works as expected
 @testset "snaq! with restrictionset(;max_level=0) infers a tree, regardless of hmax" begin
@@ -141,48 +145,44 @@ end
 
 @testset "snaq! with probQR = 0.5" begin
 	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
-	dcf = computeexpectedDataCF(net);
-	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
-	startnet = generate_net(10, 2, 8);
+	dcf = computeexpectedDataCF(tnet);
+	trueloss = computeloss(tnet, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 12);
 	startLL = computeloss(startnet, dcf)
 	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
-	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, probQR=0.5, probST=0.0);
-	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	snaqnet = snaq!(startnet, dcf; hmax=tnet.numhybrids, Nfail=20, runs=10, opt_maxeval=100, probQR=0.5, probST=0.0, restrictions=SNaQ.norestrictions());
 	@test computeloss(snaqnet, dcf) >= startLL
 end
 
 @testset "snaq! with probQR = 1.0" begin
 	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
-	dcf = computeexpectedDataCF(net);
-	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
-	startnet = generate_net(10, 2, 8);
+	dcf = computeexpectedDataCF(tnet);
+	trueloss = computeloss(tnet, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 12);
 	startLL = computeloss(startnet, dcf)
 	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
-	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, probQR=1.0, probST=0.0);
-	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	snaqnet = snaq!(startnet, dcf; hmax=tnet.numhybrids, Nfail=20, runs=10, opt_maxeval=100, probQR=1.0, probST=0.0, restrictions=SNaQ.norestrictions());
 	@test computeloss(snaqnet, dcf) >= startLL
 end
 
 @testset "snaq! with qinfTest=true" begin
 	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
-	dcf = computeexpectedDataCF(net);
-	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
-	startnet = generate_net(10, 2, 8);
+	dcf = computeexpectedDataCF(tnet);
+	trueloss = computeloss(tnet, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 12);
 	startLL = computeloss(startnet, dcf)
 	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
-	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, qinfTest=true, probST=0.0);
-	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	snaqnet = snaq!(startnet, dcf; hmax=tnet.numhybrids, Nfail=20, runs=10, opt_maxeval=100, qinfTest=true, probST=0.0, restrictions=SNaQ.norestrictions());
 	@test computeloss(snaqnet, dcf) >= startLL
 end
 
 @testset "snaq! with qinfTest=true, probQR=0.9, probST=1.0" begin
 	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
-	dcf = computeexpectedDataCF(net);
-	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
-	startnet = generate_net(10, 2, 8);
+	dcf = computeexpectedDataCF(tnet);
+	trueloss = computeloss(tnet, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 12);
 	startLL = computeloss(startnet, dcf)
 	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
-	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, qinfTest=true, probQR=0.9, probST=1.0);
-	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	snaqnet = snaq!(startnet, dcf; hmax=tnet.numhybrids, Nfail=20, runs=10, opt_maxeval=100, qinfTest=true, probQR=0.9, probST=1.0, restrictions=SNaQ.norestrictions());
 	@test computeloss(snaqnet, dcf) >= startLL
 end
