@@ -56,8 +56,6 @@ These parameters are used when evaluating candidate networks only.
 The following optional keyword arguments control when to stop proposing new network topologies:
 
 - `Nfail` (75): maximum number of times that new topologies are proposed and rejected (in a row).
-- `liktolAbs` (1e-6): the proposed network is accepted if its score is better
-  than the current score by at least liktolAbs.
 
 Lower values of `Nfail` and greater values of `liktolAbs` and `ftolAbs` would
 result in a less thorough but faster search.
@@ -72,6 +70,12 @@ expected concordance factors from the star tree (one-third for all topologies).
 Default parameters are are in parentheses:
 - `qinfTest` (false): if true, then look for uninformative quartets to discard.
 - `qtolAbs` (1e-4): The tolerance for identifying uninformative concordance factors. Uninformative concordance factors are (1/3)±`qtolAbs`
+
+By default SNaQ searches for networks under a model of independent inheritance, where lineages coalesce through
+hybrid nodes independently of one another. The following optional keyword argument controls this model of dependence:
+
+- `ρ` (0.0): in the range [0, 1], a value of 0 corresponds to independent inheritance, whereas a value of
+  1 corresponds to completely dependent inheritance. See [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030) for further details.
 
 See also: [`optimize!`](@ref) to optimize parameters on a fixed topology,
 and [`computeloss`](@ref) to get the negative log-likelihood
@@ -107,8 +111,10 @@ function snaq!(
   qinfTest::Bool=false,
   propQuartets::Float64=1.0,
   restrictions::Function=SNaQ.tcgidentifiable,
+  ρ::Float64=0.0,
   kwargs...
 )
+  α = ρ == 0.0 ? Inf : (1.0 - ρ) / ρ
   bestnet = multisearch(
       currT0,
       d,
@@ -130,6 +136,7 @@ function snaq!(
       qinfTest=qinfTest,
       qtolAbs=qtolAbs,
       probQR=probQR,
+      α=α,
       kwargs...
   )[1]
 

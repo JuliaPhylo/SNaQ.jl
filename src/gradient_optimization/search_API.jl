@@ -709,7 +709,7 @@ parameters is selected. Also, makes sure the proposed move is not present in
 function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}, moves_attempted::Vector, hmax::Int, probQR::Float64, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, α::Float64)::Tuple{Symbol,Any}
     required_edge::Union{Edge, Nothing} = nothing
     if probQR > 0.0 && rand(rng) <= probQR
-        required_edge = sampleprobQRedge(Nrpime, N_eqns, Q, CFΔs, rng, α)
+        required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, α)
     end
 
     validmove(mv::Symbol, pars) = !isnothing(pars) &&
@@ -718,12 +718,22 @@ function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}
 
     retries::Int = 0
     move, params = samplemoveproposal(Nprime, hmax, rng)
+    attempted_reqedges = 1
 
     while !validmove(move, params)
         move, params = samplemoveproposal(Nprime, hmax, rng)
         retries += 1
-        if retries >= 1e6
-            error("Could not find any valid move proposals after 1e6 attempts.")
+        if retries >= 1e3
+            if isnothing(required_edge) || attempted_reqedges >= 100
+                @show isnothing(required_edge)
+                @show attempted_reqedges
+                error("Could not find any valid move proposals after 1e3 attempts.")
+            end
+            # Sometimes we sample an edge that is not actually possible to
+            # find in a move, so we re-sample another edge
+            required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, α)
+            attempted_reqedges += 1
+            retries = 0
         end
     end
 
@@ -739,18 +749,20 @@ Samples an edge from the network `N` with weights stored in `CFΔs`. If `CFΔs` 
 weights are computed.
 """
 function sampleprobQRedge(N::HybridNetwork, eqns::Vector{QuartetData}, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, α::Float64)::Edge
+    idxobjmap = gatheroptimizationinfo(N, false)[3]
     if length(CFΔs) == 0
         params = gatherparams(N);
         for (eqn, (ocf1, ocf2, ocf3)) in zip(eqns, eachrow(Q))
-            ecf1, ecf2, ecf3 = computeexpectedCF(eqn, params, α)
+            ecf1, ecf2 = computeexpectedCF(eqn, params, α)
+            ecf3 = 1.0 - ecf1 - ecf2
             push!(CFΔs, abs(ecf1 - ocf1) + abs(ecf2 - ocf2) + abs(ecf3 - ocf3))
         end
     end
 
     # Queue approach to run through every contributing equation in the sampled
     # CF's equation to make sure we select ALL edges that relate to this quartet
-    quartet = sample(rng, 1:length(eqns), Weights(CFΔs))
-    Q = [quartet.eqn]
+    iquartet = sample(rng, 1:length(eqns), Weights(CFΔs))
+    Q = [eqns[iquartet].eqn]
     edges = []
     while length(Q) > 0
         curr = Q[1]
@@ -759,8 +771,12 @@ function sampleprobQRedge(N::HybridNetwork, eqns::Vector{QuartetData}, Q::Matrix
         append!(edges, curr.coal_edges)
         append!(Q, curr.divisions)
     end
-
-    return sample(rng, unique(edges))
+    if length(edges) > 0
+        return idxobjmap[sample(rng, unique(edges))]
+    else
+        validkeys = [k for k in keys(idxobjmap) if typeof(idxobjmap[k]) <: Edge]
+        return idxobjmap[sample(validkeys)]
+    end
 end
 
 
