@@ -353,7 +353,7 @@ Returns eCFs for ab|cd and ac|bd -- ad|bc is calculated from the others.
 end
 
 
-function quadsplitprobability(type::Int, γ::Real, α::Real)::Float64
+function quadsplitprobability(type::Int64, γ::Float64, α::Float64)::Float64
     if α == Inf
         # Strictly independent
         if type == 1
@@ -389,7 +389,7 @@ function quadsplitprobability(type::Int, γ::Real, α::Real)::Float64
 end
 
 
-function quadsplitprobabilitygradient(type::Int, γ::Real, α::Real)::Float64
+function quadsplitprobabilitygradient(type::Int64, γ::Float64, α::Float64)::Float64
     if α == Inf
         # Strictly independent
         if type == 1
