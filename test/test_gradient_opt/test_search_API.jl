@@ -187,6 +187,17 @@ end
 	@test computeloss(snaqnet, dcf) >= startLL
 end
 
+@testset "snaq! with qinfTest=true, probQR=0.9, propQuartets=0.25, probST=1.0" begin
+	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
+	dcf = computeexpectedDataCF(tnet);
+	trueloss = computeloss(tnet, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 12);
+	startLL = computeloss(startnet, dcf)
+	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
+	snaqnet = snaq!(startnet, dcf; hmax=tnet.numhybrids, Nfail=20, runs=3, opt_maxeval=100, qinfTest=true, propQuartets=0.25, probQR=0.9, probST=1.0, restrictions=SNaQ.norestrictions());
+	@test computeloss(snaqnet, dcf) >= startLL
+end
+
 @testset "snaq! with ρ = 1.0" begin
 	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
 	dcf = computeexpectedDataCF(tnet, 0.0);
