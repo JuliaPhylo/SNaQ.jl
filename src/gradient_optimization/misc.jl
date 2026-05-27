@@ -41,6 +41,23 @@ end
 
 """
 Helper function that generates a `Vector{Int}` with `n` indices where each
+integer from 1 to `n` has probability `p` of appearing. Only samples informative
+quartets, so only used when `qinfTest` is `true`.
+"""
+function sampleqindices(n::Int, p::Real, informative::BitVector, rng::TaskLocalRNG)::Vector{Int}
+    nsamp::Int64 = min(ninform, Int64(ceil(n * p)))
+    valididxs::Vector{Int64} = findall(informative)
+    if length(valididxs) == nsamp
+        return valididxs
+    end
+    return sort(sample(rng, valididxs, nsamp, replace=false))
+end
+sampleqindices(N::HybridNetwork, p::Real, i::BitVector, rng::TaskLocalRNG) =
+    sampleqindices(nchoose4taxalength(net), p, i, rng)
+
+
+"""
+Helper function that generates a `Vector{Int}` with `n` indices where each
 integer from 1 to `n` has probability `p` of appearing.
 """
 function sampleqindices(n::Int, p::Real, rng::TaskLocalRNG)::Vector{Int}

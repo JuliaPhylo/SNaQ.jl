@@ -138,3 +138,51 @@ end
 	end
 	@test hardwiredclusterdistance(snaqnet, multifurcation, false) == 0
 end
+
+@testset "snaq! with probQR = 0.5" begin
+	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
+	dcf = computeexpectedDataCF(net);
+	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 8);
+	startLL = computeloss(startnet, dcf)
+	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
+	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, probQR=0.5, probST=0.0);
+	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	@test computeloss(snaqnet, dcf) >= startLL
+end
+
+@testset "snaq! with probQR = 1.0" begin
+	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
+	dcf = computeexpectedDataCF(net);
+	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 8);
+	startLL = computeloss(startnet, dcf)
+	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
+	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, probQR=1.0, probST=0.0);
+	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	@test computeloss(snaqnet, dcf) >= startLL
+end
+
+@testset "snaq! with qinfTest=true" begin
+	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
+	dcf = computeexpectedDataCF(net);
+	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 8);
+	startLL = computeloss(startnet, dcf)
+	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
+	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, qinfTest=true, probST=0.0);
+	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	@test computeloss(snaqnet, dcf) >= startLL
+end
+
+@testset "snaq! with qinfTest=true, probQR=0.9, probST=1.0" begin
+	tnet = generate_net(10, 2, 8);	# seed 8 is identifiable.
+	dcf = computeexpectedDataCF(net);
+	trueloss = computeloss(net, dcf); # approx 0, up to rounding error
+	startnet = generate_net(10, 2, 8);
+	startLL = computeloss(startnet, dcf)
+	starthwcd = hardwiredclusterdistance(startnet, tnet, false)
+	snaqnet = snaq!(startnet, dcf; hmax=net.numhybrids, Nfail=20, runs=10, opt_maxeval=100, qinfTest=true, probQR=0.9, probST=1.0);
+	@test hardwiredclusterdistance(tnet, snaqnet, false) <= starthwcd
+	@test computeloss(snaqnet, dcf) >= startLL
+end

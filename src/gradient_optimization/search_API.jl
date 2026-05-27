@@ -20,6 +20,9 @@ that fit the observed quartet concordance factors.
 # Optional Arguments
 - `runs::Int=10`: Number of independent search runs.
 - `seed::Int=42`: Random seed for reproducibility.
+- `restrictions::Fuction=defaultrestrictions()`: Function that takes a `HybridNetwork` as
+    its only argument and returns a `Bool`. Only networks that return `true` to this function
+    will be considered during search.
 - `kwargs...`: Additional keyword arguments passed to the [`search`](@ref) function.
 
 # Returns
@@ -368,6 +371,12 @@ of branch lengths and inheritance probabilities.
 
 # Optional Arguments
 - `restrictions::Function=defaultrestrictions()`: Function to enforce restrictions on the proposed networks.
+- `qinfTest::Bool`: whether to test for uninformative quartets (CFs near [1/3, 1/3, 1/3]) and
+    exclude those quartets when performing the network search.
+- `qtolAbs::Float64=1e-4`: the absolute tolerance used to detect uninformative quartets.
+- `propQR::Float64=0.0`: probability at a given search iteration of utilizing weighted random
+    sampling to (i) sample a poorly fitting quartet, (ii) sample an edge spanned by that
+    quartet in the network, and finally (iii) only sample moves that include this edge.
 - `α::Real=Inf`: Dirichlet parameter for gene tree heterogeneity model.
 - `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
@@ -403,6 +412,8 @@ function search(
     logfile::String="",
     filename::String="",
     outgroup::String="none",
+    qinfTest::Bool=false,
+    qtolAbs::Float64=1e-4,
     optargs...
 )
     # Parameter enforcement
@@ -413,6 +424,8 @@ function search(
     0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $(probQR))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
+    qtolAbs ≥ 0.0 || error("qtolAbs must be ≥ 0.0 (qtolAbs = $qtolAbs)")
+    0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $probQR)")
 
     # Initial logging message
     starttime = time()
@@ -463,11 +476,24 @@ function search(
     end
 
     # Data used throughout the optimization process
-    q_idxs = sampleqindices(N, propQuartets, rng)
+    local q_idxs::Vector{Int64}
+    if qinfTest
+        informative = trues(size(q, 1))
+        if qinfTest
+            for (i, row) in enumerate(eachrow(q))
+                informative[i] = isquartetinformative(row, qtolAbs)
+            end
+        end
+        q_idxs = sampleqindices(N, propQuartets, informative, rng)
+    elseif propQuartets == 1.0
+        q_idxs = collect(1:nchoose4taxalength(N))
+    else
+        q_idxs = sampleqindices(N, propQuartets, rng)
+    end
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
     neq = findquartetequations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
-    N_numparams::Int = length(neq[3])
+    CFΔs::Vector{Float64} = []  # used when probQR != 0.0, computed WHEN NEEDED, so init'd to []
     unchanged_iters = 0
 
     # Pre-optimizing the network's parameters
@@ -499,7 +525,7 @@ function search(
         #Nprime = readnewick(writenewick(N));
         Nprime = deepcopynetwork(N);
 
-        prop_move, prop_params = generatemoveproposal(Nprime, moves_attempted, hmax, rng)
+        prop_move, prop_params = generatemoveproposal(Nprime, N_eqns, moves_attempted, hmax, probQR, q[q_idxs, :], CFΔs, rng, α)
         last_move = prop_move
         applymove!(Nprime, prop_move, prop_params)
         @debug "Proposed move: $(prop_move), parameters: $(prop_params)"
@@ -570,6 +596,7 @@ function search(
             N = Nprime
             N_eqns = Nprime_eqns
             logPLs[j] = Nprime_logPL
+            CFΔs = []
             moves_accepted[prop_move] += 1
             push!(moves_logPL[prop_move], logPLs[j] - logPLs[j-1])
 
@@ -628,6 +655,23 @@ end
 
 
 """
+Checks whether a given quartet is informative based off of observed CFs.
+Informative here is defined as any two entries in the quartet's observed
+CFs having absolute difference greater than `atol`.
+"""
+function isquartetinformative(ocfrow::AbstractVector{Float64}, atol::Float64)
+    for i = 1:2
+        for j = (i+1):3
+            if abs(ocfrow[i] - ocfrow[j]) > atol
+                return true
+            end
+        end
+    end
+    return false
+end
+
+
+"""
 Applies the move `move` on parameters `params` to network `N`.
 """
 function applymove!(N::HybridNetwork, move::Symbol, params::Tuple)
@@ -662,12 +706,21 @@ parameters, so this function repeatedly samples until a move with valid
 parameters is selected. Also, makes sure the proposed move is not present in
 `moves_attempted`, and appends the returned move to this vector.
 """
-function generatemoveproposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
-    retries::Int = 0
-    move, params = samplemoveproposal(N, hmax, rng)
+function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}, moves_attempted::Vector, hmax::Int, probQR::Float64, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, α::Float64)::Tuple{Symbol,Any}
+    required_edge::Union{Edge, Nothing} = nothing
+    if probQR > 0.0 && rand(rng) <= probQR
+        required_edge = sampleprobQRedge(Nrpime, N_eqns, Q, CFΔs, rng, α)
+    end
 
-    while params === nothing || alreadyattempted(moves_attempted, move, params)
-        move, params = samplemoveproposal(N, hmax, rng)
+    validmove(mv::Symbol, pars) = !isnothing(pars) &&
+        !alreadyattempted(moves_attempted, mv, pars) &&
+        (isnothing(required_edge) || any(p -> p == required_edge, pars))
+
+    retries::Int = 0
+    move, params = samplemoveproposal(Nprime, hmax, rng)
+
+    while !validmove(move, params)
+        move, params = samplemoveproposal(Nprime, hmax, rng)
         retries += 1
         if retries >= 1e6
             error("Could not find any valid move proposals after 1e6 attempts.")
@@ -675,6 +728,39 @@ function generatemoveproposal(N::HybridNetwork, moves_attempted::Vector, hmax::I
     end
 
     return (move, params)
+end
+generatemoveproposal(Nprime::HybridNetwork, ma::Vector, hmax::Int, rng::TaskLocalRNG) =
+    generatemoveproposal(Nprime, Vector{QuartetData}([]), ma, hmax, 0.0, zeros(0, 0), zeros(0), rng, Inf)
+
+
+"""
+Samples an edge from the network `N` with weights stored in `CFΔs`. If `CFΔs` is empty
+(it starts empty and is reset to [] whenever the search finds a better network), these
+weights are computed.
+"""
+function sampleprobQRedge(N::HybridNetwork, eqns::Vector{QuartetData}, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, α::Float64)::Edge
+    if length(CFΔs) == 0
+        params = gatherparams(N);
+        for (eqn, (ocf1, ocf2, ocf3)) in zip(eqns, eachrow(Q))
+            ecf1, ecf2, ecf3 = computeexpectedCF(eqn, params, α)
+            push!(CFΔs, abs(ecf1 - ocf1) + abs(ecf2 - ocf2) + abs(ecf3 - ocf3))
+        end
+    end
+
+    # Queue approach to run through every contributing equation in the sampled
+    # CF's equation to make sure we select ALL edges that relate to this quartet
+    quartet = sample(rng, 1:length(eqns), Weights(CFΔs))
+    Q = [quartet.eqn]
+    edges = []
+    while length(Q) > 0
+        curr = Q[1]
+        deleteat!(Q, 1)
+
+        append!(edges, curr.coal_edges)
+        append!(Q, curr.divisions)
+    end
+
+    return sample(rng, unique(edges))
 end
 
 
@@ -707,7 +793,6 @@ end
 Randomly samples a move to generate a new topology from `N`.
 """
 function samplemoveproposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
-
     if N.numhybrids < hmax && rand(rng) < 0.05
         @debug "SELECTED: add_random_hybrid!"
         return (:addhybrid, sampleaddhybridparameters(N, rng))

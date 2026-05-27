@@ -87,61 +87,55 @@ Kolbow, N, Kong, K, Chafin, T, Justison, J, Ane, C, Solis-Lemus, C (2025).
 SNaQ.jl: Improved scalability for phylogenetic network inference.
 """
 function snaq!(
-    currT0::Union{HybridNetwork, Vector{HybridNetwork}},
-    d::DataCF;
-    hmax::Integer=1,
-    liktolAbs::Float64=1e-8,
-    Nfail::Integer=100,
-    ftolRel::Float64=1e-8,
-    ftolAbs::Float64=1e-8,
-    xtolRel::Float64=1e-8,
-    xtolAbs::Float64=1e-8,
-    verbose::Bool=false,
-    closeN::Bool=true,
-    Nmov0::Vector{Int}=Int[],
-    runs::Integer=10,
-    outgroup::AbstractString="none",
-    filename::AbstractString="snaq",
-    seed::Integer=rand(Int),
-    probST::Float64=0.3,
-    updateBL::Bool=true,
-    probQR::Float64=0.0,
-    qtolAbs::Float64=1e-4,
-    qinfTest::Bool=false,
-    propQuartets::Float64=1.0,
-    restrictions::Function=SNaQ.tcgidentifiable,
-    kwargs...
+  currT0::Union{HybridNetwork, Vector{HybridNetwork}},
+  d::DataCF;
+  hmax::Integer=1,
+  Nfail::Integer=100,
+  ftolRel::Float64=1e-8,
+  ftolAbs::Float64=1e-8,
+  xtolRel::Float64=1e-8,
+  xtolAbs::Float64=1e-8,
+  verbose::Bool=false,
+  runs::Integer=10,
+  outgroup::AbstractString="none",
+  filename::AbstractString="snaq",
+  seed::Integer=rand(Int),
+  probST::Float64=0.3,
+  updateBL::Bool=true,
+  probQR::Float64=0.0,
+  qtolAbs::Float64=1e-4,
+  qinfTest::Bool=false,
+  propQuartets::Float64=1.0,
+  restrictions::Function=SNaQ.tcgidentifiable,
+  kwargs...
 )
+  bestnet = multisearch(
+      currT0,
+      d,
+      hmax;
+      runs=runs,
+      maxequivPLs=Nfail,
+      verbose=verbose,
+      seed=seed,
+      probST=probST,
+      outgroup=outgroup,
+      restrictions=restrictions,
+      ftolRel=ftolRel,
+      ftolAbs=ftolAbs,
+      xtolRel=xtolRel,
+      xtolAbs=xtolAbs,
+      propQuartets=propQuartets,
+      filename=filename,
+      preopt=updateBL,
+      qinfTest=qinfTest,
+      qtolAbs=qtolAbs,
+      probQR=probQR,
+      kwargs...
+  )[1]
 
-    # kwargs not implemented that should be implemented:
-    # - `probQR`
-    # - `qinfTest`
-    # - `qtolAbs`
-
-    bestnet = multisearch(
-        currT0,
-        d,
-        hmax;
-        runs=runs,
-        maxequivPLs=Nfail,
-        verbose=verbose,
-        seed=seed,
-        probST=probST,
-        outgroup=outgroup,
-        restrictions=restrictions,
-        ftolRel=ftolRel,
-        ftolAbs=ftolAbs,
-        xtolRel=xtolRel,
-        xtolAbs=xtolAbs,
-        propQuartets=propQuartets,
-        filename=filename,
-        preopt=updateBL,
-        kwargs...
-    )[1]
-
-    # This call to `optimize!` is only to update the DataCF
-    # `d` with the new expected qCFs.
-    semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
-    optimize!(bestnet, d; maxeval=1)
-    return bestnet
+  # This call to `optimize!` is only to update the DataCF
+  # `d` with the new expected qCFs.
+  semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
+  optimize!(bestnet, d; maxeval=1)
+  return bestnet
 end
