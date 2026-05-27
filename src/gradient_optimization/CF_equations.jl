@@ -41,9 +41,6 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         # we can just default to the final `else` case here and delete `lowest_H` b/c it has
         # no effect on eCFs
 
-
-        # @info "2 - Following hybrid $(lowest_H.name)"
-
         # Remove the minor edge and all of its references in this copy
         div_major = deepcopynetwork(net)
         div_major_H = div_major.hybrid[findfirst(h -> h.name == lowest_H.name && h.number == lowest_H.number, div_major.hybrid)]
