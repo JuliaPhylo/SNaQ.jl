@@ -114,8 +114,6 @@ function snaq!(
 )
 
     # kwargs not implemented that should be implemented:
-    # - `filename`
-    # - `updateBL`
     # - `probQR`
     # - `qinfTest`
     # - `qtolAbs`
