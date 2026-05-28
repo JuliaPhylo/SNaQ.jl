@@ -104,7 +104,7 @@ raxmlCF = readtrees2CF(raxmltrees) # read in the file and produce a "DataCF" obj
 ```
 
 In this table (`tableCF.txt`), each 4-taxon set is listed in one row.
-The 3 "CF" columns gives the proportion of genes that has
+The 3 "CF" columns give the proportion of genes that has
 each of the 3 possible trees on these 4 taxa.
 
 When there are many more taxa, the number of quartets
@@ -319,7 +319,7 @@ rm("bestnet_h1.tre") # hide
 
 From a set of candidate networks, one might simply need the score of each network
 to pick the best. Here, the score is the composite log-likelihood, and the
-higher the better. See the section [Candidate networks](@ref) to get the score of each candidate networks.
+higher the better. See the section [Candidate networks](@ref) to get the score of each candidate network.
 
 ### Choosing the number of hybridizations (`hmax`)
 
