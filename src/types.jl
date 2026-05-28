@@ -45,6 +45,16 @@ numht(h::HybridNetwork) = h.vec_int2 # vector of number of the hybrid nodes and 
 numBad(h::HybridNetwork) = h.intg1 # number of bad diamond I hybrid nodes, set as 0
 hasVeryBadTriangle(h::HybridNetwork) = h.boolg1 # true if the network has extremely/very bad triangles that should be ignored
 index(h::HybridNetwork) = h.vec_int3 #index in net.edge, net.node of elements in net.ht to make updating easy
+
+"""
+    loglik(network::HybridNetwork)
+
+Gets the cached composite log-likelihood of the provided network.
+If [`computeloss`](@ref) or [`optimize!`](@ref) have not been run on the
+provided network, and the provided network is not the output of [`snaq!`](@ref),
+[`readsnaqnetwork`](@ref), or [`readallsnaqnetworks`](@ref), then the return value
+will be meaningless.
+"""
 loglik(h::HybridNetwork) = h.fscore # composite log-likelihood (higher = better fit)
 blacklist(h::HybridNetwork) = h.vec_int4 # reusable array of integers, used in afterOptBL
 cleaned(h::HybridNetwork) = h.boolg2 # attribute to know if the network has been cleaned after readm default false
