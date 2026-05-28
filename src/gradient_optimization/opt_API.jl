@@ -198,8 +198,7 @@ optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findqua
 
 Optimizes the parameters of `net` with the quartet concordance factor data
 in `dcf`. Returns the estimated likelihood of the network, which can also
-be accessed later with `loglik(net)`. Also updates the `expCF` and `logPseudoLik`
-parameters of each quartet in `dcf.quartet`.
+be accessed later with `loglik(net)`.
 
 ### Parameters
 - `ρ` is the inheritance correlation parameter in the range [0, 1] (default 0).
