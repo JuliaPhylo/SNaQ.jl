@@ -8,8 +8,8 @@ inheritance correlation parameter:
 - `ρ = 1.0`: completely dependent inheritance
 - `0 < ρ < 1`: partially dependent inheritance
 
-> [!NOTE]
-> The character ρ can be typed in the Julia REPL by typing `\rho` and then pressing the TAB key.
+!!! info "Note:"
+	The character ρ can be typed in the Julia REPL by typing `\rho` and then pressing the TAB key.
 
 The correlated inheritance model is described in
 [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030).

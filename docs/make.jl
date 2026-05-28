@@ -7,14 +7,6 @@ using SNaQ, PhyloNetworks
 using Documenter
 
 
-##add note to all pages in documentation
-note = """
-    !!! info "Important Note:"
-        This documentation pertains to SNaQ v1.1 and may differ from the specific implementation
-        originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896).
-        See documentation SNaQ v1.0  for the original implementation.
-    """
-
 const original_src = joinpath(@__DIR__, "src")
 const temp_src = joinpath(@__DIR__, "temp_src_for_build") # temp directory with note added to md files
 
