@@ -238,8 +238,8 @@ Optional arguments include the following, with default values in parentheses:
 - `runs` (10): number of independent optimization runs for each replicate
 - `filename` ("bootsnaq"): root name for output files. No output files if "".
 - `seed` (0 to get a random seed from the clock): seed for random number generator
-- `otherNet` (empty): another starting topology so that each replicate will start prcnet% runs on otherNet and (1-prcnet)% runs on `T`
-- `prcnet` (0): percentage of runs starting on `otherNet`; error if different than 0.0, and otherNet not specified.
+- `otherNet` (empty): another starting topology so that each replicate will start `prcnet` of runs on `otherNet` and `(1-prcnet)` of runs on `T`
+- `prcnet` (0): fraction of runs starting on `otherNet`; error if different than 0.0, and `otherNet` not specified.
 - `ftolRel`, `ftolAbs`, `xtolRel`, `xtolAbs`, `liktolAbs`, `Nfail`,
   `probST`, `verbose`, `outgroup`: see `snaq!`, same defaults.
 
