@@ -129,6 +129,7 @@ function optimize!(
     xtolAbs::Float64=1e-12
 )::Float64
 
+    0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $ρ)")
     # Make sure there are no NaNs in the network's edge lengths
     # This is a bug that only seems to happen on Linux for some reason,
     # so it is hard for me to track down the source of the error

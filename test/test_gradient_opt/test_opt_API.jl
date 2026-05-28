@@ -32,7 +32,7 @@ end
 
             firstoptL = optimize!(SNaQ.deepcopynetwork(opt_net), q; maxeval=100000)
             eqns = findquartetequations(opt_net)[1];
-            secondoptL = optimize!(opt_net, eqns, q, Inf; maxeval=100000)
+            secondoptL = optimize!(opt_net, eqns, q, 0.0; maxeval=100000)
             opt_params = SNaQ.gatherparams(opt_net);
             @test firstoptL ≈ secondoptL atol=1e-5
             if !(sum(mean((opt_params .- params).^2)) < 1.0)
