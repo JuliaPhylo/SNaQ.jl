@@ -23,23 +23,23 @@ function updatequartetequations!(
     param_map::Dict{Int, Int},
     move::Symbol,
     params::Tuple,
-    α::Real
+    ρ::Real=0.0
 )
     if move == :rNNI1
-        applyrNNI1update!(Nprime, old_eqns, new_eqns, param_map, params[3], α)
+        applyrNNI1update!(Nprime, old_eqns, new_eqns, param_map, params[3], ρ)
     elseif move == :rNNI2
-        applyrNNI2update!(Nprime, old_eqns, new_eqns, param_map, params..., α)
+        applyrNNI2update!(Nprime, old_eqns, new_eqns, param_map, params..., ρ)
     else
         error("Only move that can be updated in place right now is rNNI1 (move = $(move))")
     end
 end
 
 
-function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, α::Real=Inf)
+function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, ρ::Real=0.0)
     relevant_params = paramsbelowurNNI1(u, param_map)
     Threads.@threads for j in eachindex(old_qdata)
         if length(old_qdata[j].eqn.divisions) > 0 || recurfxnhasparams(old_qdata[j].eqn, relevant_params)
-            new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
+            new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, ρ)
         else
             new_qdata[j] = old_qdata[j]
         end
@@ -47,12 +47,12 @@ function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{Quar
 end
 
 
-function applyrNNI2update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, α::Real=Inf)
+function applyrNNI2update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, ρ::Real=0.0)
     relevant_params = [u.edge[findfirst(e -> t in e.node, u.edge)], s.edge[findfirst(e -> v in e.node, s.edge)]]
     relevant_params = [param_map[e.number] for e in relevant_params]
     Threads.@threads for j in eachindex(old_qdata)
         if contains_parameter(old_qdata[j], relevant_params)
-            new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, α)
+            new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, ρ)
         else
             new_qdata[j] = old_qdata[j]
         end
