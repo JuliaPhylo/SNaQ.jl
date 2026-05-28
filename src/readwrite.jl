@@ -16,8 +16,8 @@ function readsnaqnetwork(file::AbstractString)
         net = readnewick(line)
         # readTopologyUpdate is inadequate: would replace missing branch lengths, which are unidentifiable, by 1.0 values
         try
-            vec = split(line,"-Ploglik = ")
-            loglik!(net, parse(Float64,vec[2]))
+            vec = split(line,"loglik = ")
+            loglik!(net, -parse(Float64,vec[2]))
         catch e
             @warn "could not find the network score; the error was:"
             rethrow(e)

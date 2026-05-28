@@ -161,7 +161,7 @@ function multisearch(
     open("$(filename).out", "w+") do f
         print(f,
             """
-            $(writenewick(bestnet)) -Ploglik = $(-loglik(bestnet))
+            $(writenewick(bestnet)) loglik = $(loglik(bestnet))
              Elapsed time: $(elapsed), $(runs) attempted runs
             
             -----------------------------------
@@ -648,7 +648,7 @@ function search(
     logtext(logfile, "Search complete at $(currenttime()).\n\n")
     logmoves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
-    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
+    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). loglik=$(loglik(N))")
     logmessage(filename, writenewick(N))
     return N
 end
