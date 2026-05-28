@@ -26,15 +26,7 @@ for (root, dirs, files) in walkdir(original_src) #go thru src directory
     for file in files
         original_filepath = joinpath(root, file)
         temp_filepath = joinpath(temp_root_path, file)
-
-        if endswith(file, ".md") ## add note to md files
-            content = read(original_filepath, String)
-            # Prepend the note
-            new_content = note * "\n" * content
-            write(temp_filepath, new_content)
-        else #copy file directly
-            cp(original_filepath, temp_filepath; force=true)
-        end
+        cp(original_filepath, temp_filepath; force=true)
     end
 end
 

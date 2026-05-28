@@ -25,60 +25,15 @@ networks that are known a priori to be poor fits.
 SNaQ provides several pre-built functions for common restriction scenarios.
 These can be used individually or combined using the [`restrictionset`](@ref) function.
 
-### Individual restriction functions
-
-- **`restrictgalledtree`**: Restrict to level-1 networks (galled trees).
-  A network is level-1 if no biconnected component contains more than one hybrid node.
-  ```julia
-  snaq!(net0, d; restrictions=restrictgalledtree)
-  ```
-
-- **`restrictgallednetwork`**: Restrict to galled networks (allow higher levels).
-  A network is galled if each hybrid node appears in at most 2 biconnected components.
-  This allows more complex networks than galled trees.
-  ```julia
-  snaq!(net0, d; restrictions=restrictgallednetwork)
-  ```
-
-- **`restrictmaximumlevel(level)`**: Restrict the maximum level (number of hybrids in the most complex biconnected component).
-  Because a level must be specified, this function is called with its argument to produce the restriction.
-  ```julia
-  snaq!(net0, d; restrictions=restrictmaximumlevel(2))
-  ```
-
-- **`restrictrootedtreechild`**: Restrict to rooted tree-child networks.
-  A rooted network is tree-child if every non-leaf node has at least one child that is
-  not a hybrid node.
-  ```julia
-  snaq!(net0, d; restrictions=restrictrootedtreechild)
-  ```
-
-- **`restrictweaklytreechild`**: Restrict to weakly tree-child networks.
-  This is less restrictive than rooted tree-child.
-  ```julia
-  snaq!(net0, d; restrictions=restrictweaklytreechild)
-  ```
-
-- **`restrictstronglytreechild`**: Restrict to strongly tree-child networks.
-  This is more restrictive than rooted tree-child.
-  ```julia
-  snaq!(net0, d; restrictions=restrictstronglytreechild)
-  ```
-
-- **`norestrictions`**: Allow any binary, semi-directed network.
-  ```julia
-  snaq!(net0, d; restrictions=norestrictions)
-  ```
-
-- **`tcgidentifiable`**: Restrict to tree-child galled networks with identifiable parameters.
-  ```julia
-  snaq!(net0, d; restrictions=tcgidentifiable)
-  ```
-
-- **`defaultrestrictions`**: Equivalent to `norestrictions` — no restrictions are applied.
-  ```julia
-  snaq!(net0, d; restrictions=defaultrestrictions)
-  ```
+- [`restrictgalledtree`](@ref): Restrict to level-1 networks (galled trees).
+- [`restrictgallednetwork`](@ref): Restrict to galled networks (allow higher levels).
+- [`restrictmaximumlevel(level)`](@ref): Restrict the maximum level (number of hybrids in the most complex biconnected component).
+- [`restrictrootedtreechild`](@ref): Restrict to rooted tree-child networks.
+- [`restrictweaklytreechild`](@ref): Restrict to weakly tree-child networks.
+- [`restrictstronglytreechild`](@ref): Restrict to strongly tree-child networks.
+- [`norestrictions`](@ref): Allow any binary, semi-directed network.
+- [`tcgidentifiable`](@ref): Restrict to tree-child galled networks with identifiable parameters.
+- [`defaultrestrictions`](@ref): Equivalent to `norestrictions` — no restrictions are applied.
 
 ### Combining restrictions with `restrictionset`
 

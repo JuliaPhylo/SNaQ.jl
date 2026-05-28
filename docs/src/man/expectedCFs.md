@@ -4,7 +4,7 @@ mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
 raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)));
-truenet = readnewick("((((D:0.1,C:0.1):1.2,((A:0.2,B:0.2):0.55)#H1:0.55::0.7):1.0,(#H1:0.0::0.3,(E:0.25,F:0.25):0.5):1.55):5.5,O:7.8);");
+truenet = readnewick("(C:0.0,D:0.0,((O:0.0,(E:0.0,#H7:0.0::0.196):0.314):0.664,(B:0.0,(A:0.0)#H7:0.0::0.804):5.0):5.0);");
 ```
 
 # Quartet test for goodness of fit

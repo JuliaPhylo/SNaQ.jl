@@ -167,18 +167,10 @@ when we use only a fraction of the quartets.
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 raxmlCF = readtrees2CF(raxmltrees)
 astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
-astraltree = readmultinewick(astralfile)[102] # 102nd tree: last tree here
+astraltree = readnewick(astralfile)
 
 net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 ```
-
-
-!!! warning
-    The `seed` argument will not be used when multithreading,
-    thus results may not be reproducible. 
-    Due to issues with seeds and random number generation,
-    each run may use the seeded numbers in a different order when running multithreaded computations.
-    This could lead to different results between runs, even when using the same seed.
 
 ### Removing uninformative quartets
 

@@ -155,8 +155,8 @@ function multisearch(
     logmessage(filename, """
     Finished optimizing topology at $(currenttime()) after $(elapsed).
     Optimal network: $(writenewick(bestnet, round=true))
-    Optimal -loglik: $(-loglik(bestnet))
-    To view all $runs inferred networks and their associated -loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
+    Optimal loglik: $(loglik(bestnet))
+    To view all $runs inferred networks and their associated loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
 
     open("$(filename).out", "w+") do f
         print(f,
@@ -169,15 +169,15 @@ function multisearch(
             """
         )
         for j in sort_idx
-            println(f, " $(writenewick(all_nets[j])), with -loglik $(loglik(all_nets[j]))")
+            println(f, " $(writenewick(all_nets[j])), with loglik $(loglik(all_nets[j]))")
         end
         println(f, "-----------------------------------")
     end
 
     open("$(filename).networks", "w+") do f
-        for i in sort_idx
-            write(f, "$(writenewick(all_nets[i])), with -loglik $(loglik(all_nets[i]))")
-            if i == 1
+        for (j, i) in enumerate(sort_idx)
+            write(f, "$(writenewick(all_nets[i])), with loglik $(loglik(all_nets[i]))")
+            if j == 1
                 write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
             end
             write(f, "\n")
@@ -630,7 +630,7 @@ function search(
         else
             loglik!(N, optimize!(N, q))
         end
-        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with -loglik=$(round(loglik(N), digits=5))")
+        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with loglik=$(round(loglik(N), digits=5))")
     end
 
     # Remove internal node names that are not hybrids

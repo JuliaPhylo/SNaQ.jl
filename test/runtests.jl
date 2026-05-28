@@ -96,7 +96,7 @@ end
 end
 
 # Quiet clean up
-tryrm(f::String) = (isfile(f) && rm(f)) || (isdir(f) && rm(f; recursive=true))
+tryrm(f::String) = if isfile(f) rm(f) elseif isdir(f) rm(f; recursive=true) end
 qrm(f::String) = tryrm(joinpath(@__DIR__, "..", f))
 qrm("rand1Quartets.txt")
 qrm("rand2Quartets.txt")

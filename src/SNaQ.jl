@@ -58,6 +58,7 @@ module SNaQ
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
+        readallsnaqnetworks,
         bootsnaq,
         # functions to access relevant object variables
         loglik,

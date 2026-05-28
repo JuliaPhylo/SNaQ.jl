@@ -17,7 +17,7 @@ function readsnaqnetwork(file::AbstractString)
         # readTopologyUpdate is inadequate: would replace missing branch lengths, which are unidentifiable, by 1.0 values
         try
             vec = split(line,"loglik = ")
-            loglik!(net, -parse(Float64,vec[2]))
+            loglik!(net, parse(Float64,vec[2]))
         catch e
             @warn "could not find the network score; the error was:"
             rethrow(e)
@@ -34,11 +34,14 @@ network is also read and can be accessed individually with the
 [`loglik`](@ref) function.
 """
 function readallsnaqnetworks(outfile::String)::Vector{HybridNetwork}
-	lines = [l for l in readlines(outfile) if occursin("with -loglik", l)]
+	lines = [l for l in readlines(outfile) if occursin("with loglik", l)]
 	nets = []
 	for l in lines
-		l1, l2 = split(l, ", with -loglik ")
+		l1, l2 = split(l, ", with loglik ")
 		n = readnewick(l1)
+        if occursin("best network found", l2)
+            l2 = split(l2, " (best network found")[1]
+        end
 		loglik!(n, parse(Float64, l2))
 		push!(nets, n)
 	end

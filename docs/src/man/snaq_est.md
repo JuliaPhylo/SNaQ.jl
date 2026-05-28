@@ -5,16 +5,10 @@ exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
 raxmlCF = readtrees2CF(raxmltrees, writeTab=false, writeSummary=false)
 astralfile = joinpath(exampledir,"astral.tre")
-astraltree = readmultinewick(astralfile)[102] # 102nd tree = last tree here
-net0 = readnewick(joinpath(exampledir,"net0.out"))
-net1 = readnewick(joinpath(exampledir,"net1.out"))
-rotate!(net1, -6)
-net2 = readnewick(joinpath(exampledir,"net2.out"))
-net3 = readnewick(joinpath(exampledir,"net3.out"))
-loglik!(net0, 53.53150526187732)
-loglik!(net1, 28.31506721890958)
-loglik!(net2, 28.31506721890957)
-loglik!(net3, 28.315067218909626)
+net0 = readsnaqnetwork(joinpath(exampledir,"net0.out"))
+net1 = readsnaqnetwork(joinpath(exampledir,"net1.out"))
+net2 = readsnaqnetwork(joinpath(exampledir,"net2.out"))
+net3 = readsnaqnetwork(joinpath(exampledir,"net3.out"))
 ```
 # Network estimation
 
@@ -100,7 +94,6 @@ of quartet CFs (proportion of input trees with a given quartet):
 using PhyloNetworks, SNaQ
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 raxmlCF = readtrees2CF(raxmltrees) # read in the file and produce a "DataCF" object
-
 ```
 
 In this table (`tableCF.txt`), each 4-taxon set is listed in one row.
@@ -197,7 +190,7 @@ It's this last tree that we are most interested in.
 We can read it with
 ```@example qcf
 astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
-astraltree = readmultinewick(astralfile)[102] # 102nd tree: last tree here
+astraltree = readnewick(astralfile)
 ```
 
 Instead of a starting tree (`astraltree` in this case), we can start the optimization 
@@ -232,7 +225,6 @@ using PhyloPlots
 using RCall # hide
 R"name <- function(x) file.path('..', 'assets', 'figures', x)" # hide
 R"svg(name('snaqplot_net0_1.svg'), width=4, height=3)" # hide
-R"par"(mar=[0,0,0,0]) # hide
 plot(net0);
 R"dev.off()"; # hide
 nothing # hide

@@ -223,11 +223,11 @@ function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::In
     end
     eqns, parammap, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
-    optimize!(net, eqns, obsCFs, α; maxeval=maxeval, kwargs...)
+    optimize!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
 
     for q in dcf.quartet
-        eqn = findquartetequations4taxa(net, q.taxon, parammap, α)
-        expCF1, expCF2 = computeexpectedCF(eqn, parameters, α)
+        eqn = findquartetequations4taxa(net, q.taxon, parammap, ρ)
+        expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
         q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
     end
 

@@ -38,7 +38,6 @@ loglik(optnet) # composite log-likelihood: the higher, the better
 ```
 ```@example fixednetworkoptim
 using PhyloPlots, RCall
-@show pwd()
 R"name <- function(x) file.path('..', 'assets', 'figures', x)" # hide
 R"svg(name('truenet_opt.svg'), width=4, height=4)" # hide
 R"par"(mar=[0,0,0,0])
@@ -48,9 +47,9 @@ nothing # hide
 ```
 ![truenet_opt](../assets/figures/truenet_opt.svg)
 
-We get a score of 29.786,
-which is comparable to the score of the SNaQ network (net1: 28.315),
-especially compared to the score of the best tree (net0: 53.532).
+We get a score of -0.01420,
+which is comparable to the score of the SNaQ network (net1: -0.01421),
+especially compared to the score of the best tree (net0: -0.2836).
 This begs the question: is the true network within the "range" of uncertainty?
 We can run a [Bootstrap](@ref) analysis to measure uncertainty
 in our network inference.
@@ -61,7 +60,6 @@ the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
 net1par = optimize!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
-loglik(net1par) # composite log-likelihood: the higher, the better
 ```
 
 ## Network score with no optimization
@@ -70,7 +68,6 @@ For a network with given branch lengths and γ inheritance probabilities,
 we can compute the composite log-likelihood with:
 ```@repl fixednetworkoptim
 computeloss(truenet, raxmlCF) # composite log-likelihood: the higher, the better
-loglik(truenet)               # loss can be accessed again later
 ```
 This function is not maximizing the composite log-likelihood, it is simply computing the
 composite log-likelihood for the given branch lengths and probabilities of
@@ -98,11 +95,17 @@ Below is what the `net1.networks` file looks like, after performing
 the analysis in the section [Network estimation](@ref).
 Scroll to the right to see the scores.
 
-    (C,D,((O,(E,#H7:::0.19558838614943078):0.31352437658618976):0.6640664399202987,(B,(A)#H7:::0.8044116138505693):10.0):10.0);, with -loglik 28.31506721890958 (best network found, remaining sorted by log-pseudolik; the smaller, the better)
-    (C,D,((O,(E)#H7:::0.8150784689693145):0.9336405757682176,(B,(A,#H7:::0.18492153103068557):0.25386142779877724):1.8758156446611114):10.0);, with -loglik 31.535560380783814
-    (B,#H7:9.90999345612101::0.2555404440833535,(A,(E,(O,((C,D):10.0)#H7:0.3419231810962026::0.7444595559166465):0.19994859441332047):2.5014911511063644):0.7957621793330066);, with -loglik 56.64548310161462
-    (C,D,((O,(E,((B)#H7:::0.7957543284159452,A):4.786202415937916):0.004527712280136759):1.7952610454570868,#H7:::0.20424567158405482):10.0);, with -loglik 67.17775727492258
-    (C,D,(#H7:::0.32947301811471164,(B,(A,(E,(O)#H7:::0.6705269818852884):1.371799259141243):0.0):6.397073999864152):7.677245926003807);, with -loglik 199.11401961057143
+    (D:0.0,C:0.0,(((E:0.0,#H1:9.773328660620532::0.2153933893852204):0.5634560541958061,O:0.0):0.5148518949768833,(B:0.0,(A:9.773328660620532)#H1:1.0e-5::0.7846066106147795):18.177763138689265):19.156523950571202);, with loglik -0.0142092522636232 (best network found, remaining sorted by log-pseudolik; the smaller, the better)
+    (D:0.0,C:0.0,(((E:0.0,#H1:1.0e-5::0.21539327901801508):0.5634566904807472,O:0.0):0.514851894466229,(B:0.0,(A:0.0)#H1:1.0e-5::0.7846067209819849):15.44919944017283):19.546777983584125);, with loglik -0.01420928235241607
+    (D:0.0,C:0.0,((B:0.0,(A:0.0)#H1:1.0e-5::0.7846116222456221):11.697714718055341,(O:0.0,(E:0.0,#H1:1.0e-5::0.21538837775437789):0.563485103100604):0.5148518944086256):19.546663186534115);, with loglik -0.014210831571692534
+    (D:0.0,C:0.0,((O:0.0,(E:0.0,#H1:0.08708052358306313::0.21538099427132573):0.5633492803411521):0.5148431848214704,(B:0.0,(A:0.0)#H1:1.0e-5::0.7846190057286743):11.048069985572374):19.5467444127772);, with loglik -0.014212286655858707
+    (D:0.0,C:0.0,((O:0.0,(E:0.0,#H1:1.0e-5::0.21550218066054921):0.5629165827327959):0.5149191428743732,(B:0.0,(A:0.0)#H1:1.0e-5::0.7844978193394507):8.714574371928515):19.546663736694907);, with loglik -0.014241110757615973
+    (D:0.0,C:0.0,((O:0.0,(E:0.0,#H1:1.0e-5::0.21550218065989887):0.5629165827412171):0.5149191428744571,(B:0.0,(A:0.0)#H1:1.0e-5::0.7844978193401011):8.714574371216708):19.54666373669491);, with loglik -0.01424111075763494
+    (D:0.0,C:0.0,((E:0.0,O:0.0):0.3752616316089667,(A:0.0,B:0.0):1.25739767575748):19.546660332896955);, with loglik -0.283591956494552
+    (D:0.0,C:0.0,((E:0.0,O:0.0):0.3752616321790141,(A:0.0,B:0.0):1.2573976776620968):19.546660278206648);, with loglik -0.283591956494552
+    (D:0.0,C:0.0,((E:0.0,O:0.0):0.3752616321790141,(A:0.0,B:0.0):1.2573976776620968):19.546660278206648);, with loglik -0.28359195649455204
+    (D:0.0,C:0.0,((E:0.0,O:0.0):0.37526163268090873,(A:0.0,B:0.0):1.2573976793390045):19.54666023005492);, with loglik -0.2835919564945531
+
 
 We can read this file and look at its list of networks like this:
 
@@ -113,7 +116,7 @@ file = joinpath(dirname(pathof(SNaQ)), "..","examples","net1.networks");
 netlist = readmultinewick(file) # read the full list of networks in that file
 ```
 Next, we would like to extract the network scores from the file.
-We can do this with the [`readsnaqnetwork`](@ref) function.
+We can do this with the [`readallsnaqnetworks`](@ref) function.
 ```@repl fixednetworkoptim
 netlist = readallsnaqnetworks(file);
 for i in eachindex(netlist)
@@ -121,19 +124,14 @@ for i in eachindex(netlist)
 end
 ```
 The first network in the list is the best network returned by [`snaq!`](@ref).
-We see that the second network has a score that's not too far, but the other networks
-have worse scores. The best network and its best modification (second network in the
-list) are shown below. We chose to show edge numbers, to use them later
-to re-root the networks.
+We see that multiple runs found this same network as well, but networks 7-10
+have worse scores. The best network is shown below. We chose to show edge numbers,
+to use them later to re-root the network.
 
 ```@example fixednetworkoptim
-R"svg(name('fixednetworkoptim_othernets1.svg'), width=7, height=4)" # hide
-R"layout(matrix(1:2,1,2))"; # hide
-R"par"(mar=[0,0,0,0]) # hide
+R"svg(name('fixednetworkoptim_othernets1.svg'), width=7, height=7)" # hide
 plot(netlist[1], showgamma=true, showedgenumber=true, tipoffset=0.1);
-R"mtext"("best net, score=28.3", line=-1);
-plot(netlist[2], showgamma=true, showedgenumber=true, tipoffset=0.1);
-R"mtext"("direction modified, score=31.5", line=-1);
+R"mtext"("best net, score=-0.0142", line=-1);
 R"dev.off()"; # hide
 nothing # hide
 ```
@@ -150,25 +148,13 @@ But we could root the best network on the major parent edge to A, edge 10
 
 ```@example fixednetworkoptim
 R"svg(name('fixednetworkoptim_othernets2.svg'), width=7, height=7)" # hide
-R"layout(matrix(c(1,4,2,3),2,2))"; # hide
-R"par"(mar=[0,0,0.5,0]) # hide
 rootonedge!(netlist[1], 10); # root best net to make A outgroup
 rotate!(netlist[1], -4); # to 'un-cross' edges
 rotate!(netlist[1], -6);
 rotate!(netlist[1], -5);
 plot(netlist[1], showgamma=true, tipoffset=0.1);
-R"mtext"("best net, score=28.3", line=-1);
+R"mtext"("best net, score=-0.0142", line=-1);
 global_logger(NullLogger()); # hide
-rootatnode!(netlist[2], "A"); # net with modified direction: first way to make A outgroup
-global_logger(baselogger);   # hide
-rotate!(netlist[2], -4) # to 'un-cross' edges
-rotate!(netlist[2], -6)
-plot(netlist[2], showgamma=true, tipoffset=0.1);
-R"mtext"("second best in list, score=31.5\nrequires unsampled population", line=-2);
-rootonedge!(netlist[2], 10) # net with modified direction: second way to make A outgroup
-for i in [9,-7] rotate!(netlist[2], i); end; # to 'un-cross' edges
-plot(netlist[2], showgamma=true, tipoffset=0.1);
-R"mtext"("second best in list, score=31.5\ndifferent root position", line=-2);
 R"dev.off()"; # hide
 nothing # hide
 ```

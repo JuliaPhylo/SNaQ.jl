@@ -46,7 +46,6 @@ end
 	cachedLL = loglik(snaqnet)
 	@test cachedLL ≈ computeloss(snaqnet, dcf) atol=1e-8
 	@test cachedLL > initLL
-	@test loglik(snaqnet) ≈ loglik()
 
 	# snaq! with restrictions works as expected
 	t0 = simulatecoalescent(tre0, 1, 1)[1];

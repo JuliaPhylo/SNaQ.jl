@@ -207,7 +207,6 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         else
             write(s,"$(writenewick(n,outgroup))\n")
         end
-        # "with -loglik $(loglik(n))" not printed: not comparable across bootstrap networks
       end
       close(s)
     end
