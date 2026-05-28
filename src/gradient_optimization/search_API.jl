@@ -725,8 +725,6 @@ function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}
         retries += 1
         if retries >= 1e3
             if isnothing(required_edge) || attempted_reqedges >= 100
-                @show isnothing(required_edge)
-                @show attempted_reqedges
                 error("Could not find any valid move proposals after 1e3 attempts.")
             end
             # Sometimes we sample an edge that is not actually possible to
