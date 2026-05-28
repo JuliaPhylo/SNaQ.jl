@@ -161,7 +161,7 @@ reticulations, we typically want to infer networks with progressively increasing
 numbers of reticulations.
 
 Instead, to implement this restriction we will only reject proposed networks
-that have any hybrid nodes with descendants that are **not** apart of our known
+that have any hybrid nodes with descendants that are **not** a part of our known
 set of hybrid taxa. We would do this as follows:
 
 ```julia
