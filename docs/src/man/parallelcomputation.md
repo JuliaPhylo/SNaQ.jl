@@ -2,7 +2,7 @@
 
 ## Parallel runs
 
-For network estimation, multiple runs can done in parallel.
+For network estimation, multiple runs can be done in parallel.
 For example, if your machine has 4 or more processors (or cores),
 you can tell julia to use 4 processors by starting julia with `julia -p3`,
 or by starting julia the usual way (`julia`) and then adding processors with:
@@ -129,39 +129,45 @@ echo "start of SNaQ parallel runs on $(hostname)"
 echo "end of SNaQ run ..."
 ```
 
-## Parallel quartet likelihood 
+## Parallel quartet likelihood
 
 Each step of optimization involves computing the likelihood of each quartet.
-Since SNaQ treats quartet likelihoods as independent,
-their likelihoods can be computed in parallel with multi-threading. 
+Since SNaQ treats quartets as independent,
+their likelihoods can be computed in parallel with multi-threading.
 To enable multi-threading, the user needs to specify how many threads are
-avaliable when starting a Julia session with the `--threads` flag:
+available when starting a Julia session with the `--threads` flag:
 ```bash
-julia --threads=8 #use 8 threads
+julia --threads=8
 ```
-SNaQ then automatically multi-threads quartet likelihoods, if given the opportunity. 
-Setting `--threads=auto` uses all avaliable CPU threads.
+or equivalently with the `-t` flag:
+```bash
+julia -t8
+```
+SNaQ then automatically multi-threads quartet likelihoods.
+Setting `--threads=auto` uses all available CPU threads.
 
 
 ## Quartet subsampling
 
 For a network with $N$ taxa, there are $\binom{N}{4}$ different quartets,
-meaning that the complexity of likelihood computation balloons quartically with respect to the number of taxa. 
+meaning that the complexity of likelihood computation grows quartically with respect to the number of taxa.
 In cases where the number of taxa causes network estimation to be prohibitively slow,
 we implemented a strategy that only uses a fraction of all quartets when computing the likelihood.
 For a network with $\binom{N}{4}$ quartets, the optional `propQuartets` argument can be used to randomly sample
 $\lceil \binom{N}{4} \cdot$ `propQuartets` $\rceil$ quartets.
-Although we lose some information when subsampling quartets, using `propQuartets` as low as `0.5`
-has been shown to not signifcantly decrease accuracy.
+Although we lose some information when subsampling quartets, using `propQuartets` as low as `0.1`
+has been shown to not significantly decrease accuracy when the network contains 25 taxa. Caution should
+be exercised when decreasing `propQuartets` too low, especially with few taxa in the network. A rule of
+thumb is to never use fewer than 1,000 quartets, i.e. `propQuartets` at least $1000 / \binom{N}{4}$.
 
-We can run the same analysis as the [Estimating a network](@ref) section and comapre the two networks
-when we use only a fraction of the quartets. 
+We can run the same analysis as the [Estimating a network](@ref) section and compare the two networks
+when we use only a fraction of the quartets.
 
 ```julia
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 raxmlCF = readtrees2CF(raxmltrees)
 astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
-astraltree = readmultinewick(astralfile)[102] # 102th tree: last tree here
+astraltree = readmultinewick(astralfile)[102] # 102nd tree: last tree here
 
 net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 ```
@@ -177,13 +183,13 @@ net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 ### Removing uninformative quartets
 
 We can further reduce computational costs with minimal detriment to accuracy by
-ignoring uniformative quartets.
+ignoring uninformative quartets.
 A star tree would give concordance factors of $\frac{1}{3}$ for all quartet topologies,
 thus, quartets with CFs near $\frac{1}{3}$ may not be informative of the overall species topology.
 We can check for and remove uninformative quartets by setting
  the optional keyword argument `qinfTest` to `true`.
 Any quartets with concordance factors sufficiently close to $\frac{1}{3}$ will be removed when
  computing the composite likelihood. 
-Further, the optional keyword argument `qtolAbs` can be used to specify the tolerence for determining
+Further, the optional keyword argument `qtolAbs` can be used to specify the tolerance for determining
 what concordance factors are "close enough" to $\frac{1}{3}$.
 
