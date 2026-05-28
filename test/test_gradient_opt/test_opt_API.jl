@@ -77,7 +77,7 @@ end
     end
 end
 
-@testset "-logPL strictly improves with non-Inf α" begin
+@testset "-logPL strictly improves with ρ != 0.0" begin
     ntested::Int = 0
     nfail::Int = 0
     while ntested < 100
@@ -100,11 +100,10 @@ end
         end
         q = qstat
 
-        ρ = rand() < 0.5 ? 1.0 : rand()
-        α = ρ == 0.0 ? Inf : (1.0 - ρ) / ρ
-        before_L = SNaQ.computeloss(net, q, α)
-        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, α; maxeval = 10)
-        after_L = SNaQ.computeloss(net, q, α)
+        ρ = rand() < 0.25 ? 1.0 : rand()
+        before_L = SNaQ.computeloss(net, q, ρ)
+        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, ρ; maxeval = 10)
+        after_L = SNaQ.computeloss(net, q, ρ)
 
         @test after_L > before_L
         ntested += 1
