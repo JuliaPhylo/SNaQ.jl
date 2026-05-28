@@ -201,7 +201,7 @@ Assumptions:
   but this assumption is *not checked* (for speed, e.g. during bootstrapping).
 - one single row per 4-taxon set (multiple individuals representatives
   of the same 4-taxon set should have been already merged);
-  basically: the DataCF should have been created from the data frame by `readtableCF!(df, colums)`
+  basically: the DataCF should have been created from the data frame by `readtableCF!(df, columns)`
 """
 function readtableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
     for i in axes(df, 1)
