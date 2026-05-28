@@ -1,9 +1,32 @@
 
 """
+    rhotoalpha(ρ)
+
+Convert the inheritance correlation parameter `ρ` ∈ [0, 1] to the internal `α` parameter
+used by the likelihood functions. `ρ = 0` (independent inheritance) maps to `α = Inf`;
+`ρ = 1` (completely dependent) maps to `α = 0`.
+
+See also: [`alphatorho`](@ref)
+"""
+rhotoalpha(ρ::Real) = ρ == 0.0 ? Inf : (1.0 - ρ) / ρ
+
+"""
+    alphatorho(α)
+
+Convert the internal `α` parameter used by the likelihood functions to the inheritance
+correlation parameter `ρ` ∈ [0, 1]. `α = Inf` (independent inheritance) maps to `ρ = 0`;
+`α = 0` (completely dependent) maps to `ρ = 1`.
+
+See also: [`rhotoalpha`](@ref)
+"""
+alphatorho(α::Real) = isinf(α) ? 0.0 : 1.0 / (1.0 + α)
+
+
+"""
     snaq!(T::HybridNetwork, d::DataCF)
 
 Estimate the network (or tree) to fit observed quartet concordance factors (CFs)
-stored in a DataCF object, using maximum pseudo-likelihood.
+stored in a DataCF object, using maximum pseudolikelihood.
 The search starts from topology `T`,
 which can be a tree or a network with no more than `hmax` hybrid nodes.
 This function does *not* modify `T`.
@@ -15,7 +38,7 @@ Output:
 - the best network and modifications of it, in file `.networks`.
   All networks in this file have the same undirected topology as the best network,
   but have different hybrid/gene flow directions.
-  These other networks are reported with their pseudo-likelihood scores, because
+  These other networks are reported with their pseudolikelihood scores, because
   non-identifiability issues can cause them to have very similar scores, and
   because SNaQ was shown to estimate the undirected topology accurately but
   not the direction of hybridization in cases of near non-identifiability.
@@ -25,7 +48,7 @@ There are many optional keyword arguments, including
 
 - `hmax` (default 1): maximum number of hybridizations allowed
 - `propQuartets` (default 1): the proportion of observed quartet concordance factors in `d`
-  to use when calculating network pseudo-likelihoods. Smaller values will lead to faster
+  to use when calculating network pseudolikelihoods. Smaller values will lead to faster
   method runtime but may come at the expense of accuracy if lowered too far.
 - `probQR` (default 0): the probability at any given step to use weighted random sampling
   of quartets when deciding where to make topological moves when proposing the next
@@ -55,9 +78,9 @@ Greater values will result in a less thorough but faster search.
 These parameters are used when evaluating candidate networks only.
 The following optional keyword arguments control when to stop proposing new network topologies:
 
-- `Nfail` (75): maximum number of times that new topologies are proposed and rejected (in a row).
+- `Nfail` (100): maximum number of times that new topologies are proposed and rejected (in a row).
 
-Lower values of `Nfail` and greater values of `liktolAbs` and `ftolAbs` would
+Lower values of `Nfail` and greater values of `ftolAbs` would
 result in a less thorough but faster search.
 
 At the end, branch lengths and γ's are optimized on the last "best" network
@@ -67,18 +90,19 @@ with different and very thorough tolerance parameters:
 The following optional keyword arguments are used to identify and exclude uninformative quartets.
 Uninformative quartets are those with concordance factors sufficiently close to the
 expected concordance factors from the star tree (one-third for all topologies). 
-Default parameters are are in parentheses:
+Default parameters are in parentheses:
 - `qinfTest` (false): if true, then look for uninformative quartets to discard.
-- `qtolAbs` (1e-4): The tolerance for identifying uninformative concordance factors. Uninformative concordance factors are (1/3)±`qtolAbs`
+- `qtolAbs` (1e-4): tolerance for identifying uninformative concordance factors. Uninformative concordance factors are within `(1/3) ± qtolAbs`.
 
-By default SNaQ searches for networks under a model of independent inheritance, where lineages coalesce through
-hybrid nodes independently of one another. The following optional keyword argument controls this model of dependence:
+By default, SNaQ searches for networks under a model of independent inheritance. The following optional
+keyword argument controls this model of dependence:
 
-- `ρ` (0.0): in the range [0, 1], a value of 0 corresponds to independent inheritance, whereas a value of
-  1 corresponds to completely dependent inheritance. See [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030) for further details.
+- `ρ` (0.0): inheritance correlation parameter in the range [0, 1]. `ρ = 0` corresponds to
+  independent inheritance; `ρ = 1` corresponds to completely dependent inheritance.
+  See [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030) for further details.
 
 See also: [`optimize!`](@ref) to optimize parameters on a fixed topology,
-and [`computeloss`](@ref) to get the negative log-likelihood
+and [`computeloss`](@ref) to get the composite log-likelihood
 of a fixed topology with fixed parameters.
 
 References:
@@ -110,11 +134,10 @@ function snaq!(
   qtolAbs::Float64=1e-4,
   qinfTest::Bool=false,
   propQuartets::Float64=1.0,
-  restrictions::Function=SNaQ.tcgidentifiable,
+  restrictions::Function=norestrictions,
   ρ::Float64=0.0,
   kwargs...
 )
-  α = ρ == 0.0 ? Inf : (1.0 - ρ) / ρ
   bestnet = multisearch(
       currT0,
       d,
@@ -136,7 +159,7 @@ function snaq!(
       qinfTest=qinfTest,
       qtolAbs=qtolAbs,
       probQR=probQR,
-      α=α,
+      ρ=ρ,
       kwargs...
   )[1]
 
