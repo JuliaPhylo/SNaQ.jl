@@ -143,3 +143,27 @@ snaq!(net0, d; restrictions=onlyknownhybrids)
 ```
 
 Note that this approach also has the benefit of allowing all trees when `hmax=0`.
+
+## Custom restrictions with parallel computing
+
+When utilizing custom restrictions with parallel computing, the restriction
+function needs to be defined on every worker process. This can be achieved by
+defining the function within an `@everywhere` block:
+
+```julia
+using Distributed
+
+@everywhere begin
+  function customrestriction(network::HybridNetwork)::Bool
+    # restriction code...
+  end
+end
+```
+
+If this step is not performed, anomalous errors from worker processes similar
+to the following may be thrown:
+
+```
+LoadError: On worker 7:
+UndefVarError: `#510#511` not defined in `SNaQ`
+```
