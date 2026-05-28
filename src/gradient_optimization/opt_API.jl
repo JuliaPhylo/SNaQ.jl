@@ -3,6 +3,8 @@ const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 
 
 """
+    optimizetopology!(Nprime, old_eqns, move, params, q, q_idxs, opt_maxeval, force_resample_all, rng, ρ)
+
 Optimizes the branch lengths and γ parameters of the network `Nprime`.
 
 # Arguments:
@@ -56,6 +58,8 @@ end
 
 
 """
+    optimize!(net, eqns, observed_CFs, ρ)
+
 Optimizes the branch lengths of network `net` which is defined by quartet concordance factor
 equations `eqns` based on observed quartet CFs `observed_CFs` under inheritance correlation
 parameter `ρ`. `maxeval` adjusts the maximum number of loss evaluations in the optimization
@@ -90,6 +94,8 @@ optimize_bls!(
 
 
 """
+    optimizetopology!(net, d)
+
 This version is just a helper function for more clear tests. In the context of the
 algorithm, this function recomputes values and wastes time.
 """
@@ -100,6 +106,8 @@ end
 
 
 """
+    optimize!(net, eqns, observed_CFs, ρ; maxeval, ftolRel, ftolAbs, xtolRel, xtolAbs)
+
 Optimizes the branch lengths (and γ parameters) of network `net`.
 
 # Required Arguments:
@@ -429,6 +437,8 @@ end
 
 
 """
+    gatherparams(net)
+
 Helper function that takes a network `net` and its `param_map` (provided
 by [`gatheroptimizationinfo`](@ref)) and gathers each of the associated
 parameters.
@@ -440,6 +450,8 @@ end
 
 
 """
+    computeexpectedCFmatrix(net, ρ=0.0)
+
 Computes the expected concordance factors of `net` with the inheritance
 correlation parameter `ρ` (default=`0.0`). The returned `Matrix{Float64}`
 object is unlabelled. See also [`computeexpectedDataCF`](@ref) for a `DataCF` object
@@ -464,6 +476,8 @@ computeexpectedCFs(net::HybridNetwork, ρ::Real=0.0)::Matrix{Float64} =
 
 
 """
+    computeexpectedDataCF(net, ρ=0.0)
+
 Creates a DataCF object containing the expected CFs for each quartet in `net`.
 """
 function computeexpectedDataCF(net::HybridNetwork, ρ::Real=0.0)::DataCF

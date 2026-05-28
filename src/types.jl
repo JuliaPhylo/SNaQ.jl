@@ -70,6 +70,8 @@ hasVeryBadTriangle!(h::HybridNetwork, b::Bool) = (h.boolg1 = b)
 index!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int3 = v)
 
 """
+    loglik!(network, value)
+
 Sets the composite log-likelihood of network `h` to `f`.
 Higher values indicate better fit.
 """

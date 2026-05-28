@@ -1,4 +1,6 @@
 """
+    sampleqindices(n, p, informative, rng)
+
 Helper function that generates a `Vector{Int}` with `n` indices where each
 integer from 1 to `n` has probability `p` of appearing. Only samples informative
 quartets, so only used when `qinfTest` is `true`.
@@ -17,6 +19,8 @@ sampleqindices(N::HybridNetwork, p::Real, i::BitVector, rng::TaskLocalRNG) =
 
 
 """
+    sampleqindices(n, p, rng)
+
 Helper function that generates a `Vector{Int}` with `n` indices where each
 integer from 1 to `n` has probability `p` of appearing.
 """
@@ -34,6 +38,8 @@ sampleqindices(net::HybridNetwork, p::Real, rng::TaskLocalRNG)::Vector{Int} =
 
 
 """
+    nchoose4taxalength(net)
+
 Helper function that calculates how many quartet combinations exist.
 """
 @inline function nchoose4taxalength(net::HybridNetwork)::Int

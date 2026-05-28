@@ -28,6 +28,8 @@ end
 
 
 """
+    readallsnaqnetworks(outfile)
+
 Read all of the optimal networks from a `.networks` file generated
 by the [`snaq!`](@ref) function. The composite log-likelihood of each
 network is also read and can be accessed individually with the

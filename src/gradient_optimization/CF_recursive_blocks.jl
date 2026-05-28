@@ -2,6 +2,8 @@
 
 
 """
+    RecursiveCFEquation
+
 The key struct used in computing -log pseudo-likelihood and gradients
 when optimizing branch lengths.
 """
@@ -24,6 +26,8 @@ end
 
 
 """
+    QuartetData
+
 A struct that contains:
 1. The initial `RecursiveCFEquation` struct from which the loss & gradient can be calculated
 2. A list of "internal" parameters (stored as indexed from 1 to `k` where `k` is the total number of
@@ -50,6 +54,8 @@ end
 
 
 """
+    computeexpectedCF4taxa(net, taxa, ρ=0.0)
+
 Helper function (primarily for the `QuartetNetworkGoodnessFit.jl` package) used
 to compute the expected CFs of the quartet consisting of `taxa` in `net`.
 The optional `ρ` argument (default 0) is the inheritance correlation parameter
@@ -67,6 +73,9 @@ end
 
 
 """
+    computeloss(N, q, ρ=0.0)
+    computeloss(N, dcf, ρ=0.0)
+
 Computes the composite log-likelihood of network `N` given observed quartet concordance
 factor data. The optional `ρ` argument (default 0) is the inheritance correlation parameter
 in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.

@@ -361,6 +361,8 @@ end
 
 
 """
+    search(N, q, hmax; restrictions, ρ, propQuartets, preopt, probST, probQR, maxeval, maxequivPLs, opt_maxeval, seed, verbose, logfile)
+
 Performs a single search for the optimal network topology with gradient-based optimization
 of branch lengths and inheritance probabilities.
 
