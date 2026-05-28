@@ -2,6 +2,17 @@ using PhyloNetworks
 
 # snaq!(tre0, df, restrictionset(max_level=3, require_galled_tree=true))
 
+"""
+Convenience function that generates restriction functions for common use cases.
+
+# Optional Named Arguments
+- `max_level` (default=Inf): maximum level of the inferred network
+- `galled_tree` (default=true): whether the inferred network must be a galled tree
+- `galled_network` (default=true): whether the inferred network must be a galled network
+- `rooted_tree_child` (default=true): whether the inferred network must be rooted tree child
+- `weakly_tree_child` (default=true): whether the inferred network must be weakly tree child
+- `strongly_tree_child` (default=true): whether the inferred network must be strongly tree child
+"""
 function restrictionset(; max_level::Real=Inf, galled_tree::Bool=false, galled_network::Bool=false,
     rooted_tree_child::Bool=false, weakly_tree_child::Bool=false, strongly_tree_child::Bool=false)
 
@@ -34,7 +45,8 @@ restrictgalledtree() = (net) -> getnetworklevel(net) <= 1
 restrictrootedtreechild() = (net) -> PhyloNetworks.istreechild(net)[1]
 restrictweaklytreechild() = (net) -> PhyloNetworks.istreechild(net)[2]
 restrictstronglytreechild() = (net) -> PhyloNetworks.istreechild(net)[3]
-defaultrestrictions() = (net) -> tcgidentifiable(net)
+defaultrestrictions() = (net) -> norestrictions(net)
+norestrictions(net::HybridNetwork) = true
 norestrictions() = (net) -> true
 
 
