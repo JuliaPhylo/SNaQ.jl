@@ -44,12 +44,6 @@ function performrNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     # `s` or `t` are hybrids, they maintain their status
     swapedgehybridinfo!(edge_su, edge_tv)
     directedges!(N)
-
-    # If `v` is a hybrid, we need to flip the direciton of the edge `uv`
-    # if v.hybrid
-    #     edge_uv::Edge = u.edge[findfirst(e -> v in e.node, u.edge)]
-    #     fliphybrid!(N, v, edge_uv.ismajor)
-    # end
     
     return 1
 end
