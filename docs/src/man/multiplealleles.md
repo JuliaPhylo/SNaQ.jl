@@ -120,7 +120,7 @@ nrow(df_sp) # 31 quartets of individuals informative between species
     are considered, say `(a1,b1,c1,d1)`, `(a2,b1,c1,d1)`, `(a1,b2,c1,d1)`,
     `(a2,b2,c1,d1)` and so on.
     The CFs of these 4-taxon sets are averaged together to obtain the
-    CFs at the species level. This procedures gives more weight to genes that have
+    CFs at the species level. This procedure gives more weight to genes that have
     many alleles (because they contribute to more sets of 4 individuals) and less
     weight to genes that have few alleles.
 
