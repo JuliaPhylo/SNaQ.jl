@@ -120,7 +120,9 @@ that have any hybrid nodes with descendants that are **not** a part of our known
 set of hybrid taxa. We would do this as follows:
 
 ```julia
+using PhyloNetworks
 global known_hybrids = ["A", "B", "C", "D"];
+
 function onlyknownhybrids(network::HybridNetwork)
   for H in network.hybrid
     # We can utilize an internal function of SNaQ to make
