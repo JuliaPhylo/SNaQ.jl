@@ -25,7 +25,7 @@ end
 
 """
 A struct that contains:
-1. The initial `RecrusiveCFEquation` struct from which the loss & gradient can be calculated
+1. The initial `RecursiveCFEquation` struct from which the loss & gradient can be calculated
 2. A list of "internal" parameters (stored as indexed from 1 to `k` where `k` is the total number of
     parameters optimized during branch length optimization in `optimize!`) that are relevant to
     this quarnet. This INCLUDES edges that DO NOT contribute to the quarnet's expected CF, but that
@@ -43,7 +43,8 @@ contains_parameter(qdata::QuartetData, param_idxs::Vector{Int})::Bool = any(
 )
 
 
-function computeexpectedCF(qdata::QuartetData, params::Vector{Float64}, α::Float64)
+function computeexpectedCF(qdata::QuartetData, params::Vector{Float64}, ρ::Float64=0.0)
+    α = rhotoalpha(ρ)
     return computeexpectedCFandgradientrecur!(qdata.eqn, params, zeros(length(params), 3), falses(length(params)), α, ones(length(params), 3))
 end
 
@@ -51,55 +52,51 @@ end
 """
 Helper function (primarily for the `QuartetNetworkGoodnessFit.jl` package) used
 to compute the expected CFs of the quartet consisting of `taxa` in `net`.
+The optional `ρ` argument (default 0) is the inheritance correlation parameter
+in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
 """
-function computeexpectedCF4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, α::Real)::Tuple{Float64,Float64,Float64}
+function computeexpectedCF4taxa(net::HybridNetwork, taxa::AbstractVector{<:AbstractString}, ρ::Real=0.0)::Tuple{Float64,Float64,Float64}
     # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
     param_map, params = gatheroptimizationinfo(net)[[2,4]]
 
     qdata = SNaQ.findquartetequations4taxa(net, taxa, param_map)
-    eCF1, eCF2 = SNaQ.computeexpectedCF(qdata, params, α)
-    
+    eCF1, eCF2 = SNaQ.computeexpectedCF(qdata, params, ρ)
+
     return eCF1, eCF2, 1-eCF1-eCF2
 end
 
 
 """
-Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet concordance
-factor data `q` under Dirichlet parameter `α`.
+Computes the composite log-likelihood of network `N` given observed quartet concordance
+factor data. The optional `ρ` argument (default 0) is the inheritance correlation parameter
+in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
 """
-function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float64
+function computeloss(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
-    loss = computeloss(qdata, params, q, α)
+    loss = computeloss(qdata, params, q, ρ)
     loglik!(N, loss)
     return loss
 end
-function computeloss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
-    loss = computeloss(N, gatherCFmatrix(dcf), α)
+function computeloss(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
+    loss = computeloss(N, gatherCFmatrix(dcf), ρ)
     loglik!(N, loss)
     return loss
 end
-function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
+function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, ρ::Float64=0.0)::Float64
+    α = rhotoalpha(ρ)
     return computelossandgradient!(qdata, params, zeros(length(params)), q, α)
 end
 
-"""
-Deprecated - included for backwards compatibility in niche cases.
-"""
-compute_loss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf) = computeloss(N, q, α)
-
-"""
-Deprecated - included for backwards compatibility in niche cases.
-"""
-compute_loss(N::HybridNetwork, dcf::DataCF, α::Real=Inf) = computeloss(N, dcf, α)
 
 
 
 """
 Debugging function - not to be used internally because it will recompute many things.
 """
-function computegradient(net::HybridNetwork, obsCFs::Matrix{Float64}, α::Float64=Inf)::Vector{Float64}
+function computegradient(net::HybridNetwork, obsCFs::Matrix{Float64}, ρ::Real=0.0)::Vector{Float64}
+    α = rhotoalpha(ρ)
     params = gatherparams(net);
     grad = zeros(length(params))
     computelossandgradient!(findquartetequations(net)[1], params, grad, obsCFs, α)
