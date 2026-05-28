@@ -95,3 +95,16 @@ end
     runtestfile("test_network_moves/test_all_moves.jl")
 end
 
+# Quiet clean up
+tryrm(f::String) = (isfile(f) && rm(f)) || (isdir(f) && rm(f; recursive=true))
+qrm(f::String) = tryrm(joinpath(@__DIR__, "..", f))
+qrm("rand1Quartets.txt")
+qrm("rand2Quartets.txt")
+qrm("rand3Quartets.txt")
+qrm("rand7Quartets.txt")
+qrm("rand12Quartets.txt")
+qrm("snaq.log")
+qrm("snaq.networks")
+qrm("snaq.out")
+qrm("summaryTreesQuartets.txt")
+qrm("tableCF.txt")
