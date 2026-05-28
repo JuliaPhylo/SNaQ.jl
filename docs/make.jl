@@ -81,6 +81,8 @@ makedocs(;
             "Extract expected CFs" => "man/expectedCFs.md",
             "Bootstrap" => "man/bootstrap.md",
             "Improving runtimes" => "man/parallelcomputation.md",
+            "Restricted Search" => "man/network_restrictions.md",
+            "Correlated inheritance" => "man/correlated_inheritance.md",
             "Multiple alleles" => "man/multiplealleles.md",
             "Error reporting" => "man/error_reporting.md"
         ],
