@@ -3,14 +3,13 @@
 ## Optimizing parameters for a given network
 
 For a given network topology, we can optimize the branch lengths and
-inheritance probabilities (γ) with the pseudolikelihood.
+inheritance probabilities (γ) with the composite log-likelihood.
 This is useful if we have a few candidate networks to compare.
 Each network can be optimized individually, and the network with the best
-pseudolikelihood can be chosen.
+composite log-likelihood can be chosen.
 
-The score being optimized is a pseudo-deviance, i.e.
-a multiple of the negative log pseudo-likelihood up to an additive constant
-(the lower the better; a pseudo-deviance of 0 corresponds to a perfect fit).
+The score being optimized is the composite log-likelihood
+(the higher, the better).
 
 Following our example in [Estimating a network](@ref),
 we can optimize parameters on the true network
@@ -35,7 +34,7 @@ truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,
 optnet = deepcopy(truenet);
 optimize!(optnet, raxmlCF);
 writenewick(optnet, round=true)
-loglik(optnet) # typically negative, the higher the better
+loglik(optnet) # composite log-likelihood: the higher, the better
 ```
 ```@example fixednetworkoptim
 using PhyloPlots, RCall
@@ -62,29 +61,28 @@ the search stops (but the optimization will take longer).
 It makes no difference on this small data set.
 ```julia
 net1par = optimize!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
-loglik(net1par) # pseudo deviance, actually: the lower the better
+loglik(net1par) # composite log-likelihood: the higher, the better
 ```
 
 ## Network score with no optimization
 
-For a network with given branch lengths and γ heritabilies,
-we can compute the negative composite log likelihood with:
+For a network with given branch lengths and γ inheritance probabilities,
+we can compute the composite log-likelihood with:
 ```@repl fixednetworkoptim
-computeloss(truenet, raxmlCF);
-loglik(truenet) # again, pseudo deviance
+computeloss(truenet, raxmlCF) # composite log-likelihood: the higher, the better
+loglik(truenet)               # loss can be accessed again later
 ```
-This function is not maximizing the pseudolikelihood, it is simply computing the
-pseudolikelihood (or deviance) for the given branch lengths and probabilities of
-inheritance. At the moment, both of these functions require that the
-given network is of level 1 (cycles don't overlap).
+This function is not maximizing the composite log-likelihood, it is simply computing the
+composite log-likelihood for the given branch lengths and probabilities of
+inheritance.
 
 ## Candidate networks compatible with a known outgroup
 
 If the network was estimated via [`snaq!`](@ref), it might turn out to be impossible
 to root our estimated network with a known outgroup.
 At this time, `snaq!` does not impose any rooting constraint on the network:
-the search for the lowest score considers all level-1 networks, including those
-that are incompatible with a known outgroup.
+the search for the lowest score considers all networks in the specified search space,
+excluding those that are incompatible with the specified outgroup (if there is one).
 (The monophyly of outgroups is not imposed either, like in many other methods.)
 
 If the estimated network cannot be rooted with the known outgroup,
@@ -115,16 +113,11 @@ file = joinpath(dirname(pathof(SNaQ)), "..","examples","net1.networks");
 netlist = readmultinewick(file) # read the full list of networks in that file
 ```
 Next, we would like to extract the network scores from the file.
-Below is some code for doing this in julia
+We can do this with the [`readsnaqnetwork`](@ref) function.
 ```@repl fixednetworkoptim
-score_in_string = read(file, String); # read the file as a single string
-score_in_string = (x-> x[1]).(collect(eachmatch(r"with -loglik ([0-9]+.[0-9]+)",score_in_string))); # find all occurences of the loglik scores
-scores = parse.(Float64, score_in_string); # parse those matches into numbers
-
-# next: update the "loglik" of each network with the score read from the file
+netlist = readallsnaqnetworks(file);
 for i in eachindex(netlist)
-   netlist[i].fscore = scores[i]
-   println("net $i in the list: score = ",scores[i])
+  println("net $i has composite log-likelihood = ", round(loglik(netlist[i]), digits=4))
 end
 ```
 The first network in the list is the best network returned by [`snaq!`](@ref).
