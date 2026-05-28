@@ -167,7 +167,7 @@ when we use only a fraction of the quartets.
 raxmltrees = joinpath(dirname(pathof(SNaQ)), "..","examples","raxmltrees.tre");
 raxmlCF = readtrees2CF(raxmltrees)
 astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
-astraltree = readnewick(astralfile)
+astraltree = readmultinewick(astralfile)[102]
 
 net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 ```

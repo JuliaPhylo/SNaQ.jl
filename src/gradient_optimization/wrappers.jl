@@ -167,5 +167,8 @@ function snaq!(
   # `d` with the new expected qCFs.
   semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
   optimize!(bestnet, d; maxeval=1)
+  for L in bestnet.leaf
+    getparentedge(L).length = 0.0
+  end
   return bestnet
 end

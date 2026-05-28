@@ -82,7 +82,7 @@ for easier download).
 
 Do not copy-paste into a "smart" text-editor. Instead, save the file
 directly into your working directory using "save link as" or "download linked file as".
-This file contains 30 gene trees, each in parenthetical format on 6 taxa
+This file contains 100 gene trees, each in parenthetical format on 6 taxa
 like this (with rounded branch lengths):
 
 `(E:0.038,((A:0.014,B:0.010):0.010,(C:0.008,D:0.002):0.010):0.025,O:0.078);`
@@ -190,7 +190,7 @@ It's this last tree that we are most interested in.
 We can read it with
 ```@example qcf
 astralfile = joinpath(dirname(pathof(SNaQ)), "..","examples","astral.tre");
-astraltree = readnewick(astralfile)
+astraltree = readmultinewick(astralfile)[102]
 ```
 
 Instead of a starting tree (`astraltree` in this case), we can start the optimization 
@@ -208,12 +208,8 @@ input data `raxmlCF` and starting from tree (or network) `astraltree`.
 We first set `hmax=0` to impose the constraint of at most 0 hybrid node,
 that is, we estimate a tree.
 ```julia
-net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", seed=1234)
+net0 = snaq!(astraltree, raxmlCF, hmax=0, filename="net0", seed=1234)
 ```
-Part of the screen output shows this:
-
-    MaxNet is (C,D,((B,A):1.395762055180493,(O,E):0.48453400554506426):10.0);
-    with -loglik 53.53150526187732
 
 This parenthetical (extended Newick) description is not very
 human-friendly, so we use [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl) to plot the tree
@@ -237,11 +233,6 @@ not specify a `hmax` value).
 ```julia
 net1 = snaq!(net0, raxmlCF, hmax=1, filename="net1", seed=2345)
 ```
-Part of screen output:
-
-    best network and networks with different hybrid/gene flow directions printed to .networks file
-    MaxNet is (C,D,((O,(E,#H7:::0.19558838614943078):0.31352437658618976):0.6640664399202987,(B,(A)#H7:::0.8044116138505693):10.0):10.0);
-    with -loglik 28.31506721890958
 
 We can visualize the estimated network and its inheritance values γ, which
 measure the proportion of genes inherited via each parent at a reticulation event
@@ -317,8 +308,8 @@ higher the better. See the section [Candidate networks](@ref) to get the score o
 
 We change the `hmax` argument to change the search space to let the network have up to 2 or 3 hybrid nodes:
 ```julia
-net2 = snaq!(net1,raxmlCF, hmax=2, filename="net2", seed=3456)
-net3 = snaq!(net0,raxmlCF, hmax=3, filename="net3", seed=4567)
+net2 = snaq!(net1, raxmlCF, hmax=2, filename="net2", seed=3456)
+net3 = snaq!(net0, raxmlCF, hmax=3, filename="net3", seed=4567)
 ```
 and plot them (the optimized networks are identical and they both have a single reticulation):
 ```@example snaqplot
@@ -335,16 +326,6 @@ nothing # hide
 ```
 ![net23](../assets/figures/snaqplot_net23.svg)
 
-with this screen output for net2 (only 1 hybrid node found):
-
-    MaxNet is (C,D,((B,(A)#H7:::0.804411606649347):10.0,(O,(#H7:::0.19558839335065303,E):0.3135243143217013):0.664066456871298):10.0);
-    with -loglik 28.31506721890957
-
-and this output for net3 (again, only 1 hybrid found):
-
-    MaxNet is (D,C,((O,(E,#H7:::0.19558839257941849):0.3135243301652981):0.6640664138384673,(B,(A)#H7:::0.8044116074205815):10.0):10.0);
-    with -loglik 28.315067218909626
-
 Each network's composite log-likelihood can accessed with the `loglik` function
 (the higher the better). We can plot these scores across hybrid values:
 ```@example snaqplot
@@ -352,7 +333,7 @@ scores = [loglik(net0), loglik(net1), loglik(net2), loglik(net3)]
 hmax = collect(0:3)
 R"svg(name('snaqplot_scores_heuristic.svg'), width=4, height=3)" # hide
 R"par"(mar=[2.5,2.5,.5,.5], mgp=[1.4,.4,0], tck=-0.02, las=1, lab=[3,5,7]);  # hide
-R"plot"(hmax, scores, type="b", ylab="composite log-likelihood", xlab="hmax", col="blue");
+R"plot"(hmax, .-scores, type="b", ylab="composite log-likelihood", xlab="hmax", col="blue");
 R"dev.off()"; # hide
 nothing # hide
 ```
