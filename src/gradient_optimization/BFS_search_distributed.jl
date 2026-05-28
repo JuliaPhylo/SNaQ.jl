@@ -166,7 +166,7 @@ function BFSsingleiter(
     ftolabs::Float64,
     ftolrel::Float64;
     restrictions::Function=norestrictions(),
-    α::Real=Inf,
+    ρ::Real=0.0,
     propQuartets::Real=1.0,
     maxequivPLs::Int=100,
     opt_maxeval::Int=10
@@ -176,7 +176,7 @@ function BFSsingleiter(
     propQuartets == 1.0 || error("PROPQUARTETS != 1.0 NOT IMPLEMENTED YET")
     # Parameter bounds enforcement
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
-    1 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
+    0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $(ρ))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
 
     # Copy input net
@@ -193,7 +193,7 @@ function BFSsingleiter(
         # 2. Optimize that topology
         Nprime_logPL, Nprime_eqns = optimizetopology!(
             Nprime, net_eqns, prop_move, prop_params, q, q_idxs,
-            opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, α
+            opt_maxeval, N.numhybrids != Nprime.numhybrids, rng, ρ
         )
         loglik!(Nprime, Nprime_logPL)
 
