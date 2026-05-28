@@ -13,22 +13,22 @@ that fit the observed quartet concordance factors.
 
 # Arguments
 - `N::Union{HybridNetwork, Vector{HybridNetwork}}`: The starting network topology or vector
-    of topologies. If a vector, must be length eor of length `runs`.
+    of topologies. If a vector, must be of length 1 or of length `runs`.
 - `q::Union{DataCF, AbstractArray{Float64}}`: Observed quartet concordance factors.
 - `hmax::Int`: Maximum number of hybridization events allowed.
 
 # Optional Arguments
 - `runs::Int=10`: Number of independent search runs.
 - `seed::Int=42`: Random seed for reproducibility.
-- `restrictions::Fuction=defaultrestrictions()`: Function that takes a `HybridNetwork` as
+- `restrictions::Function=defaultrestrictions()`: Function that takes a `HybridNetwork` as
     its only argument and returns a `Bool`. Only networks that return `true` to this function
     will be considered during search.
 - `kwargs...`: Additional keyword arguments passed to the [`search`](@ref) function.
 
 # Returns
-- `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
+- `best_network::HybridNetwork`: The network with the best (highest) composite log-likelihood.
 - `all_networks::Vector{HybridNetwork}`: All networks from the runs, sorted by score.
-- `all_scores::Vector{Float64}`: Negative log pseudo-likelihood scores for each network.
+- `all_scores::Vector{Float64}`: Composite log-likelihood scores for each network.
 
 # Notes
 - This function uses distributed computing to perform searches in parallel.
@@ -374,10 +374,10 @@ of branch lengths and inheritance probabilities.
 - `qinfTest::Bool`: whether to test for uninformative quartets (CFs near [1/3, 1/3, 1/3]) and
     exclude those quartets when performing the network search.
 - `qtolAbs::Float64=1e-4`: the absolute tolerance used to detect uninformative quartets.
-- `propQR::Float64=0.0`: probability at a given search iteration of utilizing weighted random
+- `probQR::Float64=0.0`: probability at a given search iteration of utilizing weighted random
     sampling to (i) sample a poorly fitting quartet, (ii) sample an edge spanned by that
     quartet in the network, and finally (iii) only sample moves that include this edge.
-- `α::Real=Inf`: Dirichlet parameter for gene tree heterogeneity model.
+- `ρ::Real=0.0`: inheritance correlation parameter in the range [0, 1]. `ρ = 0` corresponds to independent inheritance; `ρ = 1` corresponds to completely dependent inheritance.
 - `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
 - `probST::Real=0.3`: Probability of performing a subtree move before searching.
@@ -389,15 +389,15 @@ of branch lengths and inheritance probabilities.
 - `logfile::String=""`: File to log detailed progress (used for debugging, but can also be used to examine convergence).
 
 # Returns
-- `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
-- `best_score::Float64`: The negative log pseudo-likelihood of the best network.
+- `best_network::HybridNetwork`: The network with the best (highest) composite log-likelihood.
+- `best_score::Float64`: The composite log-likelihood of the best network.
 """
 function search(
     N::HybridNetwork,
     q::Union{DataCF, Matrix{Float64}},
     hmax::Int;
     restrictions::Function=defaultrestrictions(),
-    α::Real=Inf,
+    ρ::Real=0.0,
     propQuartets::Real=1.0,
     preopt::Bool=true,
     probST::Real=0.3,
@@ -419,7 +419,7 @@ function search(
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
-    0 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
+    0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $(ρ))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $(probQR))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
@@ -499,11 +499,11 @@ function search(
     # Pre-optimizing the network's parameters
     if preopt
         @debug "Pre-optimizing"
-        optimize!(N, N_eqns, q[q_idxs, :], α; maxeval=max(opt_maxeval, 500), optargs...)
+        optimize!(N, N_eqns, q[q_idxs, :], ρ; maxeval=max(opt_maxeval, 100), optargs...)
         restrictions(N) || error("N does not meet restrictions after preopt")
         logPLs[1] = loglik(N)
     else
-        logPLs[1] = computeloss(N_eqns, gatherparams(N), q[q_idxs, :], α)
+        logPLs[1] = computeloss(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
     end
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -525,7 +525,7 @@ function search(
         #Nprime = readnewick(writenewick(N));
         Nprime = deepcopynetwork(N);
 
-        prop_move, prop_params = generatemoveproposal(Nprime, N_eqns, moves_attempted, hmax, probQR, q[q_idxs, :], CFΔs, rng, α)
+        prop_move, prop_params = generatemoveproposal(Nprime, N_eqns, moves_attempted, hmax, probQR, q[q_idxs, :], CFΔs, rng, ρ)
         last_move = prop_move
         applymove!(Nprime, prop_move, prop_params)
         @debug "Proposed move: $(prop_move), parameters: $(prop_params)"
@@ -581,7 +581,7 @@ function search(
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimizetopology!(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
-            opt_maxeval, cannot_do_inplace, rng, α; optargs...
+            opt_maxeval, cannot_do_inplace, rng, ρ; optargs...
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
         # computeloss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
@@ -706,10 +706,10 @@ parameters, so this function repeatedly samples until a move with valid
 parameters is selected. Also, makes sure the proposed move is not present in
 `moves_attempted`, and appends the returned move to this vector.
 """
-function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}, moves_attempted::Vector, hmax::Int, probQR::Float64, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, α::Float64)::Tuple{Symbol,Any}
+function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}, moves_attempted::Vector, hmax::Int, probQR::Float64, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, ρ::Float64=0.0)::Tuple{Symbol,Any}
     required_edge::Union{Edge, Nothing} = nothing
     if probQR > 0.0 && rand(rng) <= probQR
-        required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, α)
+        required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, ρ)
     end
 
     validmove(mv::Symbol, pars) = !isnothing(pars) &&
@@ -731,7 +731,7 @@ function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}
             end
             # Sometimes we sample an edge that is not actually possible to
             # find in a move, so we re-sample another edge
-            required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, α)
+            required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, ρ)
             attempted_reqedges += 1
             retries = 0
         end
@@ -740,7 +740,7 @@ function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}
     return (move, params)
 end
 generatemoveproposal(Nprime::HybridNetwork, ma::Vector, hmax::Int, rng::TaskLocalRNG) =
-    generatemoveproposal(Nprime, Vector{QuartetData}([]), ma, hmax, 0.0, zeros(0, 0), zeros(0), rng, Inf)
+    generatemoveproposal(Nprime, Vector{QuartetData}([]), ma, hmax, 0.0, zeros(0, 0), zeros(0), rng, 0.0)
 
 
 """
@@ -748,12 +748,12 @@ Samples an edge from the network `N` with weights stored in `CFΔs`. If `CFΔs` 
 (it starts empty and is reset to [] whenever the search finds a better network), these
 weights are computed.
 """
-function sampleprobQRedge(N::HybridNetwork, eqns::Vector{QuartetData}, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, α::Float64)::Edge
+function sampleprobQRedge(N::HybridNetwork, eqns::Vector{QuartetData}, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, ρ::Float64=0.0)::Edge
     idxobjmap = gatheroptimizationinfo(N, false)[3]
     if length(CFΔs) == 0
         params = gatherparams(N);
         for (eqn, (ocf1, ocf2, ocf3)) in zip(eqns, eachrow(Q))
-            ecf1, ecf2 = computeexpectedCF(eqn, params, α)
+            ecf1, ecf2 = computeexpectedCF(eqn, params, ρ)
             ecf3 = 1.0 - ecf1 - ecf2
             push!(CFΔs, abs(ecf1 - ocf1) + abs(ecf2 - ocf2) + abs(ecf3 - ocf3))
         end
