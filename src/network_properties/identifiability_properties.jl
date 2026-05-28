@@ -91,7 +91,7 @@ function getdiamondns(cycle::Vector{Node})::Vector{Int}
             if currnode.leaf
                 ns[nidx] += 1
             else
-                for anode in attatchednodes(currnode)
+                for anode in attachednodes(currnode)
                     if anode ∈ visitednodes continue end
                     push!(Q, anode)
                 end
@@ -102,7 +102,7 @@ function getdiamondns(cycle::Vector{Node})::Vector{Int}
 end
 
 
-attatchednodes(n::Node) = [e.node[1] == n ? e.node[2] : e.node[1] for e in n.edge]
+attachednodes(n::Node) = [e.node[1] == n ? e.node[2] : e.node[1] for e in n.edge]
 
 
 """
