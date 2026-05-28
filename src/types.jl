@@ -45,7 +45,7 @@ numht(h::HybridNetwork) = h.vec_int2 # vector of number of the hybrid nodes and 
 numBad(h::HybridNetwork) = h.intg1 # number of bad diamond I hybrid nodes, set as 0
 hasVeryBadTriangle(h::HybridNetwork) = h.boolg1 # true if the network has extremely/very bad triangles that should be ignored
 index(h::HybridNetwork) = h.vec_int3 #index in net.edge, net.node of elements in net.ht to make updating easy
-loglik(h::HybridNetwork) = h.fscore # value of the min -loglik after optBL
+loglik(h::HybridNetwork) = h.fscore # composite log-likelihood (higher = better fit)
 blacklist(h::HybridNetwork) = h.vec_int4 # reusable array of integers, used in afterOptBL
 cleaned(h::HybridNetwork) = h.boolg2 # attribute to know if the network has been cleaned after readm default false
 
@@ -60,7 +60,8 @@ hasVeryBadTriangle!(h::HybridNetwork, b::Bool) = (h.boolg1 = b)
 index!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int3 = v)
 
 """
-Sets the negative composite log-likelihood of network `h` to `f`.
+Sets the composite log-likelihood of network `h` to `f`.
+Higher values indicate better fit.
 """
 loglik!(h::HybridNetwork, f::Real) = (h.fscore = f)
 blacklist!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int4 = v)
@@ -75,11 +76,11 @@ type that saves the information on a given 4-taxon subset. It contains the follo
 - `number`: integer
 - `taxon`: vector of taxon names, like t1 t2 t3 t4
 - `obsCF`: vector of observed CF, in order 12|34, 13|24, 14|23
-- `logPseudoLik`: log pseudo-likelihood of the quartet. 0.0 by default
+- `logPseudoLik`: log pseudolikelihood of the quartet. 0.0 by default
 - `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
 - `deltaCF`: The sum of absolute differences between observed and expected CFs
 - `sampled`: A boolean denoting whether the quartet is used in computing the likelihood
-- `uninformative`: A boolean denoting whether the quartet is not sampling due to being uninformative
+- `uninformative`: A boolean denoting whether the quartet is not sampled due to being uninformative
 
 see also: [`PhyloNetworks.QuartetT`](@extref) for quartet with data of user-defined type `T`,
 using a mapping between quartet indices and quartet taxa.
