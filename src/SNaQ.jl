@@ -99,7 +99,6 @@ module SNaQ
     include("network_properties/identifiability_properties.jl")
     include("gradient_optimization/opt_API.jl")
     include("gradient_optimization/search_API.jl")
-    include("gradient_optimization/BFS_search_distributed.jl")
     include("gradient_optimization/wrappers.jl")
     
     include("network_moves/misc.jl")
