@@ -67,7 +67,9 @@ end
 Computes the loss (-log pseudo-likelihood) of network `N` given observed quartet concordance
 factor data `q` under Dirichlet parameter `α`.
 """
-function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float64
+function computeloss(N::HybridNetwork,
+    q::Matrix{Float64},
+    α::Real=Inf)::Float64
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
@@ -75,14 +77,35 @@ function computeloss(N::HybridNetwork, q::Matrix{Float64}, α::Real=Inf)::Float6
     loglik!(N, loss)
     return loss
 end
-function computeloss(N::HybridNetwork, dcf::DataCF, α::Real=Inf)::Float64
+function computeloss(N::HybridNetwork,
+    dcf::DataCF,
+    α::Real=Inf)::Float64
     loss = computeloss(N, gatherCFmatrix(dcf), α)
     loglik!(N, loss)
     return loss
 end
-function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, α::Float64=Inf)::Float64
-    return computelossandgradient!(qdata, params, zeros(length(params)), q, α)
+function computeloss(qdata::Vector{QuartetData},
+    params::Vector{Float64}, q::Matrix{Float64},
+    α::Float64=Inf,
+    J::Union{Nothing, Matrix{T}}=nothing)::Float64 where T<:Real
+    return computelossandgradient!(qdata, params, zeros(length(params)), q, α,J)
 end
+
+
+function computegradientouterprod(N::HybridNetwork,
+    q::Matrix{Float64},
+    α::Real=Inf)::Float64
+
+    N = deepcopynetwork(N)
+    semidirectnetwork!(N)
+    qdata, _, params, _, _ = findquartetequations(N)
+    npar = length(params)
+    J = Matrix{Float64}(0,npar,npar)
+    loss = computeloss(qdata, params, q, α,J)
+    loglik!(N, loss)
+    return J
+end
+
 
 """
 Deprecated - included for backwards compatibility in niche cases.
@@ -127,7 +150,12 @@ end
 """
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
-@fastmath function computelossandgradient!(qdata::Vector{QuartetData}, params::Vector{T}, gradient_storage::Vector{T}, q::Matrix{T}, α::T=Inf)::T where T<:Float64
+@fastmath function computelossandgradient!(qdata::Vector{QuartetData},
+    params::Vector{T},
+    gradient_storage::Vector{T},
+    q::Matrix{T}, α::T=Inf,
+    J::Union{Nothing, Matrix{T}}=nothing
+    )::T where T<:Float64
 
     thread_lock::ReentrantLock = ReentrantLock()
     fill!(gradient_storage, 0.0)
@@ -177,12 +205,27 @@ Computes expected concordance factors and gradients by recursively passing throu
         local_grad_buffer[:, tid] .+= q[j, 1] .* iter_grad[:, 1] .* inv_eCF1 +
             q[j, 2] .* iter_grad[:, 2] .* inv_eCF2 +
             q[j, 3] .* iter_grad[:, 3] .* inv_eCF3
+        
+        
+        if J !== nothing
+            lock(lk) do
+                for c in 1:np
+                    for r in 1:np
+                        @inbounds J[r, c] += gj[r] * gj[c]
+                    end
+                end
+            end
+        end
     end
 
     gradient_storage .= sum(local_grad_buffer, dims=2)[:,1]
     return total_loss[]
 
 end
+
+
+
+
 
 
 """
