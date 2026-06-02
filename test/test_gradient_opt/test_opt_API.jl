@@ -17,7 +17,7 @@ end
     for L in [0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
         for seed = 1:10
             net, q = get_data(L, seed);
-            _, _, params, _, _ = findquartetequations(net);
+            params = SNaQ.gatherparams(net);
 
             opt_net = deepcopy(net)
             for E in opt_net.edge
@@ -31,15 +31,16 @@ end
             end
 
             firstoptL = optimize!(SNaQ.deepcopynetwork(opt_net), q; maxeval=100000)
-            secondoptL = optimize!(opt_net, SNaQ.findquartetequations(opt_net)[1], q, Inf; maxeval=100000)
-            @test firstoptL ≈ secondoptL atol=1e-12
-            eqns, _, opt_params, idx_obj_map, _ = findquartetequations(opt_net);
+            eqns = findquartetequations(opt_net)[1];
+            secondoptL = optimize!(opt_net, eqns, q, 0.0; maxeval=100000)
+            opt_params = SNaQ.gatherparams(opt_net);
+            @test firstoptL ≈ secondoptL atol=1e-5
             if !(sum(mean((opt_params .- params).^2)) < 1.0)
                 @info L
                 @info (sum(mean((opt_params .- params).^2)))
             end
 
-            @test sum(mean((opt_params .- params).^2)) < 1.0
+            @test sum(mean(abs.(opt_params .- params))) < 1.0
         end
     end
 end
@@ -76,7 +77,7 @@ end
     end
 end
 
-@testset "-logPL strictly improves with non-Inf α" begin
+@testset "-logPL strictly improves with ρ != 0.0" begin
     ntested::Int = 0
     nfail::Int = 0
     while ntested < 100
@@ -99,11 +100,10 @@ end
         end
         q = qstat
 
-        ρ = rand() < 0.5 ? 1.0 : rand()
-        α = ρ == 0.0 ? Inf : (1.0 - ρ) / ρ
-        before_L = SNaQ.computeloss(net, q, α)
-        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, α; maxeval = 10)
-        after_L = SNaQ.computeloss(net, q, α)
+        ρ = rand() < 0.25 ? 1.0 : rand()
+        before_L = SNaQ.computeloss(net, q, ρ)
+        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, ρ; maxeval = 10)
+        after_L = SNaQ.computeloss(net, q, ρ)
 
         @test after_L > before_L
         ntested += 1

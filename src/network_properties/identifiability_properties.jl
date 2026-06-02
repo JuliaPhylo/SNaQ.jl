@@ -1,5 +1,7 @@
 
 """
+    tcgidentifiable(N)
+
 Checks whether network `N` has an identifiable semi-directed topology
 and whether all of its branch parameters are known to be identifiable.
 Returns `true` if the topology and branch parameters are BOTH identifiable,
@@ -18,7 +20,7 @@ Checklist:
     - Otherwise --> unknown, return false
 - Non tree-child galled --> unknown, return false
 """
-function knownidentifiable(N::HybridNetwork)::Bool
+function tcgidentifiable(N::HybridNetwork)::Bool
     N.numhybrids == 0 && return true
     !N.isrooted || return false
 
@@ -61,9 +63,15 @@ function knownidentifiable(N::HybridNetwork)::Bool
     end
     return true
 end
-
+@deprecate knownidentifiable(args...) tcgidentifiable(args...);
+function knownidentifiable(N::HybridNetwork)::Bool
+    @warn "`knownidentifiable` is deprecated, please use `tcgidentifiable` instead."
+    return tcgidentifiable(N)
+end
 
 """
+    getdiamondns(cycle)
+
 Gets the `n0,n1,n2,n3` taxa counts associated with the 4-cycle `cycle`.
 Order of `cycle` does not matter. Counts returned in the order `n0,n1,n2,n3`.
 """
@@ -87,7 +95,7 @@ function getdiamondns(cycle::Vector{Node})::Vector{Int}
             if currnode.leaf
                 ns[nidx] += 1
             else
-                for anode in attatchednodes(currnode)
+                for anode in attachednodes(currnode)
                     if anode ∈ visitednodes continue end
                     push!(Q, anode)
                 end
@@ -98,10 +106,12 @@ function getdiamondns(cycle::Vector{Node})::Vector{Int}
 end
 
 
-attatchednodes(n::Node) = [e.node[1] == n ? e.node[2] : e.node[1] for e in n.edge]
+attachednodes(n::Node) = [e.node[1] == n ? e.node[2] : e.node[1] for e in n.edge]
 
 
 """
+    isCk(N)
+
 Returns `(false, 0)` if network `N` is not of any class Ck and
     returns `(true, k)` otherwise.
 """
@@ -137,6 +147,8 @@ end
 
 
 """
+    isCk(N, k)
+
 Checks whether network `N` is of class Ck given int `k`.
 """
 function isCk(N::HybridNetwork, k::Int)::Bool
@@ -146,6 +158,8 @@ end
 
 
 """
+    getleavesbelow(nodes)
+
 Gets all of the leaves BELOW each of the nodes in the vector `nodes`.
 Even if the network is semi-directed, traverses the edges as though
 they are directed.

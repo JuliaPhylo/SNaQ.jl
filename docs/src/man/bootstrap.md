@@ -41,11 +41,11 @@ bootnet = bootsnaq(net0, bootTrees, hmax=1, nrep=10, runs=3,
                    filename="bootsnaq", seed=4321)
 ```
 
-The bootstrap networks are saved in the `boostrap.out` file, so they
+The bootstrap networks are saved in the `bootsnaq.out` file, so they
 can be read in a new session with
 `bootnet = readmultinewick("bootsnaq.out")`. To save the bootstrap networks to
 a different file (perhaps after having re-rooted them with an
-outgroup), we could do this: `writeMultiTopology(bootnet, "bootstrapNets.tre")`.
+outgroup), we could do this: `writemultinewick(bootnet, "bootstrapNets.tre")`.
 
 The example above creates 10 bootstrap replicates,
 which is definitely too few, to make the example run faster.

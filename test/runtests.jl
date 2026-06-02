@@ -64,9 +64,16 @@ function runtestfile(testfile::String)
     originalstderr = stderr
     redirect_stdout(devnull)  # when testing for errors, comment these lines
     redirect_stderr(devnull)  # when testing for errors, comment these lines
-    include(testfile)
-    redirect_stdout(originalstdout)
-    redirect_stderr(originalstderr)
+    try
+        include(testfile)
+    catch e
+        redirect_stdout(originalstdout)
+        redirect_stderr(originalstderr)
+        rethrow(e)
+    finally
+        redirect_stdout(originalstdout)
+        redirect_stderr(originalstderr)
+    end
     printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
 
@@ -88,3 +95,16 @@ end
     runtestfile("test_network_moves/test_all_moves.jl")
 end
 
+# Quiet clean up
+tryrm(f::String) = if isfile(f) rm(f) elseif isdir(f) rm(f; recursive=true) end
+qrm(f::String) = tryrm(joinpath(@__DIR__, "..", f))
+qrm("rand1Quartets.txt")
+qrm("rand2Quartets.txt")
+qrm("rand3Quartets.txt")
+qrm("rand7Quartets.txt")
+qrm("rand12Quartets.txt")
+qrm("snaq.log")
+qrm("snaq.networks")
+qrm("snaq.out")
+qrm("summaryTreesQuartets.txt")
+qrm("tableCF.txt")

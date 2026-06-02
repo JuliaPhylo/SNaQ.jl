@@ -7,14 +7,6 @@ using SNaQ, PhyloNetworks
 using Documenter
 
 
-##add note to all pages in documentation
-note = """
-    !!! info "Important Note:"
-        This documentation pertains to SNaQ v1.1 and may differ from the specific implementation
-        originally described in [Solís-Lemus & Ané (2016)](https://doi.org/10.1371/journal.pgen.1005896).
-        See documentation SNaQ v1.0  for the original implementation.
-    """
-
 const original_src = joinpath(@__DIR__, "src")
 const temp_src = joinpath(@__DIR__, "temp_src_for_build") # temp directory with note added to md files
 
@@ -34,15 +26,7 @@ for (root, dirs, files) in walkdir(original_src) #go thru src directory
     for file in files
         original_filepath = joinpath(root, file)
         temp_filepath = joinpath(temp_root_path, file)
-
-        if endswith(file, ".md") ## add note to md files
-            content = read(original_filepath, String)
-            # Prepend the note
-            new_content = note * "\n" * content
-            write(temp_filepath, new_content)
-        else #copy file directly
-            cp(original_filepath, temp_filepath; force=true)
-        end
+        cp(original_filepath, temp_filepath; force=true)
     end
 end
 
@@ -81,6 +65,8 @@ makedocs(;
             "Extract expected CFs" => "man/expectedCFs.md",
             "Bootstrap" => "man/bootstrap.md",
             "Improving runtimes" => "man/parallelcomputation.md",
+            "Restricted search" => "man/network_restrictions.md",
+            "Correlated inheritance" => "man/correlated_inheritance.md",
             "Multiple alleles" => "man/multiplealleles.md",
             "Error reporting" => "man/error_reporting.md"
         ],

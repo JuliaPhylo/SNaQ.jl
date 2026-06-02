@@ -13,19 +13,22 @@ that fit the observed quartet concordance factors.
 
 # Arguments
 - `N::Union{HybridNetwork, Vector{HybridNetwork}}`: The starting network topology or vector
-    of topologies. If a vector, must be length eor of length `runs`.
+    of topologies. If a vector, must be of length 1 or of length `runs`.
 - `q::Union{DataCF, AbstractArray{Float64}}`: Observed quartet concordance factors.
 - `hmax::Int`: Maximum number of hybridization events allowed.
 
 # Optional Arguments
 - `runs::Int=10`: Number of independent search runs.
 - `seed::Int=42`: Random seed for reproducibility.
+- `restrictions::Function=defaultrestrictions()`: Function that takes a `HybridNetwork` as
+    its only argument and returns a `Bool`. Only networks that return `true` to this function
+    will be considered during search.
 - `kwargs...`: Additional keyword arguments passed to the [`search`](@ref) function.
 
 # Returns
-- `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
+- `best_network::HybridNetwork`: The network with the best (highest) composite log-likelihood.
 - `all_networks::Vector{HybridNetwork}`: All networks from the runs, sorted by score.
-- `all_scores::Vector{Float64}`: Negative log pseudo-likelihood scores for each network.
+- `all_scores::Vector{Float64}`: Composite log-likelihood scores for each network.
 
 # Notes
 - This function uses distributed computing to perform searches in parallel.
@@ -152,13 +155,13 @@ function multisearch(
     logmessage(filename, """
     Finished optimizing topology at $(currenttime()) after $(elapsed).
     Optimal network: $(writenewick(bestnet, round=true))
-    Optimal -loglik: $(-loglik(bestnet))
-    To view all $runs inferred networks and their associated -loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
+    Optimal loglik: $(loglik(bestnet))
+    To view all $runs inferred networks and their associated loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
 
     open("$(filename).out", "w+") do f
         print(f,
             """
-            $(writenewick(bestnet)) -Ploglik = $(-loglik(bestnet))
+            $(writenewick(bestnet)) loglik = $(loglik(bestnet))
              Elapsed time: $(elapsed), $(runs) attempted runs
             
             -----------------------------------
@@ -166,15 +169,15 @@ function multisearch(
             """
         )
         for j in sort_idx
-            println(f, " $(writenewick(all_nets[j])), with -loglik $(loglik(all_nets[j]))")
+            println(f, " $(writenewick(all_nets[j])), with loglik $(loglik(all_nets[j]))")
         end
         println(f, "-----------------------------------")
     end
 
     open("$(filename).networks", "w+") do f
-        for i in sort_idx
-            write(f, "$(writenewick(all_nets[i])), with -loglik $(loglik(all_nets[i]))")
-            if i == 1
+        for (j, i) in enumerate(sort_idx)
+            write(f, "$(writenewick(all_nets[i])), with loglik $(loglik(all_nets[i]))")
+            if j == 1
                 write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
             end
             write(f, "\n")
@@ -358,6 +361,8 @@ end
 
 
 """
+    search(N, q, hmax; restrictions, ρ, propQuartets, preopt, probST, probQR, maxeval, maxequivPLs, opt_maxeval, seed, verbose, logfile)
+
 Performs a single search for the optimal network topology with gradient-based optimization
 of branch lengths and inheritance probabilities.
 
@@ -368,7 +373,13 @@ of branch lengths and inheritance probabilities.
 
 # Optional Arguments
 - `restrictions::Function=defaultrestrictions()`: Function to enforce restrictions on the proposed networks.
-- `α::Real=Inf`: Dirichlet parameter for gene tree heterogeneity model.
+- `qinfTest::Bool`: whether to test for uninformative quartets (CFs near [1/3, 1/3, 1/3]) and
+    exclude those quartets when performing the network search.
+- `qtolAbs::Float64=1e-4`: the absolute tolerance used to detect uninformative quartets.
+- `probQR::Float64=0.0`: probability at a given search iteration of utilizing weighted random
+    sampling to (i) sample a poorly fitting quartet, (ii) sample an edge spanned by that
+    quartet in the network, and finally (iii) only sample moves that include this edge.
+- `ρ::Real=0.0`: inheritance correlation parameter in the range [0, 1]. `ρ = 0` corresponds to independent inheritance; `ρ = 1` corresponds to completely dependent inheritance.
 - `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
 - `probST::Real=0.3`: Probability of performing a subtree move before searching.
@@ -380,15 +391,15 @@ of branch lengths and inheritance probabilities.
 - `logfile::String=""`: File to log detailed progress (used for debugging, but can also be used to examine convergence).
 
 # Returns
-- `best_network::HybridNetwork`: The network with the best (lowest) negative log pseudo-likelihood.
-- `best_score::Float64`: The negative log pseudo-likelihood of the best network.
+- `best_network::HybridNetwork`: The network with the best (highest) composite log-likelihood.
+- `best_score::Float64`: The composite log-likelihood of the best network.
 """
 function search(
     N::HybridNetwork,
     q::Union{DataCF, Matrix{Float64}},
     hmax::Int;
     restrictions::Function=defaultrestrictions(),
-    α::Real=Inf,
+    ρ::Real=0.0,
     propQuartets::Real=1.0,
     preopt::Bool=true,
     probST::Real=0.3,
@@ -403,16 +414,20 @@ function search(
     logfile::String="",
     filename::String="",
     outgroup::String="none",
+    qinfTest::Bool=false,
+    qtolAbs::Float64=1e-4,
     optargs...
 )
     # Parameter enforcement
     maxeval > 0 || error("maxeval must be > 0 (maxeval = $(maxeval)).")
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
-    0 ≤ α ≤ Inf || error("α must be in range [1, ∞] (α = $(α))")
+    0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $(ρ))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $(probQR))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
+    qtolAbs ≥ 0.0 || error("qtolAbs must be ≥ 0.0 (qtolAbs = $qtolAbs)")
+    0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $probQR)")
 
     # Initial logging message
     starttime = time()
@@ -463,21 +478,34 @@ function search(
     end
 
     # Data used throughout the optimization process
-    q_idxs = sampleqindices(N, propQuartets, rng)
+    local q_idxs::Vector{Int64}
+    if qinfTest
+        informative = trues(size(q, 1))
+        if qinfTest
+            for (i, row) in enumerate(eachrow(q))
+                informative[i] = isquartetinformative(row, qtolAbs)
+            end
+        end
+        q_idxs = sampleqindices(N, propQuartets, informative, rng)
+    elseif propQuartets == 1.0
+        q_idxs = collect(1:nchoose4taxalength(N))
+    else
+        q_idxs = sampleqindices(N, propQuartets, rng)
+    end
     logPLs::Array{Float64} = Array{Float64}(undef, maxeval)
     neq = findquartetequations(N, q_idxs);
     N_eqns::Vector{QuartetData} = neq[1];
-    N_numparams::Int = length(neq[3])
+    CFΔs::Vector{Float64} = []  # used when probQR != 0.0, computed WHEN NEEDED, so init'd to []
     unchanged_iters = 0
 
     # Pre-optimizing the network's parameters
     if preopt
         @debug "Pre-optimizing"
-        optimize!(N, N_eqns, q[q_idxs, :], α; maxeval=max(opt_maxeval, 500), optargs...)
+        optimize!(N, N_eqns, q[q_idxs, :], ρ; maxeval=max(opt_maxeval, 100), optargs...)
         restrictions(N) || error("N does not meet restrictions after preopt")
         logPLs[1] = loglik(N)
     else
-        logPLs[1] = computeloss(N_eqns, gatherparams(N), q[q_idxs, :], α)
+        logPLs[1] = computeloss(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
     end
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -499,7 +527,7 @@ function search(
         #Nprime = readnewick(writenewick(N));
         Nprime = deepcopynetwork(N);
 
-        prop_move, prop_params = generatemoveproposal(Nprime, moves_attempted, hmax, rng)
+        prop_move, prop_params = generatemoveproposal(Nprime, N_eqns, moves_attempted, hmax, probQR, q[q_idxs, :], CFΔs, rng, ρ)
         last_move = prop_move
         applymove!(Nprime, prop_move, prop_params)
         @debug "Proposed move: $(prop_move), parameters: $(prop_params)"
@@ -555,7 +583,7 @@ function search(
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimizetopology!(
             Nprime, N_eqns, prop_move, prop_params, q, q_idxs,
-            opt_maxeval, cannot_do_inplace, rng, α; optargs...
+            opt_maxeval, cannot_do_inplace, rng, ρ; optargs...
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
         # computeloss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
@@ -570,6 +598,7 @@ function search(
             N = Nprime
             N_eqns = Nprime_eqns
             logPLs[j] = Nprime_logPL
+            CFΔs = []
             moves_accepted[prop_move] += 1
             push!(moves_logPL[prop_move], logPLs[j] - logPLs[j-1])
 
@@ -603,7 +632,7 @@ function search(
         else
             loglik!(N, optimize!(N, q))
         end
-        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with -loglik=$(round(loglik(N), digits=5))")
+        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with loglik=$(round(loglik(N), digits=5))")
     end
 
     # Remove internal node names that are not hybrids
@@ -621,9 +650,26 @@ function search(
     logtext(logfile, "Search complete at $(currenttime()).\n\n")
     logmoves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
-    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). -Ploglik=$(-loglik(N))")
+    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). loglik=$(loglik(N))")
     logmessage(filename, writenewick(N))
     return N
+end
+
+
+"""
+Checks whether a given quartet is informative based off of observed CFs.
+Informative here is defined as any two entries in the quartet's observed
+CFs having absolute difference greater than `atol`.
+"""
+function isquartetinformative(ocfrow::AbstractVector{Float64}, atol::Float64)
+    for i = 1:2
+        for j = (i+1):3
+            if abs(ocfrow[i] - ocfrow[j]) > atol
+                return true
+            end
+        end
+    end
+    return false
 end
 
 
@@ -662,19 +708,75 @@ parameters, so this function repeatedly samples until a move with valid
 parameters is selected. Also, makes sure the proposed move is not present in
 `moves_attempted`, and appends the returned move to this vector.
 """
-function generatemoveproposal(N::HybridNetwork, moves_attempted::Vector, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
-    retries::Int = 0
-    move, params = samplemoveproposal(N, hmax, rng)
+function generatemoveproposal(Nprime::HybridNetwork, N_eqns::Vector{QuartetData}, moves_attempted::Vector, hmax::Int, probQR::Float64, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, ρ::Float64=0.0)::Tuple{Symbol,Any}
+    required_edge::Union{Edge, Nothing} = nothing
+    if probQR > 0.0 && rand(rng) <= probQR
+        required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, ρ)
+    end
 
-    while params === nothing || alreadyattempted(moves_attempted, move, params)
-        move, params = samplemoveproposal(N, hmax, rng)
+    validmove(mv::Symbol, pars) = !isnothing(pars) &&
+        !alreadyattempted(moves_attempted, mv, pars) &&
+        (isnothing(required_edge) || any(p -> p == required_edge, pars))
+
+    retries::Int = 0
+    move, params = samplemoveproposal(Nprime, hmax, rng)
+    attempted_reqedges = 1
+
+    while !validmove(move, params)
+        move, params = samplemoveproposal(Nprime, hmax, rng)
         retries += 1
-        if retries >= 1e6
-            error("Could not find any valid move proposals after 1e6 attempts.")
+        if retries >= 1e3
+            if isnothing(required_edge) || attempted_reqedges >= 100
+                error("Could not find any valid move proposals after 1e3 attempts.")
+            end
+            # Sometimes we sample an edge that is not actually possible to
+            # find in a move, so we re-sample another edge
+            required_edge = sampleprobQRedge(Nprime, N_eqns, Q, CFΔs, rng, ρ)
+            attempted_reqedges += 1
+            retries = 0
         end
     end
 
     return (move, params)
+end
+generatemoveproposal(Nprime::HybridNetwork, ma::Vector, hmax::Int, rng::TaskLocalRNG) =
+    generatemoveproposal(Nprime, Vector{QuartetData}([]), ma, hmax, 0.0, zeros(0, 0), zeros(0), rng, 0.0)
+
+
+"""
+Samples an edge from the network `N` with weights stored in `CFΔs`. If `CFΔs` is empty
+(it starts empty and is reset to [] whenever the search finds a better network), these
+weights are computed.
+"""
+function sampleprobQRedge(N::HybridNetwork, eqns::Vector{QuartetData}, Q::Matrix{Float64}, CFΔs::Vector{Float64}, rng::TaskLocalRNG, ρ::Float64=0.0)::Edge
+    idxobjmap = gatheroptimizationinfo(N, false)[3]
+    if length(CFΔs) == 0
+        params = gatherparams(N);
+        for (eqn, (ocf1, ocf2, ocf3)) in zip(eqns, eachrow(Q))
+            ecf1, ecf2 = computeexpectedCF(eqn, params, ρ)
+            ecf3 = 1.0 - ecf1 - ecf2
+            push!(CFΔs, abs(ecf1 - ocf1) + abs(ecf2 - ocf2) + abs(ecf3 - ocf3))
+        end
+    end
+
+    # Queue approach to run through every contributing equation in the sampled
+    # CF's equation to make sure we select ALL edges that relate to this quartet
+    iquartet = sample(rng, 1:length(eqns), Weights(CFΔs))
+    Q = [eqns[iquartet].eqn]
+    edges = []
+    while length(Q) > 0
+        curr = Q[1]
+        deleteat!(Q, 1)
+
+        append!(edges, curr.coal_edges)
+        append!(Q, curr.divisions)
+    end
+    if length(edges) > 0
+        return idxobjmap[sample(rng, unique(edges))]
+    else
+        validkeys = [k for k in keys(idxobjmap) if typeof(idxobjmap[k]) <: Edge]
+        return idxobjmap[sample(validkeys)]
+    end
 end
 
 
@@ -707,7 +809,6 @@ end
 Randomly samples a move to generate a new topology from `N`.
 """
 function samplemoveproposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tuple{Symbol,Any}
-
     if N.numhybrids < hmax && rand(rng) < 0.05
         @debug "SELECTED: add_random_hybrid!"
         return (:addhybrid, sampleaddhybridparameters(N, rng))
@@ -736,29 +837,30 @@ function samplemoveproposal(N::HybridNetwork, hmax::Int, rng::TaskLocalRNG)::Tup
     # rSPR:         5%
     # origin:       10%
     # target:       10%
-    # loc origin:   20%
-    # loc target:   15%
+    # local origin: 20%
+    # local target: 15%
     # fliphybrid:   15%
     probs = [0.15, 0.0, 0.0, 0.1, 0.05, 0.1, 0.1, 0.2, 0.15, 0.15]
+    cumprobs = cumsum(probs)
 
     r = rand(rng)
-    if r < sum(probs[1:1])
+    if r <= sum(cumprobs[1])
         return (:rNNI1, samplerNNIparameters(N, 1, rng))
-    elseif r < sum(probs[1:2])
+    elseif r <= sum(cumprobs[2])
         return (:rNNI2, samplerNNIparameters(N, 2, rng))
-    elseif r < sum(probs[1:3])
+    elseif r <= sum(cumprobs[3])
         return (:rNNI3, samplerNNIparameters(N, 3, rng))
-    elseif r < sum(probs[1:4])
+    elseif r <= sum(cumprobs[4])
         return (:rNNI4, samplerNNIparameters(N, 4, rng))
-    elseif r < sum(probs[1:5])
+    elseif r <= sum(cumprobs[5])
         return (:rSPR, samplerSPRparameters(N, rng))
-    elseif r < sum(probs[1:6])
+    elseif r <= sum(cumprobs[6])
         return (:retic_origin, samplemovereticulateoriginparameters(N, rng))
-    elseif r < sum(probs[1:7])
+    elseif r <= sum(cumprobs[7])
         return (:retic_target, samplemovereticulatetargetparameters(N, rng))
-    elseif r < sum(probs[1:8])
+    elseif r <= sum(cumprobs[8])
         return (:retic_origin_local, samplemovereticulateoriginlocalparameters(N, rng))
-    elseif r < sum(probs[1:9])
+    elseif r <= sum(cumprobs[9])
         return (:retic_target_local, samplemovereticulatetargetlocalparameters(N, rng))
     else
         return (:flip_hybrid, samplefliphybridparameters(N, rng))

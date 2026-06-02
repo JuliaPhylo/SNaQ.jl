@@ -58,22 +58,30 @@ module SNaQ
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
+        readallsnaqnetworks,
         bootsnaq,
         # functions to access relevant object variables
         loglik,
         loglik!,
         ########## New optimization functions
-        optimize!,  # fixit: TODO: fix this name - it opts more than just BLs!
-        computeloss,   # fixit: TODO: make this name in line with Julia conventions
-        computeexpectedCFmatrix,  # fixit: TODO: no underscores in fxn names!!
-        computeexpectedDataCF,             # fixit: TODO: again, not Julian naming convensions
+        optimize!,
+        computeloss,
+        computeexpectedCFmatrix,
+        computeexpectedDataCF,
         ########## New identifiability/restriction functions
-        defaultrestrictions,    # fixit: TODO: some of these functions are called like
-                                # restrictions=fxn(), while others are called like
-                                # restirctions=fxn - standardize this
+        defaultrestrictions,
         norestrictions,
-        knownidentifiable,
-        restrictionset
+        tcgidentifiable,
+        restrictionset,
+        restrictgalledtree,
+        restrictgallednetwork,
+        restrictmaximumlevel,
+        restrictrootedtreechild,
+        restrictweaklytreechild,
+        restrictstronglytreechild,
+        # correlated inheritance utilities
+        rhotoalpha,
+        alphatorho
 
 
     include("types.jl")
@@ -92,7 +100,6 @@ module SNaQ
     include("network_properties/identifiability_properties.jl")
     include("gradient_optimization/opt_API.jl")
     include("gradient_optimization/search_API.jl")
-    include("gradient_optimization/BFS_search_distributed.jl")
     include("gradient_optimization/wrappers.jl")
     
     include("network_moves/misc.jl")

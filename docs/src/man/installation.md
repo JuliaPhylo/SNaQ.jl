@@ -101,7 +101,7 @@ We can also ask for a list of all its attributes with
 ```@repl install
 fieldnames(typeof(raxmlCF))
 ```
-For example, we see that one attribute is `numQuartets`: its the number of 4-taxon subsets
+For example, we see that one attribute is `numQuartets`: the number of 4-taxon subsets
 in the data. To see what this number is:
 ```@repl install
 raxmlCF.numQuartets

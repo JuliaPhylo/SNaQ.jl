@@ -3,6 +3,8 @@ const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 
 
 """
+    optimizetopology!(Nprime, old_eqns, move, params, q, q_idxs, opt_maxeval, force_resample_all, rng, ρ)
+
 Optimizes the branch lengths and γ parameters of the network `Nprime`.
 
 # Arguments:
@@ -22,7 +24,7 @@ Optimizes the branch lengths and γ parameters of the network `Nprime`.
 - `force_resample_all::Bool`: if `true`, ignore `move` and `params` and re-calculate *every* quartet CF
     equation. Typically set to `true` when, e.g., a new reticulation is added to the network.
 - `rng::TaskLocalRNG`: `TaskLocalRNG` object from which random numbers are generated. Ensures reproducibility.
-- `α::Float64`: inheritance correlation parameter used in calculating pseudo-likelihoods.
+- `ρ::Float64`: inheritance correlation parameter in the range [0, 1] used in calculating pseudo-likelihoods.
 """
 function optimizetopology!(
     Nprime::HybridNetwork,
@@ -34,21 +36,21 @@ function optimizetopology!(
     opt_maxeval::Int,
     force_resample_all::Bool,
     rng::TaskLocalRNG,
-    α::Float64;
+    ρ::Float64=0.0;
     optargs...
 )::Tuple{Float64, Vector{QuartetData}}
     Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(old_eqns))
     if !force_resample_all && can_update_inplace(move)
         @debug "\tGathering updated quartet equations."
         _, param_map, idxobjmap, _ = gatheroptimizationinfo(Nprime, true)
-        updatequartetequations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, α)
+        updatequartetequations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, ρ)
     else
         @debug "\tGathering quartet equations."
         findquartetequations!(Nprime, q_idxs, Nprime_eqns);
     end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_logPL = optimize!(Nprime, Nprime_eqns, q[q_idxs,:], α; maxeval=opt_maxeval, optargs...)
+    Nprime_logPL = optimize!(Nprime, Nprime_eqns, q[q_idxs,:], ρ; maxeval=opt_maxeval, optargs...)
 
     return Nprime_logPL, Nprime_eqns
 end
@@ -56,10 +58,12 @@ end
 
 
 """
+    optimize!(net, eqns, observed_CFs, ρ)
+
 Optimizes the branch lengths of network `net` which is defined by quartet concordance factor
 equations `eqns` based on observed quartet CFs `observed_CFs` under inheritance correlation
-parameter `α`. `maxeval` adjusts the maximum number of loss evaluations in the optimization
-process. This overloaded function is used as a helper method that can directly take 
+parameter `ρ`. `maxeval` adjusts the maximum number of loss evaluations in the optimization
+process. This overloaded function is used as a helper method that can directly take
 Vectors of `PhyloNetworks.QuartetT` as input so that the user doesn't need to handle
 converting the input data.
 """
@@ -67,7 +71,7 @@ function optimize!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
-    α::Real=Inf;
+    ρ::Real=0.0;
     maxeval::Int=25
 )::Float64
     obsCF_static = Array{Float64}(undef, length(observed_CFs), 3)
@@ -76,7 +80,7 @@ function optimize!(
             obsCF_static[j, k] = observed_CFs[j].data[k]
         end
     end
-    return optimize!(net, eqns, obsCF_static, α, maxeval=maxeval)
+    return optimize!(net, eqns, obsCF_static, ρ; maxeval=maxeval)
 end
 
 """
@@ -86,10 +90,12 @@ optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
-    α::Real=Inf; kwargs...) = optimize!(net, eqns, observed_CFs, α; kwargs...)
+    ρ::Real=0.0; kwargs...) = optimize!(net, eqns, observed_CFs, ρ; kwargs...)
 
 
 """
+    optimizetopology!(net, d)
+
 This version is just a helper function for more clear tests. In the context of the
 algorithm, this function recomputes values and wastes time.
 """
@@ -100,6 +106,8 @@ end
 
 
 """
+    optimize!(net, eqns, observed_CFs, ρ; maxeval, ftolRel, ftolAbs, xtolRel, xtolAbs)
+
 Optimizes the branch lengths (and γ parameters) of network `net`.
 
 # Required Arguments:
@@ -110,8 +118,8 @@ Optimizes the branch lengths (and γ parameters) of network `net`.
     the [`search`](@ref) method, then this is handled.
 
 # Optional Arguments:
-- `α::Float64=Inf`: the inheritance correlation parameter with which the network is optimized. (Default=`Inf`)
-- `maxeval::Int=25`: the maximum number of loss evaluations during optimization. (Default=`10`)
+- `ρ::Float64=0.0`: the inheritance correlation parameter in [0, 1]. `ρ = 0` is independent inheritance; `ρ = 1` is completely dependent. (Default=`0.0`)
+- `maxeval::Int=25`: the maximum number of loss evaluations during optimization. (Default=`25`)
 - `ftolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 - `ftolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 - `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
@@ -121,7 +129,7 @@ function optimize!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
-    α::Real=Inf;
+    ρ::Real=0.0;
     maxeval::Int=25,
     ftolRel::Float64=1e-12,
     ftolAbs::Float64=1e-12,
@@ -129,6 +137,7 @@ function optimize!(
     xtolAbs::Float64=1e-12
 )::Float64
 
+    0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $ρ)")
     # Make sure there are no NaNs in the network's edge lengths
     # This is a bug that only seems to happen on Linux for some reason,
     # so it is hard for me to track down the source of the error
@@ -145,6 +154,7 @@ function optimize!(
         γ = min(γ, 1.0 - 1e-5)
     end
 
+    α = rhotoalpha(ρ)
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gatheroptimizationinfo(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
     opt = Opt(NLopt.LD_LBFGS, narg)     # faster, but less accurate
@@ -196,19 +206,19 @@ optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findqua
     optimize!(net::HybridNetwork, dcf::DataCF)
 
 Optimizes the parameters of `net` with the quartet concordance factor data
-in `dcf`. Returns the estimates likelihood of the network, which can also
-be accessed later with `loglik(net)`. Also updates the `expCF` and `logPseudolik`
-parameters of each quartet in `dcf.quartet`.
+in `dcf`. Returns the estimated likelihood of the network, which can also
+be accessed later with `loglik(net)`.
 
 ### Parameters
-- `ρ` is the inheritance correlation parameter which can range from 0 to 1 (default 0).
-  A value of 0 corresponds to independent inheritance, whereas a value of 1 corresponds
-  to completely dependent inheritance.
+- `ρ` is the inheritance correlation parameter in the range [0, 1] (default 0).
+  `ρ = 0` corresponds to independent inheritance; `ρ = 1` corresponds to completely
+  dependent inheritance.
 - `maxeval` specifies the maximum number of optimization evaluations that the `NLopt`
   optimizer will perform under the hood (default 100).
 """
 function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
+    α = rhotoalpha(ρ)
     semidirectnetwork!(net)
     for E in net.edge
         E.length = max(E.length, 0.0)
@@ -221,12 +231,11 @@ function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::In
     end
     eqns, parammap, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
-    α = ρ == 0.0 ? Inf : 1.0 / ρ
-    optimize!(net, eqns, obsCFs, α; maxeval=maxeval, kwargs...)
+    optimize!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
 
     for q in dcf.quartet
-        eqn = findquartetequations4taxa(net, q.taxon, parammap, α)
-        expCF1, expCF2 = computeexpectedCF(eqn, parameters, α)
+        eqn = findquartetequations4taxa(net, q.taxon, parammap, ρ)
+        expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
         q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
     end
 
@@ -241,7 +250,7 @@ function optimize_bls_staticγ!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
-    α::Real=Inf;
+    ρ::Real=0.0;
     maxeval::Int=100,
     ftolRel::Float64=1e-12,
     ftolAbs::Float64=1e-12,
@@ -249,6 +258,7 @@ function optimize_bls_staticγ!(
     xtolAbs::Float64=1e-8
 )::Float64
 
+    α = rhotoalpha(ρ)
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gatheroptimizationinfo(net, false)
 
     # Figure out static parameters
@@ -427,6 +437,8 @@ end
 
 
 """
+    gatherparams(net)
+
 Helper function that takes a network `net` and its `param_map` (provided
 by [`gatheroptimizationinfo`](@ref)) and gathers each of the associated
 parameters.
@@ -438,16 +450,18 @@ end
 
 
 """
+    computeexpectedCFmatrix(net, ρ=0.0)
+
 Computes the expected concordance factors of `net` with the inheritance
-correlation parameter `α` (default=`Inf`). The returned `Matrix{Float64}`
+correlation parameter `ρ` (default=`0.0`). The returned `Matrix{Float64}`
 object is unlabelled. See also [`computeexpectedDataCF`](@ref) for a `DataCF` object
 with corresponding taxa information.
 """
-function computeexpectedCFmatrix(net::HybridNetwork, α::Real=Inf)::Matrix{Float64}
+function computeexpectedCFmatrix(net::HybridNetwork, ρ::Real=0.0)::Matrix{Float64}
     eqns, _, params, _ = findquartetequations(net)
     eCFs = zeros(length(eqns), 3)
     for j = 1:size(eCFs)[1]
-        eCFs[j, 1], eCFs[j, 2] = computeexpectedCF(eqns[j], params, α)
+        eCFs[j, 1], eCFs[j, 2] = computeexpectedCF(eqns[j], params, ρ)
         eCFs[j, 3] = 1 - eCFs[j, 1] - eCFs[j, 2]
     end
     return eCFs
@@ -456,24 +470,21 @@ end
 """
 Deprecated - included for backwards compatibility in niche cases.
 """
-computeexpectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
-    computeexpectedCFmatrix(net, α)
+computeexpectedCFs(net::HybridNetwork, ρ::Real=0.0)::Matrix{Float64} =
+    computeexpectedCFmatrix(net, ρ)
 
-"""
-Deprecated. Internal use only - used for backward compatibility.
-"""
-compute_expectedCFs(net::HybridNetwork, α::Real=Inf)::Matrix{Float64} =
-    computeexpectedCFmatrix(net, α)
 
 
 """
+    computeexpectedDataCF(net, ρ=0.0)
+
 Creates a DataCF object containing the expected CFs for each quartet in `net`.
 """
-function computeexpectedDataCF(net::HybridNetwork, α::Real=Inf)::DataCF
+function computeexpectedDataCF(net::HybridNetwork, ρ::Real=0.0)::DataCF
     eqns, _, params, _ = findquartetequations(net);
     d = DataCF()
     for j in eachindex(eqns)
-        eCF1, eCF2 = computeexpectedCF(eqns[j], params, α)
+        eCF1, eCF2 = computeexpectedCF(eqns[j], params, ρ)
         q = Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2]))
         q.expCF = q.obsCF
         push!(d.quartet, q)

@@ -4,7 +4,7 @@ mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
 raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)));
-truenet = readnewick("((((D:0.1,C:0.1):1.2,((A:0.2,B:0.2):0.55)#H1:0.55::0.7):1.0,(#H1:0.0::0.3,(E:0.25,F:0.25):0.5):1.55):5.5,O:7.8);");
+truenet = readnewick("(C:0.0,D:0.0,((O:0.0,(E:0.0,#H7:0.0::0.196):0.314):0.664,(B:0.0,(A:0.0)#H7:0.0::0.804):5.0):5.0);");
 ```
 
 # Quartet test for goodness of fit
@@ -27,7 +27,7 @@ is to plot the observed CF versus the expected CF. If the network is a good fit,
 in the plot will be close to the diagonal (x=y line).
 
 The following function will create a dataframe with the observed and expected CFs,
-which are all saved in the DataCF object after running snaq:
+which are all saved in the DataCF object after running `snaq!`:
 ```@repl expCFs
 optimize!(truenet, raxmlCF);
 df_wide = fittedquartetCF(raxmlCF) # same as fittedquartetCF(raxmlCF, :wide)

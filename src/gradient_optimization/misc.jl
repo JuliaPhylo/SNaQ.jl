@@ -1,45 +1,26 @@
 """
-Generates a `Dict` mapping all edges and hybrid nodes w/ an associated γ parameter to their
-index in the vector that is being optimized.
+    sampleqindices(n, p, informative, rng)
+
+Helper function that generates a `Vector{Int}` with `n` indices where each
+integer from 1 to `n` has probability `p` of appearing. Only samples informative
+quartets, so only used when `qinfTest` is `true`.
 """
-function generateoptimizationmap(net::HybridNetwork)::Tuple{Dict{Union{PN.Edge,PN.Node}, Int}, Dict{Int, Union{PN.Edge,PN.Node}}}
-    ngammas = length(net.hybrid)
-    nedges = net.numedges - net.numtaxa
-    map = Dict{Union{PN.Edge,PN.Node}, Int}()
-    j = 1
-    for H in net.hybrid
-        map[H] = j
-        j += 1
+function sampleqindices(n::Int, p::Real, informative::BitVector, rng::TaskLocalRNG)::Vector{Int}
+    valididxs::Vector{Int64} = findall(informative)
+    ninform::Int64 = length(valididxs)
+    nsamp::Int64 = min(ninform, Int64(ceil(n * p)))
+    if length(valididxs) == nsamp
+        return valididxs
     end
-    for E in net.edge
-        getchild(E).leaf && continue
-        # E.hybrid && !E.ismajor && continue
-        map[E] = j
-        j += 1
-    end
-    return map, Dict{Int, Union{PN.Edge,PN.Node}}(map[key] => key for key in keys(map))
+    return sort(sample(rng, valididxs, nsamp, replace=false))
 end
-nopt_params(net::HybridNetwork)::Int = length(generateoptimizationmap(net)[1])
+sampleqindices(N::HybridNetwork, p::Real, i::BitVector, rng::TaskLocalRNG) =
+    sampleqindices(nchoose4taxalength(N), p, i, rng)
 
 
 """
-Function mostly used for debugging, gets the relevant parameters for network `net`.
-"""
-function getparams(net::HybridNetwork)
-    vals = []
-    optmap, _ = generateoptimizationmap(net)
-    for key in keys(optmap)
-        if typeof(key) <: PN.Node
-            push!(vals, getparentedgeminor(key).gamma)
-        else
-            push!(vals, key.length)
-        end
-    end
-    return vals
-end
+    sampleqindices(n, p, rng)
 
-
-"""
 Helper function that generates a `Vector{Int}` with `n` indices where each
 integer from 1 to `n` has probability `p` of appearing.
 """
@@ -57,6 +38,8 @@ sampleqindices(net::HybridNetwork, p::Real, rng::TaskLocalRNG)::Vector{Int} =
 
 
 """
+    nchoose4taxalength(net)
+
 Helper function that calculates how many quartet combinations exist.
 """
 @inline function nchoose4taxalength(net::HybridNetwork)::Int

@@ -10,10 +10,10 @@ Recursively builds the quartet CF equations for the quarnet in
     `net` containing the taxa in `taxa`. `taxa` should contain
     exactly 4 strings. `parameter_map` is a `Dict` that maps
     edge and hybrid node numbers (e.g. `node.number`) to a unique
-    index - used for optimization. `α` is the inheritance correlation
+    index - used for optimization. `ρ` is the inheritance correlation
     parameter.
 """
-function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::RecursiveCFEquation
+function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, ρ::Float64=0.0)::RecursiveCFEquation
 
     # If no hybrids remain, this case is simple
     if net.numhybrids == 0
@@ -40,9 +40,6 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         # If there is only 1 leaf below this retic && the minor and major parents are the same,
         # we can just default to the final `else` case here and delete `lowest_H` b/c it has
         # no effect on eCFs
-
-
-        # @info "2 - Following hybrid $(lowest_H.name)"
 
         # Remove the minor edge and all of its references in this copy
         div_major = deepcopynetwork(net)
@@ -454,7 +451,7 @@ Finds the quartet equations for the quarnet in `net` containing the taxa in `tax
     names of tips that are contained in `net`. `parameter_map` maps edges and gamma parameters in `net` to
     optimization variable indicies.
 """
-function findquartetequations4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, α::Float64=Inf)::QuartetData
+function findquartetequations4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, ρ::Float64=0.0)::QuartetData
     # Let's see if the quartet is tree-like and easy first
     qdat = trytreelikequartet(net, taxa, parameter_map)
     qdat !== nothing && return qdat
@@ -495,7 +492,7 @@ function findquartetequations4taxa(net::HybridNetwork, taxa::AbstractVector{Stri
     end
 
     return QuartetData(
-        get4taxaquartetequations(net, taxa, parameter_map, α),
+        get4taxaquartetequations(net, taxa, parameter_map, ρ),
         [parameter_map[obj.number] for obj in vcat(net.edge, net.hybrid)
             if haskey(parameter_map, obj.number)],
         taxa
