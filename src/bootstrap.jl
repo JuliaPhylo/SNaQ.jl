@@ -189,7 +189,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         writelog && flush(logfile)
 
         push!(bootNet, net)
-        str = (outgroup=="none" ? writenewick(net) : writenewick(net,outgroup))
+        str = writenewick(net)
         if writelog
             write(logfile, str)
             write(logfile,"\n")
