@@ -15,6 +15,7 @@ function addhybrid!(N::HybridNetwork, from_edge::Edge, to_edge::Edge)
     newH, _ = addhybridedge!(N, from_edge, to_edge, true, 0.0, 0.25)
     getparent(from_edge).name = "i$(abs(rand(Int)) % 100000 + 1000)"
     newH.name = "H$(abs(rand(Int)) % 100000 + 1000)"
+    update_yz!(newH)
     return newH
 end
 
