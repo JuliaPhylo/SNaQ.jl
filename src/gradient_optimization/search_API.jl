@@ -158,29 +158,31 @@ function multisearch(
     Optimal loglik: $(loglik(bestnet))
     To view all $runs inferred networks and their associated loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
 
-    open("$(filename).out", "w+") do f
-        print(f,
-            """
-            $(writenewick(bestnet)) loglik = $(loglik(bestnet))
-             Elapsed time: $(elapsed), $(runs) attempted runs
-            
-            -----------------------------------
-            List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
-            """
-        )
-        for j in sort_idx
-            println(f, " $(writenewick(all_nets[j])), with loglik $(loglik(all_nets[j]))")
-        end
-        println(f, "-----------------------------------")
-    end
-
-    open("$(filename).networks", "w+") do f
-        for (j, i) in enumerate(sort_idx)
-            write(f, "$(writenewick(all_nets[i])), with loglik $(loglik(all_nets[i]))")
-            if j == 1
-                write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
+    if filename != ""
+        open("$(filename).out", "w+") do f
+            print(f,
+                """
+                $(writenewick(bestnet)) loglik = $(loglik(bestnet))
+                Elapsed time: $(elapsed), $(runs) attempted runs
+                
+                -----------------------------------
+                List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
+                """
+            )
+            for j in sort_idx
+                println(f, " $(writenewick(all_nets[j])), with loglik $(loglik(all_nets[j]))")
             end
-            write(f, "\n")
+            println(f, "-----------------------------------")
+        end
+
+        open("$(filename).networks", "w+") do f
+            for (j, i) in enumerate(sort_idx)
+                write(f, "$(writenewick(all_nets[i])), with loglik $(loglik(all_nets[i]))")
+                if j == 1
+                    write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
+                end
+                write(f, "\n")
+            end
         end
     end
 
@@ -271,6 +273,10 @@ function logtext(logfile::String, msg::String)
     # get the current time and format it
     timestamp = Dates.format(now(), "yyyy-mm-dd HH:MM:SS")
     # open the file in append mode and write the log line
+    @show logfile
+    @show logfile
+    @show logfile
+    @show logfile
     open(logfile, "a") do io
         println(io, "[$timestamp] $msg")
     end
@@ -336,6 +342,11 @@ logmessage(filename::String, msg::String) = remotecall_fetch(writelogmessage, 1,
 currenttime() = Dates.format(now(), "HH:MM:SS yyyy-mm-dd")
 
 function writelogmessage(filename::String, msg::String)
+    filename == "" && return
+    @show filename
+    @show filename
+    @show filename
+    @show filename
     open("$(filename).log", "a+") do f
         println(f, msg)
     end
@@ -431,7 +442,7 @@ function search(
 
     # Initial logging message
     starttime = time()
-    open(string(filename, ".log"), "w+") do f end # clear any pre-existing text in the log file
+    filename != "" && open(string(filename, ".log"), "w+") do f end # clear any pre-existing text in the log file
     logmessage(filename, """
     BEGIN: search with seed $(seed) at $(currenttime())
            starting topology: $(writenewick(N, round=true))""")

@@ -164,7 +164,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i);
                          "rootname set to $rootname"; end
-            net1 = multisearch(currT0, newd, hmax; runs=runs1, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose,
+            net1 = multisearch(currT0, newd, hmax; runs=runs1, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose, filename="",
                 maxequivPLs=Nfail, outgroup=outgroup, seed=seeds[i], probST=probST, probQR=probQR, propQuartets=propQuartets)[1]
             if runs2==0
                 net = net1
@@ -202,11 +202,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
     if writelog
       s = open(string(filename,".out"),"w")
       for n in bootNet
-        if outgroup == "none"
-            write(s,"$(writenewick(n))\n")
-        else
-            write(s,"$(writenewick(n,outgroup))\n")
-        end
+        write(s,"$(writenewick(n))\n")
       end
       close(s)
     end
