@@ -46,7 +46,6 @@ The SNaQ package has dependencies like
 [PhyloPlots](https://github.com/juliaphylo/PhyloPlots.jl)
 has utilities to visualize networks, and for interoperability,
 such as to export networks to R (which can then be plotted via R).
-
 To install:
 
 ```julia

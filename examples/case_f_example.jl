@@ -46,6 +46,7 @@ setNode!(ed10,[n9,n10]);
 #inCycle!(ed5, 2;)
 
 net=HybridNetwork([n1,n2,n3,n4,n5,n6,n7,n8,n9,n10],[ed1,ed2,ed3,ed4,ed5,ed6,ed7,ed8,ed9,ed10]);
+for e in net.edge SNaQ.update_yz!(e); end
 node=searchHybridNode(net);
 n2.name = "H1"; n4.name = "4"; n6.name = "6"; n7.name = "7";
 n8.name = "8"; n10.name = "10"
