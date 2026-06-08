@@ -12,10 +12,10 @@ Splits `from_edge` and `to_edge` to create a new hybrid. Returns the new hybrid 
 """
 function addhybrid!(N::HybridNetwork, from_edge::Edge, to_edge::Edge)
     isvalidaddhybrid(from_edge, to_edge, N) || error("Invalid parameters given to `addhybrid!`")
-    newH, _ = addhybridedge!(N, from_edge, to_edge, true, 0.0, 0.25)
+    newH, newHE = addhybridedge!(N, from_edge, to_edge, true, 0.0, 0.25)
     getparent(from_edge).name = "i$(abs(rand(Int)) % 100000 + 1000)"
     newH.name = "H$(abs(rand(Int)) % 100000 + 1000)"
-    update_yz!(newH)
+    update_yz!(newHE)
     return newH
 end
 
