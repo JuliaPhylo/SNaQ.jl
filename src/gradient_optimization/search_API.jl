@@ -273,10 +273,6 @@ function logtext(logfile::String, msg::String)
     # get the current time and format it
     timestamp = Dates.format(now(), "yyyy-mm-dd HH:MM:SS")
     # open the file in append mode and write the log line
-    @show logfile
-    @show logfile
-    @show logfile
-    @show logfile
     open(logfile, "a") do io
         println(io, "[$timestamp] $msg")
     end
@@ -343,10 +339,6 @@ currenttime() = Dates.format(now(), "HH:MM:SS yyyy-mm-dd")
 
 function writelogmessage(filename::String, msg::String)
     filename == "" && return
-    @show filename
-    @show filename
-    @show filename
-    @show filename
     open("$(filename).log", "a+") do f
         println(f, msg)
     end
