@@ -730,23 +730,24 @@ function readtrees2CF(trees::Vector{HybridNetwork};
 end
 
 
-# Function for calculating confidence intervals for qartet CFs
+# Function for calculating confidence intervals for quartet CFs
 # G. A. Ballen, 2026-05-05
 """
-    confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, verbose::Bool)
+    confintqCF_genetrees(pointestimates::String, replicates::String, level::Float64, verbose::Bool)
 
 Calculate confidence intervals for quartet concordance factors to generate
-a data frame with observed concordance factors and their 95% confidence
-intervals. Confidence intervals are calculated using bootstrap.
+a data frame with observed concordance factors and their confidence
+intervals of any desired confidence level. Confidence intervals are calculated using bootstrap.
 The input arguments are:
 
-- `gt_mles` A String with the path to the multiphylo with the gene trees, for instance
-  from IQTREE or RAxML.
-- `gt_boots` A string with the path to the text file pointing to the
-  bootstrapped gene trees, one multiphylo of bootstrap trees per gene tree.
-- `level` A Float64 with the confidence level for the confidence interval, typically 0.95.
-- `verbose` A Bool with the instruction whether to return verbose output
-  through execution.
+- `pointestimates`: Point estimates of the gene trees. This may either be a `String` with the path
+  to the multiphylo with the gene trees or a vector of tree objects `Vector{HybridNetwork}`.
+- `replicates`: Sampled estimates for each gene tree, for example, bootstrap or posterior samples. 
+  This may either be vector of vectors of gene tree samples (e.g. bootstrap or posterior)
+  `Vector{Vector{HybridNetwork}}` or a `String` with the path to the text file pointing to the
+  sampled gene trees (See [`PhyloNetworks.readmultinewick_files`](@extref)), one multiphylo of bootstrap trees per gene tree.
+- `level`: A Float64 with the confidence level for the confidence interval, typically 0.95.
+- `verbose`: A Bool with the instruction whether to return verbose output through execution.
 
 The function will calculate observed CFs for each combination of gene tree
 bootstrap iteration, and then use the resulting vectors to calculate the
@@ -766,22 +767,16 @@ converted to it with [readtableCF](@ref).
 The function [bootsnaq](@ref) takes a `DataFrame` as input, so you can just use the resulting
 object straight away.
 """
-function confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, verbose::Bool)
+function confintqCF_genetrees(pointestimates::Vector{HybridNetwork}, replicates::Vector{Vector{HybridNetwork}}, level::Float64, verbose::Bool)
     # read in the MLE gene trees
-    trees = readmultinewick(gt_mles);
-    if verbose
-        println("Finished reading gene tree MLEs.")
-    end
-    q,t = countquartetsintrees(trees; showprogressbar=verbose);
+
+    q,t = countquartetsintrees(pointestimates; showprogressbar=verbose);
     nt = tablequartetCF(q,t;)
     cfs = DataFrame(nt, copycols=false);
-    bootTrees = readmultinewick_files(gt_boots);
-    if verbose
-        println("Finished reading gene bootstrap trees.")
-    end
+
     # prototyping the bootstrap of cfs
     # first iter
-    q,t = countquartetsintrees(map(x -> x[1], bootTrees); showprogressbar=verbose);
+    q,t = countquartetsintrees(map(x -> x[1], replicates); showprogressbar=verbose);
     nt = tablequartetCF(q,t);
     df = DataFrame(nt, copycols=false);
     # initialise the array and assign the values in the first iter element-wise
@@ -791,11 +786,11 @@ function confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, v
     end
     # calculate memory
     freememGb = Sys.free_memory()/(1024^3)
-    arrexpmemGb = (size(arr)[1] * size(arr)[2] * length(bootTrees[1]) * 8) / (1024^3)
+    arrexpmemGb = (size(arr)[1] * size(arr)[2] * length(replicates[1]) * 8) / (1024^3)
     if freememGb < arrexpmemGb
         error("The CF multidmiensional array requires at least $arrexpmemGb Gb of RAM but only has $freememGb Gb available.")
     end
-    arr_boot = Array{Float64}(undef, size(arr)[1], size(arr)[2], length(bootTrees[1]))
+    arr_boot = Array{Float64}(undef, size(arr)[1], size(arr)[2], length(replicates[1]))
     arrmemGb = Base.summarysize(arr_boot)/(1024^3)
     if verbose
         println("The multidimensional array requires $arrmemGb Gb of memory and has $freememGb Gb of RAM available.")
@@ -803,15 +798,15 @@ function confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, v
     end
     arr_boot[:,:,1] .= arr
     # start for loop and get the length from the first gt vector
-    for iboot in 2:length(bootTrees[1])
-        q,t = countquartetsintrees(map(x -> x[iboot], bootTrees); showprogressbar=verbose);
+    for iboot in 2:length(replicates[1])
+        q,t = countquartetsintrees(map(x -> x[iboot], replicates); showprogressbar=verbose);
         nt = tablequartetCF(q,t);
         df = DataFrame(nt, copycols=false);
         arr = df[:, 6:end-1]
         arr_boot[:,:,iboot] .= arr
     end
     if verbose
-        println("Finished calculating quartets in $(length(bootTrees[1])) gene trees.")
+        println("Finished calculating quartets in $(length(replicates[1])) gene trees.")
     end
     cf_cis = Matrix{Float64}(undef, size(arr_boot)[1], 3*2)
     # start calculating quantiles on the vectors for each combination of quartet and observed cf across the bootstrap replicates
@@ -840,6 +835,20 @@ function confintqCF_bootgts(gt_mles::String, gt_boots::String, level::Float64, v
     cf_final.CF14_23_hi = cf_cis[:,6]
     cf_final.ngenes = cfs[:,9]
     return cf_final
+end
+function confintqCF_genetrees(pointestimates::Vector{HybridNetwork}, replicates::String, level::Float64, verbose::Bool)
+    bootTrees = readmultinewick_files(replicates);
+    if verbose
+        println("Finished reading gene bootstrap trees.")
+    end
+    return confintqCF_genetrees(pointestimates,bootTrees,level,verbose)
+end
+function confintqCF_genetrees(pointestimates::String, replicates, level::Float64, verbose::Bool)
+    trees = readmultinewick(pointestimates);
+    if verbose
+        println("Finished reading gene tree MLEs.")
+    end
+    return confintqCF_genetrees(trees,replicates,level,verbose)
 end
 
 # ---------------------- descriptive stat for input data ----------------------------------

@@ -39,7 +39,8 @@ import PhyloNetworks:
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,
-    pushHybrid!
+    pushHybrid!,
+    readmultinewick
 
 @testset "Code quality (Aqua.jl)" begin
     Aqua.test_all(SNaQ;
@@ -59,6 +60,7 @@ SNaQ.setCHECKNET(true)
     include("test_calculateExpCF.jl")
     include("test_calculateExpCF2.jl")
     include("test_correctLik.jl")
+    include("test_confint_qcf_genetrees.jl")
     include("test_deleteHybridizationUpdate.jl")
     include("test_multipleAlleles.jl")
     include("test_optBLparts.jl")
