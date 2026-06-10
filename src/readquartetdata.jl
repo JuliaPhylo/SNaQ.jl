@@ -740,14 +740,14 @@ a data frame with observed concordance factors and their confidence
 intervals of any desired confidence level. Confidence intervals are calculated using bootstrap.
 The input arguments are:
 
-- `pointestimates` Point estimates of the gene trees. This may either be a `String` with the path
+- `pointestimates`: Point estimates of the gene trees. This may either be a `String` with the path
   to the multiphylo with the gene trees or a vector of tree objects `Vector{HybridNetwork}`.
-- `replicates` Sampled estimates for each gene tree, for example, bootstrap or posterior samples. 
+- `replicates`: Sampled estimates for each gene tree, for example, bootstrap or posterior samples. 
   This may either be vector of vectors of gene tree samples (e.g. bootstrap or posterior)
-  `Vector{Vector{HybridNetwork}} or a `String` with the path to the text file pointing to the
-  sampled gene trees, one multiphylo of bootstrap trees per gene tree.
-- `level` A Float64 with the confidence level for the confidence interval, typically 0.95.
-- `verbose` A Bool with the instruction whether to return verbose output through execution.
+  `Vector{Vector{HybridNetwork}}` or a `String` with the path to the text file pointing to the
+  sampled gene trees (See [`PhyloNetworks.readmultinewick_files`](@extref)), one multiphylo of bootstrap trees per gene tree.
+- `level`: A Float64 with the confidence level for the confidence interval, typically 0.95.
+- `verbose`: A Bool with the instruction whether to return verbose output through execution.
 
 The function will calculate observed CFs for each combination of gene tree
 bootstrap iteration, and then use the resulting vectors to calculate the
