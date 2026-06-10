@@ -39,3 +39,18 @@ end
 @testset "The type of the output by confint_qCF_genetrees should be a DataFrame or a subtype of it" begin
     @test typeof(qcf_cis) <: DataFrame
 end
+
+
+@testset "Ensure different argument types work" begin
+    treelist = joinpath(examp_dir, "treefilelist.txt")
+    pt_treefile = joinpath(examp_dir,"point_trees.txt")
+    trees = readmultinewick_files(treelist)
+    pt_trees=[trees[1][3],trees[2][4]]
+
+    @test confintqCF_genetrees(pt_trees, treelist, 0.95, false) isa Any #point - objects, reps - string
+    confintqCF_genetrees(pt_treefile, trees, 0.95, false) isa Any#point - string , reps - objects
+    confintqCF_genetrees(pt_treefile, treelist, 0.95, false) isa Any#point - string , reps - string
+    ## objects and objects tested above
+
+
+end
