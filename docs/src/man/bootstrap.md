@@ -20,7 +20,7 @@ df = CSV.read("tableCF_withCI.csv", DataFrame)
 bootnet = bootsnaq(startnetwork, df, hmax=1, filename="bootstrap")
 ```
 
-However, it is not necessary to use BUCKy however and a posterior sample of gene trees to calculate confidence intervals on quartet concordance factors. The function `confintqCF_genetrees` allows to use both a collection of gene tree point estimates (e.g., maximum likelihood gene trees), and then a sample of bootstrap replicates, one for each gene tree. A simple way to estimate both is using IQTREE. Imagine we have 10 gene trees, and let's suppose that we have all of our maximum likelihood gene trees in a file named `gts.tre`. Also, we have ten files, one per gene tree (named `gt1.ufboot`, `gt2.ufboot`, etc., all in a directory `bootstrap_gts`), containing 1000 ultrafast bootstrap replicates. Let us assume we have the following directory structure:
+However, it is not necessary to use BUCKy and a posterior sample of gene trees to calculate confidence intervals on quartet concordance factors. The function `confintqCF_genetrees` allows to use both a collection of gene tree point estimates (e.g., maximum likelihood gene trees), and a sample of bootstrap replicates, one for each gene tree, to calculate confidence intervals on quartet concordance factors. A simple way to estimate both is using IQTREE. Imagine we have 10 gene trees, and let's suppose that we have all of our maximum likelihood gene trees in a file named `gts.tre`. Also, we have ten files, one per gene tree (named `gt1.ufboot`, `gt2.ufboot`, etc., all in a directory `bootstrap_gts`), containing 1000 ultrafast bootstrap replicates. Let us assume we have the following directory structure:
 
 ```bash
 .
@@ -40,7 +40,7 @@ However, it is not necessary to use BUCKy however and a posterior sample of gene
 
 ```
 
-We can calculate the quartet concordance factor point estimates and their confidence intervals atthe 0.95 level:
+We can calculate the quartet concordance factor point estimates and their confidence intervals at the 0.95 level:
 
 ```julia
 using SNaQ, PhyloNetworks, PhyloPlots, DataFrames, CSV
@@ -86,7 +86,7 @@ Please note that it is not necessary to have all the point estimates in the same
 accepts a vector with a list of files as input.
     
 A key difference between using a vector of gene trees (see below) and the table with
-confidence intervals is that such table does not assume complete taxon sampling across gene trees
+confidence intervals is that such table does not assume complete taxon sampling across gene trees,
 and therefore can incorporate incomplete taxon sampling, that is, not all of the species
 need to be in all gene trees. This is a key feature as this sort of missing data is quite
 common in empirical datasets. If your dataset is like this, and not all species are in all gene trees,
