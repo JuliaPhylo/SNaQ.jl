@@ -63,6 +63,7 @@ net1par = optimize!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
 ```
 
 ## Network score with no optimization
+## Network score with no optimization
 
 For a network with given branch lengths and γ inheritance probabilities,
 we can compute the composite log-likelihood with:
