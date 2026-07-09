@@ -80,6 +80,7 @@ end
 
 
 @testset "SNaQ.jl" begin
+    runtestfile("test_confint_qcf_genetrees.jl")
     runtestfile("test_bootstrap.jl")
     runtestfile("test_multipleAlleles.jl")
     runtestfile("test_perfectData.jl")
