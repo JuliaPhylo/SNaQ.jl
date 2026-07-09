@@ -1,5 +1,3 @@
-import Graphs
-import Graphs: SimpleGraph
 using PhyloNetworks
 
 const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([]);
@@ -596,64 +594,4 @@ function findtreelikemrcapath(a::Node, b::Node)::Union{Nothing,Vector{Edge}}
     else
         return vcat(edge_path_a[1:findfirst(anode -> anode == b, node_path_a)], edge_path_b)
     end
-end
-
-
-"""
-Helper function - takes a set of network edges encoded as graph edges in `internal_graph_edges`
-    and returns the corresponding set of `PhyloNetworks.Edge` edge objects in `net.edge`.
-"""
-function fromgraphtonetedges(net::HybridNetwork, internal_graph_edges::Vector{Graphs.SimpleGraphs.SimpleEdge{Int64}})::Array{PN.Edge}
-    net_edges = Array{PN.Edge}(undef, length(internal_graph_edges))
-    for (E_idx, E) in enumerate(internal_graph_edges)
-        nodei = net.node[E.src]
-        nodej = net.node[E.dst]
-        edgeij = nodei.edge[findfirst(e -> nodej in e.node, nodei.edge)]
-        net_edges[E_idx] = edgeij
-    end
-    return net_edges
-end
-
-
-"""
-Function taken from InPhyNet.jl
-
-Converts the tree/network `net` into a SimpleGraph to leverage already
-implemented pathfinding algorithms.
-
-# Arguments
-- includeminoredges (default=true): if true, the entire network is translated to a graph.
-      Otherwise, only tree-like edges (other than those in `alwaysinclude`) are retained.
-- alwaysinclude (default=nothing): edges that should always be included in the graph,
-      regardless of the value of `includeminoredges`
-- withweights (default=false): return a set of weights corresponding to branch lengths as well
-"""
-function Graph(net::HybridNetwork; withweights::Bool=false, minoredgeweight::Float64=1.)
-    graph = SimpleGraph(net.numnodes)
-    weights = Matrix{Float64}(undef, net.numnodes, net.numnodes)
-    weights .= Inf
-    nodemap = Dict{Node, Int64}(node => idx for (idx, node) in enumerate(net.node))
-    for edge in net.edge
-        enode1 = edge.node[1]
-        enode2 = edge.node[2]
-        if haskey(nodemap, enode1) && haskey(nodemap, enode2)
-            add_edge!(graph, nodemap[enode1], nodemap[enode2])
-            if withweights
-                weight = 1
-                if edge.hybrid && !edge.ismajor
-                    weight = minoredgeweight
-                elseif edge.length == -1.
-                    weight = 1
-                end
-                
-                weights[nodemap[enode1], nodemap[enode2]] =
-                    weights[nodemap[enode2], nodemap[enode1]] = weight
-            end
-        end
-    end
-
-    if withweights
-        return graph, weights
-    end
-    return graph
 end
