@@ -47,7 +47,8 @@ import PhyloNetworks: Node, Edge,
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,
-    pushHybrid!
+    pushHybrid!,
+    readmultinewick
 
 @testset "Code quality (Aqua.jl)" begin
     Aqua.test_all(SNaQ;
