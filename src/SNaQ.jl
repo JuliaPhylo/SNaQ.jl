@@ -3,17 +3,13 @@ module SNaQ
     using Dates
     using Distributed
 
-    using Printf: @printf
     using Random
-    using Statistics: mean
 
     using Base.Threads
 
     # other libraries, indicate compatible version in Project.toml
     using CSV
     using DataFrames # innerjoin new in v0.21
-    using DataStructures # for updateInCycle with priority queue
-    using Distributions #for RateVariationAcrossSites
     using NLopt # for branch lengths optimization
     using StaticArrays
     using StatsBase # sample, etc.
