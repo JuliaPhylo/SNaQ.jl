@@ -62,7 +62,7 @@ module SNaQ
         loglik!,
         ########## New optimization functions
         optimize!,
-        computeloss,
+        computeloss!,
         computeexpectedCFmatrix,
         computeexpectedDataCF,
         ########## New identifiability/restriction functions

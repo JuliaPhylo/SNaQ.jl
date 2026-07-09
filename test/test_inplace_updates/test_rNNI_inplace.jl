@@ -37,7 +37,7 @@ for j = 1:n_moves
 
         copy_qdata = Array{QuartetData}(undef, length(net_qdata));
         applyrNNI1update!(net_copy, net_qdata, copy_qdata, net_param_map, u, 0.0)
-        push!(inplace_losses, computeloss(copy_qdata, copy_params, q))
+        push!(inplace_losses, computeloss!(copy_qdata, copy_params, q))
     end
     push!(inplace_times, inplace_time)
 
@@ -50,7 +50,7 @@ for j = 1:n_moves
         s, t, u, v = valid_stuvs[j];
         performrNNI1!(net_copy, s, t, u, v);
         correct_qdata, correct_param_map, correct_params, _ = findquartetequations(net_copy)
-        push!(outofplace_losses, computeloss(correct_qdata, correct_params, q))
+        push!(outofplace_losses, computeloss!(correct_qdata, correct_params, q))
     end
     push!(outofplace_times, outofplace_time)
 end
@@ -77,7 +77,7 @@ for j = 1:n_moves
 
         copy_qdata = Array{QuartetData}(undef, length(net_qdata));
         applyrNNI2update!(net_copy, net_qdata, copy_qdata, net_param_map, s, t, u, v, 0.0)
-        push!(inplace_losses, computeloss(copy_qdata, copy_params, q))
+        push!(inplace_losses, computeloss!(copy_qdata, copy_params, q))
     end
     push!(inplace_times, inplace_time)
 
@@ -90,7 +90,7 @@ for j = 1:n_moves
         s, t, u, v = valid_stuvs[j];
         performrNNI2!(net_copy, s, t, u, v);
         correct_qdata, correct_param_map, correct_params, _ = findquartetequations(net_copy)
-        push!(outofplace_losses, computeloss(correct_qdata, correct_params, q))
+        push!(outofplace_losses, computeloss!(correct_qdata, correct_params, q))
     end
     push!(outofplace_times, outofplace_time)
 end

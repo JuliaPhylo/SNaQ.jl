@@ -102,7 +102,7 @@ keyword argument controls this model of dependence:
   See [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030) for further details.
 
 See also: [`optimize!`](@ref) to optimize parameters on a fixed topology,
-and [`computeloss`](@ref) to get the composite log-likelihood
+and [`computeloss!`](@ref) to get the composite log-likelihood
 of a fixed topology with fixed parameters.
 
 References:

@@ -35,10 +35,10 @@ loglik(optnet)                   # to access again later
 
 ## Computing the composite log-likelihood with correlated inheritance
 
-[`computeloss`](@ref) also accepts `ρ` as its third positional argument:
+[`computeloss!`](@ref) also accepts `ρ` as its third positional argument:
 
 ```julia
-computeloss(truenet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
+computeloss!(truenet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
 loglik(truenet)                     # to access again later
 ```
 

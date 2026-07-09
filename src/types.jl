@@ -50,7 +50,7 @@ index(h::HybridNetwork) = h.vec_int3 #index in net.edge, net.node of elements in
     loglik(network::HybridNetwork)
 
 Gets the cached composite log-likelihood of the provided network.
-If [`computeloss`](@ref) or [`optimize!`](@ref) have not been run on the
+If [`computeloss!`](@ref) or [`optimize!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
 [`readsnaqnetwork`](@ref), or [`readallsnaqnetworks`](@ref), then the return value
 will be meaningless.

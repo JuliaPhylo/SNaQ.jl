@@ -68,9 +68,9 @@ end
         end
         q = qstat
 
-        before_L = SNaQ.computeloss(net, q)
+        before_L = SNaQ.computeloss!(net, q)
         SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, maxeval = 10)
-        after_L = SNaQ.computeloss(net, q)
+        after_L = SNaQ.computeloss!(net, q)
 
         @test after_L > before_L
         ntested += 1
@@ -101,9 +101,9 @@ end
         q = qstat
 
         ρ = rand() < 0.25 ? 1.0 : rand()
-        before_L = SNaQ.computeloss(net, q, ρ)
+        before_L = SNaQ.computeloss!(net, q, ρ)
         SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, ρ; maxeval = 10)
-        after_L = SNaQ.computeloss(net, q, ρ)
+        after_L = SNaQ.computeloss!(net, q, ρ)
 
         @test after_L > before_L
         ntested += 1

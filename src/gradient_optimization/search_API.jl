@@ -508,7 +508,7 @@ function search(
         restrictions(N) || error("N does not meet restrictions after preopt")
         logPLs[1] = loglik(N)
     else
-        logPLs[1] = computeloss(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
+        logPLs[1] = computeloss!(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
     end
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -589,7 +589,7 @@ function search(
             opt_maxeval, cannot_do_inplace, rng, ρ; optargs...
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
-        # computeloss(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
+        # computeloss!(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
         isnan(Nprime_logPL) && error("""

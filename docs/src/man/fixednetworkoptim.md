@@ -68,7 +68,7 @@ net1par = optimize!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10)
 For a network with given branch lengths and γ inheritance probabilities,
 we can compute the composite log-likelihood with:
 ```@repl fixednetworkoptim
-computeloss(truenet, raxmlCF) # composite log-likelihood: the higher, the better
+computeloss!(truenet, raxmlCF) # composite log-likelihood: the higher, the better
 ```
 This function is not maximizing the composite log-likelihood, it is simply computing the
 composite log-likelihood for the given branch lengths and probabilities of

@@ -2,7 +2,7 @@ using PhyloNetworks, SNaQ, PhyloCoalSimulations, Test, Random
 import SNaQ: 
     RecursiveCFEquation, QuartetData, contains_parameter,
     computeexpectedCF, computeexpectedCFs, semidirectnetwork!,
-    findquartetequations, computelossandgradient!, computeloss,
+    findquartetequations, computelossandgradient!, computeloss!,
     computeexpectedCFandgradientrecur!
 
 @testset "RecursiveCFEquation construction" begin
@@ -96,8 +96,8 @@ end
         params_minus = copy(params)
         params_minus[i] -= epsilon
         
-        loss_plus = computeloss(qdata, params_plus, q)
-        loss_minus = computeloss(qdata, params_minus, q)
+        loss_plus = computeloss!(qdata, params_plus, q)
+        loss_minus = computeloss!(qdata, params_minus, q)
         
         numerical_grad = (loss_plus - loss_minus) / (2 * epsilon)
         

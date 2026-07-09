@@ -73,27 +73,27 @@ end
 
 
 """
-    computeloss(N, q, ρ=0.0)
-    computeloss(N, dcf, ρ=0.0)
+    computeloss!(N, q, ρ=0.0)
+    computeloss!(N, dcf, ρ=0.0)
 
 Computes the composite log-likelihood of network `N` given observed quartet concordance
 factor data. The optional `ρ` argument (default 0) is the inheritance correlation parameter
 in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
 """
-function computeloss(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
+function computeloss!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
-    loss = computeloss(qdata, params, q, ρ)
+    loss = computeloss!(qdata, params, q, ρ)
     loglik!(N, loss)
     return loss
 end
-function computeloss(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
-    loss = computeloss(N, gatherCFmatrix(dcf), ρ)
+function computeloss!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
+    loss = computeloss!(N, gatherCFmatrix(dcf), ρ)
     loglik!(N, loss)
     return loss
 end
-function computeloss(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, ρ::Float64=0.0)::Float64
+function computeloss!(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, ρ::Float64=0.0)::Float64
     α = rhotoalpha(ρ)
     return computelossandgradient!(qdata, params, zeros(length(params)), q, α)
 end
