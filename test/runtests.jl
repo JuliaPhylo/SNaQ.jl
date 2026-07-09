@@ -11,7 +11,8 @@ using CSV
 using Aqua
 using StatsBase
 using PhyloCoalSimulations
-include("test_inplace_updates/misc.jl")
+include(joinpath(@__DIR__, "test_inplace_updates/misc.jl"))
+include(joinpath(@__DIR__, "test_output_helper.jl"))
 
 ## Import internal functions that are directly used in tests. There has got to be a better way
 import SNaQ: writeExpCF, descData,
@@ -61,19 +62,8 @@ end
 function runtestfile(testfile::String)
     printstyled(testfile, ": ", color=:blue)
     starttime = time()
-    originalstdout = stdout
-    originalstderr = stderr
-    redirect_stdout(devnull)  # when testing for errors, comment these lines
-    redirect_stderr(devnull)  # when testing for errors, comment these lines
-    try
+    safely_redirect_output() do
         include(testfile)
-    catch e
-        redirect_stdout(originalstdout)
-        redirect_stderr(originalstderr)
-        rethrow(e)
-    finally
-        redirect_stdout(originalstdout)
-        redirect_stderr(originalstderr)
     end
     printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
