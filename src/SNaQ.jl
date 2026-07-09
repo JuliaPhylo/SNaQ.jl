@@ -17,11 +17,9 @@ module SNaQ
 
     import Base: show
 
-    const DEBUGC = false # even more debug messages
     const PN = PhyloNetworks;
     const Edge = PN.Edge;
     const Node = PN.Node;
-    global CHECKNET = false # for debugging only
 
 
     import PhyloNetworks: HybridNetwork, Network, Partition,
