@@ -124,7 +124,7 @@ function snaq!(
   xtolRel::Float64=1e-8,
   xtolAbs::Float64=1e-8,
   verbose::Bool=false,
-  runs::Integer=10,
+  runs::Integer=100,
   outgroup::AbstractString="none",
   filename::AbstractString="snaq",
   seed::Integer=rand(Int),
