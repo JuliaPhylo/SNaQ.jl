@@ -1,51 +1,6 @@
 import Base: getproperty, getfield, getindex, setproperty!, show
 
 
-# Edge getters/setters
-istIdentifiable(e::Edge) = e.boole1 # true if the parameter t (length) for this edge is identifiable as part of a network
-fromBadDiamondI(e::Edge) = e.boole2 # true if the edge came from deleting a bad diamond I hybridization
-inCycle(e::Edge) = e.inte1 # = Hybrid node number if this edge is part of a cycle created by such hybrid node; -1 if not part of cycle. used to add new hybrid edge. updated after edge is part of a network
-
-istIdentifiable!(e::Edge, b::Bool) = (e.boole1 = b)
-fromBadDiamondI!(e::Edge, b::Bool) = (e.boole2 = b)
-inCycle!(e::Edge, i::Int) = (e.inte1 = i)
-
-
-# Node getters/setters
-hasHybEdge(n::Node) = n.booln1 # is there a hybrid edge in edge? only needed when hybrid=false (tree node)
-isBadDiamondI(n::Node) = n.booln2 # for hybrid node, is it bad diamond case I, update in updateGammaz!
-isBadDiamondII(n::Node) = n.booln3 # for hybrid node, is it bad diamond case II, update in updateGammaz!
-isExtBadTriangle(n::Node) = n.booln4 # for hybrid node, is it extremely bad triangle, udpate in updateGammaz!
-isVeryBadTriangle(n::Node) = n.booln5 # for hybrid node, is it very bad triangle, udpate in updateGammaz!
-isBadTriangle(n::Node) = n.booln6 # for hybrid node, is it bad triangle, udpate in updateGammaz!
-k(n::Node) = n.intn2 # num nodes in cycle, only stored in hybrid node, updated after node becomes part of network; default -1
-typeHyb(n::Node) = n.int8n3 # type of hybridization (1,2,3,4, or 5), needed for quartet network only. default -1
-inCycle(n::Node) = n.intn1 # = hybrid node if this node is part of a cycle created by such hybrid node, -1 if not part of cycle
-gammaz(n::Node) = n.fvalue # notes file for explanation. gammaz if tree node, gamma2z if hybrid node; updated after node is part of network with updateGammaz!
-
-hasHybEdge!(n::Node, b::Bool) = (n.booln1 = b)
-isBadDiamondI!(n::Node, b::Bool) = (n.booln2 = b)
-isBadDiamondII!(n::Node, b::Bool) = (n.booln3 = b)
-isExtBadTriangle!(n::Node, b::Bool) = (n.booln4 = b)
-isVeryBadTriangle!(n::Node, b::Bool) = (n.booln5 = b)
-isBadTriangle!(n::Node, b::Bool) = (n.booln6 = b)
-k!(n::Node, i::Int) = (n.intn2 = i)
-typeHyb!(n::Node, i::Int) = typeHyb!(n, Int8(i))
-typeHyb!(n::Node, i::Int8) = (n.int8n3 = i)
-inCycle!(n::Node, i::Int) = (n.intn1 = i)
-gammaz!(n::Node, f::Real) = (n.fvalue = f)
-
-
-# HybridNetwork getters/setters
-visited(h::HybridNetwork) = h.vec_bool
-edges_changed(h::HybridNetwork) = h.vec_edge
-nodes_changed(h::HybridNetwork) = h.vec_node
-ht(h::HybridNetwork) = h.vec_float # vector of parameters to optimize
-numht(h::HybridNetwork) = h.vec_int2 # vector of number of the hybrid nodes and edges in ht e.g. [3,6,8,...], 2 hybrid nodes 3,6, and edge 8 is the 1st identifiable
-numBad(h::HybridNetwork) = h.intg1 # number of bad diamond I hybrid nodes, set as 0
-hasVeryBadTriangle(h::HybridNetwork) = h.boolg1 # true if the network has extremely/very bad triangles that should be ignored
-index(h::HybridNetwork) = h.vec_int3 #index in net.edge, net.node of elements in net.ht to make updating easy
-
 """
     loglik(network::HybridNetwork)
 
@@ -56,18 +11,7 @@ provided network, and the provided network is not the output of [`snaq!`](@ref),
 will be meaningless.
 """
 loglik(h::HybridNetwork) = h.fscore # composite log-likelihood (higher = better fit)
-blacklist(h::HybridNetwork) = h.vec_int4 # reusable array of integers, used in afterOptBL
-cleaned(h::HybridNetwork) = h.boolg2 # attribute to know if the network has been cleaned after readm default false
 
-visited!(h::HybridNetwork, v::BitVector) = visited!(h, Vector{Bool}(v))
-visited!(h::HybridNetwork, v::Array{Bool, 1}) = (h.vec_bool = v)
-edges_changed!(h::HybridNetwork, v::Array{Edge, 1}) = (h.vec_edge = v)
-nodes_changed!(h::HybridNetwork, v::Array{Node, 1}) = (h.vec_node = v)
-ht!(h::HybridNetwork, v::Vector{<:Real}) = (h.vec_float = v)
-numht!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int2 = v)
-numBad!(h::HybridNetwork, i::Int) = (h.intg1 = i)
-hasVeryBadTriangle!(h::HybridNetwork, b::Bool) = (h.boolg1 = b)
-index!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int3 = v)
 
 """
     loglik!(network, value)
@@ -76,8 +20,6 @@ Sets the composite log-likelihood of network `h` to `f`.
 Higher values indicate better fit.
 """
 loglik!(h::HybridNetwork, f::Real) = (h.fscore = f)
-blacklist!(h::HybridNetwork, v::Vector{Int}) = (h.vec_int4 = v)
-cleaned!(h::HybridNetwork, b::Bool) = (h.boolg2 = b)
 
 
 """

@@ -17,17 +17,9 @@ include(joinpath(@__DIR__, "test_output_helper.jl"))
 ## Import internal functions that are directly used in tests. There has got to be a better way
 import SNaQ: writeExpCF, descData,
     # field getters
-    istIdentifiable, fromBadDiamondI, inCycle, hasHybEdge,
-    isBadDiamondI, isBadDiamondII, isExtBadTriangle, isVeryBadTriangle,
-    k, typeHyb, gammaz,
-    visited, edges_changed, nodes_changed, ht, numht,
-    numBad, hasVeryBadTriangle, index, loglik, blacklist, cleaned,
+    loglik,
     # field setters
-    istIdentifiable!, fromBadDiamondI!, inCycle!, hasHybEdge!,
-    isBadDiamondI!, isBadDiamondII!, isExtBadTriangle!, isVeryBadTriangle!,
-    k!, typeHyb!, gammaz!,
-    visited!, edges_changed!, nodes_changed!, ht!, numht!,
-    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
+    loglik!
 
 import SNaQ: Node, findquartetequations, computeexpectedCFs,
     isvalidaddhybrid, computeexpectedDataCF,

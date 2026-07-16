@@ -52,36 +52,6 @@ Consider [`PhyloNetworks.setlengths!`](@extref) from `PhyloNetworks` for a more 
 setLength!(edge::Edge, new_length::Number) = setLength!(edge, new_length, false)
 
 
-
-
-# function to find if a given partition is in net.partition
-function isPartitionInNet(net::HybridNetwork,desc::Vector{Edge},cycle::Vector{Int})
-    for p in net.partition
-        if(sort(cycle) == sort(p.cycle))
-            if(sort([e.number for e in desc]) == sort([e.number for e in p.edges]))
-                return true
-            end
-        end
-    end
-    return false
-end
-
-# function to check if a partition is already in net.partition
-# used in updatePartition
-function isPartitionInNet(net::HybridNetwork,partition::Partition)
-    if(isempty(net.partition))
-        return false
-    end
-    for p in net.partition
-        cycle = isempty(setdiff(p.cycle,partition.cycle)) && isempty(setdiff(partition.cycle,p.cycle))
-        edges = isempty(setdiff([n.number for n in p.edges],[n.number for n in partition.edges])) && isempty(setdiff([n.number for n in partition.edges],[n.number for n in p.edges]))
-        if(cycle && edges)
-            return true
-        end
-    end
-    return false
-end
-
 """
     sorttaxa!(DataFrame, columns)
 
