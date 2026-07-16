@@ -31,7 +31,7 @@ end
 A struct that contains:
 1. The initial `RecursiveCFEquation` struct from which the loss & gradient can be calculated
 2. A list of "internal" parameters (stored as indexed from 1 to `k` where `k` is the total number of
-    parameters optimized during branch length optimization in `optimize!`) that are relevant to
+    parameters optimized during branch length optimization in `fitnumericalparameters!`) that are relevant to
     this quarnet. This INCLUDES edges that DO NOT contribute to the quarnet's expected CF, but that
     ARE internal edges w/in the network as a whole and DO **inscribe** the quarnet in the network.
     I.e., if one of these edges was removed or re-directed, this quarnet's eCF would change.
@@ -73,27 +73,27 @@ end
 
 
 """
-    computeloss!(N, q, ρ=0.0)
-    computeloss!(N, dcf, ρ=0.0)
+    computeSNaQscore!(N, q, ρ=0.0)
+    computeSNaQscore!(N, dcf, ρ=0.0)
 
 Computes the composite log-likelihood of network `N` given observed quartet concordance
 factor data. The optional `ρ` argument (default 0) is the inheritance correlation parameter
 in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
 """
-function computeloss!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
+function computeSNaQscore!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
-    loss = computeloss!(qdata, params, q, ρ)
+    loss = computeSNaQscore!(qdata, params, q, ρ)
     loglik!(N, loss)
     return loss
 end
-function computeloss!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
-    loss = computeloss!(N, gatherCFmatrix(dcf), ρ)
+function computeSNaQscore!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
+    loss = computeSNaQscore!(N, gatherCFmatrix(dcf), ρ)
     loglik!(N, loss)
     return loss
 end
-function computeloss!(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, ρ::Float64=0.0)::Float64
+function computeSNaQscore!(qdata::Vector{QuartetData}, params::Vector{Float64}, q::Matrix{Float64}, ρ::Float64=0.0)::Float64
     α = rhotoalpha(ρ)
     return computelossandgradient!(qdata, params, zeros(length(params)), q, α)
 end

@@ -13,7 +13,7 @@ end
 
 
 
-@testset "optimize! gets close to truth" begin
+@testset "fitnumericalparameters! gets close to truth" begin
     for L in [0.1, 0.25, 0.5, 1.0, 2.0, 5.0]
         for seed = 1:10
             net, q = get_data(L, seed);
@@ -30,9 +30,9 @@ end
                 getparentedgeminor(H).gamma = 1.0 - γ
             end
 
-            firstoptL = optimize!(SNaQ.deepcopynetwork(opt_net), q; maxeval=100000)
+            firstoptL = fitnumericalparameters!(SNaQ.deepcopynetwork(opt_net), q; maxeval=100000)
             eqns = findquartetequations(opt_net)[1];
-            secondoptL = optimize!(opt_net, eqns, q, 0.0; maxeval=100000)
+            secondoptL = fitnumericalparameters!(opt_net, eqns, q, 0.0; maxeval=100000)
             opt_params = SNaQ.gatherparams(opt_net);
             @test firstoptL ≈ secondoptL atol=1e-5
             if !(sum(mean((opt_params .- params).^2)) < 1.0)
@@ -68,9 +68,9 @@ end
         end
         q = qstat
 
-        before_L = SNaQ.computeloss!(net, q)
-        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, maxeval = 10)
-        after_L = SNaQ.computeloss!(net, q)
+        before_L = SNaQ.computeSNaQscore!(net, q)
+        SNaQ.fitnumericalparameters!(net, SNaQ.findquartetequations(net)[1], q, maxeval = 10)
+        after_L = SNaQ.computeSNaQscore!(net, q)
 
         @test after_L > before_L
         ntested += 1
@@ -101,9 +101,9 @@ end
         q = qstat
 
         ρ = rand() < 0.25 ? 1.0 : rand()
-        before_L = SNaQ.computeloss!(net, q, ρ)
-        SNaQ.optimize!(net, SNaQ.findquartetequations(net)[1], q, ρ; maxeval = 10)
-        after_L = SNaQ.computeloss!(net, q, ρ)
+        before_L = SNaQ.computeSNaQscore!(net, q, ρ)
+        SNaQ.fitnumericalparameters!(net, SNaQ.findquartetequations(net)[1], q, ρ; maxeval = 10)
+        after_L = SNaQ.computeSNaQscore!(net, q, ρ)
 
         @test after_L > before_L
         ntested += 1

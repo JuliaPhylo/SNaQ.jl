@@ -101,8 +101,8 @@ keyword argument controls this model of dependence:
   independent inheritance; `ρ = 1` corresponds to completely dependent inheritance.
   See [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030) for further details.
 
-See also: [`optimize!`](@ref) to optimize parameters on a fixed topology,
-and [`computeloss!`](@ref) to get the composite log-likelihood
+See also: [`fitnumericalparameters!`](@ref) to optimize parameters on a fixed topology,
+and [`computeSNaQscore!`](@ref) to get the composite log-likelihood
 of a fixed topology with fixed parameters.
 
 References:
@@ -163,10 +163,10 @@ function snaq!(
       kwargs...
   )[1]
 
-  # This call to `optimize!` is only to update the DataCF
+  # This call to `fitnumericalparameters!` is only to update the DataCF
   # `d` with the new expected qCFs.
   semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
-  optimize!(bestnet, d; maxeval=1)
+  fitnumericalparameters!(bestnet, d; maxeval=1)
   for L in bestnet.leaf
     getparentedge(L).length = 0.0
   end

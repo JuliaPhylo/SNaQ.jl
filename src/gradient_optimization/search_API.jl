@@ -504,11 +504,11 @@ function search(
     # Pre-optimizing the network's parameters
     if preopt
         @debug "Pre-optimizing"
-        optimize!(N, N_eqns, q[q_idxs, :], ρ; maxeval=max(opt_maxeval, 100), optargs...)
+        fitnumericalparameters!(N, N_eqns, q[q_idxs, :], ρ; maxeval=max(opt_maxeval, 100), optargs...)
         restrictions(N) || error("N does not meet restrictions after preopt")
         logPLs[1] = loglik(N)
     else
-        logPLs[1] = computeloss!(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
+        logPLs[1] = computeSNaQscore!(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
     end
 
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
@@ -589,7 +589,7 @@ function search(
             opt_maxeval, cannot_do_inplace, rng, ρ; optargs...
         )
         Nprime_logPL == -Inf && error("Nprime_logPL is -Inf?? newick: $(writenewick(Nprime, round=true))\nold network: $(writenewick(N, round=true))\nprop move: $(prop_move)\nprop params: $(prop_params)")
-        # computeloss!(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
+        # computeSNaQscore!(Nprime, q) == Nprime_logPL || error("LOGPLS NOT EQUAL AFTER MOVE $(prop_move)")
 
         # 5. Accept / reject
         isnan(Nprime_logPL) && error("""
@@ -631,9 +631,9 @@ function search(
     if propQuartets != 1.0
         logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
         if typeof(q) <: DataCF
-            loglik!(N, optimize!(N, gatherCFmatrix(q)))
+            loglik!(N, fitnumericalparameters!(N, gatherCFmatrix(q)))
         else
-            loglik!(N, optimize!(N, q))
+            loglik!(N, fitnumericalparameters!(N, q))
         end
         logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with loglik=$(round(loglik(N), digits=5))")
     end

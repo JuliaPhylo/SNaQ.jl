@@ -59,8 +59,8 @@ module SNaQ
         loglik,
         loglik!,
         ########## New optimization functions
-        optimize!,
-        computeloss!,
+        fitnumericalparameters!,
+        computeSNaQscore!,
         computeexpectedCFmatrix,
         computeexpectedDataCF,
         ########## New identifiability/restriction functions

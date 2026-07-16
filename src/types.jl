@@ -5,7 +5,7 @@ import Base: getproperty, getfield, getindex, setproperty!, show
     loglik(network::HybridNetwork)
 
 Gets the cached composite log-likelihood of the provided network.
-If [`computeloss!`](@ref) or [`optimize!`](@ref) have not been run on the
+If [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
 [`readsnaqnetwork`](@ref), or [`readallsnaqnetworks`](@ref), then the return value
 will be meaningless.

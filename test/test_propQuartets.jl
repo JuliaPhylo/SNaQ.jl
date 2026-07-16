@@ -13,7 +13,7 @@ falsetre = readnewick("(((a,c):5.0,(e,b):5.0):1.0,(d,f):1.5);");
 @testset "propQuartets<1.0: search improves over starting topology and final -loglik is computed with all quartets" begin
 	snaqtre = snaq!(falsetre, qcf; hmax=0, propQuartets=0.5, seed=42, Nfail=500, maxeval=5000);
 	@test hardwiredclusterdistance(snaqtre, truetre, false) == 0
-	@test loglik(snaqtre) ≈ computeloss!(truetre, qcf) atol=1e-10
+	@test loglik(snaqtre) ≈ computeSNaQscore!(truetre, qcf) atol=1e-10
 end
 
 @testset "propQuartets<1.0: different quartets sampled each run" begin

@@ -25,20 +25,20 @@ net1 = snaq!(net0, dataCF, hmax=1, ρ=0.5, filename="net1_corr")
 ## Optimizing parameters with correlated inheritance
 
 To optimize branch lengths and inheritance probabilities on a fixed topology under correlated
-inheritance, pass `ρ` as the third positional argument to [`optimize!`](@ref):
+inheritance, pass `ρ` as the third positional argument to [`fitnumericalparameters!`](@ref):
 
 ```julia
 optnet = deepcopy(truenet)
-optimize!(optnet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
+fitnumericalparameters!(optnet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
 loglik(optnet)                   # to access again later
 ```
 
 ## Computing the composite log-likelihood with correlated inheritance
 
-[`computeloss!`](@ref) also accepts `ρ` as its third positional argument:
+[`computeSNaQscore!`](@ref) also accepts `ρ` as its third positional argument:
 
 ```julia
-computeloss!(truenet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
+computeSNaQscore!(truenet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
 loglik(truenet)                     # to access again later
 ```
 
