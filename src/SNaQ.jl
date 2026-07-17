@@ -3,17 +3,13 @@ module SNaQ
     using Dates
     using Distributed
 
-    using Printf: @printf
     using Random
-    using Statistics: mean
 
     using Base.Threads
 
     # other libraries, indicate compatible version in Project.toml
     using CSV
     using DataFrames # innerjoin new in v0.21
-    using DataStructures # for updateInCycle with priority queue
-    using Distributions #for RateVariationAcrossSites
     using NLopt # for branch lengths optimization
     using StaticArrays
     using StatsBase # sample, etc.
@@ -21,11 +17,9 @@ module SNaQ
 
     import Base: show
 
-    const DEBUGC = false # even more debug messages
     const PN = PhyloNetworks;
     const Edge = PN.Edge;
     const Node = PN.Node;
-    global CHECKNET = false # for debugging only
 
 
     import PhyloNetworks: HybridNetwork, Network, Partition,
@@ -55,6 +49,7 @@ module SNaQ
         mapallelesCFtable,
         summarizedataCF,
         fittedquartetCF,
+        confintqCF_genetrees,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
@@ -64,8 +59,8 @@ module SNaQ
         loglik,
         loglik!,
         ########## New optimization functions
-        optimize!,
-        computeloss,
+        fitnumericalparameters!,
+        computeSNaQscore!,
         computeexpectedCFmatrix,
         computeexpectedDataCF,
         ########## New identifiability/restriction functions

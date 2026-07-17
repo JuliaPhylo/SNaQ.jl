@@ -12,7 +12,7 @@ The format can be `:wide` (default) or `:long`.
   4 columns for the taxon names, one column to give the quartet resolution, one column for
   the observed CF and the last column for the expected CF.
 
-See also: [`optimize!`](@ref) and [`loglik!`](@ref)
+See also: [`fitnumericalparameters!`](@ref) and [`loglik!`](@ref)
 to update the fitted quartet CF expected
 under a specific network, inside the DataCF object `d`.
 """

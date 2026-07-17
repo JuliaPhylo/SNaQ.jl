@@ -11,22 +11,15 @@ using CSV
 using Aqua
 using StatsBase
 using PhyloCoalSimulations
-include("test_inplace_updates/misc.jl")
+include(joinpath(@__DIR__, "test_inplace_updates/misc.jl"))
+include(joinpath(@__DIR__, "test_output_helper.jl"))
 
 ## Import internal functions that are directly used in tests. There has got to be a better way
 import SNaQ: writeExpCF, descData,
     # field getters
-    istIdentifiable, fromBadDiamondI, inCycle, hasHybEdge,
-    isBadDiamondI, isBadDiamondII, isExtBadTriangle, isVeryBadTriangle,
-    k, typeHyb, gammaz,
-    visited, edges_changed, nodes_changed, ht, numht,
-    numBad, hasVeryBadTriangle, index, loglik, blacklist, cleaned,
+    loglik,
     # field setters
-    istIdentifiable!, fromBadDiamondI!, inCycle!, hasHybEdge!,
-    isBadDiamondI!, isBadDiamondII!, isExtBadTriangle!, isVeryBadTriangle!,
-    k!, typeHyb!, gammaz!,
-    visited!, edges_changed!, nodes_changed!, ht!, numht!,
-    numBad!, hasVeryBadTriangle!, index!, loglik!, blacklist!, cleaned!
+    loglik!
 
 import SNaQ: Node, findquartetequations, computeexpectedCFs,
     isvalidaddhybrid, computeexpectedDataCF,
@@ -47,7 +40,8 @@ import PhyloNetworks: Node, Edge,
     setNode!,setEdge!,
     approxEq,
     searchHybridNode,
-    pushHybrid!
+    pushHybrid!,
+    readmultinewick
 
 @testset "Code quality (Aqua.jl)" begin
     Aqua.test_all(SNaQ;
@@ -60,25 +54,15 @@ end
 function runtestfile(testfile::String)
     printstyled(testfile, ": ", color=:blue)
     starttime = time()
-    originalstdout = stdout
-    originalstderr = stderr
-    redirect_stdout(devnull)  # when testing for errors, comment these lines
-    redirect_stderr(devnull)  # when testing for errors, comment these lines
-    try
+    safely_redirect_output() do
         include(testfile)
-    catch e
-        redirect_stdout(originalstdout)
-        redirect_stderr(originalstderr)
-        rethrow(e)
-    finally
-        redirect_stdout(originalstdout)
-        redirect_stderr(originalstderr)
     end
     printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
 
 
 @testset "SNaQ.jl" begin
+    runtestfile("test_confint_qcf_genetrees.jl")
     runtestfile("test_bootstrap.jl")
     runtestfile("test_multipleAlleles.jl")
     runtestfile("test_perfectData.jl")
@@ -108,3 +92,4 @@ qrm("snaq.networks")
 qrm("snaq.out")
 qrm("summaryTreesQuartets.txt")
 qrm("tableCF.txt")
+qrm("snaq_runs")

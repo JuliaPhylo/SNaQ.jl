@@ -28,11 +28,11 @@ in the plot will be close to the diagonal (x=y line).
 The following function will create a dataframe with the observed and expected CFs,
 which are all saved in the DataCF object after running `snaq!`:
 ```@repl expCFs
-optimize!(truenet, raxmlCF);
+fitnumericalparameters!(truenet, raxmlCF);
 df_wide = fittedquartetCF(raxmlCF) # same as fittedquartetCF(raxmlCF, :wide)
 df_long = fittedquartetCF(raxmlCF, :long)
 ```
-It is important to have run `snaq!` and `optimize!`
+It is important to have run `snaq!` and `fitnumericalparameters!`
 before making these tables, or the result would be meaningless.
 These functions update the fitted concordance factors (those expected under the network)
 inside the DataCF object `raxmlCF`.

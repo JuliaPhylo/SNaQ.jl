@@ -179,7 +179,6 @@ function expandLeaves!(
                 end
                 removeLeaf!(tree,n)
                 n.leaf = false
-                istIdentifiable!(n.edge[1], true)
                 n.name = ""
                 max_node = maximum([e.number for e in tree.node]);
                 max_edge = maximum([e.number for e in tree.edge]);

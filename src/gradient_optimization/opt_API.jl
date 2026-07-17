@@ -50,7 +50,7 @@ function optimizetopology!(
     end
 
     @debug "\tOptimizing branch lengths."
-    Nprime_logPL = optimize!(Nprime, Nprime_eqns, q[q_idxs,:], ρ; maxeval=opt_maxeval, optargs...)
+    Nprime_logPL = fitnumericalparameters!(Nprime, Nprime_eqns, q[q_idxs,:], ρ; maxeval=opt_maxeval, optargs...)
 
     return Nprime_logPL, Nprime_eqns
 end
@@ -58,7 +58,7 @@ end
 
 
 """
-    optimize!(net, eqns, observed_CFs, ρ)
+    fitnumericalparameters!(net, eqns, observed_CFs, ρ)
 
 Optimizes the branch lengths of network `net` which is defined by quartet concordance factor
 equations `eqns` based on observed quartet CFs `observed_CFs` under inheritance correlation
@@ -67,7 +67,7 @@ process. This overloaded function is used as a helper method that can directly t
 Vectors of `PhyloNetworks.QuartetT` as input so that the user doesn't need to handle
 converting the input data.
 """
-function optimize!(
+function fitnumericalparameters!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
@@ -80,7 +80,7 @@ function optimize!(
             obsCF_static[j, k] = observed_CFs[j].data[k]
         end
     end
-    return optimize!(net, eqns, obsCF_static, ρ; maxeval=maxeval)
+    return fitnumericalparameters!(net, eqns, obsCF_static, ρ; maxeval=maxeval)
 end
 
 """
@@ -90,7 +90,7 @@ optimize_bls!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
-    ρ::Real=0.0; kwargs...) = optimize!(net, eqns, observed_CFs, ρ; kwargs...)
+    ρ::Real=0.0; kwargs...) = fitnumericalparameters!(net, eqns, observed_CFs, ρ; kwargs...)
 
 
 """
@@ -101,12 +101,12 @@ algorithm, this function recomputes values and wastes time.
 """
 function optimizetopology!(net::HybridNetwork, d::DataCF)
     eqns = SNaQ.findquartetequations(net)[1];
-    return optimize!(net, eqns, gatherCFmatrix(d); maxeval=500)
+    return fitnumericalparameters!(net, eqns, gatherCFmatrix(d); maxeval=500)
 end
 
 
 """
-    optimize!(net, eqns, observed_CFs, ρ; maxeval, ftolRel, ftolAbs, xtolRel, xtolAbs)
+    fitnumericalparameters!(net, eqns, observed_CFs, ρ; maxeval, ftolRel, ftolAbs, xtolRel, xtolAbs)
 
 Optimizes the branch lengths (and γ parameters) of network `net`.
 
@@ -125,7 +125,7 @@ Optimizes the branch lengths (and γ parameters) of network `net`.
 - `xtolRel::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 - `xtolAbs::Float64=1e-8`: optimization parameter passed to the NLOpt.jl optimizer.
 """
-function optimize!(
+function fitnumericalparameters!(
     net::HybridNetwork,
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
@@ -199,11 +199,11 @@ function optimize!(
     loglik!(net, maxf)
     return maxf
 end
-optimize!(net::HybridNetwork, oCFs; kwargs...)::Float64 = optimize!(net, findquartetequations(net)[1], oCFs; kwargs...)
+fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumericalparameters!(net, findquartetequations(net)[1], oCFs; kwargs...)
 
 
 """
-    optimize!(net::HybridNetwork, dcf::DataCF)
+    fitnumericalparameters!(net::HybridNetwork, dcf::DataCF)
 
 Optimizes the parameters of `net` with the quartet concordance factor data
 in `dcf`. Returns the estimated likelihood of the network, which can also
@@ -216,9 +216,8 @@ be accessed later with `loglik(net)`.
 - `maxeval` specifies the maximum number of optimization evaluations that the `NLopt`
   optimizer will perform under the hood (default 100).
 """
-function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
+function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
-    α = rhotoalpha(ρ)
     semidirectnetwork!(net)
     for E in net.edge
         E.length = max(E.length, 0.0)
@@ -231,7 +230,7 @@ function optimize!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::In
     end
     eqns, parammap, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
-    optimize!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
+    fitnumericalparameters!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
 
     for q in dcf.quartet
         eqn = findquartetequations4taxa(net, q.taxon, parammap, ρ)
