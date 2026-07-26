@@ -65,8 +65,8 @@ function computeexpectedCF4taxa(net::HybridNetwork, taxa::AbstractVector{<:Abstr
     # Definitely slightly inefficient to do this for each quartet, but shouldn't be a big deal.
     param_map, params = gatheroptimizationinfo(net)[[2,4]]
 
-    qdata = SNaQ.findquartetequations4taxa(net, taxa, param_map)
-    eCF1, eCF2 = SNaQ.computeexpectedCF(qdata, params, ρ)
+    qdata = findquartetequations4taxa(net, taxa, param_map)
+    eCF1, eCF2 = computeexpectedCF(qdata, params, ρ)
 
     return eCF1, eCF2, 1-eCF1-eCF2
 end

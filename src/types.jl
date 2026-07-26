@@ -1,6 +1,3 @@
-import Base: getproperty, getfield, getindex, setproperty!, show
-
-
 """
     loglik(network::HybridNetwork)
 
@@ -30,6 +27,9 @@ type that saves the information on a given 4-taxon subset. It contains the follo
 - `number`: integer
 - `taxon`: vector of taxon names, like t1 t2 t3 t4
 - `obsCF`: vector of observed CF, in order 12|34, 13|24, 14|23
+- `expCF`: vector of CF expected from the current network, in the same order.
+  warning: this vector may be obsolete
+  (see [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref))
 - `logPseudoLik`: log pseudolikelihood of the quartet. 0.0 by default
 - `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
 - `deltaCF`: The sum of absolute differences between observed and expected CFs
