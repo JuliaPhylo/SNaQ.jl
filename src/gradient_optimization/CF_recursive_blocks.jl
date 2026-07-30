@@ -150,7 +150,7 @@ function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Floa
     if any(q -> q.ngenes <= 0, dcf.quartet)
         error("At least one quartet in `dcf.quartet` had <= 0 observations.")
     end
-    if any(q -> length(q.expCF) == 0 && length(q.obsCF) == 0, dcf.quartet)
+    if any(q -> length(q.expCF) == 0, dcf.quartet)
         computeSNaQscore!(net, dcf, ρ)
     end
 
