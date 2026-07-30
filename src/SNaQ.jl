@@ -107,4 +107,6 @@ module SNaQ
     include("network_moves/move_origin_target.jl")
     include("network_moves/flip_hybrid.jl")
 
+    include("deprecated.jl")
+
 end
