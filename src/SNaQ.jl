@@ -16,6 +16,7 @@ module SNaQ
     using PhyloNetworks
 
     import Base: show, getproperty, getfield, getindex, setproperty!
+    import StatsBase: sample
 
     const PN = PhyloNetworks;
     const Edge = PN.Edge;
@@ -36,7 +37,8 @@ module SNaQ
         pushHybrid!, removeHybrid!, printedges, printpartitions,
         samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
         AQuartet, sort_stringasinteger!, tablequartetCF,
-        RootMismatch
+        RootMismatch, addhybridedge!, directionalconflict, deletehybridedge!,
+        breakedge!, fuseedgesat!
 
     export
         ## types & network definition

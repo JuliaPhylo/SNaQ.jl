@@ -1,5 +1,3 @@
-using PhyloNetworks
-
 const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([]);
 const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);
 

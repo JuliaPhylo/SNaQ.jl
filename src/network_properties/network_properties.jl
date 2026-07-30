@@ -1,6 +1,3 @@
-using PhyloNetworks
-
-# snaq!(tre0, df, restrictionset(max_level=3, require_galled_tree=true))
 
 """
     restrictionset(; max_level=Inf, galled_tree=false, galled_network=false,
