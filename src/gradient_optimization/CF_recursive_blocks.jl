@@ -147,8 +147,8 @@ factors are computed for `net` first.
 """
 function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
     0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
-    if any(q -> q.ngenes <= 0, dcf.quartet)
-        error("At least one quartet in `dcf.quartet` had <= 0 observations.")
+    if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)
+        error("At least one quartet in `dcf.quartet` had `q.ngenes` as a value <= 0 or `missing`.")
     end
     if any(q -> length(q.expCF) == 0, dcf.quartet)
         computeSNaQscore!(net, dcf, ρ)
