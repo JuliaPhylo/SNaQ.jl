@@ -138,12 +138,39 @@ end
 
 
 """
+Computes the composite deviance of the network `net` from the
+data in `dcf` with inheritance correlation parameter `ρ`.
+
+Note: if `q.expCF` is populated in each quartet contained in `dcf.quartet`,
+then this computation only utilizes `dcf`. Otherwise, expected concordance
+factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)`.
+"""
+function compositedeviance(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
+    0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
+    if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)
+        error("At least one quartet in `dcf.quartet` had `q.ngenes` as a value <= 0 or `missing`.")
+    end
+    if any(q -> length(q.expCF) == 0, dcf.quartet)
+        computeSNaQscore!(net, dcf, ρ)
+    end
+
+    cdev::Float64 = 0.0
+    for q in dcf.quartet
+        cdev += q.obsCF[1] == 0.0 ? 0.0 : 2 * q.ngenes * q.obsCF[1] * (log(q.obsCF[1]) - log(q.expCF[1]))
+        cdev += q.obsCF[2] == 0.0 ? 0.0 : 2 * q.ngenes * q.obsCF[2] * (log(q.obsCF[2]) - log(q.expCF[2]))
+        cdev += q.obsCF[3] == 0.0 ? 0.0 : 2 * q.ngenes * q.obsCF[3] * (log(q.obsCF[3]) - log(q.expCF[3]))
+    end
+    return cdev
+end
+
+
+"""
 Computes the composite log-likelihood of the network `net` from the
 data in `dcf` with inheritance correlation parameter `ρ`.
 
 Note: if `q.expCF` is populated in each quartet contained in `dcf.quartet`,
 then this computation only utilizes `dcf`. Otherwise, expected concordance
-factors are computed for `net` first.
+factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)`.
 """
 function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
     0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")

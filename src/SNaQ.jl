@@ -60,6 +60,7 @@ module SNaQ
         SNaQscore,
         SNaQscore!,
         compositeloglik,
+        compositedeviance,
         ########## New optimization functions
         fitnumericalparameters!,
         computeSNaQscore!,
