@@ -1,23 +1,25 @@
 """
-    loglik(network::HybridNetwork)
+    SNaQscore(network::HybridNetwork)
 
-Gets the cached composite SNaQ score of the provided network. This value is *not* actually the
-log-likelihood, it is instead *proportional* to the *composite deviance*.
+Gets the cached composite SNaQ score of the provided network. This value is *proportional* to
+the *composite deviance* of the network. To compute the composite log-likelihood of the
+network, see [`cloglik`](@ref).
+
 If [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
 [`readsnaqnetwork`](@ref), or [`readallsnaqnetworks`](@ref), then the return value
 will be meaningless.
 """
-loglik(h::HybridNetwork) = h.fscore
+SNaQscore(h::HybridNetwork) = h.fscore
 
 
 """
-    loglik!(network, value)
+    SNaQscore!(network, value)
 
 Sets the cached composite SNaQ score of network `h` to `f`.
 Higher values indicate better fit.
 """
-loglik!(h::HybridNetwork, f::Real) = (h.fscore = f)
+SNaQscore!(h::HybridNetwork, f::Real) = (h.fscore = f)
 
 
 """

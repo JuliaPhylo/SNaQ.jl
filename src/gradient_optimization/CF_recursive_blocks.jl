@@ -85,14 +85,14 @@ function computeSNaQscore!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
     loss = computeSNaQscore!(qdata, params, q, ρ)
-    loglik!(N, loss)
+    SNaQscore!(N, loss)
     return loss
 end
 function computeSNaQscore!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
     obsCFs = gatherCFmatrix(dcf)
     eqns, _, parameters, _ = findquartetequations(N);
     loss = computeSNaQscore!(eqns, parameters, obsCFs, ρ)
-    loglik!(N, loss)
+    SNaQscore!(N, loss)
     for (i, q) in enumerate(dcf.quartet)
         eqn = eqns[i]
         expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)

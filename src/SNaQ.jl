@@ -57,8 +57,8 @@ module SNaQ
         readallsnaqnetworks,
         bootsnaq,
         # functions to access relevant object variables
-        loglik,
-        loglik!,
+        SNaQscore,
+        SNaQscore!,
         ########## New optimization functions
         fitnumericalparameters!,
         computeSNaQscore!,

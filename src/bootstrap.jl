@@ -184,7 +184,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             end
         end
         if runs1>0 && runs2>0
-            net = (loglik(net1) < loglik(net2) ? net1 : net2)
+            net = (SNaQscore(net1) < SNaQscore(net2) ? net1 : net2)
         end
         writelog && flush(logfile)
 

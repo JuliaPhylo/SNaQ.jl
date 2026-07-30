@@ -196,7 +196,7 @@ function fitnumericalparameters!(
         # This way, no updates will be forced.
     end
 
-    loglik!(net, maxf)
+    SNaQscore!(net, maxf)
     return maxf
 end
 fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumericalparameters!(net, findquartetequations(net)[1], oCFs; kwargs...)
@@ -207,7 +207,7 @@ fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumer
 
 Optimizes the parameters of `net` with the quartet concordance factor data
 in `dcf`. Returns the estimated likelihood of the network, which can also
-be accessed later with `loglik(net)`.
+be accessed later with `SNaQscore(net)`.
 
 ### Parameters
 - `ρ` is the inheritance correlation parameter in the range [0, 1] (default 0).
@@ -238,7 +238,7 @@ function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.
         q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
     end
 
-    return loglik(net)
+    return SNaQscore(net)
 end
 
 

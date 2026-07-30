@@ -94,7 +94,7 @@ function deepcopynetwork(net::HybridNetwork)::HybridNetwork
     netc.hybrid = hybc
     netc.numhybrids = net.numhybrids
     netc.isrooted = net.isrooted
-    loglik!(netc, loglik(net))
+    SNaQscore!(netc, SNaQscore(net))
     return netc
 end
 
