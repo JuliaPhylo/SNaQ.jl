@@ -17,7 +17,8 @@ function readsnaqnetwork(file::AbstractString)
         net = readnewick(line)
         # readTopologyUpdate is inadequate: would replace missing branch lengths, which are unidentifiable, by 1.0 values
         try
-            vec = split(line,"SNaQ score = ")
+            delim = occursin("loglik = ", line) ? "loglik = " : "SNaQ score = " # reverse compatibility
+            vec = split(line, delim)
             SNaQscore!(net, parse(Float64,vec[2]))
         catch e
             @warn "could not find the network score; the error was:"
@@ -38,10 +39,11 @@ network is also read and can be accessed individually with the
 """
 function readallsnaqnetworks(netfile::String)::Vector{HybridNetwork}
     endswith(netfile, ".networks") || @warn "`readallsnaqnetworks` reads the .networks file output by SNaQ. It looks like you may be trying to read from a different file type."
-	lines = [l for l in readlines(netfile) if occursin("with SNaQ score", l)]
+	lines = [l for l in readlines(netfile) if occursin("with SNaQ score", l) || occursin("with loglik", l)]
 	nets = []
 	for l in lines
-		l1, l2 = split(l, ", with SNaQ score ")
+        delim = occursin(", with SNaQ score ", l) ? ", with SNaQ score " : ", with loglik " # revese compatibility
+		l1, l2 = split(l, delim)
 		n = readnewick(l1)
         if occursin("best network found", l2)
             l2 = split(l2, " (best network found")[1]
