@@ -228,12 +228,12 @@ function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.
             getparentedgeminor(H).gamma = 0.5
         end
     end
-    eqns, parammap, parameters, _ = findquartetequations(net);
+    eqns, _, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
     fitnumericalparameters!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
 
-    for q in dcf.quartet
-        eqn = findquartetequations4taxa(net, q.taxon, parammap, ρ)
+    for (i, q) in enumerate(dcf.quartet)
+        eqn = eqns[i];
         expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
         q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
     end
