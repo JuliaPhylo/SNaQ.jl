@@ -1,4 +1,4 @@
 @deprecate topologymaxQpseudolik! fitnumericalparameters!
 @deprecate topologyQpseudolik! computeSNaQscore!
-@deprecate SNaQscore snaqscore
-@deprecate SNaQscore! snaqscore!
+@deprecate loglik SNaQscore
+@deprecate loglik! SNaQscore!
