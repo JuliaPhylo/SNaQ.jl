@@ -138,6 +138,63 @@ end
 
 
 """
+Computes the composite log-likelihood of the network `net` from the
+data in `dcf` with inheritance correlation parameter `ρ`.
+
+Note: if `q.expCF` is populated in each quartet contained in `dcf.quartet`,
+then this computation only utilizes `dcf`. Otherwise, expected concordance
+factors are computed for `net` first.
+"""
+function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
+    0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
+    if any(q -> q.ngenes <= 0, dcf.quartet)
+        error("At least one quartet in `dcf.quartet` had <= 0 observations.")
+    end
+    if any(q -> length(q.expCF) == 0 && length(q.obsCF) == 0, dcf.quartet)
+        computeSNaQscore!(net, dcf, ρ)
+    end
+
+    cll::Float64 = 0.0
+    for q in dcf.quartet
+        cll += q.obsCF[1] == 0.0 ? 0.0 : q.ngenes * q.obsCF[1] * log(q.expCF[1])
+        cll += q.obsCF[2] == 0.0 ? 0.0 : q.ngenes * q.obsCF[2] * log(q.expCF[2])
+        cll += q.obsCF[3] == 0.0 ? 0.0 : q.ngenes * q.obsCF[3] * log(q.expCF[3])
+    end
+    return cll
+end
+
+
+"""
+Computes the composite log-likelihood given the observed concordance factors (`obsCFs`)
+and expected concordance factors (`expCFs`) where the number of gene trees used to
+calculate the observed CFs in row `i` of `obsCFs` is stored in entry `i` of
+`ngt_per_quartet`.
+"""
+function compositeloglik(obsCFs::Matrix{Float64}, expCFs::Matrix{Float64}, ngt_per_quartet::Vector{Int64})::Float64
+    size(obsCFs) == size(expCFs) || error("obsCFs and expCFs have differing sizes.")
+    size(obsCFs, 1) == length(ngt_per_quartet) || error("Length of ngt_per_quartet must match the size of the first dimension of obsCFs and expCFs ($(size(obsCFs, 1)) != $(length(ngt_per_quartet)))")
+    all(ngt_per_quartet .> 0) || error("All values in ngt_per_quartet must be >0 (min=$(minimum(ngt_per_quartet)))")
+
+    cll::Float64 = 0.0
+    for i in eachrow(obsCFs)
+        ngt = ngt_per_quartet[i];
+        cll += obsCFs[i, 1] == 0.0 ? 0.0 : ngt * obsCFs[i, 1] * log(expCFs[i, 1])
+        cll += obsCFs[i, 2] == 0.0 ? 0.0 : ngt * obsCFs[i, 2] * log(expCFs[i, 2])
+        cll += obsCFs[i, 3] == 0.0 ? 0.0 : ngt * obsCFs[i, 3] * log(expCFs[i, 3])
+    end
+    return cll
+end
+
+"""
+Computes the composite log-likelihood given the observed concordance factors (`obsCFs`)
+and expected concordance factors (`expCFs`) assuming all quartets were sampled across
+the same number of gene trees `ngt`.
+"""
+compositeloglik(obsCFs::Matrix{Float64}, expCFs::Matrix{Float64}, ngt::Int64)::Float64 =
+    compositeloglik(obsCFs, expCFs, fill(ngt, size(obsCFs, 1)))
+
+
+"""
 Computes expected concordance factors and gradients by recursively passing through `qdata`.
 """
 @fastmath function computelossandgradient!(qdata::Vector{QuartetData}, params::Vector{T}, gradient_storage::Vector{T}, q::Matrix{T}, α::T=Inf)::T where T<:Float64

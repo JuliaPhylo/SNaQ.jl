@@ -3,7 +3,7 @@
 
 Gets the cached composite SNaQ score of the provided network. This value is *proportional* to
 the *composite deviance* of the network. To compute the composite log-likelihood of the
-network, see [`cloglik`](@ref).
+network, see [`compositeloglik`](@ref).
 
 If [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
