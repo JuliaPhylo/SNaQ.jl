@@ -43,7 +43,6 @@ module SNaQ
     export
         ## types & network definition
         DataCF,
-        Quartet,
         # quartet CF
         readtrees2CF,
         readtableCF,
