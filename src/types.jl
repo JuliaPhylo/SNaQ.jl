@@ -5,10 +5,10 @@ Gets the cached composite SNaQ score of the provided network. This value is *pro
 the *composite deviance* of the network. To compute the composite log-likelihood of the
 network, see [`compositeloglik`](@ref).
 
-If all quartets appear in the set of `ngt` input gene trees used to compute observed concordance factors,
-the composite deviance can be computed with `-2 * ngt * SNaQscore(network)`. If all quartets do not appear
-the same number of times across the set of input gene trees, composite deviance must be calculated with
-the [`compositedeviance`](@ref) function instead.
+If all quartets appear in the set of input gene trees used to compute observed concordance factors the
+same number of times (say `m` times each), then the composite deviance can be computed with
+`-2 * ngt * SNaQscore(network)`. If all quartets do not appear the same number of times across the set
+of input gene trees, composite deviance must be calculated with the [`compositedeviance`](@ref) function instead.
 
 If [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
