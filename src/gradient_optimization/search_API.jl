@@ -105,24 +105,27 @@ function multisearch(
     run_seeds = abs.(rand(Int, runs) .% 100000)
 
     # Log run details
+    restrictionmsg = restrictions == defaultrestrictions() ? "default restrictions" :
+        restrictions == restrictgallednetwork() ? "galled networks" :
+        restrictions == restrictgalledtree() ? "galled trees" :
+        restrictions == restrictrootedtreechild() ? "rooted tree child" :
+        restrictions == restrictweaklytreechild() ? "weakly tree child" :
+        restrictions == restrictstronglytreechild() ? "strongly tree child" :
+        "custom restrictions"
+    msg = """
+    Beginning network optimization using SNaQ.jl across $runs runs with the following parameters:
+        hmax = $hmax,
+        seed = $seed,
+        outgroup = $outgroup,
+        restrictions = $restrictionmsg
+    Root name for log files: $filename (absolute path $(abspath(filename)))
+    Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").
+    """
+    println(msg)
+
     if filename != ""
         open("$(filename).log", "w+") do f end
-        restrictionmsg = restrictions == defaultrestrictions() ? "default restrictions" :
-            restrictions == restrictgallednetwork() ? "galled networks" :
-            restrictions == restrictgalledtree() ? "galled trees" :
-            restrictions == restrictrootedtreechild() ? "rooted tree child" :
-            restrictions == restrictweaklytreechild() ? "weakly tree child" :
-            restrictions == restrictstronglytreechild() ? "strongly tree child" : "custom restrictions"
-        
-        logmessage(filename, """
-        Beginning network optimization using SNaQ.jl across $runs runs with the following parameters:
-            hmax = $hmax,
-            seed = $seed,
-            outgroup = $outgroup,
-            restrictions = $restrictionmsg
-        Root name for log files: $filename (absolute path $(abspath(filename)))
-        Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").
-        """)
+        logmessage(filename, msg)
     end
 
     # Make sure the log files can be created
