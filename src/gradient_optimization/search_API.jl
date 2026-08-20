@@ -39,6 +39,7 @@ function multisearch(
     q::Union{DataCF, AbstractMatrix{Float64}},
     hmax::Int;
     # Basic arguments
+    verbose::Bool=true,
     runs::Int=10,
     seed::Int=abs(rand(Int) % 100000),
     logprefix::String="",
@@ -121,7 +122,7 @@ function multisearch(
     Root name for log files: $filename (absolute path $(abspath(filename)))
     Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").
     """
-    println(msg)
+    verbose && println(msg)
 
     if filename != ""
         open("$(filename).log", "w+") do f end
