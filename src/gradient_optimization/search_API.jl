@@ -40,7 +40,7 @@ function multisearch(
     hmax::Int;
     # Basic arguments
     runs::Int=10,
-    seed::Int=rand(Int),
+    seed::Int=abs(rand(Int) % 100000),
     logprefix::String="",
     filename::String="snaq",
     outgroup::String="none",
