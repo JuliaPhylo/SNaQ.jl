@@ -6,8 +6,6 @@ function writeExpCF(quartets::Array{Quartet,1})
                               CF12_34=Float64[],CF13_24=Float64[],CF14_23=Float64[])
     for q in quartets
         length(q.taxon) == 4 || error("quartet $(q.number) does not have 4 taxa")
-        length(q.qnet.expCF) == 3 || error("quartet $(q.number) does have qnet with 3 expCF")
-        push!(df, [q.taxon[1],q.taxon[2],q.taxon[3],q.taxon[4],q.qnet.expCF[1],q.qnet.expCF[2],q.qnet.expCF[3]])
     end
     return df
 end
@@ -43,7 +41,7 @@ function tablequartetCF(quartets::Array{Quartet,1})
 
     for (i,q) in enumerate(quartets)
         length(q.taxon) == 4 || error("quartet $(q.number) does not have 4 taxa")
-        length(q.obsCF) == 3 || error("quartet $(q.number) does have qnet with 3 expCF")
+        length(q.obsCF) == 3 || error("quartet $(q.number) does not have 3 obsCFs")
         
         nt.t1[i] = q.taxon[1]
         nt.t2[i] = q.taxon[2]
@@ -158,7 +156,7 @@ function readtableCF!(df::DataFrames.DataFrame, co::Vector{Int}; mergerows=false
         co = collect(eachindex(co)) # 1:7 or 1:8
     end                         # we cannot move to mapallelesCFtable because we need repSpecies in here
     quartets = Quartet[]
-    for i in 1:size(df,1)
+    for i in axes(df, 1)
         push!(quartets,Quartet(i,string(df[i,co[1]]),string(df[i,co[2]]),string(df[i,co[3]]),string(df[i,co[4]]),
                                [df[i,co[5]],df[i,co[6]],df[i,co[7]]]))
         if withngenes
@@ -206,10 +204,10 @@ Assumptions:
   but this assumption is *not checked* (for speed, e.g. during bootstrapping).
 - one single row per 4-taxon set (multiple individuals representatives
   of the same 4-taxon set should have been already merged);
-  basically: the DataCF should have been created from the data frame by `readtableCF!(df, colums)`
+  basically: the DataCF should have been created from the data frame by `readtableCF!(df, columns)`
 """
 function readtableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
-    for i in 1:size(df,1)
+    for i in axes(df, 1)
         for j in 1:3
             datcf.quartet[i].obsCF[j] = df[i,cols[j]]
         end
@@ -219,54 +217,6 @@ end
 
 
 # ---------------- read input gene trees and calculate obsCF ----------------------
-
-"""
-    readmultinewicklevel1(file)
-
-Read a text file with a list of trees/networks in extended newick format
-(one tree per line) and transform them like [`readnewicklevel1`](@ref).
-Namely, in each tree/network
-- the root is suppressed (becomes of degree 3 if it was of degree 2)
-- any polytomy is resolved arbitrarily
-- any missing branch length is set to 1
-- any branch length above 10 is set to 10 (this assumes branch lengths in coalescent units)
-- any missing γ's are set to (0.1, 0.9)
-and more (see [`readnewicklevel1`](@ref)).
-
-See [`PhyloNetworks.readmultinewick`](@extref)
-to read multiple trees or networks with no modification.
-
-Output: array of HybridNetwork objects.
-
-Each line starting with "(" will be considered as describing one topology.
-The file can have extra lines that are ignored.
-"""
-function readmultinewicklevel1(file::AbstractString)
-    try
-        s = open(file)
-    catch
-        error("Could not find or open $(file) file");
-    end
-    vnet = HybridNetwork[];
-    s = open(file)
-    numl = 1
-    for line in eachline(s)
-        line = strip(line) # remove spaces
-        @debug "$(line)"
-        c = isempty(line) ? "" : line[1]
-        if(c == '(')
-           try
-               push!(vnet, readTopologyUpdate(line,false))
-           catch(err)
-               error("could not read tree in line $(numl). The error is $(err)")
-           end
-        end
-        numl += 1
-    end
-    close(s)
-    return vnet # consistent output type: HybridNetwork vector. might be of length 0.
-end
-
 
 # function to list all quartets for a set of taxa names
 # return a vector of quartet objects, and if writeFile=true, writes a file
@@ -340,7 +290,7 @@ end
 function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::Integer, writeFile::Bool)
     randquartets = Quartet[]
     n = length(taxon)
-    ntotal = binom(n,4)
+    ntotal = binomial(n,4)
     num <= ntotal || error("you cannot choose a sample of $(num) quartets when there are $(ntotal) in total")
     # indx = [rep(1,num);rep(0,ntotal-num)] # requires much more memory than necessary:
     # indx = indx[sortperm(randn(ntotal))]  # several arrays of size ntotal !!
@@ -442,7 +392,7 @@ function tiplabels(quartets::Vector{Quartet})
     taxa = reduce(union, q.taxon for q in quartets)
     return sort_stringasinteger!(taxa)
 end
-tiplabelsTree(file::AbstractString) = tiplabels(readmultinewicklevel1(file))
+tiplabelsTree(file::AbstractString) = tiplabels(readnewick(file))
 
 tiplabels(d::DataCF) = tiplabels(d.quartet)
 
@@ -469,18 +419,18 @@ processing each input tree only once.
 `calculateObsCFAll_noDataCF!` processes each input tree `# quartet` times.
 """
 function calculateObsCFAll!(dat::DataCF, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
-    calculateObsCFAll_noDataCF!(dat.quartet, dat.tree, taxa)
+    calculateObsCFAllnoDataCF!(dat.quartet, dat.tree, taxa)
 end
 
 
 function calculateObsCFAll!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
-    calculateObsCFAll_noDataCF!(quartets, trees, taxa)
+    calculateObsCFAllnoDataCF!(quartets, trees, taxa)
     d = DataCF(quartets, trees)
     return d
 end
 
 
-function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
+function calculateObsCFAllnoDataCF!(quartets::Vector{Quartet}, trees::Vector{HybridNetwork}, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
     println("calculating obsCF from $(length(trees)) gene trees and for $(length(quartets)) quartets")
     index = 1
     totalq = length(quartets)
@@ -504,7 +454,7 @@ function calculateObsCFAll_noDataCF!(quartets::Vector{Quartet}, trees::Vector{Hy
         sum13 = 0
         sum14 = 0
         for t in trees
-            isTree(t) || error("gene tree found in file that is a network $(writenewick(t))")
+            t.numhybrids == 0 || error("gene tree found in file that is a network $(writenewick(t))")
             if sameTaxa(q,t)
                 M = tree2Matrix(t,taxa) #fixit: way to reuse M? length(t.edge) will be different across trees
                 res = extractQuartetTree(q,M,taxa)
@@ -578,7 +528,7 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
         end
     end
     println("read input trees from file $(treefile)\nand quartetfile $(quartetfile)")
-    trees = readmultinewicklevel1(treefile)
+    trees = readmultinewick(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
@@ -637,7 +587,7 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
         end
     end
     println("read input trees from file $(treefile). no quartet file given.")
-    trees = readmultinewicklevel1(treefile)
+    trees = readmultinewick(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
 readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, tiplabelsTree(treefile), writetab, "none",false, true)
@@ -704,8 +654,8 @@ function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractStri
                       taxa::AbstractVector=Vector{String}(),
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
     trees = (nexus ?
-             readnexus_treeblock(treefile, readTopologyUpdate, false; reticulate=false) :
-             readmultinewicklevel1(treefile))
+             readnexus_treeblock(treefile, readTopologyUpdate, false, false; reticulate=false) :
+             readmultinewick(treefile))
     if length(taxa)==0        # tiplabels(trees) NOT default argument:
       taxa = tiplabels(trees) # otherwise: tree file is read twice
     end
@@ -950,157 +900,6 @@ end
 
 # -------- branch length estimate in coalescent units on species tree ------
 
-"""
-    updateBL!(net::HybridNetwork, d::DataCF)
-
-Update internal branch lengths of `net` based on the average quartet concordance
-factor (CF) across all quartets that exactly correspond to a given branch:
-new branch length = `-log(3/2(1-mean(CF observed in d)))`.
-`net` is assumed to be a tree, such that the above equation holds.
-"""
-function updateBL!(net::HybridNetwork,d::DataCF)
-    if !isTree(net)
-        @error "updateBL! was created for a tree, and net here is not a tree, so no branch lengths updated"
-    end
-    parts = edgesParts(net)
-    df = makeTable(net,parts,d)
-    x = combine(groupby(df, :edge), nrow => :Nquartets,
-                :CF => (x -> -log(3/2*(1. - mean(x)))) => :edgeL)
-    edges = x[!,:edge]
-    lengths = x[!,:edgeL]
-    for i in 1:length(edges)
-        ind = getIndexEdge(edges[i],net) # helpful error if not found
-        if net.edge[ind].length < 0.0 || net.edge[ind].length==1.0
-            # readnewicklevel1 changes missing branch length to 1.0
-            setLength!(net.edge[ind], (lengths[i] > 0 ? lengths[i] : 0.0))
-        end
-    end
-    for e in net.edge
-        if e.length < 0.0 # some edges might have *no* quartet in the data
-            setLength!(e, 1.0)
-        end
-    end
-    return x
-end
-
-
-# function to get part1,part2,part3,part4 for each edge in net.edge
-# returns a EdgeParts object
-function edgesParts(net::HybridNetwork)
-    parts = EdgeParts[] #vector to hold part1,...,part4 for each edge
-    for e in net.edge
-        if(isInternalEdge(e))
-            length(e.node) == 2 || error("strange edge with $(length(e.node)) nodes instead of 2")
-            n1 = e.node[1]
-            n2 = e.node[2]
-            e11,e12 = hybridEdges(n1,e)
-            e21,e22 = hybridEdges(n2,e)
-            part1 = Node[]
-            part2 = Node[]
-            part3 = Node[]
-            part4 = Node[]
-            getDescendants!(getOtherNode(e11,n1),e11,part1)
-            getDescendants!(getOtherNode(e12,n1),e12,part2)
-            getDescendants!(getOtherNode(e21,n2),e21,part3)
-            getDescendants!(getOtherNode(e22,n2),e22,part4)
-            push!(parts, EdgeParts(e.number,part1,part2,part3,part4))
-        end
-    end
-    return parts
-end
-
-# Traverse the network from a node towards an edge, following major edges only.
-# The other `getDescendants` updates the nodes `.inCycle`, to update partitions later.
-function getDescendants!(
-    node::Node,
-    edge::Edge,
-    descendants::Array{Node,1}
-)
-    if node.leaf
-        push!(descendants, node)
-    else
-        for e in node.edge
-            if !isEqual(edge,e) && e.ismajor
-                other = getOtherNode(e,node);
-                getDescendants!(other,e, descendants);
-            end
-        end
-    end
-end
-
-
-# similar to `getDescendants!` above, but uses a vector of edges instead of nodes
-# finds the partition corresponding to the node and edge in the cycle
-# used in chooseEdgesGamma and to set net.partition
-# cycleNum is a variable that will save another hybrid node number if found
-function getDescendants!(
-    node::Node,
-    edge::Edge,
-    descendants::Vector{Edge},
-    cycleNum::Vector{Int}
-)
-    @debug "getDescendants of node $(node.number) and edge $(edge.number)"
-    if inCycle(node) != -1
-        push!(cycleNum,inCycle(node))
-    elseif !node.leaf && inCycle(node) == -1
-        for e in node.edge
-            if(!isEqual(edge,e) && e.ismajor)
-                push!(descendants,e)
-                getDescendants!(getOtherNode(e,node),e,descendants,cycleNum)
-            end
-        end
-    end
-end
-
-
-# function to make table to later use in updateBL
-# uses vector parts obtained from edgeParts function
-function makeTable(net::HybridNetwork, parts::Vector{EdgeParts},d::DataCF)
-    df = DataFrame(edge=Int[],t1=AbstractString[],t2=AbstractString[],t3=AbstractString[],t4=AbstractString[],resolution=AbstractString[],CF=Float64[])
-    sortedDataQ = [sort(q.taxon) for q in d.quartet]
-    for p in parts #go over internal edges too
-        for t1 in p.part1
-            for t2 in p.part2
-                for t3 in p.part3
-                    for t4 in p.part4
-                        tx1 = net.names[t1.number]
-                        tx2 = net.names[t2.number]
-                        tx3 = net.names[t3.number]
-                        tx4 = net.names[t4.number]
-                        nam = [tx1,tx2,tx3,tx4]
-                        snam = sort(nam)
-                        row = findall(isequal(snam), sortedDataQ)
-                        for r in row # nothing if tax set not found: length(row)=0
-                          col,res = resolution(nam,d.quartet[r].taxon)
-                          push!(df, [p.edgenum,tx1,tx2,tx3,tx4,res,d.quartet[r].obsCF[col]])
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return df
-end
-
-
-# function to determine the resolution of taxa picked from part1,2,3,4 and DataCF
-# names: taxa from part1,2,3,4
-# rownames: taxa from table of obsCF
-function resolution(names::Vector{<:AbstractString},rownames::Vector{<:AbstractString})
-    length(names) == length(rownames) || error("names and rownames should have the same length")
-    length(names) == 4 || error("names should have 4 entries, not $(length(names))")
-    bin = [n == names[1] || n == names[2] ? 1 : 0 for n in rownames]
-    if(bin == [1,1,0,0] || bin == [0,0,1,1])
-        return 1,"12|34"
-    elseif(bin == [1,0,1,0] || bin == [0,1,0,1])
-        return 2,"13|24"
-    elseif(bin == [1,0,0,1] || bin == [0,1,1,0])
-        return 3,"14|23"
-    else
-        error("strange resolution $(bin)")
-    end
-end
-
 
 # function to extract a quartet from a matrix M
 # obtained from tree2Matrix (defined in file compareNetworks.jl)
@@ -1116,7 +915,7 @@ function extractQuartetTree(q::Quartet, M::Matrix{Int},S::Union{Vector{<:Abstrac
     end
     subM = M[:, inds.+1]
     @debug "subM: $(subM)"
-    for r in 1:size(subM,1) #rows in subM
+    for r in axes(subM,1) #rows in subM
         @debug "subM[r,:]: $(subM[r,:])"
         if subM[r,:] == [0,0,1,1] || subM[r,:] == [1,1,0,0]
             return 1
@@ -1135,11 +934,11 @@ end
 # returns vector of int, e.g. 1234
 function whichQuartet(n::Int, q::Int)
     p = 4
-    q <= binom(n,p) || error("the index for the quartet $(q) needs to be less than choose(n,4)=$(binom(n,p))")
+    q <= binomial(n,p) || error("the index for the quartet $(q) needs to be less than choose(n,4)=$(binomial(n,p))")
     n > 4 || error("there must be at least 5 taxa, not $(n)")
     quartet = Int[]
     while(n > 1)
-        abs = binom(n-1,p) #fixit: we don't want to compute this, we want to look for it in a table
+        abs = binomial(n-1,p) #fixit: we don't want to compute this, we want to look for it in a table
         if(q > abs)
             push!(quartet,n)
             n -= 1

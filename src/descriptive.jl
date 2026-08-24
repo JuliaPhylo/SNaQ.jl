@@ -1,8 +1,3 @@
-# functions to describe a HybridNetwork object to avoid accessing the attributes directly
-# Claudia August 2015
-
-
-
 """
     fittedquartetCF(d::DataCF, format::Symbol)
 
@@ -17,7 +12,7 @@ The format can be `:wide` (default) or `:long`.
   4 columns for the taxon names, one column to give the quartet resolution, one column for
   the observed CF and the last column for the expected CF.
 
-see also: [`topologyQpseudolik!`](@ref) and [`topologymaxQpseudolik!`](@ref)
+See also: [`fitnumericalparameters!`](@ref) and [`SNaQscore!`](@ref)
 to update the fitted quartet CF expected
 under a specific network, inside the DataCF object `d`.
 """
@@ -31,9 +26,9 @@ function fittedquartetCF(d::DataCF, format=:wide::Symbol)
                 obsCF12=[q.obsCF[1] for q in d.quartet],
                 obsCF13=[q.obsCF[2] for q in d.quartet],
                 obsCF14=[q.obsCF[3] for q in d.quartet],
-                expCF12=[q.qnet.expCF[1] for q in d.quartet],
-                expCF13=[q.qnet.expCF[2] for q in d.quartet],
-                expCF14=[q.qnet.expCF[3] for q in d.quartet])
+                expCF12=[q.expCF[1] for q in d.quartet],
+                expCF13=[q.expCF[2] for q in d.quartet],
+                expCF14=[q.expCF[3] for q in d.quartet])
     elseif format == :long
         nQ = length(d.quartet)
         df = DataFrame(
@@ -48,7 +43,7 @@ function fittedquartetCF(d::DataCF, format=:wide::Symbol)
         for i in 1:nQ
             for j in 1:3
                 df[row, 6] = d.quartet[i].obsCF[j]
-                df[row, 7] = d.quartet[i].qnet.expCF[j]
+                df[row, 7] = d.quartet[i].expCF[j]
                 row += 1
             end
         end
@@ -56,69 +51,4 @@ function fittedquartetCF(d::DataCF, format=:wide::Symbol)
         error("format $(format) was not recognized. Should be :wide or :long.")
     end
     return df
-end
-
-"""
-`setNonIdBL!(net)`
-
-Set non-identifiable edge branch lengths to -1.0 (i.e. missing) for a level-1 network `net`,
-except for edges in
-
-- a good triangle: the edge below the hybrid is constrained to 0.
-- a bad diamond II: the edge below the hybrid is constrained to 0
-- a bad diamond I: the edges across from the hybrid node have non identifiable lengths
-  but are kept, because the two γ*(1-exp(-t)) values are identifiable.
-
-will break if `inCycle` attributes are not initialized (at -1) or giving a correct node number.
-
-see [`PhyloNetworks.Node`](@extref) for the meaning of boolean attributes
-`isBadTriangle` (which corresponds to a "good" triangle above),
-`isBadDiamondI` and `isBadDiamondII`.
-"""
-function setNonIdBL!(net::HybridNetwork)
-    for e in net.edge
-        if !istIdentifiable(e)
-            keeplength = any(n -> (isBadDiamondII(n) || isBadTriangle(n)), e.node)
-            # if below 'bad' hybrid node, length=0 by constraint. If above, length estimated.
-            # next: keep length if edge across from hybrid node in bad diamond I.
-            if  !keeplength && inCycle(e) != -1
-                hyb = net.node[getIndexNode(inCycle(e), net)]
-                if isBadDiamondI(hyb)
-                    keeplength |= !any(n -> (n==hyb), e.node) # only if e across hyb: no touching it
-                end
-            end
-            if !keeplength
-                e.length = -1.0 # not setLength, which does not allow too negative BLs
-            end
-        end
-    end
-end
-
-
-# and QuartetNetworks (which cannot be just written because they do not have root)
-function Base.show(io::IO, net::QuartetNetwork)
-    print(io,"taxa: $(net.quartetTaxon)\n")
-    print(io,"number of hybrid nodes: $(net.numhybrids)\n")
-    if(net.split != [-1,-1,-1,-1])
-        print(io,"split: $(net.split)\n")
-    end
-end
-
-function Base.show(io::IO,d::DataCF)
-    print(io,"Object DataCF\n")
-    print(io,"number of quartets: $(d.numQuartets)\n")
-    if(d.numTrees != -1)
-        print(io,"number of trees: $(d.numTrees)\n")
-    end
-end
-
-function Base.show(io::IO,q::Quartet)
-    print(io,"number: $(q.number)\n")
-    print(io,"taxon names: $(q.taxon)\n")
-    print(io,"observed CF: $(q.obsCF)\n")
-    print(io,"pseudo-deviance under last used network: $(q.logPseudoLik) (meaningless before estimation)\n")
-    print(io,"expected CF under last used network: $(q.qnet.expCF) (meaningless before estimation)\n")
-    if(q.ngenes != -1)
-        print(io,"number of genes used to compute observed CF: $(q.ngenes)\n")
-    end
 end
