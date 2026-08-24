@@ -15,6 +15,11 @@ end
 get_nodes(net::HybridNetwork, names::String...) = [
     net.node[findfirst(node -> node.name == name, net.node)] for name in names
 ]
+function testnewickequality(net, correctnewick)
+    net = deepcopy(net)
+    for E in net.edge E.length = -1 end
+    return writenewick(net) == correctnewick
+end
 
 ###############################################################
 # FIRST: TESTS THAT WHOSE OUTCOMES HAVE BEEN VERIFIED BY HAND #
@@ -22,19 +27,19 @@ get_nodes(net::HybridNetwork, names::String...) = [
 
 net = reload_labelled_net();
 performrNNI1!(net, get_nodes(net, "i6", "i4", "i2", "i3")...);
-@test writenewick(net) == "(((e,f)i5)#i4,(d,(c,#i4)i6)i3,(a,b)i1)i2;"
+@test testnewickequality(net, "(((e,f)i5)#i4,(d,(c,#i4)i6)i3,(a,b)i1)i2;")
 
 net = reload_labelled_net();
 performrNNI2!(net, get_nodes(net, "i2", "i3", "i6", "i4")...);
-@test writenewick(net) == "(((e,f)i5)#i4,(d,(c,#i4)i6)i3,(a,b)i1)i2;"
+@test testnewickequality(net, "(((e,f)i5)#i4,(d,(c,#i4)i6)i3,(a,b)i1)i2;")
 
 net = reload_labelled_net();
 performrNNI3!(net, get_nodes(net, "i6", "f", "i4", "i5")...)
-@test writenewick(net) == "((c,#H5)i6,(d,((e)#H5,f)i4)i3,(a,b)i1)i2;"
+@test testnewickequality(net, "((c,#H5)i6,(d,((e)#H5,f)i4)i3,(a,b)i1)i2;")
 
 net = reload_labelled_net();
 performrNNI4!(net, get_nodes(net, "d", "i6", "i3", "i4")...)
-@test writenewick(net) == "((c,#H3)i6,(((e,f)i5,d)i4)#H3,(a,b)i1)i2;"
+@test testnewickequality(net, "((c,#H3)i6,(((e,f)i5,d)i4)#H3,(a,b)i1)i2;")
 
 net = reload_labelled_net();
 performrNNI4!(net, get_nodes(net, "c", "i3", "i6", "i4")...)

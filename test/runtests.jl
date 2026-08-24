@@ -54,8 +54,10 @@ end
 function runtestfile(testfile::String)
     printstyled(testfile, ": ", color=:blue)
     starttime = time()
-    safely_redirect_output() do
-        include(testfile)
+    @testset "$testfile" begin
+        safely_redirect_output() do
+            include(testfile)
+        end
     end
     printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end

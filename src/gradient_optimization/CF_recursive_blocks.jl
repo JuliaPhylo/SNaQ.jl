@@ -81,7 +81,6 @@ factor data. The optional `ρ` argument (default 0) is the inheritance correlati
 in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
 """
 function computeSNaQscore!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
-    fixnegativeedges!
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     qdata, _, params, _, _ = findquartetequations(N)
@@ -90,7 +89,6 @@ function computeSNaQscore!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::
     return loss
 end
 function computeSNaQscore!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
-    fixnegativeedges!(N)
     obsCFs = gatherCFmatrix(dcf)
     eqns, _, parameters, _ = findquartetequations(N);
     loss = computeSNaQscore!(eqns, parameters, obsCFs, ρ)
@@ -155,7 +153,6 @@ function compositedeviance(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Fl
     if any(q -> length(q.expCF) == 0, dcf.quartet)
         computeSNaQscore!(net, dcf, ρ)
     end
-    fixnegativeedges!(net)
 
     cdev::Float64 = 0.0
     for q in dcf.quartet
@@ -177,9 +174,6 @@ factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)
 """
 function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
     0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
-
-    net = SNaQ.deepcopynetwork(net)
-    fixnegativeedges!(net)
 
     if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)
         error("At least one quartet in `dcf.quartet` had `q.ngenes` as a value <= 0 or `missing`.")
@@ -208,9 +202,6 @@ function compositeloglik(obsCFs::Matrix{Float64}, expCFs::Matrix{Float64}, ngt_p
     size(obsCFs) == size(expCFs) || error("obsCFs and expCFs have differing sizes.")
     size(obsCFs, 1) == length(ngt_per_quartet) || error("Length of ngt_per_quartet must match the size of the first dimension of obsCFs and expCFs ($(size(obsCFs, 1)) != $(length(ngt_per_quartet)))")
     all(ngt_per_quartet .> 0) || error("All values in ngt_per_quartet must be >0 (min=$(minimum(ngt_per_quartet)))")
-    
-    net = SNaQ.deepcopynetwork(net)
-    fixnegativeedges!(net)
 
     cll::Float64 = 0.0
     for i in eachrow(obsCFs)

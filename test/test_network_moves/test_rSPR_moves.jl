@@ -13,6 +13,11 @@ end
 get_nodes(net::HybridNetwork, names::String...) = Tuple([
     net.node[findfirst(node -> node.name == name, net.node)] for name in names
 ])
+function testnewickequality(net, correctnewick)
+    net = deepcopy(net)
+    for E in net.edge E.length = -1 end
+    return writenewick(net) == correctnewick
+end
 
 ###############################################################
 # FIRST: TESTS THAT WHOSE OUTCOMES HAVE BEEN VERIFIED BY HAND #
@@ -24,10 +29,10 @@ net = reload_labelled_net()
 @test !isvalidrSPR(get_nodes(net, "i3", "i1", "i2", "i6", "i4", "i5")...)
 
 applymove!(net, :rSPR, get_nodes(net, "i1", "i3", "i6", "i2", "i4", "i5"))
-@test writenewick(net) == "(d,(((e,f)i5,(a,b)i1)i2)#i4,(c,#i4)i6)i3;"
+@test testnewickequality(net, "(d,(((e,f)i5,(a,b)i1)i2)#i4,(c,#i4)i6)i3;")
 
 applymove!(net, :rSPR, get_nodes(net, "i6", "i3", "i2", "i4", "i5", "e"))
-@test writenewick(net) == "(d,((f,(e)#i4)i5,(a,b)i1)i2,(c,#i4)i6)i3;"
+@test testnewickequality(net, "(d,((f,(e)#i4)i5,(a,b)i1)i2,(c,#i4)i6)i3;")
 
 
 ##########################################################

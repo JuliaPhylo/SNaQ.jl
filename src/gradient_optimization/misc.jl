@@ -8,7 +8,7 @@ edge lengths were unidentifiable.
 function fixnegativeedges!(N::HybridNetwork; shouldwarn::Bool=true)
     for E in N.edge
         getchild(E).leaf && continue
-        if E.hybrid && E.length < 0
+        if E.hybrid && E.length < 0.0
             shouldwarn && @warn "Found a hybrid edge with unspecified length; setting its length to 0.0 before proceeding. To avoid this, set the edge's length manually."
             shouldwarn = false
             E.length = 0.0

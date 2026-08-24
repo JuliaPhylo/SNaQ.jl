@@ -74,7 +74,6 @@ function fitnumericalparameters!(
     ρ::Real=0.0;
     maxeval::Int=25
 )::Float64
-    fixnegativeedges!(net)
     obsCF_static = Array{Float64}(undef, length(observed_CFs), 3)
     for j in eachindex(observed_CFs)
         for k = 1:3
@@ -137,7 +136,6 @@ function fitnumericalparameters!(
     xtolRel::Float64=1e-12,
     xtolAbs::Float64=1e-12
 )::Float64
-    fixnegativeedges!(net)
     0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $ρ)")
     # Make sure there are no NaNs in the network's edge lengths
     # This is a bug that only seems to happen on Linux for some reason,
@@ -220,7 +218,6 @@ be accessed later with `SNaQscore(net)`.
 function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
     semidirectnetwork!(net)
-    fixnegativeedges!(net)
     for E in net.edge
         E.length = max(E.length, 0.0)
     end
