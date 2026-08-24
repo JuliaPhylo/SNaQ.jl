@@ -1,4 +1,46 @@
 """
+    fixnegativeedges!(N::HybridNetwork)
+
+Sets negative edge lengths to 0.0 if they do not lead to leaves. These are
+most often hybrid edges that were not given edge lengths because their
+edge lengths were unidentifiable.
+"""
+function fixnegativeedges!(N::HybridNetwork; shouldwarn::Bool=true)
+    for E in N.edge
+        getchild(E).leaf && continue
+        if E.hybrid && E.length < 0
+            shouldwarn && @warn "Found a hybrid edge with unspecified length; setting its length to 0.0 before proceeding. To avoid this, set the edge's length manually."
+            shouldwarn = false
+            E.length = 0.0
+        end
+
+        E.length < 0 && error("""
+        Found an edge with unspecified length that was neither a hybrid edge nor a leaf edge. This is not allowed.
+        This is likely due to the edge not having a specified length in the newick string used to read the network.
+        If this is not the case, please submit a bug report at github.com/JuliaPhylo/SNaQ.jl/issues
+
+        To identify such edges in your network, run the following (after changing `net` to your network's variable):
+            badedges = getnegativeedges(net)
+        """)
+    end
+end
+
+"""
+    getnegativeedges(N::HybridNetwork)
+
+Helper function to get all the edges in the network `N` that have unspecified lengths.
+"""
+function getnegativeedges(N::HybridNetwork)::Vector{Edge}
+    nedges = Edge[];
+    for E in N.edge
+        E.hybrid && continue
+        getchild(E).leaf && continue
+        E.length < 0 && push!(nedges, E)
+    end
+    return nedges
+end
+
+"""
     sampleqindices(n, p, informative, rng)
 
 Helper function that generates a `Vector{Int}` with `n` indices where each

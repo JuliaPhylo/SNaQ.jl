@@ -9,6 +9,7 @@ function semidirectnetwork!(N::HybridNetwork; check_conditions::Bool=true)
         PhyloNetworks.fuseedgesat!(N.rooti, N, false)
     end
     N.isrooted = false
+    fixnegativeedges!(N)
 
     if check_conditions
         # Check that all network assumptions are met

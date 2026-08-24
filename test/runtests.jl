@@ -67,6 +67,7 @@ end
     runtestfile("test_multipleAlleles.jl")
     runtestfile("test_perfectData.jl")
     runtestfile("test_readInputData.jl")
+    runtestfile("test_negativeEdgeLengths.jl")
 
     runtestfile("test_propQuartets.jl")
     runtestfile("test_gradient_opt/test_opt_API.jl")

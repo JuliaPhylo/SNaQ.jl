@@ -51,6 +51,7 @@ module SNaQ
         summarizedataCF,
         fittedquartetCF,
         confintqCF_genetrees,
+        getnegativeedges,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,

@@ -118,8 +118,10 @@ end
 function Base.show(io::IO,d::DataCF)
     print(io,"Object DataCF\n")
     print(io,"number of quartets: $(d.numQuartets)\n")
-    if(d.numTrees != -1)
-        print(io,"number of trees: $(d.numTrees)\n")
+    if d.numTrees == -2
+        print(io, "number of trees: ∞ (expected values)\n")
+    elseif d.numTrees != -1
+        print(io, "number of trees: $(d.numTrees)\n")
     end
 end
 
