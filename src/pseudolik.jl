@@ -417,24 +417,17 @@ function updateHasEdge!(qnet::QuartetNetwork, net::HybridNetwork)
                 else
                     ind1 = parse(Int,string(string(node.number),"1"))
                     ind2 = parse(Int,string(string(node.number),"2"))
-                    found1 = true
-                    found2 = true
-                    try
-                        getIndexEdge(ind1,qnet)
-                    catch
-                        found1 = false
-                    end
-                    try
-                        getIndexEdge(ind2,qnet)
-                    catch
-                        found2 = false
-                    end
+                    idx1 = findfirst(e -> e.number == ind1 && fromBadDiamondI(e),
+                                     qnet.edge)
+                    idx2 = findfirst(e -> e.number == ind2 && fromBadDiamondI(e),
+                                     qnet.edge)
+                    found1 = !isnothing(idx1)
+                    found2 = !isnothing(idx2)
                     if(!found1 && !found2)
                         push!(hz,false)
                         push!(hz,false)
                     elseif(found1 && !found2)
-                        index = getIndexEdge(ind1,qnet)
-                        if(!istIdentifiable(qnet.edge[index]) && all((n->!n.leaf), qnet.edge[index].node))
+                        if !istIdentifiable(qnet.edge[idx1]) && all((n->!n.leaf), qnet.edge[idx1].node)
                             push!(hz,true)
                         else
                             push!(hz,false)
@@ -442,16 +435,14 @@ function updateHasEdge!(qnet::QuartetNetwork, net::HybridNetwork)
                         push!(hz,false)
                     elseif(found2 && !found1)
                         push!(hz,false)
-                        index = getIndexEdge(ind2,qnet)
-                        if(!istIdentifiable(qnet.edge[index]) && all((n->!n.leaf), qnet.edge[index].node))
+                        if !istIdentifiable(qnet.edge[idx2]) && all((n->!n.leaf), qnet.edge[idx2].node)
                             push!(hz,true)
                         else
                             push!(hz,false)
                         end
                     else
-                        index1 = getIndexEdge(ind1,qnet)
-                        index2 = getIndexEdge(ind2,qnet)
-                        if(!istIdentifiable(qnet.edge[index1]) && all((n->!n.leaf), qnet.edge[index1].node) && !istIdentifiable(qnet.edge[index2]) && all((n->!n.leaf), qnet.edge[index2].node))
+                        if !istIdentifiable(qnet.edge[idx1]) && all((n->!n.leaf), qnet.edge[idx1].node) &&
+                           !istIdentifiable(qnet.edge[idx2]) && all((n->!n.leaf), qnet.edge[idx2].node)
                             error("strange qnet when net has node $(node.number) Bad Diamond I: qnet should have only one of the gammaz if it does not have node, but it has two")
                         end
                     end
