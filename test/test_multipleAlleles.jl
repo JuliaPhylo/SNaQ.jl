@@ -86,7 +86,7 @@ d = readtableCF(df, mergerows=true)
 @test isempty(d.repSpecies)
 @test length(d.quartet) == 1
 @test d.quartet[1].obsCF ≈ [0.3*10 + 0.3*20, 0.45*10 + 0.55*20, 0.25*10 + 0.15*20] ./ 30
-@test d.quartet[1].ngenes == 30
+@test d.quartet[1].ngenes == 15
 SNaQ.descData(d, devnull)
 SNaQ.descData(d, "tmp.log")
 summarizedataCF(d, filename="tmp.log")
@@ -158,7 +158,7 @@ end # test of writenewick_level1
   
   # Threw an error previously
   d_sp = readtableCF!(df; mergerows=true)
-  @test d_sp.quartet[1].ngenes == 29
+  @test d_sp.quartet[1].ngenes == 14.5
   @test d_sp.quartet[1].obsCF == [
     (0.791667 * 16 + 0.8 * 13) / 29,
     (0.104167 * 16 + 0.1 * 13) / 29,
