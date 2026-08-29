@@ -153,13 +153,48 @@ function mergeRows(df::DataFrame, cols::Vector{Int})
     sorttaxa!(df, cols) # sort taxa alphabetically within each row
     colnamtax = DataFrames.propertynames(df)[cols[1:4]]
     colnam = DataFrames.propertynames(df)[cols[5:end]]
-    df = combine(groupby(df, colnamtax, sort=false, skipmissing=false),
-                 colnam .=> mean .=> colnam)
+    df = combine(
+        groupby(df, colnamtax, sort=false, skipmissing=false),
+        colnam => weightedCFmean => AsTable
+    )
     # rename!(df, Dict((Symbol(n, "_mean"), n) for n in colnam) )
     n4tax = size(df,1) # total number of 4-taxon sets
     print("$n4tax unique 4-taxon sets were found.\nCF values of repeated 4-taxon sets will be averaged")
     println((length(cols)>7 ? " (ngenes too)." : "."))
     return df
+end
+
+
+# takes abstract vectors (corresponding to dataframe rows) of equal length corresponding to
+# each of the 3 CFs and the number of genes corresponding to each set of 3 CFs.
+# if all `n` values are valid (>0) the weighted mean is returned, otherwise the simple mean
+# is returned and `n` is set to its minimum value (undefined behavior)
+function weightedCFmean(CF1::SubArray, CF2::SubArray, CF3::SubArray, n::SubArray)
+    if all(n .> 0)
+        return DataFrame(
+            CF12_34 = sum(n .* CF1) / sum(n),
+            CF13_24 = sum(n .* CF2) / sum(n),
+            CF14_23 = sum(n .* CF3) / sum(n),
+            ngenes = Int64(sum(n))
+        )
+    else
+        return DataFrame(
+            CF12_34 = mean(CF1),
+            CF13_24 = mean(CF2),
+            CF14_23 = mean(CF3),
+            ngenes = Int64(minimum(n))
+        )
+    end
+end
+
+
+# version of weightedCFmean when the number of genes is not available -- simple average.
+function weightedCFmean(CF1::SubArray, CF2::SubArray, CF3::SubArray)
+    return DataFrame(
+        CF12_34 = mean(CF1),
+        CF13_24 = mean(CF2),
+        CF14_23 = mean(CF3)
+    )
 end
 
 
