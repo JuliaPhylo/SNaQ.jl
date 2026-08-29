@@ -85,8 +85,8 @@ df = DataFrame(t1=["6","7"], t2=["7","6"], t3=["4","4"], t4=["8","8"],
 d = readtableCF(df, mergerows=true)
 @test isempty(d.repSpecies)
 @test length(d.quartet) == 1
-@test d.quartet[1].obsCF ≈ [0.3, 0.5, 0.2]
-@test d.quartet[1].ngenes ≈ 15
+@test d.quartet[1].obsCF ≈ [0.3*10 + 0.3*20, 0.45*10 + 0.55*20, 0.25*10 + 0.15*20] ./ 30
+@test d.quartet[1].ngenes == 30
 SNaQ.descData(d, devnull)
 SNaQ.descData(d, "tmp.log")
 summarizedataCF(d, filename="tmp.log")
@@ -143,5 +143,27 @@ end # test of snaq on multiple alleles
 net = readnewicklevel1("(A,(((B,B__2),E),(C,D)));")
 @test writenewick_level1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
 end # test of writenewick_level1
+
+@testset "readtableCF! with mergerows=true and duplicate 4-taxon sets" begin
+  df = DataFrame(
+    t1 = ["S1", "S1", "S1"],
+    t2 = ["S1__2", "S1__2", "S2"],
+    t3 = ["S2", "S2", "S3"],
+    t4 = ["S3", "S3", "S4"],
+    CF12_34 = [0.791667, 0.8, 0.0833333],
+    CF13_24 = [0.104167, 0.1, 0.854167],
+    CF14_23 = [0.104167, 0.1, 0.0625],
+    ngenes  = [16, 13, 16],
+  )
+  
+  # Threw an error previously
+  d_sp = readtableCF!(df; mergerows=true)
+  @test d_sp.quartet[1].ngenes == 29
+  @test d_sp.quartet[1].obsCF == [
+    (0.791667 * 16 + 0.8 * 13) / 29,
+    (0.104167 * 16 + 0.1 * 13) / 29,
+    (0.104167 * 16 + 0.1 * 13) / 29
+  ]
+end
 
 end # overall multiple allele sets of testests
