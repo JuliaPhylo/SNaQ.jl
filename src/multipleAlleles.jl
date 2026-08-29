@@ -175,7 +175,7 @@ function weightedCFmean(CF1::SubArray, CF2::SubArray, CF3::SubArray, n::SubArray
             CF12_34 = sum(n .* CF1) / sum(n),
             CF13_24 = sum(n .* CF2) / sum(n),
             CF14_23 = sum(n .* CF3) / sum(n),
-            ngenes = Int64(sum(n))
+            ngenes = mean(n)
         )
     else
         return DataFrame(
