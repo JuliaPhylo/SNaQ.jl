@@ -265,7 +265,7 @@ mutable struct DataCF # fixit
     quartet::Array{Quartet,1} # array of quartets read from CF output table or list of quartets in file
     numQuartets::Integer # number of quartets
     tree::Vector{HybridNetwork} #array of input gene trees
-    numTrees::Integer # number of gene trees
+    numTrees::AbstractFloat # number of gene trees
     repSpecies::Vector{String} #repeated species in the case of multiple alleles
     DataCF(quartet::Array{Quartet,1}) = new(quartet,length(quartet),[],-1,[])
     DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork}) = new(quartet,length(quartet),trees,length(trees),[])
