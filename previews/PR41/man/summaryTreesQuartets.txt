@@ -1,4 +1,4 @@
-data consists of 30.0 gene trees and 15 4-taxon subsets
+data consists of 30 gene trees and 15 4-taxon subsets
 
  same taxa in gene trees and quartets: ["A", "B", "C", "D", "E", "O"]
 Taxon A appears in 30 input trees (100.0 %)
