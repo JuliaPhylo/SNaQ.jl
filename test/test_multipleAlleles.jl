@@ -155,14 +155,13 @@ end # test of writenewick_level1
     CF14_23 = [0.104167, 0.1, 0.0625],
     ngenes  = [16, 13, 16],
   )
-  
-  # Threw an error previously
+  # see issue #40, error in ≤ v1.2.0
   d_sp = readtableCF!(df; mergerows=true)
   @test d_sp.quartet[1].ngenes == 14.5
   @test d_sp.quartet[1].obsCF == [
-    (0.791667 * 16 + 0.8 * 13) / 29,
-    (0.104167 * 16 + 0.1 * 13) / 29,
-    (0.104167 * 16 + 0.1 * 13) / 29
+    0.7954024827586207,  # (0.791667 * 16 + 0.8 * 13) / 29,
+    0.10229903448275862, # (0.104167 * 16 + 0.1 * 13) / 29,
+    0.10229903448275862, # (0.104167 * 16 + 0.1 * 13) / 29
   ]
 end
 

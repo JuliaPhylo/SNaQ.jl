@@ -165,16 +165,21 @@ function mergeRows(df::DataFrame, cols::Vector{Int})
 end
 
 
-# takes abstract vectors (corresponding to dataframe rows) of equal length corresponding to
-# each of the 3 CFs and the number of genes corresponding to each set of 3 CFs.
-# if all `n` values are valid (>0) the weighted mean is returned, otherwise the simple mean
-# is returned and `n` is set to its minimum value (undefined behavior)
+#= takes abstract vectors (corresponding to dataframe rows) of equal length
+corresponding to each of the 3 CFs and the number of genes.
+* If all `n` values are valid (≥0 and sum to >0), then return:
+  the weighted mean of the CFs, and the mean `n`
+* otherwise, return: the simple mean CF, and the minimum `n`.
+So the type of the output `n` is not stable, but readtableCF! will convert n
+to a Float64 for each Quartet's ngenes, and to an Int for the DataCF's numTrees.
+=#
 function weightedCFmean(CF1::SubArray, CF2::SubArray, CF3::SubArray, n::SubArray)
-    if all(n .> 0)
+    ntot = sum(n)
+    if ntot > 0 && all(n .≥ 0)
         return DataFrame(
-            CF12_34 = sum(n .* CF1) / sum(n),
-            CF13_24 = sum(n .* CF2) / sum(n),
-            CF14_23 = sum(n .* CF3) / sum(n),
+            CF12_34 = sum(n .* CF1) / ntot,
+            CF13_24 = sum(n .* CF2) / ntot,
+            CF14_23 = sum(n .* CF3) / ntot,
             ngenes = mean(n)
         )
     else
@@ -182,7 +187,7 @@ function weightedCFmean(CF1::SubArray, CF2::SubArray, CF3::SubArray, n::SubArray
             CF12_34 = mean(CF1),
             CF13_24 = mean(CF2),
             CF14_23 = mean(CF3),
-            ngenes = Int64(minimum(n))
+            ngenes = minimum(n)
         )
     end
 end
