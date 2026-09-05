@@ -762,9 +762,9 @@ The function returns a `DataFrame` with columns `t1`, `t2`, `t3`, `t4`,
 `CF14_23`, `CF14_23_lo`, `CF14_23_hi`, and `ngenes`. The user may either use
 it as the input for the bootsnaq function, or write it to a CSV for later use.
 
-The function [snaq!](@ref) uses `DataCF` as input, so the resulting `DataFrame` will need to be
-converted to it with [readtableCF](@ref).
-The function [bootsnaq](@ref) takes a `DataFrame` as input, so you can just use the resulting
+The function [`snaq!`](@ref) uses `DataCF` as input, so the resulting `DataFrame` will need to be
+converted to it with [`readtableCF`](@ref).
+The function [`bootsnaq`](@ref) takes a `DataFrame` as input, so you can just use the resulting
 object straight away.
 """
 function confintqCF_genetrees(pointestimates::Vector{HybridNetwork}, replicates::Vector{Vector{HybridNetwork}}, level::Float64, verbose::Bool)
