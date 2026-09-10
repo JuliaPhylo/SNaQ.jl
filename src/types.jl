@@ -261,12 +261,21 @@ If the input was a list of trees, the `HybridNetwork`'s can be accessed with the
 For example, if the `DataCF` object is named `d`, `d.quartet[1]` will show the first quartet
 and `d.tree[1]` will print the first input tree.
 """
-mutable struct DataCF # fixit
-    quartet::Array{Quartet,1} # array of quartets read from CF output table or list of quartets in file
-    numQuartets::Integer # number of quartets
-    tree::Vector{HybridNetwork} #array of input gene trees
-    numTrees::Integer # number of gene trees
-    repSpecies::Vector{String} #repeated species in the case of multiple alleles
+mutable struct DataCF
+    """quartet: vector of Quartet objects"""
+    quartet::Array{Quartet,1}
+    "numQuartets: number of four-taxon sets"
+    numQuartets::Int
+    "tree: vector of input gene trees"
+    tree::Vector{HybridNetwork}
+    """numTrees: number of gene trees from which quartet CFs were calculated,
+    or -1 if the input was a table of CFs rather than a sample of gene trees.
+    Note that the number of *informative* gene trees may differ across 4-taxon sets
+    due to missing taxa or polytomies in gene trees. Each `Quartet` in the list has
+    its own field `.ngenes`, which may ≠ `numTrees` here."""
+    numTrees::Int
+    "repSpecies: repeated species in the case of multiple alleles"
+    repSpecies::Vector{String}
     DataCF(quartet::Array{Quartet,1}) = new(quartet,length(quartet),[],-1,[])
     DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork}) = new(quartet,length(quartet),trees,length(trees),[])
     DataCF() = new([],0,[],-1,[])
