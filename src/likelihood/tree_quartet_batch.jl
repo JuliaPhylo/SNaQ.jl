@@ -14,8 +14,8 @@ observed-CF entropy `Σ q_k log(q_k)` is constant over a fit. Precomputing them 
 Built once per [`fitnumericalparameters!`](@ref) call by [`treequartetbatch`](@ref).
 """
 struct TreeQuartetBatch
-    coal::Vector{Int32}     # concatenated coal_edges over the tree-like quartets
-    off::Vector{Int32}      # tree-like quartet i owns coal[off[i]:off[i+1]-1]
+    coal::Vector{Int}     # concatenated coal_edges over the tree-like quartets
+    off::Vector{Int}      # tree-like quartet i owns coal[off[i]:off[i+1]-1]
     qres::Vector{Float64}   # observed CF of that quartet's RESOLVED topology
     qoth::Vector{Float64}   # observed CFs of the other two topologies, summed
     qlogq::Vector{Float64}  # Σ_k q_k log(q_k), skipping q_k == 0 (constant across evaluations)
@@ -43,8 +43,8 @@ function treequartetbatch(qdata::Vector{QuartetData}, obsCFs::Matrix{Float64})::
         end
     end
 
-    coal = Vector{Int32}(undef, total)
-    off = Vector{Int32}(undef, ntree + 1)
+    coal = Vector{Int}(undef, total)
+    off = Vector{Int}(undef, ntree + 1)
     qres = Vector{Float64}(undef, ntree)
     qoth = Vector{Float64}(undef, ntree)
     qlogq = Vector{Float64}(undef, ntree)
@@ -63,7 +63,7 @@ function treequartetbatch(qdata::Vector{QuartetData}, obsCFs::Matrix{Float64})::
         i += 1
         off[i] = pos
         for p in eqn.coal_edges
-            coal[pos] = Int32(p)
+            coal[pos] = Int(p)
             pos += 1
         end
         q1 = obsCFs[j, 1]; q2 = obsCFs[j, 2]; q3 = obsCFs[j, 3]
@@ -95,7 +95,7 @@ identical to the `Vector{QuartetData}` path for these quartets; see
     total = 0.0
 
     @inbounds for j = 1:nq
-        lo = off[j]; hi = off[j+1] - Int32(1)
+        lo = off[j]; hi = off[j+1] - Int(1)
 
         branchsum = 0.0
         for k = lo:hi

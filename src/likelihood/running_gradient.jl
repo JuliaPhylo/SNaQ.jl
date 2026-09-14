@@ -19,7 +19,7 @@ mutable struct RunningGradient
     shared::Vector{Float64}         # length 3: running gradient of every non-exceptional parameter
     exceptionparam::Vector{Int}     # parameter index held in each exception slot
     exceptionvalue::Matrix{Float64} # 3 x capacity: running gradient of each exception
-    exceptionslot::Vector{Int32}    # nparam-long: parameter -> its slot, 0 if not an exception
+    exceptionslot::Vector{Int}    # nparam-long: parameter -> its slot, 0 if not an exception
     params_seen::Vector{Bool}       # nparam-long: has an ancestor already fixed this parameter?
     nexceptions::Int
     savestack::Vector{Float64}      # checkpoint arena for saverunninggradient!
@@ -29,7 +29,7 @@ mutable struct RunningGradient
         # Both the exception list and the checkpoint arena grow on demand.
         cap = 8
         new(ones(3), zeros(Int, cap), Matrix{Float64}(undef, 3, cap),
-            zeros(Int32, nparam), zeros(Bool, nparam), 0, Vector{Float64}(undef, 64), 0)
+            zeros(Int, nparam), zeros(Bool, nparam), 0, Vector{Float64}(undef, 64), 0)
     end
 end
 
@@ -58,7 +58,7 @@ otherwise the shared value.
 """
 @inline function runninggradient(rg::RunningGradient, p::Int, k::Int)::Float64
     @inbounds s = rg.exceptionslot[p]
-    return s == Int32(0) ? (@inbounds rg.shared[k]) : (@inbounds rg.exceptionvalue[k, s])
+    return s == Int(0) ? (@inbounds rg.shared[k]) : (@inbounds rg.exceptionvalue[k, s])
 end
 
 
@@ -66,7 +66,7 @@ end
 Makes `p` an exception, starting from the value it currently has. A no-op if `p` already is one.
 """
 @inline function addexception!(rg::RunningGradient, p::Int)
-    @inbounds rg.exceptionslot[p] == Int32(0) || return nothing
+    @inbounds rg.exceptionslot[p] == Int(0) || return nothing
     if rg.nexceptions == length(rg.exceptionparam)
         newcap = 2 * rg.nexceptions
         resize!(rg.exceptionparam, newcap)
@@ -78,7 +78,7 @@ Makes `p` an exception, starting from the value it currently has. A no-op if `p`
     s = rg.nexceptions
     @inbounds begin
         rg.exceptionparam[s] = p
-        rg.exceptionslot[p] = Int32(s)
+        rg.exceptionslot[p] = Int(s)
         rg.exceptionvalue[1, s] = rg.shared[1]; rg.exceptionvalue[2, s] = rg.shared[2]; rg.exceptionvalue[3, s] = rg.shared[3]
     end
     return nothing
@@ -166,7 +166,7 @@ Scales the running gradient of the single exceptional parameter `p` by `f`.
 """
 @inline function scaleexception!(rg::RunningGradient, p::Int, f::Float64)
     @inbounds s = rg.exceptionslot[p]
-    s == Int32(0) && return nothing
+    s == Int(0) && return nothing
     @inbounds begin
         rg.exceptionvalue[1, s] *= f; rg.exceptionvalue[2, s] *= f; rg.exceptionvalue[3, s] *= f
     end

@@ -8,18 +8,17 @@ many quartets of one network: a leaf name => `Node` map and every leaf's
 [`ancestorchain`](@ref), so no quartet has to scan `net.leaf` or re-climb to the root.
 
 It works for networks as well as trees. Each leaf's chain stops below the first reticulation
-above it, so two leaves' chains meet exactly when a tree-like path joins them; quartets a
-reticulation does span fall back to [`reticulatequartetequations`](@ref).
+above it, so two leaves' chains meet exactly when a tree-like path joins them; non-treelike
+quartets fall back to [`reticulatequartetequations`](@ref) but tree-like quartets get
+significant speed and memory savings.
 """
 struct TreeQuartetContext
     net::HybridNetwork
     leafmap::Dict{String,Node}
     chains::Dict{String,Vector{Node}}
     hashybrids::Bool
-    # Position of each node/edge in `net.node`/`net.edge`, so `inducedquartetnetwork` can
-    # restore the network's own ordering without scanning it.
-    nodepos::Dict{Int,Int32}
-    edgepos::Dict{Int,Int32}
+    nodepos::Dict{Int,Int}
+    edgepos::Dict{Int,Int}
 end
 
 
@@ -38,13 +37,13 @@ function treequartetcontext(net::HybridNetwork)::TreeQuartetContext
         leafmap[l.name] = l
         chains[l.name] = hashybrids ? treelikeancestorchain(l) : ancestorchain(l)
     end
-    nodepos = Dict{Int,Int32}()
-    edgepos = Dict{Int,Int32}()
+    nodepos = Dict{Int,Int}()
+    edgepos = Dict{Int,Int}()
     if hashybrids     # only the reticulate route needs these
         sizehint!(nodepos, length(net.node))
         sizehint!(edgepos, length(net.edge))
-        for (j, n) in enumerate(net.node); nodepos[n.number] = Int32(j); end
-        for (j, e) in enumerate(net.edge); edgepos[e.number] = Int32(j); end
+        for (j, n) in enumerate(net.node); nodepos[n.number] = Int(j); end
+        for (j, e) in enumerate(net.edge); edgepos[e.number] = Int(j); end
     end
     return TreeQuartetContext(net, leafmap, chains, hashybrids, nodepos, edgepos)
 end

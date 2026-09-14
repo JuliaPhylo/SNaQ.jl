@@ -239,7 +239,7 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
                         write(f,"$(taxon[taxa_idx1]),$(taxon[taxa_idx2]),$(taxon[taxa_idx3]),$(taxon[taxa_idx4])\n")
                     end
                     push!(vquartet,Quartet(i,string(taxon[taxa_idx1]),string(taxon[taxa_idx2]),string(taxon[taxa_idx3]),chomp(string(taxon[taxa_idx4])),[1.0,0.0,0.0]))
-                    i += 1 # overflow error if # quartets > typemax(Int), i.e. if 121,978+ taxa with Int64, 478+ taxa with Int32
+                    i += 1 # overflow error if # quartets > typemax(Int), i.e. if 121,978+ taxa with Int64, 478+ taxa with Int
                 end
             end
         end
