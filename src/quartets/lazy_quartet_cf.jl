@@ -26,12 +26,13 @@ struct LazyQuartetCF <: AbstractMatrix{Float64}
     taxa::Vector{String}                       # canonical, sort(tiplabels(...))-ordered
     ntaxa::Int
     ntrees::Int
-    lcadepth::Union{Nothing,Matrix{Int16}}     # (ntrees, npairs); -1 => taxon absent from that tree
+    lcadepth::Union{Nothing,Matrix{Int16}}          # (ntrees, npairs); -1 => taxon absent from that tree
     trees::Vector{HybridNetwork}                    # fallback path only (empty otherwise)
     chainmaps::Vector{Dict{String,Vector{Node}}}    # fallback path only (empty otherwise)
-    cache::Dict{Int, NTuple{3,Float64}}         # rank => (obsCF12, obsCF13, obsCF14)
+    cache::Dict{Int, NTuple{3,Float64}}             # row number => (obsCF12, obsCF13, obsCF14)
     lock::ReentrantLock
 end
+
 
 
 """
@@ -50,10 +51,11 @@ passes, computes each row once. Runs draw fresh quartets, so there is little to 
 keeping rows beyond that and much to lose: uncapped, a long multi-run job accumulates
 millions of them.
 """
-const MAX_CACHED_QUARTETS::Int = 250_000
+const MAX_CACHED_QUARTETS::Int = 1_000_000
 
 
 function LazyQuartetCF(trees::Vector{HybridNetwork}, taxa::Vector{String})
+    taxa = sort(taxa);
     ntaxa = length(taxa)
     ntaxa >= 4 || error("LazyQuartetCF needs at least 4 taxa (got $(ntaxa)).")
     for tre in trees
@@ -136,6 +138,17 @@ end
 
 Base.size(q::LazyQuartetCF) = (binomial(q.ntaxa, 4), 3)
 
+function Base.show(io::IO, q::LazyQuartetCF)
+    print(io, "LazyQuartetCF Object\n")
+    print(io, "\tNumber of trees: $(q.ntrees)\n")
+    print(io, "\tComputed quartets: $(length(q.cache))/$(binomial(q.ntaxa,4))\n")
+end
+function Base.show(io::IO, ::MIME"text/plain", q::LazyQuartetCF)
+    print(io, "LazyQuartetCF Object\n")
+    print(io, "\tNumber of trees: $(q.ntrees)\n")
+    print(io, "\tComputed quartets: $(length(q.cache))/$(binomial(q.ntaxa,4))\n")
+end
+
 function Base.getindex(q::LazyQuartetCF, i::Int, j::Int)::Float64
     @boundscheck checkbounds(q, i, j)
     cached = lock(q.lock) do
@@ -150,7 +163,6 @@ function Base.getindex(q::LazyQuartetCF, i::Int, j::Int)::Float64
         else
             observedCF4taxaidx(idx4[1], idx4[2], idx4[3], idx4[4], D, q.ntaxa, q.ntrees)
         end
-        # `get!`, not a plain insert: defer to whichever task cached this row first.
         cached = lock(q.lock) do
             length(q.cache) >= MAX_CACHED_QUARTETS && empty!(q.cache)
             get!(q.cache, i, computed)
