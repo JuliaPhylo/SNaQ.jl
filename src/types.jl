@@ -1,3 +1,6 @@
+const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
+
+
 """
     SNaQscore(network::HybridNetwork)
 
