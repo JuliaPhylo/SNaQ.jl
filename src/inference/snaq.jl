@@ -25,7 +25,7 @@ Output:
 There are many optional keyword arguments, including
 
 - `hmax` (default 1): maximum number of hybridizations allowed
-- `propQuartets` (default 1): the proportion of observed quartet concordance factors in `d`
+- `propQuartets` (default 1 if currT0 has <= 14 taxa, else 1000.0 / binomial(currT0.numtaxa, 4)): the proportion of observed quartet concordance factors in `d`
   to use when calculating network pseudolikelihoods. Smaller values will lead to faster
   method runtime but may come at the expense of accuracy if lowered too far.
 - `probQR` (default 0): the probability at any given step to use weighted random sampling
@@ -37,7 +37,7 @@ There are many optional keyword arguments, including
 - `filename` (default "snaq"): root name for the output files (`.out`, `.err`). If empty (""),
   files are *not* created, progress log goes to the screen only (standard out).
 - `seed` (default 0 to get it from the clock): seed to replicate a given search
-- `probST` (default 0.3): probability of perturbing `T` by one NNI move before a run
+- `probST` (default 0.9): probability of perturbing `T` by one NNI move before a run
   starts. With probability 1-probST the run starts from `T` unchanged
   along a tree edge with no hybrid neighbor,
   with a possible modification of one reticulation if `T` has one.
@@ -56,7 +56,7 @@ Greater values will result in a less thorough but faster search.
 These parameters are used when evaluating candidate networks only.
 The following optional keyword arguments control when to stop proposing new network topologies:
 
-- `Nfail` (100): maximum number of times that new topologies are proposed and rejected (in a row).
+- `Nfail` (50): maximum number of times that new topologies are proposed and rejected (in a row).
 
 Lower values of `Nfail` and greater values of `ftolAbs` would
 result in a less thorough but faster search.
@@ -96,7 +96,7 @@ function snaq!(
   currT0::Union{HybridNetwork, Vector{HybridNetwork}},
   d::DataCF;
   hmax::Int=1,
-  Nfail::Int=100,
+  Nfail::Int=50,
   ftolRel::Float64=1e-8,
   ftolAbs::Float64=1e-8,
   xtolRel::Float64=1e-8,
@@ -106,12 +106,15 @@ function snaq!(
   outgroup::AbstractString="none",
   filename::AbstractString="snaq",
   seed::Int=rand(Int),
-  probST::Float64=0.3,
+  probST::Float64=0.9,
   updateBL::Bool=true,
   probQR::Float64=0.0,
   qtolAbs::Float64=1e-4,
   qinfTest::Bool=false,
-  propQuartets::Float64=1.0,
+  propQuartets::Float64=min(
+    1.0,
+    1000.0 / binomial((typeof(currT0)<:HybridNetwork ? currT0.numtaxa : currT0[1].numtaxa), 4)
+  ),
   restrictions::Function=norestrictions,
   ρ::Float64=0.0,
   kwargs...
