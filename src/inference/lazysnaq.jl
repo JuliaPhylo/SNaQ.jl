@@ -76,15 +76,7 @@ function lazysnaq!(
         "quartet involving them would have an observed CF of NaN: $(nevershown).")
 
     ntotal = binomial(ntaxa, 4)
-    nused = propQuartets == 1.0 ? ntotal : quartetsamplesize(ntotal, propQuartets)
     nusedfinal = propQuartetsFinal == 1.0 ? ntotal : quartetsamplesize(ntotal, propQuartetsFinal)
-    msg = "lazysnaq!: $ntaxa taxa give C($ntaxa,4) = $ntotal possible quartets.\n" *
-          "  Search (propQuartets = $propQuartets): $nused of $ntotal quartets used per run for optimization.\n" *
-          "  Final comparison (propQuartetsFinal = $propQuartetsFinal): $nusedfinal of $ntotal quartets, " *
-          "sampled once and shared across every run's resulting network, used to fairly compare them.\n" *
-          "  All observed CFs are computed on demand (and cached) from the $(length(trees)) input gene " *
-          "trees -- never all $ntotal up front."
-    println(msg)
     filename != "" && logmessage(filename, msg)
 
     lazyq = LazyQuartetCF(trees, taxa)
