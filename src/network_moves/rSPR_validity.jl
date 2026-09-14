@@ -7,7 +7,11 @@ according to the naming conventions in Figure 6 of [this paper](https://doi.org/
 function isvalidrSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::Node)
     # If type 1 (upper half of Fig 6): w must be child of z
     # If type 2 (lower ...): z must be child of w
-    z.hybrid ? z in getchildren(w) : w in getchildren(z) || return false
+    if z.hybrid
+        z in getchildren(w) || return false
+    else
+        w in getchildren(z) || return false
+    end
 
     # y' must always be child of x'
     yprime in getchildren(xprime) || return false
@@ -16,9 +20,6 @@ function isvalidrSPR(w::Node, x::Node, y::Node, z::Node, xprime::Node, yprime::N
     if length(unique([w, x, y, z, xprime, yprime])) != 6
         (length(unique([w, x, y, z, xprime, yprime])) == 5 && (y == xprime || x == xprime)) || return false
     end
-
-    if z.hybrid !(isdescendantof(w, yprime)) || return false end
-    if !z.hybrid && w.hybrid !(isdescendantof(xprime, w)) || return false end
 
     # See Lemma 6, these conditions are necessary for the move to be valid
     if z.hybrid
