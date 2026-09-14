@@ -77,7 +77,6 @@ function lazysnaq!(
 
     ntotal = binomial(ntaxa, 4)
     nusedfinal = propQuartetsFinal == 1.0 ? ntotal : quartetsamplesize(ntotal, propQuartetsFinal)
-    filename != "" && logmessage(filename, msg)
 
     lazyq = LazyQuartetCF(trees, taxa)
 
