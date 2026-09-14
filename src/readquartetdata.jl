@@ -239,7 +239,7 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
                         write(f,"$(taxon[taxa_idx1]),$(taxon[taxa_idx2]),$(taxon[taxa_idx3]),$(taxon[taxa_idx4])\n")
                     end
                     push!(vquartet,Quartet(i,string(taxon[taxa_idx1]),string(taxon[taxa_idx2]),string(taxon[taxa_idx3]),chomp(string(taxon[taxa_idx4])),[1.0,0.0,0.0]))
-                    i += 1 # overflow error if # quartets > typemax(Int), i.e. if 121,978+ taxa with Int64, 478+ taxa with Int32
+                    i += 1 # overflow error if # quartets > typemax(Int), i.e. if 121,978+ taxa with Int64, 478+ taxa with Int
                 end
             end
         end
@@ -249,16 +249,16 @@ function allQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}}, writeFi
     end
     return vquartet
 end
-allQuartets(numtaxa::Integer, writeFile::Bool) = allQuartets(1:numtaxa, writeFile)
+allQuartets(numtaxa::Int, writeFile::Bool) = allQuartets(1:numtaxa, writeFile)
 
 
 # function to list num randomly selected quartets for a vector of all quartets
 # return a vector of Quartet randomly chosen (and a file if writeFile=true)
-function randQuartets(allquartets::Vector{Quartet},num::Integer, writeFile::Bool)
+function randQuartets(allquartets::Vector{Quartet},num::Int, writeFile::Bool)
     randquartets = Quartet[]
     n = length(allquartets)
     if num == 0
-        num = Integer(floor(0.1*n))
+        num = Int(floor(0.1*n))
     end
     num <= n || error("you cannot choose a sample of $(num) quartets when there are $(n) in total")
     indx = [ones(Bool,num); zeros(Bool,n-num)]
@@ -287,7 +287,7 @@ end
 # function that will not use randQuartets(list of quartets,...)
 # this function uses whichQuartet to avoid making the list of all quartets
 # fixit: writeFile is not used. remove the option?
-function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::Integer, writeFile::Bool)
+function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::Int, writeFile::Bool)
     randquartets = Quartet[]
     n = length(taxon)
     ntotal = binomial(n,4)
@@ -310,7 +310,7 @@ function randQuartets(taxon::Union{Vector{<:AbstractString},Vector{Int}},num::In
     close(out)
     return randquartets
 end
-randQuartets(numtaxa::Integer,num::Integer, writeFile::Bool) = randQuartets(1:numtaxa,num, writeFile)
+randQuartets(numtaxa::Int,num::Int, writeFile::Bool) = randQuartets(1:numtaxa,num, writeFile)
 
 
 # function to read list of quartets from a file
@@ -516,7 +516,7 @@ See also:
 [`readtrees2CF`](@ref), which is an exported and user-friendly re-naming of `readInputData`, and
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
-function readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
+function readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Int, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
     if writetab
         if(filename == "none")
             filename = "tableCF.txt" # "tableCF$(string(integer(time()/1000))).txt"
@@ -531,12 +531,12 @@ function readInputData(treefile::AbstractString, quartetfile::AbstractString, wh
     trees = readmultinewick(treefile)
     readInputData(trees, quartetfile, whichQ, numQ, writetab, filename, writeFile, writeSummary)
 end
-readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
-readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer) = readInputData(treefile, quartetfile, whichQ, numQ, true, "none", false, true)
+readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Int, writetab::Bool) = readInputData(treefile, quartetfile, whichQ, numQ, writetab, "none", false, true)
+readInputData(treefile::AbstractString, quartetfile::AbstractString, whichQ::Symbol, numQ::Int) = readInputData(treefile, quartetfile, whichQ, numQ, true, "none", false, true)
 readInputData(treefile::AbstractString, quartetfile::AbstractString, writetab::Bool, filename::AbstractString) = readInputData(treefile, quartetfile, :all, 0, writetab, filename, false, true)
 
 
-function readInputData(trees::Vector{HybridNetwork}, quartetfile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
+function readInputData(trees::Vector{HybridNetwork}, quartetfile::AbstractString, whichQ::Symbol, numQ::Int, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
     if(whichQ == :all)
         numQ == 0 || @warn "set numQ=$(numQ) but whichQ is not rand, so all quartets will be used and numQ will be ignored. If you want a specific number of 4-taxon subsets not random, you can input with the quartetfile option"
         println("will use all quartets in file $(quartetfile)")
@@ -572,7 +572,7 @@ function readInputData(trees::Vector{HybridNetwork}, quartetfile::AbstractString
 end
 
 
-function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Integer=0,
+function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Int=0,
         taxa::Union{Vector{<:AbstractString}, Vector{Int}}=tiplabelsTree(treefile),
         writetab::Bool=true, filename::AbstractString="none",
         writeFile::Bool=false, writeSummary::Bool=true)
@@ -590,14 +590,14 @@ function readInputData(treefile::AbstractString, whichQ::Symbol=:all, numQ::Inte
     trees = readmultinewick(treefile)
     readInputData(trees, whichQ, numQ, taxa, writetab, filename, writeFile, writeSummary)
 end
-readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Integer, writetab::Bool) = readInputData(treefile, whichQ, numQ, tiplabelsTree(treefile), writetab, "none",false, true)
+readInputData(treefile::AbstractString, whichQ::Symbol, numQ::Int, writetab::Bool) = readInputData(treefile, whichQ, numQ, tiplabelsTree(treefile), writetab, "none",false, true)
 readInputData(treefile::AbstractString, taxa::Union{Vector{<:AbstractString}, Vector{Int}}) = readInputData(treefile, :all, 0, taxa, true, "none",false, true)
 # above: the use of tiplabelsTree to set the taxon set
 #        is not good: need to read the tree file twice: get the taxa, then get the trees
 #        this inefficiency was fixed in readtrees2CF
 
 
-function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Integer, taxa::Union{Vector{<:AbstractString}, Vector{Int}}, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
+function readInputData(trees::Vector{HybridNetwork}, whichQ::Symbol, numQ::Int, taxa::Union{Vector{<:AbstractString}, Vector{Int}}, writetab::Bool, filename::AbstractString, writeFile::Bool, writeSummary::Bool)
     if(whichQ == :all)
         numQ == 0 || @warn "set numQ=$(numQ) but whichQ=all, so all quartets will be used and numQ will be ignored. If you want a specific number of 4-taxon subsets not random, you can input with the quartetfile option"
         quartets = allQuartets(taxa,writeFile)
@@ -649,7 +649,7 @@ See also:
 [`PhyloNetworks.countquartetsintrees`](@extref), which uses a much faster algorithm;
 [`readtableCF`](@ref) to read a table of quartet CFs directly.
 """
-function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,
+function readtrees2CF(treefile::AbstractString; quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Int,
                       writeTab=true::Bool, CFfile="none"::AbstractString,
                       taxa::AbstractVector=Vector{String}(),
                       writeQ=false::Bool, writeSummary=true::Bool, nexus=false::Bool)
@@ -666,7 +666,7 @@ end
 
 # same as before, but with input vector of HybridNetworks
 function readtrees2CF(trees::Vector{HybridNetwork};
-        quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Integer,
+        quartetfile="none"::AbstractString, whichQ="all"::AbstractString, numQ=0::Int,
         writeTab=true::Bool, CFfile="none"::AbstractString,
         taxa::AbstractVector=tiplabels(trees),
         writeQ=false::Bool, writeSummary=true::Bool)

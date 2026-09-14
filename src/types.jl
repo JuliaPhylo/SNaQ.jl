@@ -1,3 +1,6 @@
+const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
+
+
 """
     SNaQscore(network::HybridNetwork)
 
@@ -58,12 +61,12 @@ mutable struct Quartet <: AQuartet
     sampled::Bool # false if quartet is not sampled for network optimization, default true
     uninformative::Bool # true if quartet is not sampled because it failed qinfTest, default false
     # inner constructor: to guarantee obsCF are only three and add up to 1
-    function Quartet(number::Integer,t1::AbstractString,t2::AbstractString,t3::AbstractString,t4::AbstractString,obsCF::Array{Float64,1})
+    function Quartet(number::Int,t1::AbstractString,t2::AbstractString,t3::AbstractString,t4::AbstractString,obsCF::Array{Float64,1})
         size(obsCF,1) != 3 ? error("observed CF vector should have size 3, not $(size(obsCF,1))") : nothing
         0.99 < sum(obsCF) < 1.02 || @warn "observed CF should add up to 1, not $(sum(obsCF))"
         new(number,[t1,t2,t3,t4],obsCF,[],0.0,-1.0, 0.0, true, false);
     end
-    function Quartet(number::Integer,t1::Array{String,1},obsCF::Array{Float64,1})
+    function Quartet(number::Int,t1::Array{String,1},obsCF::Array{Float64,1})
         size(obsCF,1) != 3 ? error("observed CF vector should have size 3, not $(size(obsCF,1))") : nothing
         0.99< sum(obsCF) < 1.02 || @warn "observed CF should add up to 1, not $(sum(obsCF))"
         size(t1,1) != 4 ? error("array of taxa should have size 4, not $(size(t1,1))") : nothing

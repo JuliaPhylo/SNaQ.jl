@@ -1,5 +1,148 @@
-const EMPTY_EQN_VEC::Vector{RecursiveCFEquation} = Vector{RecursiveCFEquation}([]);
-const EMPTY_INT_VEC::Vector{Int} = Vector{Int}([]);
+# Equations for quartets a reticulation does span.
+
+"""
+    inducedquartetnetwork(ctx, taxa)
+
+The sub-network of `ctx.net` spanned by the 4 leaves named in `taxa`: every node that is one
+of them or an ancestor of one (following both parents at a reticulation), and every edge
+between two such nodes. Node and edge numbers are preserved, since `parameter_map` is keyed
+by them.
+
+This is what pruning the network down to `taxa` produces, since deleting a leaf keeps exactly
+the nodes that still have a descendant leaf, but it copies only the nodes involved rather
+than the whole network.
+"""
+function inducedquartetnetwork(ctx::TreeQuartetContext, taxa::AbstractVector{String})::HybridNetwork
+    net = ctx.net
+    # Ancestral closure of the 4 leaves. Everything below is proportional to that closure
+    # rather than to `net`, which is what `ctx`'s leaf and position maps are for.
+    keep = Set{Int}()
+    stack = Node[]
+    kept = Node[]
+    for name in taxa
+        l = get(ctx.leafmap, name, nothing)
+        l === nothing && error("inducedquartetnetwork: taxon $name is not a leaf of the network.")
+        l.number in keep && continue
+        push!(keep, l.number); push!(stack, l); push!(kept, l)
+    end
+    while !isempty(stack)
+        n = pop!(stack)
+        for p in getparents(n)
+            p.number in keep && continue
+            push!(keep, p.number)
+            push!(stack, p)
+            push!(kept, p)
+        end
+    end
+
+    # `net.node` / `net.edge` order, so the result is deterministic (and identical to what
+    # scanning the whole network in order would have produced).
+    nodepos = ctx.nodepos
+    sort!(kept, by = n -> nodepos[n.number])
+
+    node_map = Dict{Int,Node}()
+    sizehint!(node_map, length(kept))
+    nodec = Vector{Node}(undef, length(kept))
+    for (j, node) in enumerate(kept)
+        nc = Node(node.number, node.leaf, node.hybrid)
+        nc.name = node.name
+        nodec[j] = nc
+        node_map[node.number] = nc
+    end
+
+    # Every edge of the sub-network is incident to a kept node, so only their edge lists
+    # need looking at; an edge with both endpoints kept shows up twice, hence `seen`.
+    edges = Edge[]
+    seen = Set{Int}()
+    for node in kept, e in node.edge
+        e.number in seen && continue
+        n1 = e.node[1]; n2 = e.node[2]
+        (haskey(node_map, n1.number) && haskey(node_map, n2.number)) || continue
+        push!(seen, e.number)
+        push!(edges, e)
+    end
+    edgepos = ctx.edgepos
+    sort!(edges, by = e -> edgepos[e.number])
+
+    edgec = Vector{Edge}(undef, length(edges))
+    for (j, e) in enumerate(edges)
+        c1 = node_map[e.node[1].number]; c2 = node_map[e.node[2].number]
+        ec = Edge(e.number, e.length, e.hybrid, e.gamma, [c1, c2])
+        ec.ischild1 = e.ischild1
+        ec.ismajor = e.ismajor
+        ec.containroot = e.containroot
+        edgec[j] = ec
+        push!(c1.edge, ec)
+        push!(c2.edge, ec)
+    end
+
+    leafc = Node[nc for nc in nodec if nc.leaf]
+    hybc = Node[nc for nc in nodec if nc.hybrid]
+    rootnumber = net.node[net.rooti].number
+    rooti = findfirst(nc -> nc.number == rootnumber, nodec)
+    rooti === nothing && error("inducedquartetnetwork: the network root is not an ancestor of the quartet.")
+
+    sub = HybridNetwork()
+    sub.numtaxa = length(leafc)
+    sub.numnodes = length(nodec)
+    sub.numedges = length(edgec)
+    sub.node = nodec
+    sub.edge = edgec
+    sub.leaf = leafc
+    sub.rooti = rooti
+    sub.names = net.names
+    sub.hybrid = hybc
+    sub.numhybrids = length(hybc)
+    sub.isrooted = net.isrooted
+    return sub
+end
+
+
+inducedquartetnetwork(net::HybridNetwork, taxa::AbstractVector{String})::HybridNetwork =
+    inducedquartetnetwork(treequartetcontext(net), taxa)
+
+
+"""
+Quartet equations for a quartet a reticulation spans, so the tree-like shortcut does not
+apply: prune down to `taxa` and split on the reticulations that remain. By far the most
+expensive way to build one quartet's equations, and what `hmax > 0` runtime is dominated by.
+"""
+function reticulatequartetequations(ctx::TreeQuartetContext, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, ρ::Float64=0.0)::QuartetData
+    net = inducedquartetnetwork(ctx, taxa)
+
+    # find and delete degree-2 blobs along external edges
+    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
+    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
+    entryindex = indexin(entry, net.vec_node)
+    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
+    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
+    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
+        # yes if: 1 single exit adjacent to a leaf
+        length(exitnodes[ib]) != 1 && return false
+        ch = getchildren(exitnodes[ib][1])
+        return length(ch) == 1 && ch[1].leaf
+    end
+    for ib in reverse(bloborder)
+        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
+        for he in bcc[ib]
+            he.ismajor && continue
+            # deletion of a hybrid can hide the deletion of another: check that he is still in net
+            any(e -> e===he, net.edge) || continue
+            # delete minor hybrid edge with options unroot=true: to make sure the
+            # root remains of degree 3+, in case a degree-2 blob starts at the root
+            # simplify=true: bc external blob
+            PN.deletehybridedge!(net,he, false,true,false,true,false)
+        end
+    end
+
+    return QuartetData(
+        get4taxaquartetequations(net, taxa, parameter_map, ρ),
+        [parameter_map[obj.number] for obj in vcat(net.edge, net.hybrid)
+            if haskey(parameter_map, obj.number)],
+        taxa
+    )
+end
+
 
 """
 Recursively builds the quartet CF equations for the quarnet in
@@ -308,288 +451,4 @@ function getleavesbelowlowesthybrid(H::Node)::Vector{Node}
     end
 
     return leaves
-end
-
-
-"""
-Gathers a vector of `QuartetData` objects that define the expected
-quartet concordance factors of `net`.
-"""
-findquartetequations(net::HybridNetwork)::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}} =
-    findquartetequations(net, 1:nchoose4taxalength(net))
- 
-"""
-Deprecated - included for backwards compatibility in niche cases.
-"""
-find_quartet_equations(net::HybridNetwork) = findquartetequations(net)
-
-"""
-Gathers a vector of `QuartetData` objects that define the expected
-quartet concordance factors of `net`. `q_idxs` is a `Vector{Int}` that
-must be of length exactly (`net.numtaxa` choose 4). Each index of
-`q_idxs` corresponds to a quartet whose equation will be computed.
-"""
-function findquartetequations(net::HybridNetwork, sampled_quartets::AbstractVector{Int})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
-    fixnegativeedges!(net)
-    all(e -> !e.hybrid || 1 >= e.gamma >= 0, net.edge) || error("net has gammas that are not in [0, 1]")
-    all(h -> getparentedge(h).gamma + getparentedgeminor(h).gamma ≈ 1, net.hybrid) || error("net has hybrid with gammas that do not sum to 1")
-
-    return findquartetequations!(net, sampled_quartets, Array{QuartetData}(undef, length(sampled_quartets)))
-end
-
-
-"""
-See [`findquartetequations`](@ref)
-"""
-function findquartetequations!(net::HybridNetwork, sampled_quartets::AbstractVector{Int}, N_eqns::Vector{QuartetData})::Tuple{Vector{QuartetData},Dict,Vector{Float64},IdxObjMap,Vector{String}}
-    # Relevant data to be returned
-    t = sort(tiplabels(net))
-    narg, param_map, idx_obj_map, params, _ = gatheroptimizationinfo(net)
-
-    # Relevant loop vars
-    thread_lock::ReentrantLock = ReentrantLock()
-    q_idx::Int = 0
-    t_idx::Int = 1
-    ts::Vector{Int} = Vector{Int}([1,2,3,4])
-
-    Threads.@threads for _ = 1:length(sampled_quartets)
-        # Define a local variable b/c using `q_idx` would lead to race conditions
-        this_iter_idx::Int = 0
-        iter_taxa::AbstractVector{String} = String["", "", "", ""]
-
-        lock(thread_lock) do
-            # Grab the taxa for this iteration and move forward the tickers
-            q_idx += 1
-            next_t_idx::Int = sampled_quartets[q_idx]
-            while t_idx < next_t_idx
-                incrtaxaidx!(ts)
-                t_idx += 1
-            end
-            this_iter_idx = q_idx
-            iter_taxa = t[ts]
-        end
-        N_eqns[this_iter_idx] = findquartetequations4taxa(net, iter_taxa, param_map)
-    end
-
-    return N_eqns, param_map, params, idx_obj_map, t
-end
-
-
-"""
-Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
-corresponding to the expected CF values of each quartet
-in `dcf` ordered in the way that `SNaQ` expects internally.
-"""
-function gatherCFmatrix(dcf::DataCF)::Matrix{Float64}
-    # Helper function for more legible code later
-    minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
-
-    # This sorting function is what we use to take the set of
-    # quartets in `dcf` as they appear and quickly determine
-    # the rearrangement that SNaQ's API is expecting
-    function labelsorter(a::Vector{String}, b::Vector{String})::Bool
-        for j = 4:-1:1
-            a[j] < b[j] && return true
-            b[j] < a[j] && return false
-        end
-    end
-
-    eCF_matrix = zeros(length(dcf.quartet), 3)
-    qorder = sortperm(dcf.quartet, lt = (a, b) -> labelsorter(sort(a.taxon), sort(b.taxon)))
-
-    iteration_mapping = [1, 2, 3]
-    for (j, qidx) in enumerate(qorder)
-        taxonperm = sortperm(dcf.quartet[qidx].taxon)
-        if minmax(taxonperm[1], taxonperm[2]) == (1, 2) || minmax(taxonperm[1], taxonperm[2]) == (3, 4)
-            iteration_mapping[1] = 1
-        elseif minmax(taxonperm[1], taxonperm[2]) == (1, 3) || minmax(taxonperm[1], taxonperm[2]) == (2, 4)
-            iteration_mapping[1] = 2
-        else
-            iteration_mapping[1] = 3
-        end
-
-        if minmax(taxonperm[1], taxonperm[3]) == (1, 2) || minmax(taxonperm[1], taxonperm[3]) == (3, 4)
-            iteration_mapping[2] = 1
-        elseif minmax(taxonperm[1], taxonperm[3]) == (1, 3) || minmax(taxonperm[1], taxonperm[3]) == (2, 4)
-            iteration_mapping[2] = 2
-        else
-            iteration_mapping[2] = 3
-        end
-
-        if minmax(taxonperm[1], taxonperm[4]) == (1, 2) || minmax(taxonperm[1], taxonperm[4]) == (3, 4)
-            iteration_mapping[3] = 1
-        elseif minmax(taxonperm[1], taxonperm[4]) == (1, 3) || minmax(taxonperm[1], taxonperm[4]) == (2, 4)
-            iteration_mapping[3] = 2
-        else
-            iteration_mapping[3] = 3
-        end
-        eCF_matrix[j, :] .= dcf.quartet[qidx].obsCF[iteration_mapping]
-    end
-    return eCF_matrix
-end
-
-
-"""
-Helper function to increment the 4-taxa index within `findquartetequations`.
-"""
-function incrtaxaidx!(ts::Vector{Int})::Nothing
-    ind = findfirst(x -> x>1, diff(ts))
-    if ind === nothing ind = 4; end
-    ts[ind] += 1
-    for j in 1:(ind-1)
-        ts[j] = j
-    end
-end
-
-
-"""
-Finds the quartet equations for the quarnet in `net` containing the taxa in `taxa`. `taxa` must contain exactly 4
-    names of tips that are contained in `net`. `parameter_map` maps edges and gamma parameters in `net` to
-    optimization variable indicies.
-"""
-function findquartetequations4taxa(net::HybridNetwork, taxa::AbstractVector{String}, parameter_map::Dict{Int, Int}, ρ::Float64=0.0)::QuartetData
-    # Let's see if the quartet is tree-like and easy first
-    qdat = trytreelikequartet(net, taxa, parameter_map)
-    qdat !== nothing && return qdat
-
-    # Above attempt failed, so we have to do it the hard way.
-    net = deepcopynetwork(net) # deepcopy b/c we need edge numbers to stay the same
-
-    # remove all taxa other than those in `taxa`
-    for t in sort(tiplabels(net))
-        t in taxa && continue
-        L = net.leaf[findfirst(l -> l.name == t, net.leaf)]
-        PhyloNetworks.deleteleaf!(net, L.number; simplify=true, nofuse=true, multgammas=false, keeporiginalroot=true)
-    end
-
-    # find and delete degree-2 blobs along external edges
-    bcc = biconnectedcomponents(net, true) # true: ignore trivial blobs
-    entry = PN.biconnectedcomponent_entrynodes(net, bcc, true)
-    entryindex = indexin(entry, net.vec_node)
-    exitnodes = PN.biconnectedcomponent_exitnodes(net, bcc, false) # don't redo the preordering
-    bloborder = sortperm(entryindex) # pre-ordering for blobs in their own blob tree
-    function isexternal(ib) # is bcc[ib] of degree 2 and adjacent to an external edge?
-        # yes if: 1 single exit adjacent to a leaf
-        length(exitnodes[ib]) != 1 && return false
-        ch = getchildren(exitnodes[ib][1])
-        return length(ch) == 1 && ch[1].leaf
-    end
-    for ib in reverse(bloborder)
-        isexternal(ib) || continue # keep bcc[ib] if not external of degree 2
-        for he in bcc[ib]
-            he.ismajor && continue
-            # deletion of a hybrid can hide the deletion of another: check that he is still in net
-            any(e -> e===he, net.edge) || continue
-            # delete minor hybrid edge with options unroot=true: to make sure the
-            # root remains of degree 3+, in case a degree-2 blob starts at the root
-            # simplify=true: bc external blob
-            PN.deletehybridedge!(net,he, false,true,false,true,false)
-        end
-    end
-
-    return QuartetData(
-        get4taxaquartetequations(net, taxa, parameter_map, ρ),
-        [parameter_map[obj.number] for obj in vcat(net.edge, net.hybrid)
-            if haskey(parameter_map, obj.number)],
-        taxa
-    )
-end
-
-
-"""
-Uses simple path-finding operations to try and find a tree-like quartet
-relationship between the 4 taxa in `taxa`. On successful finding of this
-quartet, the corresponding `QuartetData` object is returned. If a hybrid
-is encountered along a given path in this operation, `nothing` is
-returned instead.
-"""
-function trytreelikequartet(net::HybridNetwork, taxa::AbstractVector{String}, param_map::Dict{Int,Int})::Union{QuartetData,Nothing}
-    a = net.leaf[findfirst(l -> l.name == taxa[1], net.leaf)]
-    b = net.leaf[findfirst(l -> l.name == taxa[2], net.leaf)]
-    c = net.leaf[findfirst(l -> l.name == taxa[3], net.leaf)]
-    d = net.leaf[findfirst(l -> l.name == taxa[4], net.leaf)]
-
-    path_ab = findtreelikemrcapath(a, b)
-    path_ab === nothing && return nothing
-    path_cd = findtreelikemrcapath(c, d)
-    path_cd === nothing && return nothing
-    path_ac = findtreelikemrcapath(a, c)
-    path_ac === nothing && return nothing
-    path_bd = findtreelikemrcapath(b, d)
-    path_bd === nothing && return nothing
-    
-    i_abcd = intersect(path_ab, path_cd)
-    i_acbd = intersect(path_ac, path_bd)
-
-    if length(i_abcd) == 0
-        coal_edges = [param_map[e.number] for e in i_acbd]
-        return QuartetData(
-            RecursiveCFEquation(true, coal_edges, 1, -1, EMPTY_EQN_VEC, length(param_map)),
-            [param_map[e.number] for e in union(path_ac, path_bd) if haskey(param_map, e.number)],
-            [a.name, b.name, c.name, d.name]
-        )
-    elseif length(i_acbd) == 0
-        coal_edges = [param_map[e.number] for e in i_abcd]
-        return QuartetData(
-            RecursiveCFEquation(true, coal_edges, 2, -1, EMPTY_EQN_VEC, length(param_map)),
-            [param_map[e.number] for e in union(path_ab, path_cd) if haskey(param_map, e.number)],
-            [a.name, b.name, c.name, d.name]
-        )
-    else
-        coal_edges = [param_map[e.number] for e in i_abcd]
-        return QuartetData(
-            RecursiveCFEquation(true, coal_edges, 3, -1, EMPTY_EQN_VEC, length(param_map)),
-            [param_map[e.number] for e in union(path_ab, path_cd) if haskey(param_map, e.number)],
-            [a.name, b.name, c.name, d.name]
-        )
-    end
-end
-
-
-"""
-Finds the tree-like path of edges connecting nodes `a` and
-`b` to one another, assuming that they are in the same
-network. If they are connected by a strictly tree-like path
-then this path of edges is returned. Otherwise, `nothing`
-is returned.
-"""
-function findtreelikemrcapath(a::Node, b::Node)::Union{Nothing,Vector{Edge}}
-    node_path_a::Vector{Node} = []
-    edge_path_a::Vector{Edge} = []
-    node_path_b::Vector{Node} = []
-    edge_path_b::Vector{Edge} = []
-
-    iter::Int = 0
-    while !(a in node_path_b) && !(b in node_path_a)
-        pa = getparents(a)
-        pb = getparents(b)
-
-        # If hybrid in path, return nothing
-        if length(pa) > 1 || length(pb) > 1 || (length(pa) == 1 && pa[1].hybrid) || (length(pb) == 1 && pb[1].hybrid)
-            return nothing
-        end
-
-        if length(pa) == 1
-            pa[1] in node_path_a && return nothing
-            push!(node_path_a, pa[1])
-            push!(edge_path_a, getparentedge(a))
-            a = pa[1]
-        end
-        if length(pb) == 1
-            pb[1] in node_path_b && return nothing
-            push!(node_path_b, pb[1])
-            push!(edge_path_b, getparentedge(b))
-            b = pb[1]
-        end
-
-        iter += 1
-        iter < 1e5 || error("Looped $(iter) times!")
-    end
-
-
-    if a in node_path_b
-        return vcat(edge_path_a, edge_path_b[1:findfirst(bnode -> bnode == a, node_path_b)])
-    else
-        return vcat(edge_path_a[1:findfirst(anode -> anode == b, node_path_a)], edge_path_b)
-    end
 end

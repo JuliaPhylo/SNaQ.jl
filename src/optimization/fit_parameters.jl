@@ -1,61 +1,4 @@
-
-const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
-
-
-"""
-    optimizetopology!(Nprime, old_eqns, move, params, q, q_idxs, opt_maxeval, force_resample_all, rng, ρ)
-
-Optimizes the branch lengths and γ parameters of the network `Nprime`.
-
-# Arguments:
-- `Nprime::HybridNetwork`: network to be optimized, typically the proposed network in [`search`](@ref).
-- `old_eqns::Vector{QuartetData}`: quartet equations of the network that came prior to `Nprime` in the
-    hill climbing optimization of [`search`](@ref).
-- `move::Symbol`: the topological move that turned the previous network into `Nprime`. Used to inform
-    which quartets equations in `old_eqns` need to be re-calculated and which remain the same.
-- `params::Tuple`: edges and/or hybrid nodes that define the move corresponding to `move` - used along with
-    `move` for the aforementioned purpose.
-- `q::Matrix{Float64}`: the set of quartet concordance factors used to optimize the network's parameters.
-    Should be a matrix with the same number of rows as the length of `old_eqns` and 3 columns.
-- `q_idxs::Vector{Int}`: indices corresponding to the set of quartets that are being used for optimization.
-    I.e., when `propQuartets` in [`search`](@ref) is 1.0, this contains all integers from 1 to [`nchoose4taxalength`](@ref).
-    When `propQuartets` is 0.1, it contains 10% as many integers, randomly selected in this range.
-- `opt_maxeval::Int`: maximum number of evaluations when optimizing parameters.
-- `force_resample_all::Bool`: if `true`, ignore `move` and `params` and re-calculate *every* quartet CF
-    equation. Typically set to `true` when, e.g., a new reticulation is added to the network.
-- `rng::TaskLocalRNG`: `TaskLocalRNG` object from which random numbers are generated. Ensures reproducibility.
-- `ρ::Float64`: inheritance correlation parameter in the range [0, 1] used in calculating pseudo-likelihoods.
-"""
-function optimizetopology!(
-    Nprime::HybridNetwork,
-    old_eqns::Vector{QuartetData},
-    move::Symbol,
-    params::Tuple,
-    q::Matrix{Float64},
-    q_idxs::Vector{Int},
-    opt_maxeval::Int,
-    force_resample_all::Bool,
-    rng::TaskLocalRNG,
-    ρ::Float64=0.0;
-    optargs...
-)::Tuple{Float64, Vector{QuartetData}}
-    Nprime_eqns::Vector{QuartetData} = Array{QuartetData}(undef, length(old_eqns))
-    if !force_resample_all && can_update_inplace(move)
-        @debug "\tGathering updated quartet equations."
-        _, param_map, idxobjmap, _ = gatheroptimizationinfo(Nprime, true)
-        updatequartetequations!(old_eqns, Nprime_eqns, Nprime, param_map, move, params, ρ)
-    else
-        @debug "\tGathering quartet equations."
-        findquartetequations!(Nprime, q_idxs, Nprime_eqns);
-    end
-
-    @debug "\tOptimizing branch lengths."
-    Nprime_logPL = fitnumericalparameters!(Nprime, Nprime_eqns, q[q_idxs,:], ρ; maxeval=opt_maxeval, optargs...)
-
-    return Nprime_logPL, Nprime_eqns
-end
-
-
+# Fitting branch lengths and inheritance probabilities.
 
 """
     fitnumericalparameters!(net, eqns, observed_CFs, ρ)
@@ -83,6 +26,7 @@ function fitnumericalparameters!(
     return fitnumericalparameters!(net, eqns, obsCF_static, ρ; maxeval=maxeval)
 end
 
+
 """
 Deprecated internal function - used for backwards compatibility in niche cases.
 """
@@ -91,18 +35,6 @@ optimize_bls!(
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
     ρ::Real=0.0; kwargs...) = fitnumericalparameters!(net, eqns, observed_CFs, ρ; kwargs...)
-
-
-"""
-    optimizetopology!(net, d)
-
-This version is just a helper function for more clear tests. In the context of the
-algorithm, this function recomputes values and wastes time.
-"""
-function optimizetopology!(net::HybridNetwork, d::DataCF)
-    eqns = SNaQ.findquartetequations(net)[1];
-    return fitnumericalparameters!(net, eqns, gatherCFmatrix(d); maxeval=500)
-end
 
 
 """
@@ -146,13 +78,6 @@ function fitnumericalparameters!(
         edge.length = max(edge.length, 1e-5)    # starting optimization on a boundary can lead to failure
     end
 
-    # Make sure γ values don't start on boundaries (this should never be
-    # the case, but doing this check is free and may avoid errors)
-    for H in net.hybrid
-        γ = getparentedge(H).gamma
-        γ = min(γ, 1.0 - 1e-5)
-    end
-
     α = rhotoalpha(ρ)
     narg, param_map, idx_obj_map, params, LB, UB, init_steps = gatheroptimizationinfo(net, false)
     #opt = Opt(NLopt.LD_TNEWTON_PRECOND, narg)  # more accurate, but takes longer
@@ -172,9 +97,11 @@ function fitnumericalparameters!(
     x0::Vector{Float64} = [min(ub, val) for (ub, val) in zip(UB, params)]
     x0 = min.(UB .- 1e-12, x0)
     x0 = max.(LB .+ 1e-12, x0)
-    NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, eqns, observed_CFs, idx_obj_map, α))
+    # Built once per fit, then reused by all `maxeval` objective/gradient evaluations.
+    batch = treequartetbatch(convert(Vector{QuartetData}, eqns), observed_CFs)
+    NLopt.max_objective!(opt, (x, grad) -> objective(x, grad, net, batch, eqns, observed_CFs, idx_obj_map, α))
     (maxf, maxx, ret) = NLopt.optimize(opt, x0)
-    
+
     setX!(net, maxx, idx_obj_map)
     if maxf == -Inf
         error("Optimization error: maxf == -Inf")
@@ -198,7 +125,49 @@ function fitnumericalparameters!(
     SNaQscore!(net, maxf)
     return maxf
 end
+
+
 fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumericalparameters!(net, findquartetequations(net)[1], oCFs; kwargs...)
+
+
+"""
+    fitnumericalparameters!(net, trees, ρ=0.0; propQuartets=1.0, seed=rand(Int), maxeval=100)
+    fitnumericalparameters!(net, lazyq, ρ=0.0; propQuartets=1.0, seed=rand(Int), maxeval=100)
+
+Optimizes the parameters of `net` directly against gene trees, or against a
+[`LazyQuartetCF`](@ref) already built from them, without materializing the observed CFs of
+every quartet. The counterpart of [`fitnumericalparameters!`](@ref) for
+[`lazysnaq!`](@ref) runs. Returns the estimated likelihood, also readable with
+[`SNaQscore`](@ref).
+
+`propQuartets` is the proportion of quartets to fit against, drawn with `seed`; the default
+of 1.0 uses them all. Pass a smaller value for taxon counts where all `binomial(ntaxa,4)`
+quartets will not fit.
+"""
+function fitnumericalparameters!(net::HybridNetwork, trees::Vector{HybridNetwork}, ρ::Real=0.0;
+                                 propQuartets::Real=1.0, seed::Int=rand(Int), kwargs...)::Float64
+    return fitnumericalparameters!(net, LazyQuartetCF(trees, sort(tiplabels(net))), ρ;
+                                   propQuartets=propQuartets, seed=seed, kwargs...)
+end
+
+function fitnumericalparameters!(net::HybridNetwork, lazyq::LazyQuartetCF, ρ::Real=0.0;
+                                 propQuartets::Real=1.0, seed::Int=rand(Int),
+                                 maxeval::Int=100, kwargs...)::Float64
+    0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
+    semidirectnetwork!(net)
+    for E in net.edge
+        E.length = max(E.length, 0.0)
+    end
+    for H in net.hybrid
+        if getparentedge(H).gamma == -1 || getparentedgeminor(H).gamma == -1
+            getparentedge(H).gamma = 0.5
+            getparentedgeminor(H).gamma = 0.5
+        end
+    end
+    q_idxs, qsub = lazyquartetdata(net, lazyq, propQuartets, seed)
+    eqns, _, _, _ = findquartetequations(net, q_idxs)
+    return fitnumericalparameters!(net, eqns, qsub, ρ; maxeval=maxeval, kwargs...)
+end
 
 
 """
@@ -320,6 +289,15 @@ end
 
 
 """
+[`objective`](@ref) using a prebuilt [`TreeQuartetBatch`](@ref).
+"""
+function objective(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, batch::TreeQuartetBatch, eqns::Array{QuartetData}, obsCFs::Matrix{T}, idx_obj_map::IdxObjMap, α::Float64)::T where T<:Float64
+    setX!(net, X, idx_obj_map)
+    return computelossandgradient!(batch, convert(Vector{QuartetData}, eqns), X, grad, obsCFs, α)
+end
+
+
+"""
 WARNING: COMPLETELY EXPERIMENTAL AND UNSUPPORTED.
 
 The objective function that is maximized during network optimization.
@@ -331,163 +309,4 @@ function objective_staticγ(X::Vector{T}, grad::Vector{T}, net::HybridNetwork, e
     loss = computelossandgradient!(eqns, X, temp_grad, obsCFs, α)
     grad .= temp_grad[include_idxs]
     return loss
-end
-
-
-
-"""
-Sets the branch lengths and γ values of edges in `net` according
-to the values provided in `X` and the index-to-object map
-provided in `idx_obj_map`.
-"""
-function setX!(net::HybridNetwork, X::Vector{Float64}, idx_obj_map::IdxObjMap)::Nothing
-    for j in eachindex(X)
-        obj::Union{Node, Edge} = idx_obj_map[j]
-        if typeof(obj) <: PN.Node
-            E_major = getparentedge(obj)
-            E_minor = getparentedgeminor(obj)
-            E_major.gamma = 1-X[j]
-            E_minor.gamma = X[j]
-        else
-            obj.length = X[j]
-        end
-    end
-end
-
-
-"""
-Helper function to gather necessary information about `net` to
-perform optimization.
-"""
-function gatheroptimizationinfo(net::HybridNetwork, change_numbers::Bool=true)
-    param_map = Dict{Int, Int}()
-    idx_obj_map::IdxObjMap = IdxObjMap();
-    uq_ID = net.numedges
-    param_idx = 1
-
-    if change_numbers
-        for obj in vcat(net.hybrid, net.edge, net.node)
-            obj.number = uq_ID
-            uq_ID += 1
-        end
-    end
-
-    order = sortperm([obj.number for obj in vcat(net.hybrid, net.edge)])
-    for obj in vcat(net.hybrid, net.edge)[order]
-        if typeof(obj) <: Edge
-            if getchild(obj).leaf continue end
-
-            childnode = getchild(obj)
-            if childnode.hybrid
-                childnodechildren = getchildren(childnode)
-                if length(childnodechildren) == 1 && childnodechildren[1].leaf
-                    continue
-                end
-            end
-            # if getchild(obj).hybrid && getchild(getchild(obj)).leaf continue end
-        end
-
-        haskey(param_map, obj.number) && error("Duplicate object number #$(obj.number).")
-        param_map[obj.number] = param_idx
-        idx_obj_map[param_idx] = obj
-        param_idx += 1
-    end
-
-    params = gatherparams(net, param_map)
-    narg = length(param_map)
-    LB = Array{Float64}(undef, narg)
-    UB = Array{Float64}(undef, narg)
-    init_steps = Array{Float64}(undef, narg)
-
-    for j = 1:narg
-        obj::Union{Node,Edge} = idx_obj_map[j]
-        if typeof(obj) <: Node
-            params[j] = getparentedgeminor(obj).gamma
-            LB[j] = 0.0
-            UB[j] = 1.0
-            init_steps[j] = 0.1
-        else
-            params[j] = obj.length
-            LB[j] = 0.0
-            UB[j] = 25.0
-            init_steps[j] = 1.0
-        end
-    end
-
-    return narg, param_map, idx_obj_map, params, LB, UB, init_steps
-end
-
-
-"""
-Helper function that takes a network `net` and its `param_map` (provided
-by [`gatheroptimizationinfo`](@ref)) and gathers each of the associated
-parameters.
-"""
-function gatherparams(net::HybridNetwork, param_map::Dict{Int, Int})::Array{Float64}
-    params = zeros(length(param_map))
-    for obj in vcat(net.hybrid, net.edge)
-        if haskey(param_map, obj.number)
-            params[param_map[obj.number]] = typeof(obj) <: Node ? getparentedgeminor(obj).gamma : obj.length
-        end
-    end
-    return params
-end
-
-
-"""
-    gatherparams(net)
-
-Helper function that takes a network `net` and its `param_map` (provided
-by [`gatheroptimizationinfo`](@ref)) and gathers each of the associated
-parameters.
-"""
-function gatherparams(net::HybridNetwork)::Array{Float64}
-    param_map = gatheroptimizationinfo(net, true)[2]
-    return gatherparams(net, param_map)
-end
-
-
-"""
-    computeexpectedCFmatrix(net, ρ=0.0)
-
-Computes the expected concordance factors of `net` with the inheritance
-correlation parameter `ρ` (default=`0.0`). The returned `Matrix{Float64}`
-object is unlabelled. See also [`computeexpectedDataCF`](@ref) for a `DataCF` object
-with corresponding taxa information.
-"""
-function computeexpectedCFmatrix(net::HybridNetwork, ρ::Real=0.0)::Matrix{Float64}
-    eqns, _, params, _ = findquartetequations(net)
-    eCFs = zeros(length(eqns), 3)
-    for j = 1:size(eCFs)[1]
-        eCFs[j, 1], eCFs[j, 2] = computeexpectedCF(eqns[j], params, ρ)
-        eCFs[j, 3] = 1 - eCFs[j, 1] - eCFs[j, 2]
-    end
-    return eCFs
-end
-
-"""
-Deprecated - included for backwards compatibility in niche cases.
-"""
-computeexpectedCFs(net::HybridNetwork, ρ::Real=0.0)::Matrix{Float64} =
-    computeexpectedCFmatrix(net, ρ)
-
-
-
-"""
-    computeexpectedDataCF(net, ρ=0.0)
-
-Creates a DataCF object containing the expected CFs for each quartet in `net`.
-"""
-function computeexpectedDataCF(net::HybridNetwork, ρ::Real=0.0)::DataCF
-    eqns, _, params, _ = findquartetequations(net);
-    d = DataCF()
-    for j in eachindex(eqns)
-        eCF1, eCF2 = computeexpectedCF(eqns[j], params, ρ)
-        q = Quartet(j, eqns[j].q_taxa..., Vector{Float64}([eCF1, eCF2, 1.0 - eCF1 - eCF2]))
-        q.expCF = q.obsCF
-        push!(d.quartet, q)
-    end
-    d.numQuartets = length(eqns)
-    d.numTrees = -2 # code for expected CFs
-    return d
 end

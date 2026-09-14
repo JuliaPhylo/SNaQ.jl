@@ -1,3 +1,5 @@
+# General network helpers shared by the inference code.
+
 """
     fixnegativeedges!(N::HybridNetwork)
 
@@ -25,6 +27,7 @@ function fixnegativeedges!(N::HybridNetwork; shouldwarn::Bool=true)
     end
 end
 
+
 """
     getnegativeedges(N::HybridNetwork)
 
@@ -40,59 +43,23 @@ function getnegativeedges(N::HybridNetwork)::Vector{Edge}
     return nedges
 end
 
-"""
-    sampleqindices(n, p, informative, rng)
-
-Helper function that generates a `Vector{Int}` with `n` indices where each
-integer from 1 to `n` has probability `p` of appearing. Only samples informative
-quartets, so only used when `qinfTest` is `true`.
-"""
-function sampleqindices(n::Int, p::Real, informative::BitVector, rng::TaskLocalRNG)::Vector{Int}
-    valididxs::Vector{Int64} = findall(informative)
-    ninform::Int64 = length(valididxs)
-    nsamp::Int64 = min(ninform, Int64(ceil(n * p)))
-    if length(valididxs) == nsamp
-        return valididxs
-    end
-    return sort(sample(rng, valididxs, nsamp, replace=false))
-end
-sampleqindices(N::HybridNetwork, p::Real, i::BitVector, rng::TaskLocalRNG) =
-    sampleqindices(nchoose4taxalength(N), p, i, rng)
-
 
 """
-    sampleqindices(n, p, rng)
+    deepcopynetwork(net::HybridNetwork)
 
-Helper function that generates a `Vector{Int}` with `n` indices where each
-integer from 1 to `n` has probability `p` of appearing.
+Creates a "deep" copy of the network `net`, only
+copying objects and values that are relevant to
+the SNaQ algorithm as it is implemented here.
+
+WARNING: Saves SIGNIFICANT time and memory over
+`Base.deepcopy`, but only duplicates portions that
+are relevant to the SNaQ algorithm, so does not
+create a true deepcopy.
 """
-function sampleqindices(n::Int, p::Real, rng::TaskLocalRNG)::Vector{Int}
-    # We take n*p quartets instead of randomly sampling with
-    # probability p so that we don't get any bad edge cases
-    np = ceil(Int, n*p)
-    np = max(np, min(n, 10))
-
-    bv = falses(n)
-    return sort(sample(rng, 1:n, np, replace=false))
-end
-sampleqindices(net::HybridNetwork, p::Real, rng::TaskLocalRNG)::Vector{Int} =
-    sampleqindices(nchoose4taxalength(net), p, rng)
-
-
-"""
-    nchoose4taxalength(net)
-
-Helper function that calculates how many quartet combinations exist.
-"""
-@inline function nchoose4taxalength(net::HybridNetwork)::Int
-    n = net.numtaxa
-    return n * (n-1) * (n-2) * (n-3) ÷ 24
-end
-
-
 function deepcopynetwork(net::HybridNetwork)::HybridNetwork
     # List of nodes W/O attached edges
     node_map::Dict{Int, Node} = Dict{Int, Node}()
+    sizehint!(node_map, net.numnodes)   # else it rehashes its way up on every copy
     nodec = Array{Node}(undef, net.numnodes)
     for (j, node) in enumerate(net.node)
         nodec[j] = Node(node.number, node.leaf, node.hybrid)
@@ -139,5 +106,3 @@ function deepcopynetwork(net::HybridNetwork)::HybridNetwork
     SNaQscore!(netc, SNaQscore(net))
     return netc
 end
-
-

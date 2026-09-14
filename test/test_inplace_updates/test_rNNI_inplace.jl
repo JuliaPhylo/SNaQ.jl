@@ -1,10 +1,11 @@
 using PhyloNetworks
 using Random, PhyloCoalSimulations
 using Test
-include("../../src/gradient_optimization/opt_API.jl")
-include("../../src/gradient_optimization/search_API.jl")
-include("../../src/gradient_optimization/CF_recursive_blocks.jl")
-include("../../src/gradient_optimization/inplace_updates.jl")
+using SNaQ
+import SNaQ:
+    QuartetData, semidirectnetwork!, findquartetequations, gatheroptimizationinfo,
+    allvalidrNNI1nodes, performrNNI1!, applyrNNI1update!,
+    allvalidrNNI2nodes, performrNNI2!, applyrNNI2update!
 include("misc.jl")
 
 
