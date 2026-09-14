@@ -61,7 +61,7 @@ To get help, check
 - the latest [PhyloNetworks documentation](https://juliaphylo.github.io/PhyloNetworks.jl/dev)
 - a [wiki](https://github.com/juliaphylo/PhyloNetworks.jl/wiki) for a
   step-by-step tutorial with background on networks (last revised 2022)
-- [tutorial](https://cecileane.github.io/networkPCM-workshop/) for
+- [tutorial](https://juliaphylo.github.io/networkPCM-tutorial/) for
   comparative methods, including network calibration (2023 workshop)
 - the [google group](https://groups.google.com/g/juliaphylo-users)
   for common questions. Join the group to post/email your questions,
