@@ -173,7 +173,7 @@ fit a network against gene trees without ever building all `binomial(ntaxa,4)` r
 `sort_stringasinteger!`) to match [`findquartetequations!`](@ref)'s convention.
 """
 function lazyquartetdata(net::HybridNetwork, lazyq::LazyQuartetCF, propQuartets::Real,
-                         seed::Integer)::Tuple{Vector{Int},Matrix{Float64}}
+                         seed::Int)::Tuple{Vector{Int},Matrix{Float64}}
     0 < propQuartets <= 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     sort(tiplabels(net)) == lazyq.taxa ||
         error("net's taxa do not match the taxa the observed CFs were built for.")
@@ -182,7 +182,7 @@ function lazyquartetdata(net::HybridNetwork, lazyq::LazyQuartetCF, propQuartets:
 end
 
 function lazyquartetdata(net::HybridNetwork, trees::Vector{HybridNetwork}, propQuartets::Real,
-                         seed::Integer)::Tuple{Vector{Int},Matrix{Float64}}
+                         seed::Int)::Tuple{Vector{Int},Matrix{Float64}}
     isempty(trees) && error("trees must be non-empty.")
     return lazyquartetdata(net, LazyQuartetCF(trees, sort(tiplabels(net))), propQuartets, seed)
 end

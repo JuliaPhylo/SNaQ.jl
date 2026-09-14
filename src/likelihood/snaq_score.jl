@@ -51,13 +51,13 @@ every quartet. The counterpart of [`computeSNaQscore!`](@ref) for [`lazysnaq!`](
 counts where all `binomial(ntaxa,4)` quartets will not fit.
 """
 function computeSNaQscore!(N::HybridNetwork, trees::Vector{HybridNetwork}, ρ::Real=0.0;
-                           propQuartets::Real=1.0, seed::Integer=rand(Int))::Float64
+                           propQuartets::Real=1.0, seed::Int=rand(Int))::Float64
     return computeSNaQscore!(N, LazyQuartetCF(trees, sort(tiplabels(N))), ρ;
                              propQuartets=propQuartets, seed=seed)
 end
 
 function computeSNaQscore!(N::HybridNetwork, lazyq::LazyQuartetCF, ρ::Real=0.0;
-                           propQuartets::Real=1.0, seed::Integer=rand(Int))::Float64
+                           propQuartets::Real=1.0, seed::Int=rand(Int))::Float64
     N = deepcopynetwork(N)
     semidirectnetwork!(N)
     q_idxs, qsub = lazyquartetdata(N, lazyq, propQuartets, seed)

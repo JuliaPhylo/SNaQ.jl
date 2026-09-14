@@ -145,13 +145,13 @@ of 1.0 uses them all. Pass a smaller value for taxon counts where all `binomial(
 quartets will not fit.
 """
 function fitnumericalparameters!(net::HybridNetwork, trees::Vector{HybridNetwork}, ρ::Real=0.0;
-                                 propQuartets::Real=1.0, seed::Integer=rand(Int), kwargs...)::Float64
+                                 propQuartets::Real=1.0, seed::Int=rand(Int), kwargs...)::Float64
     return fitnumericalparameters!(net, LazyQuartetCF(trees, sort(tiplabels(net))), ρ;
                                    propQuartets=propQuartets, seed=seed, kwargs...)
 end
 
 function fitnumericalparameters!(net::HybridNetwork, lazyq::LazyQuartetCF, ρ::Real=0.0;
-                                 propQuartets::Real=1.0, seed::Integer=rand(Int),
+                                 propQuartets::Real=1.0, seed::Int=rand(Int),
                                  maxeval::Int=100, kwargs...)::Float64
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
     semidirectnetwork!(net)
