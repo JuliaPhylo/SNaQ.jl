@@ -1,7 +1,7 @@
 name = "SNaQ"
 uuid = "c2bf7a07-44d2-4d11-b5e2-76dc5aa199d6"
-version = "2.0.0"
-authors = ["Claudia Solis-Lemus <crsl4@users.noreply.github.com>", "Paul Bastide <pbastide@users.noreply.github.com>", "Cecile Ane <cecileane@users.noreply.github.com>", "and contributors"]
+version = "2.1.0"
+authors = ["Nathan Kolbow <nathankolbow@users.noreply.github.com>", "Claudia Solis-Lemus <crsl4@users.noreply.github.com>", "Paul Bastide <pbastide@users.noreply.github.com>", "Cecile Ane <cecileane@users.noreply.github.com>", "and contributors"]
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -10,6 +10,7 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 NLopt = "76087f3c-5699-56af-9a33-bf431cd00edd"
 PhyloNetworks = "33ad39ac-ed31-50eb-9b15-43d0656eaa72"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
@@ -19,6 +20,7 @@ CSV = "0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10"
 DataFrames = "1"
 NLopt = "1"
 PhyloNetworks = "1"
+PrecompileTools = "1"
 StaticArrays = "1.9.18"
 StatsBase = "0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34"
 julia = "1.5"
