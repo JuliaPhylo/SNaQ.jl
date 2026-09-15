@@ -17,6 +17,10 @@ function Base.getindex(lqa::LazyQuartetArray, i::Int)::Quartet
         return lqa.quartets[i]
     end
 
+	if lqa.lazyq.ntrees == 0
+		error("The LazyDataCF was loaded from a file without gene trees and a CF index that was not previously computed was attempted to be accessed.")
+	end
+
     ocfs = lqa.lazyq[i, 1:3]
     taxa = lqa.lazyq.taxa[unrank4taxa(lqa.lazyq.ntaxa, i)]
 	lqa.quartets[i] = Quartet(
