@@ -23,11 +23,11 @@ are read sequentially. That table is `binomial(ntaxa,2) * ntrees` `Int16`s; past
 [`observedCF4taxa`](@ref) instead, trading speed for memory linear in the taxon count.
 """
 struct LazyQuartetCF <: AbstractMatrix{Float64}
-    taxa::Vector{String}                       # canonical, sort(tiplabels(...))-ordered
+    taxa::Vector{String}                       # sorted
     ntaxa::Int
     ntrees::Int
     lcadepth::Union{Nothing,Matrix{Int16}}          # (ntrees, npairs); -1 => taxon absent from that tree
-    trees::Vector{HybridNetwork}                    # fallback path only (empty otherwise)
+    trees::Vector{HybridNetwork}
     chainmaps::Vector{Dict{String,Vector{Node}}}    # fallback path only (empty otherwise)
     cache::Dict{Int, NTuple{3,Float64}}             # row number => (obsCF12, obsCF13, obsCF14)
     lock::ReentrantLock
@@ -40,18 +40,6 @@ Largest pairwise-LCA-depth table [`LazyQuartetCF`](@ref) will build before falli
 walking gene trees per query.
 """
 const MAX_LCADEPTH_BYTES::Int = 2 * 1024^3
-
-
-"""
-Cap on the number of quartet rows [`LazyQuartetCF`](@ref) keeps cached; the cache is emptied
-once it grows past this.
-
-The cache exists so that materializing `q[rows, :]`, which reads the 3 columns in 3 separate
-passes, computes each row once. Runs draw fresh quartets, so there is little to gain from
-keeping rows beyond that and much to lose: uncapped, a long multi-run job accumulates
-millions of them.
-"""
-const MAX_CACHED_QUARTETS::Int = 1_000_000
 
 
 function LazyQuartetCF(trees::Vector{HybridNetwork}, taxa::Vector{String})
@@ -164,7 +152,6 @@ function Base.getindex(q::LazyQuartetCF, i::Int, j::Int)::Float64
             observedCF4taxaidx(idx4[1], idx4[2], idx4[3], idx4[4], D, q.ntaxa, q.ntrees)
         end
         cached = lock(q.lock) do
-            length(q.cache) >= MAX_CACHED_QUARTETS && empty!(q.cache)
             get!(q.cache, i, computed)
         end
     end
