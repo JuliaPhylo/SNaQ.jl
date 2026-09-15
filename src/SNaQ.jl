@@ -15,7 +15,7 @@ module SNaQ
     using StatsBase # sample, etc.
     using PhyloNetworks
 
-    import Base: show, getproperty, getfield, getindex, setproperty!
+    import Base: show, getproperty, getfield, getindex, setproperty!, write
     import StatsBase: sample
 
     const PN = PhyloNetworks;
@@ -43,6 +43,8 @@ module SNaQ
     export
         ## types & network definition
         DataCF,
+        LazyDataCF,
+        write,
         # quartet CF
         readtrees2CF,
         readtableCF,
@@ -97,6 +99,7 @@ module SNaQ
     include("quartets/quartet_indexing.jl")
     include("quartets/observed_cf.jl")
     include("quartets/lazy_quartet_cf.jl")
+    include("quartets/lazy_data_cf.jl")
 
     include("quartet_equations/types.jl")
     include("quartet_equations/ancestor_paths.jl")
