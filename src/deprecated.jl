@@ -1,2 +1,4 @@
-@deprecate readTopologyLevel1      readnewicklevel1
-@deprecate readMultiTopologyLevel1 readmultinewicklevel1
+@deprecate topologymaxQpseudolik! fitnumericalparameters!
+@deprecate topologyQpseudolik! computeSNaQscore!
+@deprecate loglik SNaQscore
+@deprecate loglik! SNaQscore!

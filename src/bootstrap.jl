@@ -57,7 +57,7 @@ function sampleCFfromCI!(df::DataFrame, seed=0::Integer)
         println("using seed $(seed) for bootstrap table")
     end
     Random.seed!(seed)
-    for i in 1:size(df,1)
+    for i in axes(df,1)
         c1 = (df[i, 9]-df[i, 8])*rand()+df[i, 8]
         c2 = (df[i,11]-df[i,10])*rand()+df[i,10]
         c3 = (df[i,13]-df[i,12])*rand()+df[i,12]
@@ -83,7 +83,7 @@ sampleCFfromCI(file::AbstractString; delim=','::Char,seed=0::Integer) =
 # - quartetfile if it was used in original data ("none" if all quartets used)
 # recall: optTopRuns! does *not* modify its input starting network
 function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vector{HybridNetwork}}},
-                        hmax::Integer, liktolAbs::Float64, Nfail::Integer, ftolRel::Float64,ftolAbs::Float64,xtolRel::Float64,xtolAbs::Float64,
+                        hmax::Integer, restrictions::Function, liktolAbs::Float64, Nfail::Integer, ftolRel::Float64,ftolAbs::Float64,xtolRel::Float64,xtolAbs::Float64,
                         verbose::Bool, closeN::Bool, Nmov0::Vector{Int},
                         runs1::Integer, outgroup::AbstractString, filename::AbstractString, seed::Integer, probST::Float64,
                         nrep::Integer, runs2::Integer, bestNet::HybridNetwork, quartetfile::AbstractString,
@@ -104,9 +104,9 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
 
     if runs1>0 && runs2>0
         str = """Will use this network as starting topology for $runs1 run(s) for each bootstrap replicate:
-                 $(writenewick_level1(currT0))
+                 $(writenewick(currT0))
                  and this other network for $runs2 run(s):
-                 $(writenewick_level1(bestNet))
+                 $(writenewick(bestNet))
                  """
         writelog && write(logfile, str)
         print(str)
@@ -121,8 +121,8 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
         # seed=-1: deep copy only, no rand()
         newd = readtableCF!(newdf, collect(1:7)) # allocate memory for DataCF object
     end
-    if runs1>0 && isTree(currT0) # get rough first estimate of branch lengths in startnet
-        updateBL!(currT0, newd)
+    if runs1>0 && currT0.numhybrids == 0 # get rough first estimate of branch lengths in startnet
+        fitnumericalparameters!(currT0, findquartetequations(currT0)[1], gatherCFmatrix(newd))
     end
 
     if seed == 0
@@ -164,8 +164,8 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i);
                          "rootname set to $rootname"; end
-            net1 = optTopRuns!(currT0, liktolAbs, Nfail, newd, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0, runs1, outgroup,
-                               rootname,seeds[i],probST,probQR,propQuartets)
+            net1 = multisearch(currT0, newd, hmax; runs=runs1, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose, filename="",
+                maxequivPLs=Nfail, outgroup=outgroup, seed=seeds[i], probST=probST, probQR=probQR, propQuartets=propQuartets)[1]
             if runs2==0
                 net = net1
             end
@@ -177,19 +177,19 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             rootname = ""
             @debug begin rootname = string(filename,"_",i,"_startNet2");
                          "rootname set to $rootname"; end
-            net2 = optTopRuns!(bestNet, liktolAbs, Nfail, newd, hmax,ftolRel, ftolAbs, xtolRel, xtolAbs, verbose, closeN, Nmov0, runs2, outgroup,
-                               rootname,seedsOtherNet[i],probST,probQR,propQuartets)
+            net2 = multisearch(currT0, newd, hmax; runs=runs2, restrictions=restrictions, liktolAbs=ftolAbs, liktolRel=ftolRel, verbose=verbose,
+                maxequivPLs=Nfail, outgroup=outgroup, seed=seedsOtherNet[i], probST=probST, probQR=probQR, propQuartets=propQuartets)[1]
             if runs1==0
                 net = net2
             end
         end
         if runs1>0 && runs2>0
-            net = (loglik(net1) < loglik(net2) ? net1 : net2)
+            net = (SNaQscore(net1) < SNaQscore(net2) ? net1 : net2)
         end
         writelog && flush(logfile)
 
         push!(bootNet, net)
-        str = (outgroup=="none" ? writenewick_level1(net) : writenewick_level1(net,outgroup))
+        str = writenewick(net)
         if writelog
             write(logfile, str)
             write(logfile,"\n")
@@ -202,12 +202,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
     if writelog
       s = open(string(filename,".out"),"w")
       for n in bootNet
-        if outgroup == "none"
-            write(s,"$(writenewick_level1(n))\n")
-        else
-            write(s,"$(writenewick_level1(n,outgroup))\n")
-        end
-        # "with -loglik $(loglik(n))" not printed: not comparable across bootstrap networks
+        write(s,"$(writenewick(n))\n")
       end
       close(s)
     end
@@ -238,21 +233,20 @@ Optional arguments include the following, with default values in parentheses:
 - `runs` (10): number of independent optimization runs for each replicate
 - `filename` ("bootsnaq"): root name for output files. No output files if "".
 - `seed` (0 to get a random seed from the clock): seed for random number generator
-- `otherNet` (empty): another starting topology so that each replicate will start prcnet% runs on otherNet and (1-prcnet)% runs on `T`
-- `prcnet` (0): percentage of runs starting on `otherNet`; error if different than 0.0, and otherNet not specified.
+- `otherNet` (empty): another starting topology so that each replicate will start `prcnet` of runs on `otherNet` and `(1-prcnet)` of runs on `T`
+- `prcnet` (0): fraction of runs starting on `otherNet`; error if different than 0.0, and `otherNet` not specified.
 - `ftolRel`, `ftolAbs`, `xtolRel`, `xtolAbs`, `liktolAbs`, `Nfail`,
   `probST`, `verbose`, `outgroup`: see `snaq!`, same defaults.
 
-If `T` is a tree, its branch lengths are first optimized roughly with [`updateBL!`](@ref)
-(by using the average CF of all quartets defining each branch and calculating the coalescent units
-corresponding to this quartet CF).
+If `T` is a tree, its branch lengths are first optimized.
 If `T` has one or more reticulations, its branch lengths are taken as is to start the search.
 The branch lengths of `otherNet` are always taken as is to start the search.
 """
 function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{HybridNetwork}}};
-                  hmax=1::Integer, liktolAbs=likAbs::Float64, Nfail=numFails::Integer,
-                  ftolRel=fRel::Float64, ftolAbs=fAbs::Float64, xtolRel=xRel::Float64, xtolAbs=xAbs::Float64,
-                  verbose=false::Bool, closeN=true::Bool, Nmov0=numMoves::Vector{Int},
+                  hmax=1::Integer, restrictions=defaultrestrictions()::Function,
+                  liktolAbs=1e-6::Float64, Nfail=3000::Integer,
+                  ftolRel=1e-10::Float64, ftolAbs=1e-10::Float64, xtolRel=1e-10::Float64, xtolAbs=1e-10::Float64,
+                  verbose=false::Bool, closeN=true::Bool, Nmov0=Int[]::Vector{Int},
                   runs=10::Integer, outgroup="none"::AbstractString, filename="bootsnaq"::AbstractString,
                   seed=0::Integer, probST=0.3::Float64, nrep=10::Integer, prcnet=0.0::Float64,
                   otherNet=HybridNetwork()::HybridNetwork, quartetfile="none"::AbstractString,
@@ -272,7 +266,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
         for igene in 1:ngenes
             btr = data[igene]
             length(btr) > 0 || error("no bootstrap trees for $(igene)th gene")
-            for itree in 1:length(btr)
+            for itree in eachindex(btr)
                 btr[itree].numhybrids == 0 || error("network $itree is not a tree for $(igene)th gene")
             end
         end
@@ -283,38 +277,19 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
     runs1 = runs - runs2                       # runs starting from startnet
 
     if runs1>0
-        startnet=readnewicklevel1(writenewick_level1(startnet)) # does not modify startnet outside
-        flag = checkNet(startnet,true) # light checking only
-        flag && error("starting topology suspected not level-1")
-        try
-            checkNet(startnet)
-        catch err
-            println("starting topology is not of level 1:")
-            rethrow(err)
-        end
+        startnet = deepcopynetwork(startnet) # does not modify startnet outside
     end
     runs2 == 0 || otherNet.numtaxa > 0 ||
         error("""otherNet not given and prcnet>0. Please set prcnet to 0 to start optimizations
                 from the same network always, or else provide an other network "otherNet"
                 to start the optimization from this other network in pcrnet % of runs.""")
-    if runs2 > 0
-        otherNet=readnewicklevel1(writenewick_level1(otherNet))
-        flag = checkNet(otherNet,true) # light checking only
-        flag && error("starting topology 'otherNet' suspected not level-1")
-        try
-            checkNet(otherNet)
-        catch err
-            println("starting topology 'otherNet' not a level 1 network:")
-            rethrow(err)
-        end
-    end
 
     # for multiple alleles: expand into two leaves quartets like sp1 sp1 sp2 sp3.
     if (@isdefined originald) && !isempty(originald.repSpecies) ## not defined if treefile empty, but not needed
         expandLeaves!(originald.repSpecies,startnet)
     end
 
-    optTopRunsBoot(startnet,data,hmax, liktolAbs, Nfail,ftolRel, ftolAbs, xtolRel, xtolAbs,
+    optTopRunsBoot(startnet,data,hmax, restrictions, liktolAbs, Nfail,ftolRel, ftolAbs, xtolRel, xtolAbs,
                    verbose, closeN, Nmov0, runs1, outgroup, filename,
                    seed, probST, nrep, runs2, otherNet, quartetfile, probQR, propQuartets)
 end
