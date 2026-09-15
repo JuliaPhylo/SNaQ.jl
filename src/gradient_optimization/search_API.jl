@@ -170,7 +170,7 @@ function multisearch(
                 Elapsed time: $(elapsed), $(runs) attempted runs
                 
                 -----------------------------------
-                List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
+                List of estimated networks for all runs (sorted by SNaQ score; the larger, the better):
                 """
             )
             for j in sort_idx
@@ -183,7 +183,7 @@ function multisearch(
             for (j, i) in enumerate(sort_idx)
                 write(f, "$(writenewick(all_nets[i])), with SNaQ score $(SNaQscore(all_nets[i]))")
                 if j == 1
-                    write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
+                    write(f, " (best network found, remaining sorted by SNaQ score; the larger, the better)")
                 end
                 write(f, "\n")
             end
