@@ -140,7 +140,7 @@ function computeSNaQscore!(net::HybridNetwork, ldcf::LazyDataCF, ρ::Float64=0.0
 	(propQuartets < 0 || propQuartets > 1) && error("propQuartets must be in the range [0, 1]")
 	numQuartets >= 0 || error("numQuartets must not be negative.")
 	0 < propQuartets <= 1 && numQuartets > 0 && error("Both propQuartets and numQuartets cannot be specified")
-	numQuartets < binomial(net.numtaxa, 4) || error("numQuartets ($(numQuartets)) must be less than net.numtaxa choose 4 ($(binomial(net.numtaxa, 4)))")
+	numQuartets <= binomial(net.numtaxa, 4) || error("numQuartets ($(numQuartets)) must be less than or equal to net.numtaxa choose 4 ($(binomial(net.numtaxa, 4)))")
 	propQuartets == 0.0 && numQuartets == 0 && length(ldcf.quartet) == 0 && error("propQuartets set to 0 and numQuartets set to 0, but the LazyDataCF object is empty! Either specify propQuartets/numQuartets or load a previous LazyDataCF object from a file.")
 
 	ntaxa = binomial(net.numtaxa, 4)
