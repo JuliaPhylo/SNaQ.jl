@@ -33,6 +33,7 @@ struct LazyQuartetCF <: AbstractMatrix{Float64}
     lock::ReentrantLock
 end
 
+@inline Base.haskey(lqcf::LazyQuartetCF, i::Int)::Bool = (haskey(lqcf.cache, i))
 
 
 """
