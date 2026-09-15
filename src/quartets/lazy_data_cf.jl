@@ -75,13 +75,17 @@ function Base.show(io::IO, ::MIME"text/plain", ldcf::LazyDataCF)
 	""")
 end
 
-function write(filename::String, ldcf::LazyDataCF)
+function Base.write(io::IOStream, ldcf::LazyDataCF)
+	Base.write(io, "row,taxa1,taxa2,taxa3,taxa4,CF12_34,CF13_24,CF14_23\n")
+	for i in sort(eachindex(ldcf.quartet))
+		taxa = ldcf.taxa[unrank4taxa(length(ldcf.taxa), i)]
+		ocfs = ldcf.quartet[i].obsCF
+		Base.write(io, "$i,$(taxa[1]),$(taxa[2]),$(taxa[3]),$(taxa[4]),$(ocfs[1]),$(ocfs[2]),$(ocfs[3])\n")
+	end
+end
+
+function Base.write(filename::String, ldcf::LazyDataCF)
 	open(filename, "w+") do f
-		Base.write(f, "row,taxa1,taxa2,taxa3,taxa4,CF12_34,CF13_24,CF14_23\n")
-		for i in sort(eachindex(ldcf.quartet))
-			taxa = ldcf.taxa[unrank4taxa(length(ldcf.taxa), i)]
-			ocfs = ldcf.quartet[i].obsCF
-			Base.write(f, "$i,$(taxa[1]),$(taxa[2]),$(taxa[3]),$(taxa[4]),$(ocfs[1]),$(ocfs[2]),$(ocfs[3])\n")
-		end
+		write(f, ldcf)
 	end
 end
