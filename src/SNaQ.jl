@@ -15,7 +15,7 @@ module SNaQ
     using StatsBase # sample, etc.
     using PhyloNetworks
 
-    import Base: show, getproperty, getfield, getindex, setproperty!, write
+    import Base: show, getproperty, getfield, getindex, setproperty!, write, haskey
     import StatsBase: sample
 
     const PN = PhyloNetworks;
