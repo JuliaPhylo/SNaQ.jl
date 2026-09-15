@@ -42,6 +42,10 @@ walking gene trees per query.
 const MAX_LCADEPTH_BYTES::Int = 2 * 1024^3
 
 
+function LazyQuartetCF(trees::Vector{HybridNetwork})
+    return LazyQuartetCF(trees, reduce(union, tiplabels(t) for t in trees))
+end
+
 function LazyQuartetCF(trees::Vector{HybridNetwork}, taxa::Vector{String})
     taxa = sort(taxa);
     ntaxa = length(taxa)
