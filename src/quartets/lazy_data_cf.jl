@@ -77,13 +77,11 @@ end
 
 function write(filename::String, ldcf::LazyDataCF)
 	open(filename, "w+") do f
-		write(f, "# $(join(ldcf.taxa, ","))\n")
-		write(f, "# $(ldcf.computedQuartets) computed out of $(ldcf.totalQuartets)\n")
-		write(f, "row,taxa1,taxa2,taxa3,taxa4,CF12_34,CF13_24,CF14_23\n")
-		for i in eachindex(ldcf.quartet)
+		Base.write(f, "row,taxa1,taxa2,taxa3,taxa4,CF12_34,CF13_24,CF14_23\n")
+		for i in sort(eachindex(ldcf.quartet))
 			taxa = ldcf.taxa[unrank4taxa(length(ldcf.taxa), i)]
 			ocfs = ldcf.quartet[i].obsCF
-			write(f, "$i,$(taxa[1]),$(taxa[2]),$(taxa[3]),$(taxa[4]),$(ocfs[1]),$(ocfs[2]),$(ocfs[3])\n")
+			Base.write(f, "$i,$(taxa[1]),$(taxa[2]),$(taxa[3]),$(taxa[4]),$(ocfs[1]),$(ocfs[2]),$(ocfs[3])\n")
 		end
 	end
 end
