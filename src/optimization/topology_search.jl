@@ -174,7 +174,7 @@ function search(
 
     if rand(rng) < probST
         found_different_net::Bool = false
-        for j = 1:10
+        for j = 1:10_000
             try
                 performrNNI1!(N, samplerNNIparameters(N, 1, rng)...);
                 if restrictions(N)
@@ -191,7 +191,7 @@ function search(
             end
         end
         if !found_different_net
-            @warn "Initial probST move led to a network that did not meet the given restrictions. Using the provided network instead."
+            @warn "Failed to adjust input network via NNI moves in a manner that met the provided restrictions (probST). Using the provided network instead."
         end
     end
 
@@ -223,7 +223,7 @@ function search(
     # Pre-optimizing the network's parameters
     if preopt
         @debug "Pre-optimizing"
-        fitnumericalparameters!(N, N_eqns, qsub, ρ; maxeval=max(opt_maxeval, 100), optargs...)
+        fitnumericalparameters!(N, N_eqns, qsub, ρ; optargs...)
         restrictions(N) || error("N does not meet restrictions after preopt")
         current_logPL = SNaQscore(N)
     else
