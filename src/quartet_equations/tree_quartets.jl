@@ -138,3 +138,53 @@ function trytreelikequartet(net::HybridNetwork, taxa::AbstractVector{String}, pa
     return treelikequartetdata(chain(taxa[1]), chain(taxa[2]), chain(taxa[3]), chain(taxa[4]),
                                 taxa, param_map, hashybrids)
 end
+
+"""
+DEPRECATED HELPER FUNCTION
+
+Finds the tree-like path of edges connecting nodes `a` and
+`b` to one another, assuming that they are in the same
+network. If they are connected by a strictly tree-like path
+then this path of edges is returned. Otherwise, `nothing`
+is returned.
+"""
+function findtreelikemrcapath(a::Node, b::Node)::Union{Nothing,Vector{Edge}}
+    node_path_a::Vector{Node} = []
+    edge_path_a::Vector{Edge} = []
+    node_path_b::Vector{Node} = []
+    edge_path_b::Vector{Edge} = []
+
+    iter::Int = 0
+    while !(a in node_path_b) && !(b in node_path_a)
+        pa = getparents(a)
+        pb = getparents(b)
+
+        # If hybrid in path, return nothing
+        if length(pa) > 1 || length(pb) > 1 || (length(pa) == 1 && pa[1].hybrid) || (length(pb) == 1 && pb[1].hybrid)
+            return nothing
+        end
+
+        if length(pa) == 1
+            pa[1] in node_path_a && return nothing
+            push!(node_path_a, pa[1])
+            push!(edge_path_a, getparentedge(a))
+            a = pa[1]
+        end
+        if length(pb) == 1
+            pb[1] in node_path_b && return nothing
+            push!(node_path_b, pb[1])
+            push!(edge_path_b, getparentedge(b))
+            b = pb[1]
+        end
+
+        iter += 1
+        iter < 1e5 || error("Looped $(iter) times!")
+    end
+
+
+    if a in node_path_b
+        return vcat(edge_path_a, edge_path_b[1:findfirst(bnode -> bnode == a, node_path_b)])
+    else
+        return vcat(edge_path_a[1:findfirst(anode -> anode == b, node_path_a)], edge_path_b)
+    end
+end
