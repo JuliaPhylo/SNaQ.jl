@@ -44,7 +44,7 @@ end
 
 Composite log-likelihood of `N` scored directly against gene trees, or against a
 [`LazyQuartetCF`](@ref) already built from them, without materializing the observed CFs of
-every quartet. The counterpart of [`computeSNaQscore!`](@ref) for [`lazysnaq!`](@ref) runs.
+every quartet.
 
 `propQuartets` is the proportion of quartets to score on, drawn with `seed`; the default of
 1.0 uses them all and so matches `computeSNaQscore!(N, q)`. Pass a smaller value for taxon
