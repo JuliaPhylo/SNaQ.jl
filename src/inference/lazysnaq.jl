@@ -1,10 +1,10 @@
-# User-facing entry point taking gene trees directly.
+# Lazy-DataCF branch of snaq!, taking gene trees directly.
 
 """
-    lazysnaq!(currT0, trees, hmax, propQuartets, propQuartetsFinal; kwargs...)
+    lazysnaq!(currT0, trees, hmax, propQuartets, propQuartetsFinal; runs, seed, filename, qinfTest, ρ, searchargs...)
 
-Like [`snaq!`](@ref), but takes gene trees instead of a `DataCF` and never computes the
-observed concordance factors of all `binomial(ntaxa,4)` quartets. Only the quartets a search
+Branch of [`snaq!`](@ref) for a lazy [`DataCF`](@ref): never computes the observed
+concordance factors of all `binomial(ntaxa,4)` quartets. Only the quartets a search
 actually samples are computed, on demand and cached, through a [`LazyQuartetCF`](@ref).
 
 # Arguments
@@ -15,45 +15,30 @@ actually samples are computed, on demand and cached, through a [`LazyQuartetCF`]
 - `propQuartetsFinal`: proportion of quartets, from one sample shared by every run, used to
   score the runs' resulting networks against each other. Runs optimize against different
   samples, so their own scores are not comparable; this makes the final comparison fair.
+  Networks are scored without re-optimization, so [`search`](@ref)'s own final
+  re-optimization is skipped.
 
-# Optional Named Arguments
-- `qinfTest` (default `false`): must be `false`. Testing for uninformative quartets needs
-  every quartet's observed CF up front; use [`snaq!`](@ref) if you need it.
-- `finalopt` (default `false`): must be `false`. Refitting against all quartets would
-  materialize every one of them; use [`snaq!`](@ref) if you need it.
-
-All other named arguments match [`snaq!`](@ref).
+# Named Arguments
+- `qinfTest`: must be `false`. Testing for uninformative quartets needs every quartet's
+  observed CF up front.
+- `runs`, `seed`, `filename`, `ρ`: as passed to [`multisearch`](@ref), and also used here.
+- `searchargs...`: all other arguments passed to [`multisearch`](@ref), as built by `snaq!`.
 """
 function lazysnaq!(
   currT0::Union{HybridNetwork, Vector{HybridNetwork}},
   trees::Vector{HybridNetwork},
   hmax::Int,
-  propQuartets::Float64,
-  propQuartetsFinal::Float64;
-  Nfail::Int=100,
-  ftolRel::Float64=1e-8,
-  ftolAbs::Float64=1e-8,
-  xtolRel::Float64=1e-8,
-  xtolAbs::Float64=1e-8,
-  verbose::Bool=false,
-  runs::Int=100,
-  outgroup::AbstractString="none",
-  filename::AbstractString="lazysnaq",
-  seed::Int=rand(Int),
-  probST::Float64=0.3,
-  updateBL::Bool=true,
-  probQR::Float64=0.0,
-  qtolAbs::Float64=1e-4,
-  qinfTest::Bool=false,
-  finalopt::Bool=false,
-  restrictions::Function=norestrictions,
-  ρ::Float64=0.0,
-  kwargs...
+  propQuartets::Real,
+  propQuartetsFinal::Real;
+  runs::Int,
+  seed::Int,
+  filename::AbstractString,
+  qinfTest::Bool,
+  ρ::Float64,
+  searchargs...
 )
-    qinfTest && error("lazysnaq! does not support qinfTest=true: it needs every " *
-        "quartet's observed CF up front. Use snaq! instead.")
-    finalopt && error("lazysnaq! does not support finalopt=true: it would materialize " *
-        "every quartet. Use snaq! instead.")
+    qinfTest && error("snaq! with a lazy DataCF does not support qinfTest=true: it needs " *
+        "every quartet's observed CF up front. Use a DataCF with lazy=false instead.")
     0 < propQuartets <= 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 < propQuartetsFinal <= 1 || error("propQuartetsFinal must be in range (0, 1] (propQuartetsFinal = $(propQuartetsFinal))")
     isempty(trees) && error("trees must be non-empty.")
@@ -82,11 +67,8 @@ function lazysnaq!(
 
     _, all_nets = multisearch(
         currT0, lazyq, hmax;
-        runs=runs, maxequivPLs=Nfail, verbose=verbose, seed=seed, probST=probST,
-        outgroup=outgroup, restrictions=restrictions, ftolRel=ftolRel, ftolAbs=ftolAbs,
-        xtolRel=xtolRel, xtolAbs=xtolAbs, propQuartets=propQuartets, filename=filename,
-        preopt=updateBL, qinfTest=qinfTest, qtolAbs=qtolAbs, probQR=probQR, ρ=ρ,
-        finalopt=finalopt, kwargs...
+        runs=runs, seed=seed, filename=filename, qinfTest=qinfTest, ρ=ρ,
+        propQuartets=propQuartets, propQuartetsFinal=0.0, searchargs...
     )
 
     finalidxs = sampleqindices(ntotal, propQuartetsFinal, Random.seed!(seed))
@@ -101,13 +83,13 @@ function lazysnaq!(
     bestidx = argmax(finalscores)
     bestnet = all_nets[bestidx]
     SNaQscore!(bestnet, finalscores[bestidx])
-    logmessage(filename, "lazysnaq!: selected run $bestidx of $runs as the best network " *
+    logmessage(filename, "snaq! (lazy DataCF): selected run $bestidx of $runs as the best network " *
         "after fair comparison (SNaQscore = $(round(finalscores[bestidx], digits=5)) on " *
         "$nusedfinal shared quartets).")
 
     semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
-    # Unlike snaq!, no final `fitnumericalparameters!(bestnet, d; maxeval=1)`: that only
-    # fills a DataCF's expCF fields, and there is no DataCF here. `bestnet`'s SNaQscore is
+    # Unlike the non-lazy branch of snaq!, no final `fitnumericalparameters!(bestnet, d; maxeval=1)`:
+    # that only fills a DataCF's expCF fields, and a lazy DataCF has none. `bestnet`'s SNaQscore is
     # the one from the shared `propQuartetsFinal` sample.
     for L in bestnet.leaf
         getparentedge(L).length = 0.0
