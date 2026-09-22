@@ -15,8 +15,8 @@ actually samples are computed, on demand and cached, through a [`LazyQuartetCF`]
 - `propQuartetsFinal`: proportion of quartets, from one sample shared by every run, used to
   score the runs' resulting networks against each other. Runs optimize against different
   samples, so their own scores are not comparable; this makes the final comparison fair.
-  Networks are scored without re-optimization, so [`search`](@ref)'s own final
-  re-optimization is skipped.
+  Networks are scored with [`rescoreonsharedquartets!`](@ref), without re-optimization, so
+  [`search`](@ref)'s own final re-optimization is skipped.
 
 # Named Arguments
 - `qinfTest`: must be `false`. Testing for uninformative quartets needs every quartet's
@@ -45,7 +45,6 @@ function lazysnaq!(
 
     refnet = currT0 isa HybridNetwork ? currT0 : currT0[1]
     taxa = sort(tiplabels(refnet))  # must match findquartetequations!'s convention
-    ntaxa = length(taxa)
 
     if !(currT0 isa HybridNetwork)
         all(n -> sort(tiplabels(n)) == taxa, currT0) ||
@@ -60,9 +59,6 @@ function lazysnaq!(
     isempty(nevershown) || error("These taxa in currT0 appear in no gene tree, so every " *
         "quartet involving them would have an observed CF of NaN: $(nevershown).")
 
-    ntotal = binomial(ntaxa, 4)
-    nusedfinal = propQuartetsFinal == 1.0 ? ntotal : quartetsamplesize(ntotal, propQuartetsFinal)
-
     lazyq = LazyQuartetCF(trees, taxa)
 
     _, all_nets = multisearch(
@@ -71,20 +67,11 @@ function lazysnaq!(
         propQuartets=propQuartets, propQuartetsFinal=0.0, searchargs...
     )
 
-    finalidxs = sampleqindices(ntotal, propQuartetsFinal, Random.seed!(seed))
-    # Materialized once, not per network: every network is scored on the same sample.
-    finalq::Matrix{Float64} = lazyq[finalidxs, :]
-    finalscores = Vector{Float64}(undef, length(all_nets))
-    for (i, net) in enumerate(all_nets)
-        N_eqns, _, params, _, _ = findquartetequations(net, finalidxs)
-        finalscores[i] = computeSNaQscore!(N_eqns, params, finalq, ρ)
-    end
-
-    bestidx = argmax(finalscores)
+    nusedfinal = rescoreonsharedquartets!(all_nets, lazyq, propQuartetsFinal, seed, ρ)
+    bestidx = argmax(SNaQscore.(all_nets))
     bestnet = all_nets[bestidx]
-    SNaQscore!(bestnet, finalscores[bestidx])
     logmessage(filename, "snaq! (lazy DataCF): selected run $bestidx of $runs as the best network " *
-        "after fair comparison (SNaQscore = $(round(finalscores[bestidx], digits=5)) on " *
+        "after fair comparison (SNaQscore = $(round(SNaQscore(bestnet), digits=5)) on " *
         "$nusedfinal shared quartets).")
 
     semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
