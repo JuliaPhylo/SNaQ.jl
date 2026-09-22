@@ -43,7 +43,6 @@ module SNaQ
     export
         ## types & network definition
         DataCF,
-        LazyDataCF,
         write,
         # quartet CF
         readtrees2CF,
@@ -56,8 +55,6 @@ module SNaQ
         getnegativeedges,
         # fitting: SNaQ and network bootstrap
         snaq!,
-        lazysnaq!,
-        LazyQuartetCF,
         readsnaqnetwork,
         readallsnaqnetworks,
         bootsnaq,
