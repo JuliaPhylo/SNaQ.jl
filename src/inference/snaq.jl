@@ -2,12 +2,20 @@
 
 """
     snaq!(T::HybridNetwork, d::DataCF)
+    snaq!(T::HybridNetwork, DataCF(genetrees; lazy=true); propQuartets, propQuartetsFinal)
 
 Estimate the network (or tree) to fit observed quartet concordance factors (CFs)
 stored in a DataCF object, using maximum pseudolikelihood.
 The search starts from topology `T`,
 which can be a tree or a network with no more than `hmax` hybrid nodes.
 This function does *not* modify `T`.
+
+If `d` is lazy (see [`DataCF`](@ref)), observed CFs are only computed for the quartets
+that are sampled, so `propQuartets` must be less than 1: otherwise every quartet would be
+computed, and a `DataCF` with `lazy=false` should be used instead.
+Runs then optimize against different samples of quartets, so their resulting networks are
+compared on one `propQuartetsFinal` sample shared by every run, without re-optimization,
+and `qinfTest` must be false.
 
 Output:
 
@@ -25,9 +33,13 @@ Output:
 There are many optional keyword arguments, including
 
 - `hmax` (default 1): maximum number of hybridizations allowed
-- `propQuartets` (default 1 if currT0 has <= 14 taxa, else 1000.0 / binomial(currT0.numtaxa, 4)): the proportion of observed quartet concordance factors in `d`
+- `propQuartets` (default 1): the proportion of observed quartet concordance factors in `d`
   to use when calculating network pseudolikelihoods. Smaller values will lead to faster
   method runtime but may come at the expense of accuracy if lowered too far.
+  Must be less than 1 if `d` is lazy.
+- `propQuartetsFinal` (default 1): the proportion of quartets in [0, 1], sampled once and
+  shared by every run, that the network of each run is re-optimized on at the end
+  (see below). If 0, this final re-optimization is skipped.
 - `probQR` (default 0): the probability at any given step to use weighted random sampling
   of quartets when deciding where to make topological moves when proposing the next
   candidate network.
@@ -61,9 +73,11 @@ The following optional keyword arguments control when to stop proposing new netw
 Lower values of `Nfail` and greater values of `ftolAbs` would
 result in a less thorough but faster search.
 
-At the end, branch lengths and γ's are optimized on the last "best" network
+At the end, branch lengths and γ's are optimized on the last "best" network of each run
 with different and very thorough tolerance parameters:
 1e-12 for `ftolRel`, 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`.
+This uses all quartets if `propQuartetsFinal` is 1 (and only if `propQuartets` < 1),
+a `propQuartetsFinal` proportion of quartets if it is in (0, 1), and is skipped if it is 0.
 
 The following optional keyword arguments are used to identify and exclude uninformative quartets.
 Uninformative quartets are those with concordance factors sufficiently close to the
@@ -111,18 +125,13 @@ function snaq!(
   probQR::Float64=0.0,
   qtolAbs::Float64=1e-4,
   qinfTest::Bool=false,
-  propQuartets::Float64=min(
-    1.0,
-    1000.0 / binomial((typeof(currT0)<:HybridNetwork ? currT0.numtaxa : currT0[1].numtaxa), 4)
-  ),
+  propQuartets::Real=1.0,
+  propQuartetsFinal::Real=1.0,
   restrictions::Function=norestrictions,
   ρ::Float64=0.0,
   kwargs...
 )
-  bestnet = multisearch(
-      currT0,
-      d,
-      hmax;
+  searchargs = (
       runs=runs,
       maxequivPLs=Nfail,
       verbose=verbose,
@@ -134,13 +143,28 @@ function snaq!(
       ftolAbs=ftolAbs,
       xtolRel=xtolRel,
       xtolAbs=xtolAbs,
-      propQuartets=propQuartets,
       filename=filename,
       preopt=updateBL,
       qinfTest=qinfTest,
       qtolAbs=qtolAbs,
       probQR=probQR,
-      ρ=ρ,
+      ρ=ρ
+  )
+
+  if d.lazy
+    propQuartets == 1.0 && error("snaq! with a lazy DataCF requires propQuartets < 1.0, " *
+        "otherwise every quartet is computed anyways. Specify propQuartets and " *
+        "propQuartetsFinal, or use a DataCF with lazy=false.")
+    return lazysnaq!(currT0, d.tree, hmax, propQuartets, propQuartetsFinal; searchargs..., kwargs...)
+  end
+
+  bestnet = multisearch(
+      currT0,
+      d,
+      hmax;
+      searchargs...,
+      propQuartets=propQuartets,
+      propQuartetsFinal=propQuartetsFinal,
       kwargs...
   )[1]
 
