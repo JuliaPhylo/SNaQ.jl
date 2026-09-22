@@ -12,7 +12,7 @@ function __init__()
 end
 
 
-# Bake the `lazysnaq!` call tree into the package image: without this the first call in a
+# Bake the lazy `snaq!` call tree into the package image: without this the first call in a
 # session spends ~9 seconds compiling before doing any work.
 @setup_workload begin
     pc_start = readnewick("(((t1:1.0,t2:1.0):0.5,(t3:1.0,t4:1.0):0.5):0.5,(t5:1.0,t6:1.0):0.5);")
@@ -23,8 +23,8 @@ end
     ]
     @compile_workload begin
         redirect_stdout(devnull) do
-            lazysnaq!(pc_start, pc_gts, 0, 1.0, 1.0; runs=1, Nfail=1, filename="",
-                      seed=1, verbose=false)
+            snaq!(pc_start, DataCF(pc_gts; lazy=true); hmax=0, propQuartets=1.0,
+                  propQuartetsFinal=1.0, runs=1, Nfail=1, filename="", seed=1, verbose=false)
         end
     end
 end
