@@ -691,7 +691,7 @@ to which `kwargs` are passed (its table and summary files are not written unless
 With `lazy=true`, nothing is computed here: [`snaq!`](@ref) computes only the quartets it
 samples, on demand, so it can run on taxon counts where all `binomial(ntaxa,4)` quartets
 would not fit in memory. A lazy `DataCF` can only be used with `snaq!`, which then requires
-`propQuartets` and `propQuartetsFinal`.
+`propQuartets < 1`.
 """
 function DataCF(trees::Vector{HybridNetwork}; lazy::Bool=false, kwargs...)
     lazy && return DataCF(Quartet[], trees, true)
