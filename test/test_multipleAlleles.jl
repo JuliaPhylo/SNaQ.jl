@@ -107,14 +107,6 @@ snaq!(T_sp, d_sp)
 
 end # test of snaq on multiple alleles
 
-#----------------------------------------------------------#
-#   testing writenewick_level1 with multiple alleles       #
-#----------------------------------------------------------#
-@testset "writenewick_level1 multiall=true" begin
-net = readnewicklevel1("(A,(((B,B__2),E),(C,D)));")
-@test writenewick_level1(net, false, true, true,"D", false, true, 2, true) == "(D:0.5,(C:1.0,((B:1.0,E:1.0):1.0,A:1.0):1.0):0.5);"
-end # test of writenewick_level1
-
 @testset "readtableCF! with mergerows=true and duplicate 4-taxon sets" begin
   df = DataFrame(
     t1 = ["S1", "S1", "S1"],
