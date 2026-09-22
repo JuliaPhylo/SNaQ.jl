@@ -174,7 +174,15 @@ function snaq!(
   # This call to `fitnumericalparameters!` is only to update the DataCF
   # `d` with the new expected qCFs.
   semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
-  fitnumericalparameters!(bestnet, d; maxeval=1)
+  
+  # Update DataCF expected CF values
+  eqns, _, parameters, _ = findquartetequations(bestnet);
+  for (i, q) in enumerate(d.quartet)
+    eqn = eqns[i];
+    expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
+    q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
+  end
+
   for L in bestnet.leaf
     getparentedge(L).length = 0.0
   end

@@ -15,7 +15,7 @@ function fitnumericalparameters!(
     eqns::Array{QuartetData},
     observed_CFs::AbstractVector{<:PhyloNetworks.QuartetT},
     ρ::Real=0.0;
-    maxeval::Int=25
+    maxeval::Int=max(30, net.numtaxa)
 )::Float64
     obsCF_static = Array{Float64}(undef, length(observed_CFs), 3)
     for j in eachindex(observed_CFs)
@@ -62,7 +62,7 @@ function fitnumericalparameters!(
     eqns::Array{QuartetData},
     observed_CFs::Matrix{Float64},
     ρ::Real=0.0;
-    maxeval::Int=25,
+    maxeval::Int=max(30, net.numtaxa),
     ftolRel::Float64=1e-12,
     ftolAbs::Float64=1e-12,
     xtolRel::Float64=1e-12,
@@ -154,12 +154,12 @@ function fitnumericalparameters!(net::HybridNetwork, lazyq::LazyQuartetCF, ρ::R
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
     semidirectnetwork!(net)
     for E in net.edge
-        E.length = max(E.length, 0.0)
+        E.length = max(min(5.0, E.length), 0.1)
     end
     for H in net.hybrid
         if getparentedge(H).gamma == -1 || getparentedgeminor(H).gamma == -1
-            getparentedge(H).gamma = 0.5
-            getparentedgeminor(H).gamma = 0.5
+            getparentedge(H).gamma = 0.25
+            getparentedgeminor(H).gamma = 0.25
         end
     end
     q_idxs, qsub = lazyquartetdata(net, lazyq, propQuartets, seed)
@@ -186,12 +186,12 @@ function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
     semidirectnetwork!(net)
     for E in net.edge
-        E.length = max(E.length, 0.0)
+        E.length = max(min(E.length, 5.0), 0.1)
     end
     for H in net.hybrid
         if getparentedge(H).gamma == -1 || getparentedgeminor(H).gamma == -1
-            getparentedge(H).gamma = 0.5
-            getparentedgeminor(H).gamma = 0.5
+            getparentedge(H).gamma = 0.25
+            getparentedgeminor(H).gamma = 0.25
         end
     end
     eqns, _, parameters, _ = findquartetequations(net);
