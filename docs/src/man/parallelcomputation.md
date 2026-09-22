@@ -172,6 +172,20 @@ astraltree = readmultinewick(astralfile)[102]
 net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 ```
 
+After the search, the network of each run is re-optimized on all quartets by default.
+The optional `propQuartetsFinal` argument instead re-optimizes it on a sample of
+$\lceil \binom{N}{4} \cdot$ `propQuartetsFinal` $\rceil$ quartets, shared by every run, or skips
+this step entirely if `propQuartetsFinal=0`.
+
+With many taxa, even computing the observed CFs of all $\binom{N}{4}$ quartets may be too costly.
+A lazy `DataCF` only computes the observed CFs of the quartets that are sampled, in which case
+`propQuartets` must be less than 1:
+
+```julia
+raxmlCF_lazy = DataCF(readmultinewick(raxmltrees); lazy=true)
+net0 = snaq!(astraltree, raxmlCF_lazy, hmax=0, filename="net0", propQuartets=0.75, propQuartetsFinal=0.75)
+```
+
 ### Removing uninformative quartets
 
 We can further reduce computational costs with minimal detriment to accuracy by
