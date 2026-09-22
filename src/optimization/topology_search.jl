@@ -323,7 +323,6 @@ function search(
             $(writenewick(Nprime, round=true))
         """)
         if Nprime_logPL - current_logPL > liktolAbs && (current_logPL - Nprime_logPL) / current_logPL > liktolRel
-            @show "$current_logPL --> $Nprime_logPL"
             # Update current topology info
             N = Nprime
             N_eqns = Nprime_eqns
@@ -364,7 +363,6 @@ function search(
         SNaQscore!(N, fitnumericalparameters!(N, final_eqns, q[final_idxs, :], ρ))
         logmessage(filename, "END propQuartetsFinal<1.0 post-search parameter optimization: found minimizer topology with SNaQ score=$(round(SNaQscore(N), digits=5))")
     end
-    @show SNaQscore(N)
 
     # Remove internal node names that are not hybrids
     for node in N.node

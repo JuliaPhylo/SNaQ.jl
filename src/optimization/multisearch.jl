@@ -168,7 +168,6 @@ function multisearch(
     # Consolidate return data
     sort_idx = sortperm(SNaQscore.(all_nets), rev=true)
     bestnet = all_nets[sort_idx[1]]
-    @show SNaQscore(bestnet)
 
     # Log results
     @logmessage filename """
@@ -215,7 +214,6 @@ function multisearch(
     end
 
     # Return
-    @show SNaQscore(bestnet)
     return bestnet, all_nets[sort_idx]
 end
 
