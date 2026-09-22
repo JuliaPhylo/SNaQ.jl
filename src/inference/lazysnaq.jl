@@ -43,6 +43,10 @@ function lazysnaq!(
     0 < propQuartetsFinal <= 1 || error("propQuartetsFinal must be in range (0, 1] (propQuartetsFinal = $(propQuartetsFinal))")
     isempty(trees) && error("trees must be non-empty.")
 
+    if propQuartetsFinal == 1.0
+        @warn "propQuartetsFinal is 1.0 (the default value). This may be very time consuming for large datasets."
+    end
+
     refnet = currT0 isa HybridNetwork ? currT0 : currT0[1]
     taxa = sort(tiplabels(refnet))  # must match findquartetequations!'s convention
 
