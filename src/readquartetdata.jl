@@ -680,6 +680,25 @@ function readtrees2CF(trees::Vector{HybridNetwork};
 end
 
 
+"""
+    DataCF(trees::Vector{HybridNetwork}; lazy=false, kwargs...)
+
+Observed quartet concordance factors of the gene trees `trees`.
+
+With `lazy=false`, the CFs of all quartets are computed now by [`readtrees2CF`](@ref),
+to which `kwargs` are passed (its table and summary files are not written unless requested).
+
+With `lazy=true`, nothing is computed here: [`snaq!`](@ref) computes only the quartets it
+samples, on demand, so it can run on taxon counts where all `binomial(ntaxa,4)` quartets
+would not fit in memory. A lazy `DataCF` can only be used with `snaq!`, which then requires
+`propQuartets` and `propQuartetsFinal`.
+"""
+function DataCF(trees::Vector{HybridNetwork}; lazy::Bool=false, kwargs...)
+    lazy && return DataCF(Quartet[], trees, true)
+    return readtrees2CF(trees; writeTab=false, writeSummary=false, kwargs...)
+end
+
+
 # Function for calculating confidence intervals for quartet CFs
 # G. A. Ballen, 2026-05-05
 """
