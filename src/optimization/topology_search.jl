@@ -160,6 +160,7 @@ function search(
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
+        checknotlazy(q, "search")
         q = gatherCFmatrix(q)
     end
 

@@ -84,6 +84,7 @@ module SNaQ
         alphatorho
 
 
+    include("quartets/lazy_quartet_cf.jl") # before types.jl: a lazy DataCF holds a LazyQuartetCF
     include("types.jl")
     include("auxiliary.jl")
     include("bootstrap.jl")
@@ -95,7 +96,6 @@ module SNaQ
 
     include("quartets/quartet_indexing.jl")
     include("quartets/observed_cf.jl")
-    include("quartets/lazy_quartet_cf.jl")
     include("quartets/lazy_data_cf.jl")
 
     include("quartet_equations/types.jl")

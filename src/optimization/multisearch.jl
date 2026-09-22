@@ -62,6 +62,8 @@ function multisearch(
     N = deepcopy(N)
 
     if typeof(q) <: DataCF
+            # a lazy DataCF's quartets are only those computed so far: the checks below would drop taxa
+            checknotlazy(q, "multisearch")
             # If input is DataCF, make sure there's not a name mismatch
             dcf_names::Vector{String} = []
             for quartet in q.quartet

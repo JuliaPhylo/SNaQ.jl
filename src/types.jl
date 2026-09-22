@@ -82,26 +82,46 @@ end
 # Data on quartet concordance factors -------
 
 """
+    LazyQuartetArray(lazyq::LazyQuartetCF)
+
+The `quartet` field of a lazy [`DataCF`](@ref): `Quartet` objects built on demand from the
+observed CFs held by `lazyq`, and indexed by quartet rank (see [`unrank4taxa`](@ref)) instead
+of by position. `lqa[i]` computes quartet `i`'s CFs if they are not computed yet.
+Its length, and the quartets visited when iterating over it, are those of the quartets whose
+CFs are already computed, in increasing rank.
+"""
+struct LazyQuartetArray <: AbstractVector{Quartet}
+    quartets::Dict{Int,Quartet}     # rank => Quartet, for quartets accessed through getindex
+    lazyq::LazyQuartetCF            # source of truth for which CFs are computed
+    LazyQuartetArray(lq::LazyQuartetCF) = new(Dict{Int,Quartet}(), lq)
+end
+
+"""
     DataCF
 
 type that contains the following attributes:
 
-- `quartet` (vector of Quartets)
+- `quartet` (vector of Quartets, or a [`LazyQuartetArray`](@ref) if `lazy`)
 - `numQuartets`
 - `tree` (vector of trees: empty if a table of CF was input instead of list of trees)
 - `numTrees` (-1 if a table CF was input instead of list of trees)
 - `repSpecies` (taxon names that were repeated in table of CF or input gene trees: used inside snaq for multiple alleles case)
-- `lazy` (if true, `quartet` is empty and observed CFs are computed on demand from `tree` by [`snaq!`](@ref))
+- `lazy` (if true, observed CFs are computed on demand from `tree`: see below)
 
 The list of `Quartet` may be accessed with the attribute `.quartet`.
 If the input was a list of trees, the `HybridNetwork`'s can be accessed with the attribute `.tree`.
 For example, if the `DataCF` object is named `d`, `d.quartet[1]` will show the first quartet
 and `d.tree[1]` will print the first input tree.
+
+If `d` is lazy (see `DataCF(trees; lazy=true)`), `d.quartet[i]` is the quartet of rank `i`
+among all `d.numQuartets = binomial(ntaxa, 4)` quartets, and its CFs are only computed
+(and then cached) when first needed. `d.quartet` only holds, and iterates over, the quartets
+whose CFs have been computed. Functions that need the CFs of every quartet error on a lazy `d`.
 """
 mutable struct DataCF
-    """quartet: vector of Quartet objects"""
-    quartet::Array{Quartet,1}
-    "numQuartets: number of four-taxon sets"
+    """quartet: vector of Quartet objects, or a LazyQuartetArray if `lazy`"""
+    quartet::Union{Vector{Quartet},LazyQuartetArray}
+    "numQuartets: number of four-taxon sets (all `binomial(ntaxa, 4)` of them if `lazy`)"
     numQuartets::Int
     "tree: vector of input gene trees"
     tree::Vector{HybridNetwork}
@@ -113,12 +133,26 @@ mutable struct DataCF
     numTrees::Int
     "repSpecies: repeated species in the case of multiple alleles"
     repSpecies::Vector{String}
-    """lazy: if true, observed CFs are not stored in `quartet`, and are instead
-    computed on demand from `tree` by [`snaq!`](@ref)"""
+    """lazy: if true, `quartet` is a LazyQuartetArray, and observed CFs are computed
+    on demand from `tree` instead of all up front"""
     lazy::Bool
     DataCF(quartet::Array{Quartet,1}) = new(quartet,length(quartet),[],-1,[],false)
-    DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork},lazy::Bool=false) = new(quartet,length(quartet),trees,length(trees),[],lazy)
-    DataCF() = new([],0,[],-1,[],false)
+    DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork}) = new(quartet,length(quartet),trees,length(trees),[],false)
+    DataCF(quartet::LazyQuartetArray,trees::Vector{HybridNetwork}) = new(quartet,size(quartet.lazyq,1),trees,length(trees),[],true)
+    DataCF() = new(Quartet[],0,[],-1,[],false)
+end
+
+"""
+    checknotlazy(d::DataCF, fname)
+
+Error if `d` is lazy, for function `fname` that needs the observed CFs of every quartet
+in `d`: a lazy `DataCF` would have to compute them all, which it exists to avoid.
+"""
+function checknotlazy(d::DataCF, fname::AbstractString)
+    d.lazy && error("$fname cannot be used with a lazy DataCF: it needs the observed CFs " *
+        "of every quartet, which a lazy DataCF does not hold. Use DataCF(genetrees) " *
+        "(with lazy=false) instead.")
+    return nothing
 end
 
 # aux type for the updateBL function
@@ -134,7 +168,9 @@ end
 function Base.show(io::IO,d::DataCF)
     print(io,"Object DataCF\n")
     if d.lazy
-        print(io,"number of quartets: computed on demand (lazy)\n")
+        print(io,"number of quartets: $(d.numQuartets), computed on demand (lazy): ",
+                 "$(length(d.quartet)) computed so far\n")
+        print(io,"number of taxa: $(d.quartet.lazyq.ntaxa)\n")
     else
         print(io,"number of quartets: $(d.numQuartets)\n")
     end

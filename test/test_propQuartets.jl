@@ -73,6 +73,8 @@ end
 	@test_throws ErrorException computeSNaQscore!(truetre, ldcf)
 
 	snaqtre = snaq!(falsetre, ldcf; hmax=0, propQuartets=0.8, propQuartetsFinal=1.0, seed=42, Nfail=10, runs=10, filename="");
+	@test length(ldcf.quartet) == ldcf.numQuartets	# CFs computed by snaq! are kept in ldcf
+	@test computeSNaQscore!(snaqtre, ldcf) ≈ loglik(snaqtre) atol=1e-10
 	@test hardwiredclusterdistance(snaqtre, truetre, false) == 0
 	@test loglik(snaqtre) ≈ computeSNaQscore!(snaqtre, gts) atol=1e-10
 	@test computeSNaQscore!(truetre, DataCF(gts)) ≈ computeSNaQscore!(truetre, gts) atol=1e-10

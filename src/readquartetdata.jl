@@ -9,7 +9,7 @@ function writeExpCF(quartets::Array{Quartet,1})
     end
     return df
 end
-writeExpCF(d::DataCF) = writeExpCF(d.quartet)
+writeExpCF(d::DataCF) = (checknotlazy(d, "writeExpCF"); writeExpCF(d.quartet))
 
 """
     tablequartetCF(vector of Quartet objects)
@@ -58,7 +58,7 @@ function tablequartetCF(quartets::Array{Quartet,1})
     end
     return nt
 end
-tablequartetCF(d::DataCF) = tablequartetCF(d.quartet)
+tablequartetCF(d::DataCF) = (checknotlazy(d, "tablequartetCF"); tablequartetCF(d.quartet))
 
 
 
@@ -207,6 +207,7 @@ Assumptions:
   basically: the DataCF should have been created from the data frame by `readtableCF!(df, columns)`
 """
 function readtableCF!(datcf::DataCF, df::DataFrame, cols::Vector{Int})
+    checknotlazy(datcf, "readtableCF!")
     for i in axes(df, 1)
         for j in 1:3
             datcf.quartet[i].obsCF[j] = df[i,cols[j]]
@@ -380,8 +381,10 @@ function taxadiff(quartets::Vector{Quartet}, t::HybridNetwork;
     return (setdiff(tq,tn), setdiff(tn,tq))
 end
 
-taxadiff(d::DataCF, t::HybridNetwork; multiplealleles=true::Bool) =
+function taxadiff(d::DataCF, t::HybridNetwork; multiplealleles=true::Bool)
+    checknotlazy(d, "taxadiff")
     taxadiff(d.quartet, t; multiplealleles=multiplealleles)
+end
 
 
 
@@ -394,7 +397,7 @@ function tiplabels(quartets::Vector{Quartet})
 end
 tiplabelsTree(file::AbstractString) = tiplabels(readnewick(file))
 
-tiplabels(d::DataCF) = tiplabels(d.quartet)
+tiplabels(d::DataCF) = d.lazy ? copy(d.quartet.lazyq.taxa) : tiplabels(d.quartet)
 
 """
     calculateObsCFAll!(DataCF, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
@@ -419,6 +422,7 @@ processing each input tree only once.
 `calculateObsCFAll_noDataCF!` processes each input tree `# quartet` times.
 """
 function calculateObsCFAll!(dat::DataCF, taxa::Union{Vector{<:AbstractString}, Vector{Int}})
+    checknotlazy(dat, "calculateObsCFAll!")
     calculateObsCFAllnoDataCF!(dat.quartet, dat.tree, taxa)
 end
 
@@ -688,13 +692,22 @@ Observed quartet concordance factors of the gene trees `trees`.
 With `lazy=false`, the CFs of all quartets are computed now by [`readtrees2CF`](@ref),
 to which `kwargs` are passed (its table and summary files are not written unless requested).
 
-With `lazy=true`, nothing is computed here: [`snaq!`](@ref) computes only the quartets it
-samples, on demand, so it can run on taxon counts where all `binomial(ntaxa,4)` quartets
-would not fit in memory. A lazy `DataCF` can only be used with `snaq!`, which then requires
-`propQuartets < 1`.
+With `lazy=true`, no CF is computed here (and `kwargs` are not supported): the CFs of a
+quartet are only computed, then cached, when first needed, so that all `binomial(ntaxa,4)`
+quartets never need to fit in memory. A lazy `DataCF` can be used with:
+- [`snaq!`](@ref), which then requires `propQuartets < 1`,
+- `computeSNaQscore!(net, d; propQuartets, numQuartets, seed)` (see [`computeSNaQscore!`](@ref)),
+- `write(filename, d)`, to save the CFs computed so far, read back with
+  `SNaQ.LazyDataCF(filename)` or `SNaQ.LazyDataCF(filename, trees)`.
+Functions that need the CFs of every quartet, like [`fitnumericalparameters!`](@ref) or
+[`compositeloglik`](@ref), error on a lazy `DataCF`.
 """
 function DataCF(trees::Vector{HybridNetwork}; lazy::Bool=false, kwargs...)
-    lazy && return DataCF(Quartet[], trees, true)
+    if lazy
+        isempty(kwargs) || error("DataCF(trees; lazy=true) does not support keyword " *
+            "arguments $(Tuple(keys(kwargs))): they only apply with lazy=false.")
+        return DataCF(LazyQuartetArray(LazyQuartetCF(trees)), trees)
+    end
     return readtrees2CF(trees; writeTab=false, writeSummary=false, kwargs...)
 end
 
@@ -864,6 +877,7 @@ end
 # default: send to stdout
 # pc: only 4-taxon subsets with percentage of gene trees less than pc will be printed (default 70%)
 function descData(d::DataCF, sout::IO, pc::Float64)
+    checknotlazy(d, "summarizedataCF")
     0<=pc<=1 || error("percentage of missing genes should be between 0,1, not: $(pc)")
     if !isempty(d.tree)
         print(sout,"data consists of $(d.numTrees) gene trees and $(d.numQuartets) 4-taxon subsets\n")
@@ -890,6 +904,7 @@ function descData(d::DataCF, sout::IO, pc::Float64)
 end
 
 function descData(d::DataCF, filename::AbstractString,pc::Float64)
+    checknotlazy(d, "summarizedataCF")
     println("descriptive stat of input data printed to file $(filename)")
     s = open(filename, "w")
     descData(d,s,pc)

@@ -148,6 +148,9 @@ function Base.getindex(q::LazyQuartetCF, i::Int, j::Int)::Float64
         get(q.cache, i, nothing)
     end
     if cached === nothing
+        q.ntrees > 0 || error("The observed CFs of quartet $i are not computed, and cannot be: " *
+            "there are no gene trees to compute them from (e.g. the lazy DataCF was read " *
+            "from a file without its gene trees).")
         idx4 = unrank4taxa(q.ntaxa, i)
         D = q.lcadepth
         computed::NTuple{3,Float64} = if D === nothing

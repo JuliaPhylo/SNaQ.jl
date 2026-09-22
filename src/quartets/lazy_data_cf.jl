@@ -1,180 +1,134 @@
-"""
-Basically a helper struct that returns `Quartet` objects on demand
-(instead of the 3-tuple oCFs returned by LazyQuartetCF) for the
-`LazyDataCF` object.
-"""
-mutable struct LazyQuartetArray{Quartet} <: AbstractVector{Quartet}
-    quartets::Dict{Int,Quartet}
-    lazyq::LazyQuartetCF
-    LazyQuartetArray(lq::LazyQuartetCF) = new{Quartet}(
-		Dict{Int,Quartet}(),
-		lq
-	)
-end
+# Lazy DataCF: observed CFs computed on demand, through a LazyQuartetArray.
+# `LazyQuartetArray` and `DataCF` are defined in types.jl.
 
 function Base.getindex(lqa::LazyQuartetArray, i::Int)::Quartet
-	if haskey(lqa.quartets, i)
-        return lqa.quartets[i]
+    lq = lqa.lazyq
+    q = lock(() -> get(lqa.quartets, i, nothing), lq.lock)
+    q === nothing || return q
+    1 <= i <= size(lq, 1) || throw(BoundsError(lqa, i))
+    taxa = lq.taxa[unrank4taxa(lq.ntaxa, i)]
+    newq = Quartet(i, taxa[1], taxa[2], taxa[3], taxa[4], [lq[i, 1], lq[i, 2], lq[i, 3]])
+    return lock(() -> get!(lqa.quartets, i, newq), lq.lock)
+end
+
+Base.getindex(lqa::LazyQuartetArray, idxs::AbstractVector{<:Int})::Vector{Quartet} =
+    [lqa[i] for i in idxs]
+
+# Only quartets whose CFs are computed count: ranks, not positions, index a LazyQuartetArray.
+Base.size(lqa::LazyQuartetArray) = (lock(() -> length(lqa.lazyq.cache), lqa.lazyq.lock),)
+Base.eachindex(lqa::LazyQuartetArray) = sort!(lock(() -> collect(keys(lqa.lazyq.cache)), lqa.lazyq.lock))
+Base.keys(lqa::LazyQuartetArray) = eachindex(lqa)
+@inline Base.haskey(lqa::LazyQuartetArray, i::Int)::Bool = haskey(lqa.lazyq, i)
+
+# The AbstractArray fallback would index ranks 1:length(lqa), computing quartets as it prints.
+function Base.show(io::IO, lqa::LazyQuartetArray)
+    print(io, "LazyQuartetArray: $(length(lqa)) quartets computed out of $(size(lqa.lazyq, 1))")
+end
+Base.show(io::IO, ::MIME"text/plain", lqa::LazyQuartetArray) = show(io, lqa)
+
+
+"""
+    LazyDataCF(trees)
+    LazyDataCF(filename, trees=HybridNetwork[])
+
+Lazy [`DataCF`](@ref), the same as `DataCF(trees; lazy=true)`.
+
+With `filename`, the observed CFs already computed and saved by `write(filename, d)` for
+a lazy DataCF `d` are read back from the file. Without the gene `trees` they came from,
+only those CFs are available: any other quartet's CF cannot be computed.
+"""
+LazyDataCF(trees::Vector{HybridNetwork}) = DataCF(trees; lazy=true)
+
+function LazyDataCF(filename::AbstractString, trees::Vector{HybridNetwork}=HybridNetwork[])
+    df = CSV.read(filename, DataFrame)
+    rowtaxa(r) = [string(r.taxa1), string(r.taxa2), string(r.taxa3), string(r.taxa4)]
+    lazyq = if isempty(trees)
+        taxa = sort(unique(reduce(vcat, (rowtaxa(r) for r in eachrow(df)); init=String[])))
+        LazyQuartetCF(taxa, length(taxa), 0, nothing, HybridNetwork[],
+                      Dict{String,Vector{Node}}[], Dict{Int,NTuple{3,Float64}}(), ReentrantLock())
+    else
+        LazyQuartetCF(trees)
+    end
+    for r in eachrow(df)
+        # rows are quartet ranks, only valid if the taxa here are those the file was written with
+        1 <= r.row <= size(lazyq, 1) && lazyq.taxa[unrank4taxa(lazyq.ntaxa, r.row)] == rowtaxa(r) ||
+            error("Quartet $(rowtaxa(r)) in row $(r.row) of $filename does not match the quartet " *
+                  "of that rank among taxa $(lazyq.taxa). The file must have been written " *
+                  "from a lazy DataCF with the same taxa as " *
+                  (isempty(trees) ? "those in the file." : "the gene trees."))
+        lazyq.cache[r.row] = (r.CF12_34, r.CF13_24, r.CF14_23)
+    end
+    return DataCF(LazyQuartetArray(lazyq), trees)
+end
+
+
+"""
+    write(filename, d::DataCF)
+    write(io, d::DataCF)
+
+Write the observed CFs computed so far by the lazy DataCF `d`, one quartet per row,
+to be read back with `LazyDataCF(filename)`.
+"""
+function Base.write(io::IO, d::DataCF)
+    d.lazy || error("write only saves the CFs computed by a lazy DataCF. For a DataCF with " *
+        "lazy=false, use CSV.write(filename, tablequartetCF(d)) instead.")
+    lq = d.quartet.lazyq
+    nb = Base.write(io, "row,taxa1,taxa2,taxa3,taxa4,CF12_34,CF13_24,CF14_23\n")
+    for i in eachindex(d.quartet)
+        taxa = lq.taxa[unrank4taxa(lq.ntaxa, i)]
+        ocfs = lock(() -> lq.cache[i], lq.lock)
+        nb += Base.write(io, "$i,$(taxa[1]),$(taxa[2]),$(taxa[3]),$(taxa[4]),$(ocfs[1]),$(ocfs[2]),$(ocfs[3])\n")
+    end
+    return nb
+end
+
+Base.write(filename::AbstractString, d::DataCF) = open(io -> Base.write(io, d), filename, "w")
+
+
+"""
+    computeSNaQscorelazy!(net, d, ρ; propQuartets, numQuartets, seed)
+
+Branch of [`computeSNaQscore!`](@ref) for a lazy DataCF `d`: scores `net` on a sample of
+`propQuartets` of all quartets, or of `numQuartets` quartets, drawn with `seed`, computing
+the CFs of sampled quartets that are not computed yet. If neither is given (0), scores `net`
+on the quartets whose CFs are already computed.
+"""
+function computeSNaQscorelazy!(net::HybridNetwork, d::DataCF, ρ::Float64;
+                               propQuartets::Real, numQuartets::Int, seed::Int)::Float64
+    lq = d.quartet.lazyq
+    nq = size(lq, 1)
+    0 <= propQuartets <= 1 || error("propQuartets must be in the range [0, 1]")
+    numQuartets >= 0 || error("numQuartets must not be negative.")
+    propQuartets > 0 && numQuartets > 0 && error("Both propQuartets and numQuartets cannot be specified")
+    numQuartets <= nq || error("numQuartets ($(numQuartets)) must be less than or equal to " *
+        "the number of taxa choose 4 ($(nq))")
+    sort(tiplabels(net)) == lq.taxa ||
+        error("net's taxa do not match the taxa of the lazy DataCF: $(lq.taxa)")
+    propQuartets == 0 && numQuartets == 0 && length(d.quartet) == 0 &&
+        error("propQuartets set to 0 and numQuartets set to 0, but the lazy DataCF has no CFs " *
+              "computed yet! Either specify propQuartets/numQuartets or load a previous lazy " *
+              "DataCF from a file.")
+
+    qidxs::Vector{Int} = if propQuartets > 0
+        sample(Xoshiro(seed), 1:nq, Int(floor(nq * propQuartets)), replace=false)
+    elseif numQuartets > 0
+        sample(Xoshiro(seed), 1:nq, numQuartets, replace=false)
+    else
+        eachindex(d.quartet)
     end
 
-	if lqa.lazyq.ntrees == 0
-		error("The LazyDataCF was loaded from a file without gene trees and a CF index that was not previously computed was attempted to be accessed.")
-	end
+    # Without gene trees (read from a file without them), only the CFs already computed exist.
+    if lq.ntrees == 0 && !all(i -> haskey(lq, i), qidxs)
+        error("""
+        The lazy DataCF was loaded from a file without gene trees, and you are attempting to compute
+        the SNaQ score using quartet CFs that were not already computed. Either: (i) do not specify either
+        of propQuartets/numQuartets to use all of the data already computed in the lazy DataCF, or
+        (ii) reload the lazy DataCF with the original gene trees.
+        """)
+    end
 
-    ocfs = lqa.lazyq[i, 1:3]
-    taxa = lqa.lazyq.taxa[unrank4taxa(lqa.lazyq.ntaxa, i)]
-	lqa.quartets[i] = Quartet(
-        i, taxa[1], taxa[2], taxa[3], taxa[4], ocfs
-    )
-	return lqa.quartets[i]
-end
-
-function Base.getindex(lqa::LazyQuartetArray, idxs::AbstractVector{<:Int})::Vector{Quartet}
-	ret = Array{Quartet}(undef, length(idxs))
-	for (reti, idx) in enumerate(idxs)
-		ret[reti] = lqa[idx]
-	end
-	return ret
-end
-
-@inline Base.setindex!(lqa::LazyQuartetArray, v::Quartet, i::Int) = (lqa.quartets[i] = v)
-
-function Base.length(lqa::LazyQuartetArray)
-	return length(lqa.quartets)
-end
-
-function Base.size(lqa::LazyQuartetArray)
-	return (length(lqa.quartets),)
-end
-
-function Base.eachindex(lqa::LazyQuartetArray)
-	return collect(keys(lqa.quartets))
-end
-
-struct LazyDataCF
-    quartet::LazyQuartetArray
-
-    # Similar parameters to DataCF
-	taxa::Vector{String}
-	numQuartets::Int
-    tree::Vector{HybridNetwork}
-    numTrees::Int
-end
-
-function LazyDataCF(trees::Vector{HybridNetwork})
-	taxa = sort(reduce(union, tiplabels(t) for t in trees))
-	return LazyDataCF(
-		LazyQuartetArray(LazyQuartetCF(trees)),
-		taxa,
-		binomial(length(taxa), 4),
-		trees,
-		length(trees)
-	)
-end
-
-function LazyDataCF(filename::String, genetrees::Vector{HybridNetwork})
-	df = CSV.read(filename, DataFrame)
-
-	if length(genetrees) == 0
-		taxa = Set{String}()
-		for r in eachrow(df)
-			push!(taxa, String(r.taxa1))
-			push!(taxa, String(r.taxa2))
-			push!(taxa, String(r.taxa3))
-			push!(taxa, String(r.taxa4))
-		end
-		taxa = sort(collect(taxa))
-
-		lqcf = LazyQuartetCF(taxa, length(taxa), -1, nothing, HybridNetwork[], [], Dict(), ReentrantLock())
-		ldcf = LazyDataCF(
-			LazyQuartetArray(lqcf),
-			taxa,
-			binomial(length(taxa), 4),
-			genetrees,
-			length(genetrees)
-		)
-		for r in eachrow(df)
-			lqcf.cache[r.row] = (r.CF12_34, r.CF13_24, r.CF14_23)
-			ldcf.quartet[r.row] = Quartet(r.row, r.taxa1, r.taxa2, r.taxa3, r.taxa4, [r.CF12_34, r.CF13_24, r.CF14_23])
-		end
-		return ldcf
-	else
-		taxa = sort(reduce(union, tiplpabels(t) for t in genetrees))
-		ldcf = LazyDataCF(
-			LazyQuartetArray(LazyQuartetCF(genetrees)),
-			taxa,
-			binomial(length(taxa), 4),
-			genetrees,
-			length(genetrees)
-		)
-		for r in eachrow(df)
-			ldcf.quaret.lazyq.cache[r.row] = [r.CF12_34, r.CF13_24, r.CF14_23]
-			ldcf.quartet[r.row] = Quartet(r.row, r.taxa1, r.taxa2, r.taxa3, r.taxa4, [r.CF12_34, r.CF13_24, r.CF14_23])
-		end
-		return ldcf
-	end
-end
-LazyDataCF(filename::String) = LazyDataCF(filename, HybridNetwork[])
-
-function Base.show(io::IO, ::MIME"text/plain", ldcf::LazyDataCF)
-	print(io, 
-	"""
-	LazyDataCF Object
-		$(ldcf.numTrees) gene trees with $(length(ldcf.taxa)) unique taxa
-		$(length(ldcf.quartet)) CFs computed out of $(ldcf.numQuartets) total possible
-	""")
-end
-
-function Base.write(io::IOStream, ldcf::LazyDataCF)
-	Base.write(io, "row,taxa1,taxa2,taxa3,taxa4,CF12_34,CF13_24,CF14_23\n")
-	for i in sort(eachindex(ldcf.quartet))
-		taxa = ldcf.taxa[unrank4taxa(length(ldcf.taxa), i)]
-		ocfs = ldcf.quartet[i].obsCF
-		Base.write(io, "$i,$(taxa[1]),$(taxa[2]),$(taxa[3]),$(taxa[4]),$(ocfs[1]),$(ocfs[2]),$(ocfs[3])\n")
-	end
-end
-
-function Base.write(filename::String, ldcf::LazyDataCF)
-	open(filename, "w+") do f
-		write(f, ldcf)
-	end
-end
-
-function computeSNaQscore!(net::HybridNetwork, ldcf::LazyDataCF, ρ::Float64=0.0; seed::Int=42, propQuartets::Float64=0.0, numQuartets::Int=0)::Float64
-	(propQuartets < 0 || propQuartets > 1) && error("propQuartets must be in the range [0, 1]")
-	numQuartets >= 0 || error("numQuartets must not be negative.")
-	0 < propQuartets <= 1 && numQuartets > 0 && error("Both propQuartets and numQuartets cannot be specified")
-	numQuartets <= binomial(net.numtaxa, 4) || error("numQuartets ($(numQuartets)) must be less than or equal to net.numtaxa choose 4 ($(binomial(net.numtaxa, 4)))")
-	propQuartets == 0.0 && numQuartets == 0 && length(ldcf.quartet) == 0 && error("propQuartets set to 0 and numQuartets set to 0, but the LazyDataCF object is empty! Either specify propQuartets/numQuartets or load a previous LazyDataCF object from a file.")
-
-	ntaxa = binomial(net.numtaxa, 4)
-	qidxs::Vector{Int} = if propQuartets > 0.0
-		sample(Xoshiro(seed), 1:ntaxa, Int(floor(ntaxa * propQuartets)), replace=false)
-	elseif numQuartets > 0
-		sample(Xoshiro(seed), 1:ntaxa, numQuartets, replace=false)
-	else
-		collect(eachindex(ldcf.quartet))
-	end
-
-	# If the ldcf has 0 trees, it was loaded from a file without the associated gene trees,
-	# and we need to check to make sure that all of the selected indices in `qidxs` have
-	# already been computed, otherwise inform the user 
-	if length(ldcf.tree) == 0
-		if !all(i -> haskey(ldcf.quartet.lazyq, i), qidxs)
-			error("""
-			The LazyDataCF object was loaded from a file without gene trees, and you are attempting to compute
-			the SNaQ score using quartet CFs that were not already computed. Either: (i) do not specify either
-			of propQuartets/numQuartets to use all of the data already computed in the LazyDataCF object, or
-			(ii) reload the LazyDataCF object with the original gene trees.
-			""")
-		end
-	end
-
-	Q = Matrix{Float64}(undef, length(qidxs), 3)
-	for i in axes(Q, 1)
-		Q[i, :] .= ldcf.quartet[qidxs[i]].obsCF
-	end
-
-	eqns, _, parameters, _ = findquartetequations(net, qidxs);
-	return computeSNaQscore!(eqns, parameters, Q, ρ)
+    eqns, _, parameters, _ = findquartetequations(net, qidxs)
+    loss = computeSNaQscore!(eqns, parameters, lq[qidxs, :], ρ)
+    SNaQscore!(net, loss)
+    return loss
 end

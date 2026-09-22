@@ -11,8 +11,8 @@ which can be a tree or a network with no more than `hmax` hybrid nodes.
 This function does *not* modify `T`.
 
 If `d` is lazy (see [`DataCF`](@ref)), observed CFs are only computed for the quartets
-that are sampled, so `propQuartets` must be less than 1: otherwise every quartet would be
-computed, and a `DataCF` with `lazy=false` should be used instead.
+that are sampled (and kept in `d`), so `propQuartets` must be less than 1: otherwise every
+quartet would be computed, and a `DataCF` with `lazy=false` should be used instead.
 Runs then optimize against different samples of quartets, so their resulting networks are
 compared on one `propQuartetsFinal` sample shared by every run, without re-optimization,
 and `qinfTest` must be false.
@@ -158,7 +158,7 @@ function snaq!(
     propQuartets == 1.0 && error("snaq! with a lazy DataCF requires propQuartets < 1.0, " *
         "otherwise every quartet is computed anyways. Specify propQuartets and " *
         "propQuartetsFinal, or use a DataCF with lazy=false.")
-    return lazysnaq!(currT0, d.tree, hmax, propQuartets, propQuartetsFinal; searchargs..., kwargs...)
+    return lazysnaq!(currT0, d, hmax, propQuartets, propQuartetsFinal; searchargs..., kwargs...)
   end
 
   bestnet = multisearch(

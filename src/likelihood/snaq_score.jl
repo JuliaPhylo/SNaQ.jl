@@ -3,10 +3,16 @@
 """
     computeSNaQscore!(N, q, ρ=0.0)
     computeSNaQscore!(N, dcf, ρ=0.0)
+    computeSNaQscore!(N, dcf, ρ=0.0; propQuartets=0.0, numQuartets=0, seed=42)
 
 Computes the composite log-likelihood of network `N` given observed quartet concordance
 factor data. The optional `ρ` argument (default 0) is the inheritance correlation parameter
 in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
+
+If `dcf` is a lazy [`DataCF`](@ref), `N` is scored on a sample of `propQuartets` of all
+quartets, or of `numQuartets` quartets, drawn with `seed`, and the CFs of sampled quartets
+not yet computed are computed. If neither is given, `N` is scored on the quartets whose CFs
+`dcf` has already computed. `propQuartets` and `numQuartets` are not supported otherwise.
 """
 function computeSNaQscore!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::Float64
     N = deepcopynetwork(N)
@@ -18,7 +24,12 @@ function computeSNaQscore!(N::HybridNetwork, q::Matrix{Float64}, ρ::Real=0.0)::
 end
 
 
-function computeSNaQscore!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
+function computeSNaQscore!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0;
+                           propQuartets::Real=0.0, numQuartets::Int=0, seed::Int=42)::Float64
+    dcf.lazy && return computeSNaQscorelazy!(N, dcf, Float64(ρ);
+                        propQuartets=propQuartets, numQuartets=numQuartets, seed=seed)
+    propQuartets == 0 && numQuartets == 0 ||
+        error("propQuartets and numQuartets are only supported with a lazy DataCF.")
     obsCFs = gatherCFmatrix(dcf)
     eqns, _, parameters, _ = findquartetequations(N);
     loss = computeSNaQscore!(eqns, parameters, obsCFs, ρ)
@@ -77,6 +88,7 @@ then this computation only utilizes `dcf`. Otherwise, expected concordance
 factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)`.
 """
 function compositedeviance(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
+    checknotlazy(dcf, "compositedeviance")
     0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
     if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)
         error("At least one quartet in `dcf.quartet` had `q.ngenes` as a value <= 0 or `missing`.")
@@ -104,6 +116,7 @@ then this computation only utilizes `dcf`. Otherwise, expected concordance
 factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)`.
 """
 function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
+    checknotlazy(dcf, "compositeloglik")
     0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
 
     if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)

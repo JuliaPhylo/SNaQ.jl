@@ -111,13 +111,10 @@ end
 Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
 corresponding to the expected CF values of each quartet
 in `dcf` ordered in the way that `SNaQ` expects internally.
-
-# Arguments
-- `forcelazy::Bool=false`: whether or not to force collection with a lazy `DataCF` object.
-    `false` by default because this could potentially be extremely overencumbering.
+Errors if `dcf` is lazy: gathering would compute the CFs of every quartet.
 """
 function gatherCFmatrix(dcf::DataCF)::Matrix{Float64}
-    dcf.lazy && error("A full CF matrix cannot be gathered with a lazy DataCF object. Try again with `gatherCFmatrix(DataCF(genetrees))` instead.")
+    checknotlazy(dcf, "gatherCFmatrix")
     # Helper function for more legible code later
     minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
 

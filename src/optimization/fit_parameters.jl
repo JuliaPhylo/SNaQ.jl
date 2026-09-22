@@ -183,6 +183,7 @@ be accessed later with `SNaQscore(net)`.
   optimizer will perform under the hood (default 100).
 """
 function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0; maxeval::Int=100, kwargs...)::Float64
+    checknotlazy(dcf, "fitnumericalparameters!")
     0 ≤ ρ ≤ 1 || error("ρ must be between 0 and 1.")
     semidirectnetwork!(net)
     for E in net.edge

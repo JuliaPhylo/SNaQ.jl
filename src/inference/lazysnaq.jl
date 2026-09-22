@@ -1,15 +1,15 @@
-# Lazy-DataCF branch of snaq!, taking gene trees directly.
+# Lazy-DataCF branch of snaq!.
 
 """
-    lazysnaq!(currT0, trees, hmax, propQuartets, propQuartetsFinal; runs, seed, filename, qinfTest, ρ, searchargs...)
+    lazysnaq!(currT0, d, hmax, propQuartets, propQuartetsFinal; runs, seed, filename, qinfTest, ρ, searchargs...)
 
-Branch of [`snaq!`](@ref) for a lazy [`DataCF`](@ref): never computes the observed
+Branch of [`snaq!`](@ref) for a lazy [`DataCF`](@ref) `d`: never computes the observed
 concordance factors of all `binomial(ntaxa,4)` quartets. Only the quartets a search
-actually samples are computed, on demand and cached, through a [`LazyQuartetCF`](@ref).
+actually samples are computed, on demand, and are then kept in `d`.
 
 # Arguments
 - `currT0`: starting topology, or one per run. If a vector, all must share the same taxa.
-- `trees`: gene trees the observed quartet CFs are computed from.
+- `d`: lazy DataCF, e.g. from `DataCF(genetrees; lazy=true)`. It must have its gene trees.
 - `hmax`: maximum number of hybridizations allowed.
 - `propQuartets`: proportion of quartets each run samples and hill-climbs against.
 - `propQuartetsFinal`: proportion of quartets, from one sample shared by every run, used to
@@ -26,7 +26,7 @@ actually samples are computed, on demand and cached, through a [`LazyQuartetCF`]
 """
 function lazysnaq!(
   currT0::Union{HybridNetwork, Vector{HybridNetwork}},
-  trees::Vector{HybridNetwork},
+  d::DataCF,
   hmax::Int,
   propQuartets::Real,
   propQuartetsFinal::Real;
@@ -37,11 +37,14 @@ function lazysnaq!(
   ρ::Float64,
   searchargs...
 )
+    d.lazy || error("lazysnaq! needs a lazy DataCF. For a DataCF with lazy=false, use snaq!.")
     qinfTest && error("snaq! with a lazy DataCF does not support qinfTest=true: it needs " *
         "every quartet's observed CF up front. Use a DataCF with lazy=false instead.")
     0 < propQuartets <= 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
     0 < propQuartetsFinal <= 1 || error("propQuartetsFinal must be in range (0, 1] (propQuartetsFinal = $(propQuartetsFinal))")
-    isempty(trees) && error("trees must be non-empty.")
+    lazyq = d.quartet.lazyq
+    lazyq.ntrees > 0 || error("snaq! with a lazy DataCF needs the gene trees its CFs are " *
+        "computed from, but it has none (e.g. it was read from a file without them).")
 
     if propQuartetsFinal == 1.0
         @warn "propQuartetsFinal is 1.0 (the default value). This may be very time consuming for large datasets."
@@ -56,14 +59,12 @@ function lazysnaq!(
                   "so that one LazyQuartetCF's rank <-> taxa mapping is valid for every run.")
     end
 
-    treetaxa = sort(reduce(union, (tiplabels(t) for t in trees); init=String[]))
-    extra = setdiff(treetaxa, taxa)
+    # lazyq.taxa are all gene tree taxa: once equal to `taxa`, lazyq's ranks match currT0's
+    extra = setdiff(lazyq.taxa, taxa)
     isempty(extra) || error("Gene trees contain taxa not present in currT0: $(extra).")
-    nevershown = setdiff(taxa, treetaxa)
+    nevershown = setdiff(taxa, lazyq.taxa)
     isempty(nevershown) || error("These taxa in currT0 appear in no gene tree, so every " *
         "quartet involving them would have an observed CF of NaN: $(nevershown).")
-
-    lazyq = LazyQuartetCF(trees, taxa)
 
     _, all_nets = multisearch(
         currT0, lazyq, hmax;
