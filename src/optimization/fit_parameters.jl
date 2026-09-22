@@ -136,9 +136,7 @@ fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumer
 
 Optimizes the parameters of `net` directly against gene trees, or against a
 [`LazyQuartetCF`](@ref) already built from them, without materializing the observed CFs of
-every quartet. The counterpart of [`fitnumericalparameters!`](@ref) for
-[`lazysnaq!`](@ref) runs. Returns the estimated likelihood, also readable with
-[`SNaQscore`](@ref).
+every quartet. Returns the estimated likelihood, also readable with [`SNaQscore`](@ref).
 
 `propQuartets` is the proportion of quartets to fit against, drawn with `seed`; the default
 of 1.0 uses them all. Pass a smaller value for taxon counts where all `binomial(ntaxa,4)`
