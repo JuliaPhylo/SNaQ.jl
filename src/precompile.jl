@@ -23,7 +23,7 @@ end
     ]
     @compile_workload begin
         redirect_stdout(devnull) do
-            snaq!(pc_start, DataCF(pc_gts; lazy=true); hmax=0, propQuartets=1.0,
+            snaq!(pc_start, DataCF(pc_gts; lazy=true); hmax=0, propQuartets=0.5,
                   propQuartetsFinal=1.0, runs=1, Nfail=1, filename="", seed=1, verbose=false)
         end
     end
