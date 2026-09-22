@@ -5,8 +5,9 @@
 #    impossible to improve the proposed topology during search)
 # 3. A different set of quartets is chosen during each run when propQuartets < 1.0
 # 4. propQuartetsFinal = 0.0 skips the final optimization, 0.0 < propQuartetsFinal < 1.0
-#    re-optimizes every run on the same sample of quartets, and 1.0 is the default behavior
-# 5. A lazy DataCF requires both propQuartets and propQuartetsFinal, and otherwise
+#    re-optimizes each run on its own sample of quartets and then re-scores every run on
+#    the same sample, and 1.0 is the default behavior
+# 5. A lazy DataCF requires propQuartets < 1.0, and otherwise
 #    finds the same networks as a DataCF with all observed CFs
 
 truetre = readnewick("(((a,b):0.5,(c,d):0.5):0.5,(e,f):0.5);");
@@ -35,7 +36,7 @@ end
 	rm("pqf_runs"; recursive=true); rm("pqf.log"); rm("pqf.out"); rm("pqf.networks")
 end
 
-@testset "0.0<propQuartetsFinal<1.0: every run is re-optimized on the same sample of quartets" begin
+@testset "0.0<propQuartetsFinal<1.0: every run is re-scored on the same sample of quartets" begin
 	_, nets = multisearch(falsetre, qcf, 0; propQuartets=0.5, propQuartetsFinal=0.25, runs=3, seed=42, maxequivPLs=10, filename="pqf");
 	idxs = SNaQ.sampleqindices(falsetre, 0.25, Random.seed!(42))
 	Q = SNaQ.gatherCFmatrix(qcf)[idxs, :]
@@ -44,6 +45,8 @@ end
 		@test loglik(net) ≈ SNaQ.computeSNaQscore!(eqns, params, Q) atol=1e-10
 	end
 	@test occursin("propQuartetsFinal = 0.25", read("pqf_runs/run1.log", String))
+	@test occursin("Re-scored the networks of all 3 runs", read("pqf.log", String))
+	@test !occursin("Re-scored", read("pqf_runs/run1.log", String))
 	rm("pqf_runs"; recursive=true); rm("pqf.log"); rm("pqf.out"); rm("pqf.networks")
 end
 
@@ -66,11 +69,10 @@ end
 	gts = simulatecoalescent(simtre, 1000, 1);
 	ldcf = DataCF(gts; lazy=true)
 	@test_throws ErrorException snaq!(falsetre, ldcf; hmax=0)
-	@test_throws ErrorException snaq!(falsetre, ldcf; hmax=0, propQuartets=1.0)
-	@test_throws ErrorException snaq!(falsetre, ldcf; hmax=0, propQuartetsFinal=1.0)
+	@test_throws ErrorException snaq!(falsetre, ldcf; hmax=0, propQuartets=1.0, propQuartetsFinal=0.5)
 	@test_throws ErrorException computeSNaQscore!(truetre, ldcf)
 
-	snaqtre = snaq!(falsetre, ldcf; hmax=0, propQuartets=1.0, propQuartetsFinal=1.0, seed=42, Nfail=10, runs=10, filename="");
+	snaqtre = snaq!(falsetre, ldcf; hmax=0, propQuartets=0.8, propQuartetsFinal=1.0, seed=42, Nfail=10, runs=10, filename="");
 	@test hardwiredclusterdistance(snaqtre, truetre, false) == 0
 	@test loglik(snaqtre) ≈ computeSNaQscore!(snaqtre, gts) atol=1e-10
 	@test computeSNaQscore!(truetre, DataCF(gts)) ≈ computeSNaQscore!(truetre, gts) atol=1e-10
