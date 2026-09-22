@@ -91,6 +91,7 @@ type that contains the following attributes:
 - `tree` (vector of trees: empty if a table of CF was input instead of list of trees)
 - `numTrees` (-1 if a table CF was input instead of list of trees)
 - `repSpecies` (taxon names that were repeated in table of CF or input gene trees: used inside snaq for multiple alleles case)
+- `lazy` (if true, `quartet` is empty and observed CFs are computed on demand from `tree` by [`snaq!`](@ref))
 
 The list of `Quartet` may be accessed with the attribute `.quartet`.
 If the input was a list of trees, the `HybridNetwork`'s can be accessed with the attribute `.tree`.
@@ -112,9 +113,12 @@ mutable struct DataCF
     numTrees::Int
     "repSpecies: repeated species in the case of multiple alleles"
     repSpecies::Vector{String}
-    DataCF(quartet::Array{Quartet,1}) = new(quartet,length(quartet),[],-1,[])
-    DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork}) = new(quartet,length(quartet),trees,length(trees),[])
-    DataCF() = new([],0,[],-1,[])
+    """lazy: if true, observed CFs are not stored in `quartet`, and are instead
+    computed on demand from `tree` by [`snaq!`](@ref)"""
+    lazy::Bool
+    DataCF(quartet::Array{Quartet,1}) = new(quartet,length(quartet),[],-1,[],false)
+    DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork},lazy::Bool=false) = new(quartet,length(quartet),trees,length(trees),[],lazy)
+    DataCF() = new([],0,[],-1,[],false)
 end
 
 # aux type for the updateBL function
@@ -129,7 +133,11 @@ end
 # Pretty-printing for custom structs
 function Base.show(io::IO,d::DataCF)
     print(io,"Object DataCF\n")
-    print(io,"number of quartets: $(d.numQuartets)\n")
+    if d.lazy
+        print(io,"number of quartets: computed on demand (lazy)\n")
+    else
+        print(io,"number of quartets: $(d.numQuartets)\n")
+    end
     if d.numTrees == -2
         print(io, "number of trees: ∞ (expected values)\n")
     elseif d.numTrees != -1
