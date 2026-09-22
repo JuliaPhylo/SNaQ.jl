@@ -37,9 +37,9 @@ There are many optional keyword arguments, including
   to use when calculating network pseudolikelihoods. Smaller values will lead to faster
   method runtime but may come at the expense of accuracy if lowered too far.
   Must be less than 1 if `d` is lazy.
-- `propQuartetsFinal` (default 1): the proportion of quartets in [0, 1], sampled once and
-  shared by every run, that the network of each run is re-optimized on at the end
-  (see below). If 0, this final re-optimization is skipped.
+- `propQuartetsFinal` (default 1): the proportion of quartets in [0, 1] that the network
+  of each run is re-optimized on at the end (see below). If 0, this final re-optimization
+  is skipped.
 - `probQR` (default 0): the probability at any given step to use weighted random sampling
   of quartets when deciding where to make topological moves when proposing the next
   candidate network.
@@ -76,8 +76,11 @@ result in a less thorough but faster search.
 At the end, branch lengths and γ's are optimized on the last "best" network of each run
 with different and very thorough tolerance parameters:
 1e-12 for `ftolRel`, 1e-10 for `ftolAbs`, `xtolRel`, `xtolAbs`.
-This uses all quartets if `propQuartetsFinal` is 1 (and only if `propQuartets` < 1),
-a `propQuartetsFinal` proportion of quartets if it is in (0, 1), and is skipped if it is 0.
+This uses all quartets if `propQuartetsFinal` is 1 (and `propQuartets` < 1),
+a `propQuartetsFinal` proportion of quartets if it is in (0, 1), and is skipped if 
+`propQuartetsFinal` is 0. When `propQuartetsFinal` is in (0, 1), each run samples
+its own quartets for re-optimization at the end, so the networks of all runs are re-scored
+(not optimized) on one shared sample of `propQuartetsFinal` for fair comparison.
 
 The following optional keyword arguments are used to identify and exclude uninformative quartets.
 Uninformative quartets are those with concordance factors sufficiently close to the
