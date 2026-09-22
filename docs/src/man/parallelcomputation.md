@@ -174,8 +174,9 @@ net0 = snaq!(astraltree,raxmlCF, hmax=0, filename="net0", propQuartets=0.75)
 
 After the search, the network of each run is re-optimized on all quartets by default.
 The optional `propQuartetsFinal` argument instead re-optimizes it on a sample of
-$\lceil \binom{N}{4} \cdot$ `propQuartetsFinal` $\rceil$ quartets, shared by every run, or skips
-this step entirely if `propQuartetsFinal=0`.
+$\lceil \binom{N}{4} \cdot$ `propQuartetsFinal` $\rceil$ quartets, or skips this step entirely
+if `propQuartetsFinal=0`. The networks of all runs are then compared on one sample of
+`propQuartetsFinal` quartets shared by every run.
 
 With many taxa, even computing the observed CFs of all $\binom{N}{4}$ quartets may be too costly.
 A lazy `DataCF` only computes the observed CFs of the quartets that are sampled, in which case
