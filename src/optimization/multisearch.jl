@@ -25,6 +25,10 @@ that fit the observed quartet concordance factors.
 - `restrictions::Function=defaultrestrictions()`: Function that takes a `HybridNetwork` as
     its only argument and returns a `Bool`. Only networks that return `true` to this function
     will be considered during search.
+- `propQuartetsFinal::Real=1.0`: passed to [`search`](@ref). If in (0, 1), each run's
+    network is re-optimized on its own sample of quartets, so the networks of all runs are
+    then re-scored on one shared sample (see [`rescoreonsharedquartets!`](@ref)).
+- `ρ::Real=0.0`: inheritance correlation parameter, passed to [`search`](@ref).
 - `kwargs...`: Additional keyword arguments passed to the [`search`](@ref) function.
 
 # Returns
@@ -48,6 +52,8 @@ function multisearch(
     filename::String="snaq",
     outgroup::String="none",
     restrictions::Function=defaultrestrictions(),
+    propQuartetsFinal::Real=1.0,
+    ρ::Real=0.0,
     kwargs...
 )
     # Verify input parameters
@@ -148,11 +154,16 @@ function multisearch(
             q, hmax; seed = run_seeds[j], restrictions=restrictions,
             logfile = logprefix == "" ? "" : "$(logprefix)$(j)",
             filename = filenames[j],
-            outgroup=outgroup, kwargs...
+            outgroup=outgroup, propQuartetsFinal=propQuartetsFinal, ρ=ρ, kwargs...
         ),
         1:runs
     )
     elapsed = timeelapsed(time() - starttime)
+
+    if 0 < propQuartetsFinal < 1
+        nused = rescoreonsharedquartets!(all_nets, q, propQuartetsFinal, seed, ρ)
+        @logmessage filename "Re-scored the networks of all $runs runs on the same $nused quartets (propQuartetsFinal = $propQuartetsFinal)."
+    end
 
     # Consolidate return data
     sort_idx = sortperm(SNaQscore.(all_nets), rev=true)
@@ -204,6 +215,27 @@ function multisearch(
 
     # Return
     return bestnet, all_nets[sort_idx]
+end
+
+
+"""
+    rescoreonsharedquartets!(nets, q, propQuartetsFinal, seed, ρ) -> Int
+
+Re-scores every network in `nets` on one sample of `propQuartetsFinal` of the quartets in `q`,
+drawn with `seed`, without re-optimizing their parameters. Networks from independent runs are
+optimized against different samples of quartets, so this makes their SNaQ scores comparable.
+Returns the number of quartets in the shared sample.
+"""
+function rescoreonsharedquartets!(nets::Vector{HybridNetwork}, q::AbstractMatrix{Float64},
+                                  propQuartetsFinal::Real, seed::Int, ρ::Real)::Int
+    idxs = sampleqindices(size(q, 1), propQuartetsFinal, Random.seed!(seed))
+    # Materialized once, not per network: every network is scored on the same sample.
+    qsub::Matrix{Float64} = q[idxs, :]
+    for net in nets
+        eqns, _, params, _, _ = findquartetequations(net, idxs)
+        SNaQscore!(net, computeSNaQscore!(eqns, params, qsub, Float64(ρ)))
+    end
+    return length(idxs)
 end
 
 

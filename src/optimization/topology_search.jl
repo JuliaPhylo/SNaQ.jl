@@ -70,7 +70,7 @@ end
 
 
 """
-    search(N, q, hmax; restrictions, ρ, propQuartets, preopt, probST, probQR, maxeval, maxequivPLs, opt_maxeval, seed, verbose, logfile)
+    search(N, q, hmax; restrictions, ρ, propQuartets, propQuartetsFinal, preopt, probST, probQR, maxeval, maxequivPLs, opt_maxeval, seed, verbose, logfile)
 
 Performs a single search for the optimal network topology with gradient-based optimization
 of branch lengths and inheritance probabilities.
@@ -91,9 +91,12 @@ of branch lengths and inheritance probabilities.
 - `ρ::Real=0.0`: inheritance correlation parameter in the range [0, 1]. `ρ = 0` corresponds to independent inheritance; `ρ = 1` corresponds to completely dependent inheritance.
 - `propQuartets::Real=1.0`: Proportion of quartets to use during optimization.
 - `preopt::Bool=false`: Whether to perform a pre-optimization step.
-- `finalopt::Bool=true`: whether to re-optimize the final network on ALL quartets when
-  `propQuartets < 1.0`. Set `false` when `q` cannot be materialized in full, as for the
-  [`LazyQuartetCF`](@ref) [`lazysnaq!`](@ref) uses.
+- `propQuartetsFinal::Real=1.0`: proportion of quartets in [0, 1] the final network is
+  re-optimized on after the search. At 1.0 all quartets are used, but only when
+  `propQuartets < 1.0` (otherwise the search already used them all). At 0.0 there is no
+  re-optimization. The `propQuartetsFinal` sample used for re-optimization is drawn at
+  random in each run, so [`multisearch`](@ref) re-scores the networks of all runs on one
+  shared sample to fairly compare them.
 - `probST::Real=0.3`: Probability of performing a subtree move before searching.
 - `maxeval::Int=Int(1e8)`: Maximum number of evaluations.
 - `maxequivPLs::Int=1500`: Maximum number of equivalent pseudo-likelihood scores to consider.
@@ -118,8 +121,8 @@ function search(
     restrictions::Function=defaultrestrictions(),
     ρ::Real=0.0,
     propQuartets::Real=1.0,
+    propQuartetsFinal::Real=1.0,
     preopt::Bool=true,
-    finalopt::Bool=true,
     probST::Real=0.3,
     probQR::Float64=0.0,
     maxeval::Int=Int(1e8),
@@ -141,6 +144,7 @@ function search(
     maxequivPLs > 0 || error("maxequivPLs must be > 0 (maxequivPLs = $(maxequivPLs)).")
     0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $(ρ))")
     0 < propQuartets ≤ 1 || error("propQuartets must be in range (0, 1] (propQuartets = $(propQuartets))")
+    0 ≤ propQuartetsFinal ≤ 1 || error("propQuartetsFinal must be in range [0, 1] (propQuartetsFinal = $(propQuartetsFinal))")
     0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $(probQR))")
     0 ≤ probST ≤ 1 || error("probST must be in range [0, 1] (probST = $(probST))")
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
@@ -348,14 +352,16 @@ function search(
     end
     SNaQscore!(N, current_logPL)
 
-    if finalopt && propQuartets != 1.0
+    if propQuartetsFinal == 1.0 && propQuartets != 1.0
         logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
-        if typeof(q) <: DataCF
-            SNaQscore!(N, fitnumericalparameters!(N, gatherCFmatrix(q)))
-        else
-            SNaQscore!(N, fitnumericalparameters!(N, q))
-        end
+        SNaQscore!(N, fitnumericalparameters!(N, q))
         logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with SNaQ score=$(round(SNaQscore(N), digits=5))")
+    elseif 0 < propQuartetsFinal < 1
+        final_idxs = sampleqindices(N, propQuartetsFinal, rng)
+        logmessage(filename, "Re-optimizing branch lengths with $(length(final_idxs)) of $(nchoose4taxalength(N)) quartets (propQuartetsFinal = $(propQuartetsFinal)).")
+        final_eqns = findquartetequations(N, final_idxs)[1]
+        SNaQscore!(N, fitnumericalparameters!(N, final_eqns, q[final_idxs, :], ρ))
+        logmessage(filename, "END propQuartetsFinal<1.0 post-search parameter optimization: found minimizer topology with SNaQ score=$(round(SNaQscore(N), digits=5))")
     end
 
     # Remove internal node names that are not hybrids
