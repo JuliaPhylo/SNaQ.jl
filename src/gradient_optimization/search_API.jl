@@ -39,8 +39,9 @@ function multisearch(
     q::Union{DataCF, AbstractMatrix{Float64}},
     hmax::Int;
     # Basic arguments
+    verbose::Bool=true,
     runs::Int=10,
-    seed::Int=rand(Int),
+    seed::Int=abs(rand(Int) % 100000),
     logprefix::String="",
     filename::String="snaq",
     outgroup::String="none",
@@ -105,24 +106,27 @@ function multisearch(
     run_seeds = abs.(rand(Int, runs) .% 100000)
 
     # Log run details
+    restrictionmsg = restrictions == defaultrestrictions() ? "default restrictions" :
+        restrictions == restrictgallednetwork() ? "galled networks" :
+        restrictions == restrictgalledtree() ? "galled trees" :
+        restrictions == restrictrootedtreechild() ? "rooted tree child" :
+        restrictions == restrictweaklytreechild() ? "weakly tree child" :
+        restrictions == restrictstronglytreechild() ? "strongly tree child" :
+        "custom restrictions"
+    msg = """
+    Beginning network optimization using SNaQ.jl across $runs runs with the following parameters:
+        hmax = $hmax,
+        seed = $seed,
+        outgroup = $outgroup,
+        restrictions = $restrictionmsg
+    Root name for log files: $filename (absolute path $(abspath(filename)))
+    Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").
+    """
+    verbose && println(msg)
+
     if filename != ""
         open("$(filename).log", "w+") do f end
-        restrictionmsg = restrictions == defaultrestrictions() ? "default restrictions" :
-            restrictions == restrictgallednetwork() ? "galled networks" :
-            restrictions == restrictgalledtree() ? "galled trees" :
-            restrictions == restrictrootedtreechild() ? "rooted tree child" :
-            restrictions == restrictweaklytreechild() ? "weakly tree child" :
-            restrictions == restrictstronglytreechild() ? "strongly tree child" : "custom restrictions"
-        
-        logmessage(filename, """
-        Beginning network optimization using SNaQ.jl across $runs runs with the following parameters:
-            hmax = $hmax,
-            seed = $seed,
-            outgroup = $outgroup,
-            restrictions = $restrictionmsg
-        Root name for log files: $filename (absolute path $(abspath(filename)))
-        Currently utilizing $(nprocs()) processor$(nprocs() > 1 ? "s" : "") and $(Threads.nthreads()) thread$(Threads.nthreads() > 1 ? "s" : "").
-        """)
+        logmessage(filename, msg)
     end
 
     # Make sure the log files can be created
@@ -148,38 +152,38 @@ function multisearch(
     elapsed = timeelapsed(time() - starttime)
 
     # Consolidate return data
-    sort_idx = sortperm(loglik.(all_nets), rev=true)
+    sort_idx = sortperm(SNaQscore.(all_nets), rev=true)
     bestnet = all_nets[sort_idx[1]]
 
     # Log results
     logmessage(filename, """
     Finished optimizing topology at $(currenttime()) after $(elapsed).
     Optimal network: $(writenewick(bestnet, round=true))
-    Optimal loglik: $(loglik(bestnet))
-    To view all $runs inferred networks and their associated loglik scores, see $(filename).out ($(abspath("$(filename).out")))""")
+    Optimal SNaQscore: $(SNaQscore(bestnet))
+    To view all $runs inferred networks and their associated SNaQscore scores, see $(filename).out ($(abspath("$(filename).out")))""")
 
     if filename != ""
         open("$(filename).out", "w+") do f
             print(f,
                 """
-                $(writenewick(bestnet)) loglik = $(loglik(bestnet))
+                $(writenewick(bestnet)) SNaQ score = $(SNaQscore(bestnet))
                 Elapsed time: $(elapsed), $(runs) attempted runs
                 
                 -----------------------------------
-                List of estimated networks for all runs (sorted by log-pseudolik; the smaller, the better):
+                List of estimated networks for all runs (sorted by SNaQ score; the larger, the better):
                 """
             )
             for j in sort_idx
-                println(f, " $(writenewick(all_nets[j])), with loglik $(loglik(all_nets[j]))")
+                println(f, " $(writenewick(all_nets[j])), with SNaQ score $(SNaQscore(all_nets[j]))")
             end
             println(f, "-----------------------------------")
         end
 
         open("$(filename).networks", "w+") do f
             for (j, i) in enumerate(sort_idx)
-                write(f, "$(writenewick(all_nets[i])), with loglik $(loglik(all_nets[i]))")
+                write(f, "$(writenewick(all_nets[i])), with SNaQ score $(SNaQscore(all_nets[i]))")
                 if j == 1
-                    write(f, " (best network found, remaining sorted by log-pseudolik; the smaller, the better)")
+                    write(f, " (best network found, remaining sorted by SNaQ score; the larger, the better)")
                 end
                 write(f, "\n")
             end
@@ -506,7 +510,7 @@ function search(
         @debug "Pre-optimizing"
         fitnumericalparameters!(N, N_eqns, q[q_idxs, :], ρ; maxeval=max(opt_maxeval, 100), optargs...)
         restrictions(N) || error("N does not meet restrictions after preopt")
-        logPLs[1] = loglik(N)
+        logPLs[1] = SNaQscore(N)
     else
         logPLs[1] = computeSNaQscore!(N_eqns, gatherparams(N), q[q_idxs, :], ρ)
     end
@@ -626,16 +630,16 @@ function search(
             break
         end
     end
-    loglik!(N, logPLs[length(logPLs)])
+    SNaQscore!(N, logPLs[length(logPLs)])
 
     if propQuartets != 1.0
         logmessage(filename, "Re-optimizing branch lengths with ALL quartets.")
         if typeof(q) <: DataCF
-            loglik!(N, fitnumericalparameters!(N, gatherCFmatrix(q)))
+            SNaQscore!(N, fitnumericalparameters!(N, gatherCFmatrix(q)))
         else
-            loglik!(N, fitnumericalparameters!(N, q))
+            SNaQscore!(N, fitnumericalparameters!(N, q))
         end
-        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with loglik=$(round(loglik(N), digits=5))")
+        logmessage(filename, "END propQuartets<1.0 post-search parameter optimization: found minimizer topology with SNaQ score=$(round(SNaQscore(N), digits=5))")
     end
 
     # Remove internal node names that are not hybrids
@@ -653,7 +657,7 @@ function search(
     logtext(logfile, "Search complete at $(currenttime()).\n\n")
     logmoves(logfile, moves_proposed, moves_accepted, moves_logPL)
 
-    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). loglik=$(loglik(N))")
+    logmessage(filename, "END: search with seed $(seed) after $(timeelapsed(time() - starttime)). SNaQ score = $(SNaQscore(N))")
     logmessage(filename, writenewick(N))
     return N
 end

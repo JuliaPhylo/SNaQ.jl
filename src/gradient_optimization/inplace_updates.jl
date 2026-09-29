@@ -1,7 +1,5 @@
 # Includes code for updating `QuartetData` structs in-place based
 # on what topological move was just conducted.
-using PhyloNetworks
-
 
 """
 Helper function to quickly determine whether or not an in-place update

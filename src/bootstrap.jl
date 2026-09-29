@@ -184,7 +184,7 @@ function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vect
             end
         end
         if runs1>0 && runs2>0
-            net = (loglik(net1) < loglik(net2) ? net1 : net2)
+            net = (SNaQscore(net1) < SNaQscore(net2) ? net1 : net2)
         end
         writelog && flush(logfile)
 
@@ -277,7 +277,7 @@ function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{H
     runs1 = runs - runs2                       # runs starting from startnet
 
     if runs1>0
-        startnet=SNaQ.deepcopynetwork(startnet) # does not modify startnet outside
+        startnet = deepcopynetwork(startnet) # does not modify startnet outside
     end
     runs2 == 0 || otherNet.numtaxa > 0 ||
         error("""otherNet not given and prcnet>0. Please set prcnet to 0 to start optimizations

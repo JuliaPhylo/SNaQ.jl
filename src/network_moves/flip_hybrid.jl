@@ -1,5 +1,3 @@
-using PhyloNetworks
-
 
 """
 Randomly selects a hybrid from `N` for which flipping is valid. If no such

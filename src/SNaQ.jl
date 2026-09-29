@@ -15,7 +15,8 @@ module SNaQ
     using StatsBase # sample, etc.
     using PhyloNetworks
 
-    import Base: show
+    import Base: show, getproperty, getfield, getindex, setproperty!
+    import StatsBase: sample
 
     const PN = PhyloNetworks;
     const Edge = PN.Edge;
@@ -36,12 +37,12 @@ module SNaQ
         pushHybrid!, removeHybrid!, printedges, printpartitions,
         samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
         AQuartet, sort_stringasinteger!, tablequartetCF,
-        RootMismatch
+        RootMismatch, addhybridedge!, directionalconflict, deletehybridedge!,
+        breakedge!, fuseedgesat!
 
     export
         ## types & network definition
         DataCF,
-        Quartet,
         # quartet CF
         readtrees2CF,
         readtableCF,
@@ -50,14 +51,17 @@ module SNaQ
         summarizedataCF,
         fittedquartetCF,
         confintqCF_genetrees,
+        getnegativeedges,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
         readallsnaqnetworks,
         bootsnaq,
         # functions to access relevant object variables
-        loglik,
-        loglik!,
+        SNaQscore,
+        SNaQscore!,
+        compositeloglik,
+        compositedeviance,
         ########## New optimization functions
         fitnumericalparameters!,
         computeSNaQscore!,
@@ -105,5 +109,7 @@ module SNaQ
     include("network_moves/rSPR_moves.jl")
     include("network_moves/move_origin_target.jl")
     include("network_moves/flip_hybrid.jl")
+
+    include("deprecated.jl")
 
 end

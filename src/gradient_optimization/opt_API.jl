@@ -136,7 +136,6 @@ function fitnumericalparameters!(
     xtolRel::Float64=1e-12,
     xtolAbs::Float64=1e-12
 )::Float64
-
     0 ≤ ρ ≤ 1 || error("ρ must be in range [0, 1] (ρ = $ρ)")
     # Make sure there are no NaNs in the network's edge lengths
     # This is a bug that only seems to happen on Linux for some reason,
@@ -196,7 +195,7 @@ function fitnumericalparameters!(
         # This way, no updates will be forced.
     end
 
-    loglik!(net, maxf)
+    SNaQscore!(net, maxf)
     return maxf
 end
 fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumericalparameters!(net, findquartetequations(net)[1], oCFs; kwargs...)
@@ -207,7 +206,7 @@ fitnumericalparameters!(net::HybridNetwork, oCFs; kwargs...)::Float64 = fitnumer
 
 Optimizes the parameters of `net` with the quartet concordance factor data
 in `dcf`. Returns the estimated likelihood of the network, which can also
-be accessed later with `loglik(net)`.
+be accessed later with `SNaQscore(net)`.
 
 ### Parameters
 - `ρ` is the inheritance correlation parameter in the range [0, 1] (default 0).
@@ -228,17 +227,17 @@ function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.
             getparentedgeminor(H).gamma = 0.5
         end
     end
-    eqns, parammap, parameters, _ = findquartetequations(net);
+    eqns, _, parameters, _ = findquartetequations(net);
     obsCFs = gatherCFmatrix(dcf)
     fitnumericalparameters!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
 
-    for q in dcf.quartet
-        eqn = findquartetequations4taxa(net, q.taxon, parammap, ρ)
+    for (i, q) in enumerate(dcf.quartet)
+        eqn = eqns[i];
         expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
         q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
     end
 
-    return loglik(net)
+    return SNaQscore(net)
 end
 
 
@@ -489,5 +488,6 @@ function computeexpectedDataCF(net::HybridNetwork, ρ::Real=0.0)::DataCF
         push!(d.quartet, q)
     end
     d.numQuartets = length(eqns)
+    d.numTrees = -2 # code for expected CFs
     return d
 end

@@ -54,8 +54,10 @@ end
 function runtestfile(testfile::String)
     printstyled(testfile, ": ", color=:blue)
     starttime = time()
-    safely_redirect_output() do
-        include(testfile)
+    @testset "$testfile" begin
+        safely_redirect_output() do
+            include(testfile)
+        end
     end
     printstyled("$(round(time() - starttime, digits=2))s elapsed\n", color=:black)
 end
@@ -67,6 +69,7 @@ end
     runtestfile("test_multipleAlleles.jl")
     runtestfile("test_perfectData.jl")
     runtestfile("test_readInputData.jl")
+    runtestfile("test_negativeEdgeLengths.jl")
 
     runtestfile("test_propQuartets.jl")
     runtestfile("test_gradient_opt/test_opt_API.jl")

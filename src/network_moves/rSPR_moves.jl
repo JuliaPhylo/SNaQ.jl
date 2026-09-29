@@ -1,5 +1,3 @@
-import PhyloNetworks: breakedge!, fuseedgesat!, removeHybrid!, pushHybrid!
-
 
 """
 Performs an rSPR move according to the procedure defined [here in Figure 6](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005611).

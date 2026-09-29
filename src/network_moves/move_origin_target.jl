@@ -1,7 +1,3 @@
-using PhyloNetworks
-using StatsBase
-import PhyloNetworks: getOtherNode
-
 
 """
 Selects a random hybrid node and a random edge that is very near the origin of

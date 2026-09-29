@@ -10,6 +10,13 @@ function semidirectnetwork!(N::HybridNetwork; check_conditions::Bool=true)
     end
     N.isrooted = false
 
+    # Fix negative edge lengths
+    for E in N.edge
+        if !getchild(E).leaf
+            E.length = max(E.length, 0.0)
+        end
+    end
+
     if check_conditions
         # Check that all network assumptions are met
         for n in N.node

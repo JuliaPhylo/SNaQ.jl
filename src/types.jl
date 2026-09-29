@@ -1,25 +1,30 @@
-import Base: getproperty, getfield, getindex, setproperty!, show
-
-
 """
-    loglik(network::HybridNetwork)
+    SNaQscore(network::HybridNetwork)
 
-Gets the cached composite log-likelihood of the provided network.
+Gets the cached composite SNaQ score of the provided network. This value is *proportional* to
+the *composite deviance* of the network. To compute the composite log-likelihood of the
+network, see [`compositeloglik`](@ref).
+
+If all quartets appear in the set of input gene trees used to compute observed concordance factors the
+same number of times (say `m` times each), then the composite deviance can be computed with
+`-2 * ngt * SNaQscore(network)`. If all quartets do not appear the same number of times across the set
+of input gene trees, composite deviance must be calculated with the [`compositedeviance`](@ref) function instead.
+
 If [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
 [`readsnaqnetwork`](@ref), or [`readallsnaqnetworks`](@ref), then the return value
 will be meaningless.
 """
-loglik(h::HybridNetwork) = h.fscore # composite log-likelihood (higher = better fit)
+SNaQscore(h::HybridNetwork) = h.fscore
 
 
 """
-    loglik!(network, value)
+    SNaQscore!(network, value)
 
-Sets the composite log-likelihood of network `h` to `f`.
+Sets the cached composite SNaQ score of network `h` to `f`.
 Higher values indicate better fit.
 """
-loglik!(h::HybridNetwork, f::Real) = (h.fscore = f)
+SNaQscore!(h::HybridNetwork, f::Real) = (h.fscore = f)
 
 
 """
@@ -30,6 +35,9 @@ type that saves the information on a given 4-taxon subset. It contains the follo
 - `number`: integer
 - `taxon`: vector of taxon names, like t1 t2 t3 t4
 - `obsCF`: vector of observed CF, in order 12|34, 13|24, 14|23
+- `expCF`: vector of CF expected from the current network, in the same order.
+  warning: this vector may be obsolete
+  (see [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref))
 - `logPseudoLik`: log pseudolikelihood of the quartet. 0.0 by default
 - `ngenes`: number of gene trees used to compute the observed CF; -1.0 if unknown
 - `deltaCF`: The sum of absolute differences between observed and expected CFs
@@ -86,12 +94,21 @@ If the input was a list of trees, the `HybridNetwork`'s can be accessed with the
 For example, if the `DataCF` object is named `d`, `d.quartet[1]` will show the first quartet
 and `d.tree[1]` will print the first input tree.
 """
-mutable struct DataCF # fixit
-    quartet::Array{Quartet,1} # array of quartets read from CF output table or list of quartets in file
-    numQuartets::Integer # number of quartets
-    tree::Vector{HybridNetwork} #array of input gene trees
-    numTrees::Integer # number of gene trees
-    repSpecies::Vector{String} #repeated species in the case of multiple alleles
+mutable struct DataCF
+    """quartet: vector of Quartet objects"""
+    quartet::Array{Quartet,1}
+    "numQuartets: number of four-taxon sets"
+    numQuartets::Int
+    "tree: vector of input gene trees"
+    tree::Vector{HybridNetwork}
+    """numTrees: number of gene trees from which quartet CFs were calculated,
+    or -1 if the input was a table of CFs rather than a sample of gene trees.
+    Note that the number of *informative* gene trees may differ across 4-taxon sets
+    due to missing taxa or polytomies in gene trees. Each `Quartet` in the list has
+    its own field `.ngenes`, which may ≠ `numTrees` here."""
+    numTrees::Int
+    "repSpecies: repeated species in the case of multiple alleles"
+    repSpecies::Vector{String}
     DataCF(quartet::Array{Quartet,1}) = new(quartet,length(quartet),[],-1,[])
     DataCF(quartet::Array{Quartet,1},trees::Vector{HybridNetwork}) = new(quartet,length(quartet),trees,length(trees),[])
     DataCF() = new([],0,[],-1,[])
@@ -110,8 +127,10 @@ end
 function Base.show(io::IO,d::DataCF)
     print(io,"Object DataCF\n")
     print(io,"number of quartets: $(d.numQuartets)\n")
-    if(d.numTrees != -1)
-        print(io,"number of trees: $(d.numTrees)\n")
+    if d.numTrees == -2
+        print(io, "number of trees: ∞ (expected values)\n")
+    elseif d.numTrees != -1
+        print(io, "number of trees: $(d.numTrees)\n")
     end
 end
 

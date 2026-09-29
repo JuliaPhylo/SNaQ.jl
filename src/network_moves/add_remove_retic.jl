@@ -1,11 +1,3 @@
-using PhyloNetworks
-import PhyloNetworks: addhybridedge!, directionalconflict, deletehybridedge!
-import StatsBase: sample
-
-# const Edge = PhyloNetworks.Edge;
-# const Node = PhyloNetworks.Node;
-
-
 
 """
 Splits `from_edge` and `to_edge` to create a new hybrid. Returns the new hybrid node.
