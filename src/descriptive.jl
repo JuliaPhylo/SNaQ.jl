@@ -17,6 +17,7 @@ to update the fitted quartet CF expected
 under a specific network, inside the DataCF object `d`.
 """
 function fittedquartetCF(d::DataCF, format=:wide::Symbol)
+    checknotlazy(d, "fittedquartetCF")
     if format == :wide
         df=DataFrame(
                  tx1 = [q.taxon[1] for q in d.quartet],

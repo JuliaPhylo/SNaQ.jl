@@ -98,12 +98,12 @@ end
 # keepOne=true: we only keep one allele per species
 function cleanAlleleDF!(
     newdf::DataFrame,
-    cols::Vector{<:Integer};
+    cols::Vector{<:Int};
     keepOne::Bool=false,
 )
     delrows = Int[] # indices of rows to delete
     repSpecies = Set{String}()
-    if(isa(newdf[1,cols[1]],Integer)) #taxon names as integers: we need this to be able to add __2
+    if(isa(newdf[1,cols[1]],Int)) #taxon names as integers: we need this to be able to add __2
         for j in 1:4
             newdf[!,cols[j]] .= map(string, newdf[!,cols[j]])
         end

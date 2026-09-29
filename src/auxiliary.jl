@@ -71,6 +71,7 @@ and reorder the 3 concordance values accordingly, in `obsCF`
 respectively, whose memory allocation gets reused. Their length is *not checked*.
 """
 function sorttaxa!(dat::DataCF)
+    checknotlazy(dat, "sorttaxa!") # would desync each quartet's taxa from its rank
     ptax = Array{Int8}(undef, 4) # to hold the sort permutations
     pCF  = Array{Int8}(undef, 3)
     for q in dat.quartet

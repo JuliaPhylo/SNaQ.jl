@@ -25,7 +25,7 @@ Warning: the modifying version does *not* check the data frame: assumes correct 
 
 optional argument: `delim=','` by default: how columns are delimited.
 """
-function sampleCFfromCI(df::DataFrame, seed=0::Integer)
+function sampleCFfromCI(df::DataFrame, seed=0::Int)
     @debug "order of columns should be: t1,t2,t3,t4,cf1234,cf1324,cf1423,cf1234LO,cf1234HI,..."
     size(df,2) == 13 || size(df,2) == 14 || @warn "sampleCFfromCI function assumes table from TICR: CF, CFlo, CFhi"
     obsCFcol = [findfirst(isequal(:CF12_34), DataFrames.propertynames(df)),
@@ -49,7 +49,7 @@ function sampleCFfromCI(df::DataFrame, seed=0::Integer)
     end
 end
 
-function sampleCFfromCI!(df::DataFrame, seed=0::Integer)
+function sampleCFfromCI!(df::DataFrame, seed=0::Int)
     if seed == 0
         t = time()/1e9
         a = split(string(t),".")
@@ -69,7 +69,7 @@ function sampleCFfromCI!(df::DataFrame, seed=0::Integer)
     return df
 end
 
-sampleCFfromCI(file::AbstractString; delim=','::Char,seed=0::Integer) =
+sampleCFfromCI(file::AbstractString; delim=','::Char,seed=0::Int) =
     sampleCFfromCI(DataFrame(CSV.File(file, delim=delim); copycols=false),seed)
 
 # function that will do bootstrap of snaq estimation in series
@@ -83,11 +83,11 @@ sampleCFfromCI(file::AbstractString; delim=','::Char,seed=0::Integer) =
 # - quartetfile if it was used in original data ("none" if all quartets used)
 # recall: optTopRuns! does *not* modify its input starting network
 function optTopRunsBoot(currT0::HybridNetwork, data::Union{DataFrame,Vector{Vector{HybridNetwork}}},
-                        hmax::Integer, restrictions::Function, liktolAbs::Float64, Nfail::Integer, ftolRel::Float64,ftolAbs::Float64,xtolRel::Float64,xtolAbs::Float64,
+                        hmax::Int, restrictions::Function, liktolAbs::Float64, Nfail::Int, ftolRel::Float64,ftolAbs::Float64,xtolRel::Float64,xtolAbs::Float64,
                         verbose::Bool, closeN::Bool, Nmov0::Vector{Int},
-                        runs1::Integer, outgroup::AbstractString, filename::AbstractString, seed::Integer, probST::Float64,
-                        nrep::Integer, runs2::Integer, bestNet::HybridNetwork, quartetfile::AbstractString,
-                        probQR::AbstractFloat, propQuartets::AbstractFloat)
+                        runs1::Int, outgroup::AbstractString, filename::AbstractString, seed::Int, probST::Float64,
+                        nrep::Int, runs2::Int, bestNet::HybridNetwork, quartetfile::AbstractString,
+                        probQR::Float64, propQuartets::Float64)
     println("BOOTSTRAP OF SNAQ ESTIMATION")
     writelog = true
     if filename != ""
@@ -243,14 +243,14 @@ If `T` has one or more reticulations, its branch lengths are taken as is to star
 The branch lengths of `otherNet` are always taken as is to start the search.
 """
 function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{HybridNetwork}}};
-                  hmax=1::Integer, restrictions=defaultrestrictions()::Function,
-                  liktolAbs=1e-6::Float64, Nfail=3000::Integer,
+                  hmax=1::Int, restrictions=defaultrestrictions()::Function,
+                  liktolAbs=1e-6::Float64, Nfail=3000::Int,
                   ftolRel=1e-10::Float64, ftolAbs=1e-10::Float64, xtolRel=1e-10::Float64, xtolAbs=1e-10::Float64,
                   verbose=false::Bool, closeN=true::Bool, Nmov0=Int[]::Vector{Int},
-                  runs=10::Integer, outgroup="none"::AbstractString, filename="bootsnaq"::AbstractString,
-                  seed=0::Integer, probST=0.3::Float64, nrep=10::Integer, prcnet=0.0::Float64,
+                  runs=10::Int, outgroup="none"::AbstractString, filename="bootsnaq"::AbstractString,
+                  seed=0::Int, probST=0.3::Float64, nrep=10::Int, prcnet=0.0::Float64,
                   otherNet=HybridNetwork()::HybridNetwork, quartetfile="none"::AbstractString,
-                  probQR::AbstractFloat=0.0, propQuartets::AbstractFloat=1.0)
+                  probQR::Float64=0.0, propQuartets::Float64=1.0)
 
     inputastrees = isa(data, Vector{Vector{HybridNetwork}})
     inputastrees || isa(data, DataFrame) ||
