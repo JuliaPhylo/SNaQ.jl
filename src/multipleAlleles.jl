@@ -78,7 +78,7 @@ function mapallelesCFtable!(
     if length(co)==0 co=[1,2,3,4]; end
     allelecol, speciescol = compareTaxaNames(alleleDF,cfDF,co)
     for j in 1:4
-        for ia in 1:size(alleleDF,1) # for all alleles
+        for ia in axes(alleleDF,1) # for all alleles
             cfDF[!,co[j]] = map(x->replace(string(x),
                                          Regex("^$(string(alleleDF[ia,allelecol]))\$") =>
                                          alleleDF[ia,speciescol]),
@@ -98,12 +98,12 @@ end
 # keepOne=true: we only keep one allele per species
 function cleanAlleleDF!(
     newdf::DataFrame,
-    cols::Vector{<:Integer};
+    cols::Vector{<:Int};
     keepOne::Bool=false,
 )
     delrows = Int[] # indices of rows to delete
     repSpecies = Set{String}()
-    if(isa(newdf[1,cols[1]],Integer)) #taxon names as integers: we need this to be able to add __2
+    if(isa(newdf[1,cols[1]],Int)) #taxon names as integers: we need this to be able to add __2
         for j in 1:4
             newdf[!,cols[j]] .= map(string, newdf[!,cols[j]])
         end
@@ -219,7 +219,6 @@ function expandLeaves!(
                 end
                 removeLeaf!(tree,n)
                 n.leaf = false
-                istIdentifiable!(n.edge[1], true)
                 n.name = ""
                 max_node = maximum([e.number for e in tree.node]);
                 max_edge = maximum([e.number for e in tree.edge]);

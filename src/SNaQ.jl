@@ -3,30 +3,28 @@ module SNaQ
     using Dates
     using Distributed
 
-    using Printf: @printf
     using Random
-    using Statistics: mean
 
     using Base.Threads
 
     # other libraries, indicate compatible version in Project.toml
     using CSV
     using DataFrames # innerjoin new in v0.21
-    using DataStructures # for updateInCycle with priority queue
-    using Distributions #for RateVariationAcrossSites
     using NLopt # for branch lengths optimization
     using StaticArrays
     using StatsBase # sample, etc.
     using PhyloNetworks
 
-    import Base: show
+    import Base: show, getproperty, getfield, getindex, setproperty!, write, haskey
+    import StatsBase: sample
 
-    const DEBUGC = false # even more debug messages
-    global CHECKNET = false # for debugging only
+    const PN = PhyloNetworks;
+    const Edge = PN.Edge;
+    const Node = PN.Node;
 
 
-    import PhyloNetworks: HybridNetwork, Edge, Node, Network, Partition,
-        tiplabels,
+    import PhyloNetworks: HybridNetwork, Network, Partition,
+        tiplabels, fliphybrid!,
         isEqual, approxEq,
         assignhybridnames!, 
         getOtherNode, getIndex, getIndexEdge, getIndexNode,
@@ -39,14 +37,13 @@ module SNaQ
         pushHybrid!, removeHybrid!, printedges, printpartitions,
         samplebootstrap_multiloci, samplebootstrap_multiloci!, tree2Matrix,
         AQuartet, sort_stringasinteger!, tablequartetCF,
-        RootMismatch
+        RootMismatch, addhybridedge!, directionalconflict, deletehybridedge!,
+        breakedge!, fuseedgesat!
 
     export
         ## types & network definition
         DataCF,
-        Quartet,
-        readnewicklevel1,
-        readmultinewicklevel1,
+        write,
         # quartet CF
         readtrees2CF,
         readtableCF,
@@ -55,31 +52,90 @@ module SNaQ
         summarizedataCF,
         fittedquartetCF,
         confintqCF_genetrees,
+        getnegativeedges,
         # fitting: SNaQ and network bootstrap
         snaq!,
         readsnaqnetwork,
-        topologymaxQpseudolik!,
-        topologyQpseudolik!,
+        readallsnaqnetworks,
         bootsnaq,
         # functions to access relevant object variables
-        loglik,
-        loglik!
+        SNaQscore,
+        SNaQscore!,
+        compositeloglik,
+        compositedeviance,
+        ########## New optimization functions
+        fitnumericalparameters!,
+        computeSNaQscore!,
+        computeexpectedCFmatrix,
+        computeexpectedDataCF,
+        ########## New identifiability/restriction functions
+        defaultrestrictions,
+        norestrictions,
+        tcgidentifiable,
+        restrictionset,
+        restrictgalledtree,
+        restrictgallednetwork,
+        restrictmaximumlevel,
+        restrictrootedtreechild,
+        restrictweaklytreechild,
+        restrictstronglytreechild,
+        # correlated inheritance utilities
+        rhotoalpha,
+        alphatorho
 
 
+    include("quartets/lazy_quartet_cf.jl") # before types.jl: a lazy DataCF holds a LazyQuartetCF
     include("types.jl")
-    include("addHybrid_snaq.jl")
     include("auxiliary.jl")
     include("bootstrap.jl")
-    include("deleteHybrid.jl")
-    include("descriptive.jl")
-    include("moves_snaq.jl")
-    include("manipulateNet.jl")
     include("multipleAlleles.jl")
-    include("pseudolik.jl")
     include("readquartetdata.jl")
     include("readwrite.jl")
-    include("snaq_optimization.jl")
-    include("undo.jl")
-    include("update.jl")
+    include("descriptive.jl")
+    include("network_utils.jl")
+
+    include("quartets/quartet_indexing.jl")
+    include("quartets/observed_cf.jl")
+    include("quartets/lazy_data_cf.jl")
+
+    include("quartet_equations/types.jl")
+    include("quartet_equations/ancestor_paths.jl")
+    include("quartet_equations/tree_quartets.jl")
+    include("quartet_equations/hybrid_quartets.jl")
+    include("quartet_equations/build_equations.jl")
+    include("quartet_equations/inplace_updates.jl")
+
+    include("likelihood/running_gradient.jl")
+    include("likelihood/threading.jl")
+    include("likelihood/expected_cf.jl")
+    include("likelihood/tree_quartet_batch.jl")
+    include("likelihood/loss_gradient.jl")
+    include("likelihood/snaq_score.jl")
+
+    include("network_properties/network_properties.jl")
+    include("network_properties/identifiability_properties.jl")
+
+    include("optimization/parameters.jl")
+    include("optimization/fit_parameters.jl")
+    include("optimization/search_logging.jl")
+    include("optimization/move_proposals.jl")
+    include("optimization/topology_search.jl")
+    include("optimization/multisearch.jl")
+
+    include("inference/snaq.jl")
+    include("inference/lazysnaq.jl")
+
+    include("network_moves/misc.jl")
+    include("network_moves/add_remove_retic.jl")
+    include("network_moves/rNNI_validity.jl")
+    include("network_moves/rNNI_moves.jl")
+    include("network_moves/rSPR_validity.jl")
+    include("network_moves/rSPR_moves.jl")
+    include("network_moves/move_origin_target.jl")
+    include("network_moves/flip_hybrid.jl")
+
+    include("deprecated.jl")
+
+    include("precompile.jl")
 
 end

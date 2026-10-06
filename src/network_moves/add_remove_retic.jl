@@ -1,0 +1,56 @@
+
+"""
+Splits `from_edge` and `to_edge` to create a new hybrid. Returns the new hybrid node.
+"""
+function addhybrid!(N::HybridNetwork, from_edge::Edge, to_edge::Edge)
+    isvalidaddhybrid(from_edge, to_edge, N) || error("Invalid parameters given to `addhybrid!`")
+    newH, newHE = addhybridedge!(N, from_edge, to_edge, true, 0.0, 0.25)
+    getparent(from_edge).name = "i$(abs(rand(Int)) % 100000 + 1000)"
+    newH.name = "H$(abs(rand(Int)) % 100000 + 1000)"
+    update_yz!(newHE)
+    return newH
+end
+
+
+"""
+Removes hybrid node `hyb_node` from network `N`. Removes the minor edge if
+argument `minor` is `true`, else removes the `major` edge.
+"""
+function removehybrid!(N::HybridNetwork, hyb_node::Node, minor::Bool=true)
+    rm_edge = minor ? getparentedgeminor(hyb_node) : getparentedge(hyb_node)
+    deletehybridedge!(N, rm_edge)
+end
+
+
+"""
+Randomly selects pairs of edges to use with `addhybrid!` until a valid pair is found.
+Returns that pair of nodes, or `nothing` if no valid pair is found (this should
+never happen).
+"""
+function sampleaddhybridparameters(N::HybridNetwork, rng::TaskLocalRNG)
+    niter::Int = 0
+    e1::Edge = N.edge[1]    # placeholders
+    e2::Edge = N.edge[1]
+
+    while niter < 1000
+        e1, e2 = sample(rng, N.edge, 2, replace=false)
+        isvalidaddhybrid(e1, e2, N) && return (e1, e2)
+        isvalidaddhybrid(e2, e1, N) && return (e2, e1)
+        niter += 1
+    end
+    return nothing
+end
+
+
+"""
+Checks whether the `addhybrid!` move defined by this `from_edge` and
+`to_edge` choice is valid. A move must satisfy the following:
+
+1. must not create a direction conflict
+"""
+function isvalidaddhybrid(from_edge::Edge, to_edge::Edge, N::HybridNetwork)::Bool
+    # Condition (1)
+    !directionalconflict(getparent(from_edge), to_edge, true) || return false
+    getparent(from_edge) == getparent(to_edge) && isrootof(getparent(from_edge), N) && return false
+    return true
+end
