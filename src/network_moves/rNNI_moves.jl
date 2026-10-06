@@ -19,7 +19,6 @@ end
 function performrNNI1!(N::HybridNetwork, s::Node, t::Node, u::Node, v::Node)
     isvalidrNNI1(s, t, u, v) || error("Topological conditions for rNNI(1) not met.")
     @debug "MOVE: rNNI(1) - $((s.name, t.name, u.name, v.name))"
-    newick_before = writenewick(N; round=true)
 
     # u: loses s as a child and gains t as a child
     # v: loses t as a child and gains s as a child

@@ -21,7 +21,9 @@ import SNaQ:
     @test eqn.which_coal == which_c
     @test eqn.division_H == dh
     @test eqn.divisions == divisions
-    @test eqn.coal_mask == BitVector([true, true, true, false, false])
+    # `coal_mask` is built on first request rather than at construction, so go through
+    # the accessor (the mask itself is unchanged).
+    @test SNaQ.coalmask(eqn) == BitVector([true, true, true, false, false])
 end
 
 @testset "QuartetData construction and parameter checking" begin
@@ -115,11 +117,11 @@ end
     
     params = [0.5]
     gradient = zeros(1, 3)
-    params_seen = falses(1)
-    running_gradient = ones(1, 3)
-    
+    # The running gradient and the "already seen" flags live in a `RunningGradient` now.
+    st = SNaQ.RunningGradient(1)
+
     # Compute eCFs and gradient
-    ecf1, ecf2 = SNaQ.computeexpectedCFandgradientrecur!(eqn_treelike, params, gradient, params_seen, 0.0, running_gradient)
+    ecf1, ecf2 = SNaQ.computeexpectedCFandgradientrecur!(eqn_treelike, params, gradient, st, 0.0)
     
     # Check eCFs
     @test ecf1 ≈ 1 - 2/3 * exp(-0.5)

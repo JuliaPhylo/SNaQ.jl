@@ -1,3 +1,5 @@
+# Reusing quartet equations across a topology move.
+
 # Includes code for updating `QuartetData` structs in-place based
 # on what topological move was just conducted.
 
@@ -28,18 +30,31 @@ function updatequartetequations!(
     elseif move == :rNNI2
         applyrNNI2update!(Nprime, old_eqns, new_eqns, param_map, params..., ρ)
     else
-        error("Only move that can be updated in place right now is rNNI1 (move = $(move))")
+        error("Only moves that can be updated in place are rNNI1 and rNNI2 (move = $(move))")
     end
 end
 
 
 function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, ρ::Real=0.0)
     relevant_params = paramsbelowurNNI1(u, param_map)
-    Threads.@threads for j in eachindex(old_qdata)
-        if length(old_qdata[j].eqn.divisions) > 0 || recurfxnhasparams(old_qdata[j].eqn, relevant_params)
-            new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, ρ)
-        else
-            new_qdata[j] = old_qdata[j]
+    ctx = treequartetcontext(Nprime)
+    scratch = pathscratchpool()   # built here, outside the threaded loop below
+    rebuild(taxa, sc) = findquartetequations4taxa(ctx, taxa, param_map, ρ, sc)
+    if useparallelloop(length(old_qdata))
+        Threads.@threads for j in eachindex(old_qdata)
+            if length(old_qdata[j].eqn.divisions) > 0 || recurfxnhasparams(old_qdata[j].eqn, relevant_params)
+                new_qdata[j] = rebuild(old_qdata[j].q_taxa, scratch[Threads.threadid()])
+            else
+                new_qdata[j] = old_qdata[j]
+            end
+        end
+    else
+        for j in eachindex(old_qdata)
+            if length(old_qdata[j].eqn.divisions) > 0 || recurfxnhasparams(old_qdata[j].eqn, relevant_params)
+                new_qdata[j] = rebuild(old_qdata[j].q_taxa, scratch[1])
+            else
+                new_qdata[j] = old_qdata[j]
+            end
         end
     end
 end
@@ -48,11 +63,24 @@ end
 function applyrNNI2update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, s::Node, t::Node, u::Node, v::Node, ρ::Real=0.0)
     relevant_params = [u.edge[findfirst(e -> t in e.node, u.edge)], s.edge[findfirst(e -> v in e.node, s.edge)]]
     relevant_params = [param_map[e.number] for e in relevant_params]
-    Threads.@threads for j in eachindex(old_qdata)
-        if contains_parameter(old_qdata[j], relevant_params)
-            new_qdata[j] = findquartetequations4taxa(Nprime, old_qdata[j].q_taxa, param_map, ρ)
-        else
-            new_qdata[j] = old_qdata[j]
+    ctx = treequartetcontext(Nprime)
+    scratch = pathscratchpool()   # built here, outside the threaded loop below
+    rebuild(taxa, sc) = findquartetequations4taxa(ctx, taxa, param_map, ρ, sc)
+    if useparallelloop(length(old_qdata))
+        Threads.@threads for j in eachindex(old_qdata)
+            if contains_parameter(old_qdata[j], relevant_params)
+                new_qdata[j] = rebuild(old_qdata[j].q_taxa, scratch[Threads.threadid()])
+            else
+                new_qdata[j] = old_qdata[j]
+            end
+        end
+    else
+        for j in eachindex(old_qdata)
+            if contains_parameter(old_qdata[j], relevant_params)
+                new_qdata[j] = rebuild(old_qdata[j].q_taxa, scratch[1])
+            else
+                new_qdata[j] = old_qdata[j]
+            end
         end
     end
 end

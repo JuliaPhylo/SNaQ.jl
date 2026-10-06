@@ -15,7 +15,7 @@ module SNaQ
     using StatsBase # sample, etc.
     using PhyloNetworks
 
-    import Base: show, getproperty, getfield, getindex, setproperty!
+    import Base: show, getproperty, getfield, getindex, setproperty!, write, haskey
     import StatsBase: sample
 
     const PN = PhyloNetworks;
@@ -43,6 +43,7 @@ module SNaQ
     export
         ## types & network definition
         DataCF,
+        write,
         # quartet CF
         readtrees2CF,
         readtableCF,
@@ -83,6 +84,7 @@ module SNaQ
         alphatorho
 
 
+    include("quartets/lazy_quartet_cf.jl") # before types.jl: a lazy DataCF holds a LazyQuartetCF
     include("types.jl")
     include("auxiliary.jl")
     include("bootstrap.jl")
@@ -90,17 +92,39 @@ module SNaQ
     include("readquartetdata.jl")
     include("readwrite.jl")
     include("descriptive.jl")
-    ############ NEW STUFF
-    include("gradient_optimization/CF_recursive_blocks.jl")
-    include("gradient_optimization/misc.jl")
-    include("gradient_optimization/CF_equations.jl")
-    include("gradient_optimization/inplace_updates.jl")
+    include("network_utils.jl")
+
+    include("quartets/quartet_indexing.jl")
+    include("quartets/observed_cf.jl")
+    include("quartets/lazy_data_cf.jl")
+
+    include("quartet_equations/types.jl")
+    include("quartet_equations/ancestor_paths.jl")
+    include("quartet_equations/tree_quartets.jl")
+    include("quartet_equations/hybrid_quartets.jl")
+    include("quartet_equations/build_equations.jl")
+    include("quartet_equations/inplace_updates.jl")
+
+    include("likelihood/running_gradient.jl")
+    include("likelihood/threading.jl")
+    include("likelihood/expected_cf.jl")
+    include("likelihood/tree_quartet_batch.jl")
+    include("likelihood/loss_gradient.jl")
+    include("likelihood/snaq_score.jl")
+
     include("network_properties/network_properties.jl")
     include("network_properties/identifiability_properties.jl")
-    include("gradient_optimization/opt_API.jl")
-    include("gradient_optimization/search_API.jl")
-    include("gradient_optimization/wrappers.jl")
-    
+
+    include("optimization/parameters.jl")
+    include("optimization/fit_parameters.jl")
+    include("optimization/search_logging.jl")
+    include("optimization/move_proposals.jl")
+    include("optimization/topology_search.jl")
+    include("optimization/multisearch.jl")
+
+    include("inference/snaq.jl")
+    include("inference/lazysnaq.jl")
+
     include("network_moves/misc.jl")
     include("network_moves/add_remove_retic.jl")
     include("network_moves/rNNI_validity.jl")
@@ -111,5 +135,7 @@ module SNaQ
     include("network_moves/flip_hybrid.jl")
 
     include("deprecated.jl")
+
+    include("precompile.jl")
 
 end
