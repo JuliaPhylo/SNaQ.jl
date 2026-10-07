@@ -77,14 +77,24 @@ function mapallelesCFtable!(
     size(cfDF,2) >= 7 || error("CF DataFrame should have 7+ columns: 4taxa, 3CF, and possibly ngenes")
     if length(co)==0 co=[1,2,3,4]; end
     allelecol, speciescol = compareTaxaNames(alleleDF,cfDF,co)
+
+    #create mapping of allele to species names. explicitly convert to strings
+    allele_map = Dict(string(a) => string(s) for (a, s) in zip(alleleDF[!, allelecol], alleleDF[!, speciescol]))
+
     for j in 1:4
-        for ia in 1:size(alleleDF,1) # for all alleles
-            cfDF[!,co[j]] = map(x->replace(string(x),
-                                         Regex("^$(string(alleleDF[ia,allelecol]))\$") =>
-                                         alleleDF[ia,speciescol]),
-                                cfDF[!,co[j]])
+        col = co[j]
+        new_column = String[]
+        for x in cfDF[!, col]
+            taxon_str = string(x)
+            
+            species = get(allele_map, taxon_str, taxon_str) #get species name, if mapped
+            push!(new_column, species)
         end
+
+        cfDF[!, col] = new_column
     end
+
+
     if write
         filename != "" || error("cannot write quartet CF with mapped alleles: empty filename")
         CSV.write(filename, cfDF)
