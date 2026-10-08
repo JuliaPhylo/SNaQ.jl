@@ -80,20 +80,17 @@ function mapallelesCFtable!(
 
     #create mapping of allele to species names. explicitly convert to strings
     allele_map = Dict(string(a) => string(s) for (a, s) in zip(alleleDF[!, allelecol], alleleDF[!, speciescol]))
-
-    for j in 1:4
-        col = co[j]
-        new_column = String[]
-        for x in cfDF[!, col]
+    
+    nrows = size(cfDF, 1)
+    for col in co
+        new_column = Vector{String}(undef,nrows)
+        for (i,x) in enumerate(cfDF[!, col])
             taxon_str = string(x)
-            
             species = get(allele_map, taxon_str, taxon_str) #get species name, if mapped
-            push!(new_column, species)
+            new_column[i]=species
         end
-
         cfDF[!, col] = new_column
-    end
-
+    end    
 
     if write
         filename != "" || error("cannot write quartet CF with mapped alleles: empty filename")
