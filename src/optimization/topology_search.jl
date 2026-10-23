@@ -178,20 +178,21 @@ function search(
     restrictions(N) || error("N does not meet restrictions IMMEDIATELY")
 
     if rand(rng) < probST
+        Nperturbed = deepcopynetwork(N);
+        semidirectnetwork!(Nperturbed); # shouldn't need this, but just in case
         found_different_net::Bool = false
         for j = 1:10_000
             try
-                performrNNI1!(N, samplerNNIparameters(N, 1, rng)...);
-                if restrictions(N)
+                performrNNI1!(Nperturbed, samplerNNIparameters(Nperturbed, 1, rng)...);
+                if restrictions(Nperturbed)
                     found_different_net = true
                     break
                 end
             catch
             finally
-                if !found_different_net
-                    # N = readnewick(writenewick(N));
-                    N = deepcopynetwork(N);
-                    semidirectnetwork!(N)
+                if found_different_net
+                    N = Nperturbed
+                    semidirectnetwork!(N);
                 end
             end
         end
