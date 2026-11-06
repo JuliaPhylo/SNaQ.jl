@@ -34,7 +34,8 @@ truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,
 optnet = deepcopy(truenet);
 fitnumericalparameters!(optnet, raxmlCF);
 writenewick(optnet, round=true)
-loglik(optnet) # composite log-likelihood: the higher, the better
+SNaQscore(optnet) # SNaQ score: the higher, the better
+loglik(optnet)    # same score on the SNaQ v1 scale, -100 * SNaQscore: the lower, the better
 ```
 ```@example fixednetworkoptim
 using PhyloPlots, RCall
@@ -66,13 +67,18 @@ net1par = fitnumericalparameters!(truenet, raxmlCF, ftolRel=1e-10, xtolAbs=1e-10
 ## Network score with no optimization
 
 For a network with given branch lengths and γ inheritance probabilities,
-we can compute the composite log-likelihood with:
+we can compute the SNaQ score with:
 ```@repl fixednetworkoptim
-computeSNaQscore!(truenet, raxmlCF) # composite log-likelihood: the higher, the better
+computeSNaQscore!(truenet, raxmlCF) # SNaQ score: the higher, the better
 ```
-This function is not maximizing the composite log-likelihood, it is simply computing the
-composite log-likelihood for the given branch lengths and probabilities of
-inheritance.
+This function is not maximizing the SNaQ score, it is simply computing the
+SNaQ score for the given branch lengths and probabilities of inheritance.
+The composite log-likelihood and composite deviance can be computed with
+[`compositeloglik`](@ref) and [`compositedeviance`](@ref):
+```@repl fixednetworkoptim
+compositeloglik(truenet, raxmlCF)
+compositedeviance(truenet, raxmlCF)
+```
 
 ## Candidate networks compatible with a known outgroup
 
@@ -121,7 +127,7 @@ We can do this with the [`readallsnaqnetworks`](@ref) function.
 ```@repl fixednetworkoptim
 netlist = readallsnaqnetworks(file);
 for i in eachindex(netlist)
-  println("net $i has composite log-likelihood = ", round(loglik(netlist[i]), digits=4))
+  println("net $i has SNaQ score = ", round(SNaQscore(netlist[i]), digits=4))
 end
 ```
 The first network in the list is the best network returned by [`snaq!`](@ref).
