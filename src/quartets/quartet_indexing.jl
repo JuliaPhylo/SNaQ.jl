@@ -6,7 +6,7 @@
 The 4 taxon indices (ascending) of the `rank`-th 4-taxon combination of `n` taxa, in the
 same lexicographic order [`incrtaxaidx!`](@ref) produces from `[1,2,3,4]`.
 
-Wraps [`whichQuartet`](@ref), which errors for `n <= 4`, to allow the trivial `n == 4` case.
+Wraps `whichQuartet`, which errors for `n <= 4`, to allow the trivial `n == 4` case.
 Both [`findquartetequations!`](@ref) and [`LazyQuartetCF`](@ref) must go through this one
 function, or an observed CF could be paired with the wrong quartet's equation.
 """
