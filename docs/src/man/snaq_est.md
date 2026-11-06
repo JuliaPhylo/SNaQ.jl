@@ -326,14 +326,14 @@ nothing # hide
 ```
 ![net23](../assets/figures/snaqplot_net23.svg)
 
-Each network's composite log-likelihood can accessed with the `loglik` function
+Each network's SNaQ score can be accessed with the [`SNaQscore`](@ref) function
 (the higher the better). We can plot these scores across hybrid values:
 ```@example snaqplot
-scores = [loglik(net0), loglik(net1), loglik(net2), loglik(net3)]
+scores = [SNaQscore(net0), SNaQscore(net1), SNaQscore(net2), SNaQscore(net3)]
 hmax = collect(0:3)
 R"svg(name('snaqplot_scores_heuristic.svg'), width=4, height=3)" # hide
 R"par"(mar=[2.5,2.5,.5,.5], mgp=[1.4,.4,0], tck=-0.02, las=1, lab=[3,5,7]);  # hide
-R"plot"(hmax, .-scores, type="b", ylab="composite log-likelihood", xlab="hmax", col="blue");
+R"plot"(hmax, .-scores, type="b", ylab="negative SNaQ score", xlab="hmax", col="blue");
 R"dev.off()"; # hide
 nothing # hide
 ```
