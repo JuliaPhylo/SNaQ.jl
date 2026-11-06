@@ -108,13 +108,19 @@ end
 
 
 """
-Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
-corresponding to the expected CF values of each quartet
-in `dcf` ordered in the way that `SNaQ` expects internally.
-Errors if `dcf` is lazy: gathering would compute the CFs of every quartet.
+    cfmatrixorder(dcf::DataCF) -> (qorder, colmaps)
+
+Correspondence between the quartets in `dcf` and the rows and columns of the CF matrices
+used internally by SNaQ (see [`gatherCFmatrix`](@ref) and [`computeexpectedCFmatrix`](@ref)):
+row `j` corresponds to quartet `dcf.quartet[qorder[j]]`, and column `k` of row `j`
+corresponds to entry `colmaps[j][k]` of that quartet's `obsCF` and `expCF` vectors.
+
+Any code moving CFs between a `DataCF` and these matrices must go through this function,
+in both directions, or a CF could be paired with the wrong quartet or the wrong split.
+Errors if `dcf` is lazy.
 """
-function gatherCFmatrix(dcf::DataCF)::Matrix{Float64}
-    checknotlazy(dcf, "gatherCFmatrix")
+function cfmatrixorder(dcf::DataCF)::Tuple{Vector{Int},Vector{SVector{3,Int}}}
+    checknotlazy(dcf, "cfmatrixorder")
     # Helper function for more legible code later
     minmax(i1::Int, i2::Int)::Tuple{Int,Int} = (min(i1, i2), max(i1, i2))
 
@@ -126,38 +132,69 @@ function gatherCFmatrix(dcf::DataCF)::Matrix{Float64}
             a[j] < b[j] && return true
             b[j] < a[j] && return false
         end
+        return false
     end
-
-    eCF_matrix = zeros(length(dcf.quartet), 3)
     qorder = sortperm(dcf.quartet, lt = (a, b) -> labelsorter(sort(a.taxon), sort(b.taxon)))
 
-    iteration_mapping = [1, 2, 3]
+    # column of `obsCF` for the split that pairs the taxa at positions i1 and i2 in `q.taxon`
+    splitcolumn(i1::Int, i2::Int)::Int =
+        minmax(i1, i2) in ((1, 2), (3, 4)) ? 1 :
+        minmax(i1, i2) in ((1, 3), (2, 4)) ? 2 : 3
+
+    colmaps = Vector{SVector{3,Int}}(undef, length(qorder))
     for (j, qidx) in enumerate(qorder)
+        # taxonperm[k]: position in `q.taxon` of the k-th taxon in sorted order
         taxonperm = sortperm(dcf.quartet[qidx].taxon)
-        if minmax(taxonperm[1], taxonperm[2]) == (1, 2) || minmax(taxonperm[1], taxonperm[2]) == (3, 4)
-            iteration_mapping[1] = 1
-        elseif minmax(taxonperm[1], taxonperm[2]) == (1, 3) || minmax(taxonperm[1], taxonperm[2]) == (2, 4)
-            iteration_mapping[1] = 2
-        else
-            iteration_mapping[1] = 3
-        end
-
-        if minmax(taxonperm[1], taxonperm[3]) == (1, 2) || minmax(taxonperm[1], taxonperm[3]) == (3, 4)
-            iteration_mapping[2] = 1
-        elseif minmax(taxonperm[1], taxonperm[3]) == (1, 3) || minmax(taxonperm[1], taxonperm[3]) == (2, 4)
-            iteration_mapping[2] = 2
-        else
-            iteration_mapping[2] = 3
-        end
-
-        if minmax(taxonperm[1], taxonperm[4]) == (1, 2) || minmax(taxonperm[1], taxonperm[4]) == (3, 4)
-            iteration_mapping[3] = 1
-        elseif minmax(taxonperm[1], taxonperm[4]) == (1, 3) || minmax(taxonperm[1], taxonperm[4]) == (2, 4)
-            iteration_mapping[3] = 2
-        else
-            iteration_mapping[3] = 3
-        end
-        eCF_matrix[j, :] .= dcf.quartet[qidx].obsCF[iteration_mapping]
+        colmaps[j] = SVector(splitcolumn(taxonperm[1], taxonperm[2]),
+                             splitcolumn(taxonperm[1], taxonperm[3]),
+                             splitcolumn(taxonperm[1], taxonperm[4]))
     end
-    return eCF_matrix
+    return qorder, colmaps
+end
+
+
+"""
+Takes a `DataCF` object `dcf` and returns a `Matrix{Float64}`
+corresponding to the observed CF values of each quartet
+in `dcf` ordered in the way that `SNaQ` expects internally
+(see [`cfmatrixorder`](@ref)).
+Errors if `dcf` is lazy: gathering would compute the CFs of every quartet.
+"""
+function gatherCFmatrix(dcf::DataCF)::Matrix{Float64}
+    checknotlazy(dcf, "gatherCFmatrix")
+    qorder, colmaps = cfmatrixorder(dcf)
+    oCF_matrix = zeros(length(dcf.quartet), 3)
+    for (j, qidx) in enumerate(qorder)
+        oCF_matrix[j, :] .= dcf.quartet[qidx].obsCF[colmaps[j]]
+    end
+    return oCF_matrix
+end
+
+
+"""
+    gatherngenes(dcf::DataCF)
+
+Vector of the number of genes `q.ngenes` of each quartet in `dcf`, in the order of the rows
+of [`gatherCFmatrix`](@ref).
+"""
+gatherngenes(dcf::DataCF)::Vector{Float64} = [dcf.quartet[i].ngenes for i in cfmatrixorder(dcf)[1]]
+
+
+"""
+    setexpectedCFs!(dcf::DataCF, net::HybridNetwork, ρ=0.0)
+
+Stores in `q.expCF`, for each quartet `q` in `dcf`, the CFs expected from `net` with its
+current parameters and inheritance correlation `ρ`. Errors if `dcf` is lazy.
+"""
+function setexpectedCFs!(dcf::DataCF, net::HybridNetwork, ρ::Real=0.0)::DataCF
+    qorder, colmaps = cfmatrixorder(dcf)
+    eCFs = computeexpectedCFmatrix(net, ρ)
+    size(eCFs, 1) == length(qorder) || error("the network has $(size(eCFs, 1)) quartets " *
+        "but the DataCF has $(length(qorder)).")
+    for (j, qidx) in enumerate(qorder)
+        expCF = zeros(3)
+        expCF[colmaps[j]] .= eCFs[j, :]
+        dcf.quartet[qidx].expCF = expCF
+    end
+    return dcf
 end
