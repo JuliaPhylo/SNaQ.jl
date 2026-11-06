@@ -53,3 +53,34 @@ net.isrooted = false;
 
 samp = samplemovereticulateoriginparameters(net, Random.seed!(0))
 @test samp !== nothing
+
+
+##########################################################################
+# removeexcessreticulations! removes hybrids with the smallest minor γ first #
+##########################################################################
+
+# H2 has minor γ 0.2, H1 has minor γ 0.3: H2 should be removed first
+neth2 = readnewick("(((((D:1,C:1):1)#H2:1::0.8,((A:1,B:1):1)#H1:1::0.7):1,(#H1:1::0.3,E:1):1):1,(#H2:1::0.2,O:1):1);")
+SNaQ.semidirectnetwork!(neth2)
+
+# hmax at least the number of hybrids: no change
+net = deepcopy(neth2)
+SNaQ.removeexcessreticulations!(net, 2)
+@test net.numhybrids == 2
+@test writenewick(net) == writenewick(neth2)
+
+# hmax = 1: only H2 is removed, H1 and its γs are kept
+net = deepcopy(neth2)
+SNaQ.removeexcessreticulations!(net, 1)
+@test net.numhybrids == 1
+H = net.hybrid[1]
+taxa = tiplabels(net)
+@test sort(taxa[hardwiredcluster(getparentedge(H), taxa)]) == ["A", "B"] # H1 kept, not H2
+@test getparentedgeminor(H).gamma ≈ 0.3
+@test getparentedge(H).gamma ≈ 0.7
+
+# hmax = 0: both minor edges removed, leaving the major tree
+net = deepcopy(neth2)
+SNaQ.removeexcessreticulations!(net, 0)
+@test net.numhybrids == 0
+@test hardwiredclusterdistance(net, majortree(neth2), false) == 0
