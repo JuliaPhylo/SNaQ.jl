@@ -15,11 +15,7 @@ include(joinpath(@__DIR__, "test_inplace_updates/misc.jl"))
 include(joinpath(@__DIR__, "test_output_helper.jl"))
 
 ## Import internal functions that are directly used in tests. There has got to be a better way
-import SNaQ: writeExpCF, descData,
-    # field getters
-    loglik,
-    # field setters
-    loglik!
+import SNaQ: writeExpCF, descData
 
 import SNaQ: Node, findquartetequations, computeexpectedCFs,
     isvalidaddhybrid, computeexpectedDataCF,
@@ -73,6 +69,7 @@ end
 
     runtestfile("test_propQuartets.jl")
     runtestfile("test_lazy_datacf.jl")
+    runtestfile("test_regressions.jl")
     runtestfile("test_gradient_opt/test_opt_API.jl")
     runtestfile("test_gradient_opt/test_search_API.jl")
     runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")
