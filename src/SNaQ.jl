@@ -61,6 +61,8 @@ module SNaQ
         # functions to access relevant object variables
         SNaQscore,
         SNaQscore!,
+        loglik,
+        loglik!,
         compositeloglik,
         compositedeviance,
         ########## New optimization functions
