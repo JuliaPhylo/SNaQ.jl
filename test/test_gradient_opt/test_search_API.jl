@@ -43,7 +43,7 @@ end
 	dcf = computeexpectedDataCF(net);
 	initLL = computeSNaQscore!(t0, dcf);
 	opt_rt = @elapsed snaqnet = snaq!(t0, dcf; hmax=1, propQuartets=0.85, runs=5, Nfail=50)
-	cachedLL = loglik(snaqnet)
+	cachedLL = SNaQscore(snaqnet)
 	@test cachedLL ≈ computeSNaQscore!(snaqnet, dcf) atol=1e-8
 	@test cachedLL > initLL
 
@@ -52,7 +52,7 @@ end
 	dcf = computeexpectedDataCF(net);
 	initLL = computeSNaQscore!(t0, dcf);
 	snaqnet = snaq!(t0, dcf; restrictions=restrictionset(;max_level=1), hmax=1, propQuartets=0.85, runs=5, Nfail=50)
-	cachedLL = loglik(snaqnet)
+	cachedLL = SNaQscore(snaqnet)
 	@test restrictionset(;max_level=1)(snaqnet)
 	@test tcgidentifiable(snaqnet)
 	@test cachedLL > initLL
@@ -138,8 +138,8 @@ end
 	dcf = computeexpectedDataCF(multifurcation)
 	binary = SNaQ.verifystartingtopologies!(multifurcation, "none", (net) -> true)[1];
 	computeSNaQscore!(binary, dcf)
-	snaqnet = snaq!(multifurcation, dcf; restrictions=norestrictions(), hmax=0, Nfail=20, runs=2, opt_maxeval=1000)
-	@test loglik(snaqnet) > -1e-6
+	snaqnet = snaq!(multifurcation, dcf; restrictions=norestrictions(), hmax=multifurcation.numhybrids, Nfail=20, runs=2, opt_maxeval=1000)
+	@test SNaQscore(snaqnet) > -1e-6
 	for E in reverse(snaqnet.edge)
 		if !getchild(E).leaf && !E.hybrid && 0.0 ≤ E.length ≤ 1e-5	# hard-coded minimum for edge lengths
 			PhyloNetworks.shrinkedge!(snaqnet, E)
