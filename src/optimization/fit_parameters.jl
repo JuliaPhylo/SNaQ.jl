@@ -195,16 +195,10 @@ function fitnumericalparameters!(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.
             getparentedgeminor(H).gamma = 0.25
         end
     end
-    eqns, _, parameters, _ = findquartetequations(net);
+    eqns = findquartetequations(net)[1];
     obsCFs = gatherCFmatrix(dcf)
     fitnumericalparameters!(net, eqns, obsCFs, ρ; maxeval=maxeval, kwargs...)
-
-    for (i, q) in enumerate(dcf.quartet)
-        eqn = eqns[i];
-        expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
-        q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
-    end
-
+    setexpectedCFs!(dcf, net, ρ) # with the optimized parameters
     return SNaQscore(net)
 end
 
