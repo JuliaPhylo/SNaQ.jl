@@ -29,8 +29,8 @@ inheritance, pass `ρ` as the third positional argument to [`fitnumericalparamet
 
 ```julia
 optnet = deepcopy(truenet)
-fitnumericalparameters!(optnet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
-loglik(optnet)                   # to access again later
+fitnumericalparameters!(optnet, raxmlCF, 0.5)  # SNaQ score: the higher, the better
+SNaQscore(optnet)                # to access again later
 ```
 
 ## Computing the composite log-likelihood with correlated inheritance
@@ -38,8 +38,8 @@ loglik(optnet)                   # to access again later
 [`computeSNaQscore!`](@ref) also accepts `ρ` as its third positional argument:
 
 ```julia
-computeSNaQscore!(truenet, raxmlCF, 0.5)  # composite log-likelihood: the higher, the better
-loglik(truenet)                     # to access again later
+computeSNaQscore!(truenet, raxmlCF, 0.5)  # SNaQ score: the higher, the better
+SNaQscore(truenet)                  # to access again later
 ```
 
 Note that this approach does not optimize the branch lengths or inheritance proportions of the provided
