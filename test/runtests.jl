@@ -69,7 +69,7 @@ end
 
     runtestfile("test_propQuartets.jl")
     runtestfile("test_lazy_datacf.jl")
-    runtestfile("test_regressions.jl")
+    runtestfile("test_bugs.jl")
     runtestfile("test_gradient_opt/test_opt_API.jl")
     runtestfile("test_gradient_opt/test_search_API.jl")
     runtestfile("test_gradient_opt/test_CF_recursive_blocks.jl")
