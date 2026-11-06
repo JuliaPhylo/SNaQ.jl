@@ -23,7 +23,7 @@ function restrictionset(; max_level::Real=Inf, galled_tree::Bool=false, galled_n
 
     restrictions = Vector{Function}()
     if max_level < Inf
-        push!(restrictions, restrictmaximumlevel(max_level))
+        push!(restrictions, restrictmaximumlevel(floor(Int, max_level)))
     end
 
     if galled_tree
@@ -40,9 +40,19 @@ function restrictionset(; max_level::Real=Inf, galled_tree::Bool=false, galled_n
         push!(restrictions, restrictstronglytreechild)
     end
 
-    return (net) -> all(F(net) for F in restrictions)
-
+    return RestrictionSet(restrictions)
 end
+
+"""
+    RestrictionSet
+
+Restriction function returned by [`restrictionset`](@ref): accepts a network if
+all restrictions in its field `restrictions` accept it.
+"""
+struct RestrictionSet <: Function
+    restrictions::Vector{Function}
+end
+(r::RestrictionSet)(net::HybridNetwork) = all(F(net) for F in r.restrictions)
 
 """
     restrictmaximumlevel(level)
@@ -50,7 +60,18 @@ end
 Return a restriction function that accepts only networks whose level is at most `level`.
 The level of a network is the maximum number of hybrid nodes in any biconnected component.
 """
-restrictmaximumlevel(level::Int) = (net) -> getnetworklevel(net) <= level
+restrictmaximumlevel(level::Integer) = MaxLevelRestriction(level)
+
+"""
+    MaxLevelRestriction
+
+Restriction function returned by [`restrictmaximumlevel`](@ref): accepts networks of
+level at most `level`.
+"""
+struct MaxLevelRestriction <: Function
+    level::Int
+end
+(r::MaxLevelRestriction)(net::HybridNetwork) = getnetworklevel(net) <= r.level
 
 """
     restrictgallednetwork(net)
@@ -113,6 +134,40 @@ This is the default behavior of [`snaq!`](@ref).
 """
 norestrictions(net::HybridNetwork) = true
 norestrictions() = (net) -> true
+
+
+# restrictions provided by SNaQ, and their descriptions for log files
+const NAMEDRESTRICTIONS = (
+    (norestrictions, "none (any network with at most hmax reticulations)"),
+    (defaultrestrictions, "none (any network with at most hmax reticulations)"),
+    (restrictgalledtree, "galled trees (level-1 networks)"),
+    (restrictgallednetwork, "galled networks"),
+    (restrictrootedtreechild, "rooted tree-child networks"),
+    (restrictweaklytreechild, "weakly tree-child networks"),
+    (restrictstronglytreechild, "strongly tree-child networks"),
+)
+
+"""
+    describerestrictions(restrictions::Function)
+
+Human-readable description of the restrictions imposed by function `restrictions` on the
+networks considered by [`snaq!`](@ref), for log files. Restrictions provided by SNaQ are
+recognized whether they are passed as is (e.g. `restrictgalledtree`) or called without
+argument (e.g. `restrictgalledtree()`).
+"""
+function describerestrictions(f::Function)::String
+    for (g, desc) in NAMEDRESTRICTIONS
+        (f === g || f === g()) && return desc
+    end
+    f isa MaxLevelRestriction && return "networks of level ≤ $(f.level)"
+    if f isa RestrictionSet
+        isempty(f.restrictions) && return describerestrictions(norestrictions)
+        return join(describerestrictions.(f.restrictions), " and ")
+    end
+    name = string(nameof(f))
+    return startswith(name, "#") ? "user-supplied anonymous function" :
+        "user-supplied function `$name`"
+end
 
 
 function meetsconstraints(net::HybridNetwork, constraints::Vector{Function})
