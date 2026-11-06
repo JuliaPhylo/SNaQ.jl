@@ -5,7 +5,7 @@
     computeSNaQscore!(N, dcf, ρ=0.0)
     computeSNaQscore!(N, dcf, ρ=0.0; propQuartets=0.0, numQuartets=0, seed=42)
 
-Computes the composite log-likelihood of network `N` given observed quartet concordance
+Computes the SNaQ score (see [`SNaQscore`](@ref)) of network `N` given observed quartet concordance
 factor data. The optional `ρ` argument (default 0) is the inheritance correlation parameter
 in [0, 1]; `ρ = 0` is independent inheritance, `ρ = 1` is completely dependent.
 
@@ -34,11 +34,7 @@ function computeSNaQscore!(N::HybridNetwork, dcf::DataCF, ρ::Real=0.0;
     eqns, _, parameters, _ = findquartetequations(N);
     loss = computeSNaQscore!(eqns, parameters, obsCFs, ρ)
     SNaQscore!(N, loss)
-    for (i, q) in enumerate(dcf.quartet)
-        eqn = eqns[i]
-        expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
-        q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
-    end
+    setexpectedCFs!(dcf, N, ρ)
     return loss
 end
 
@@ -53,7 +49,7 @@ end
     computeSNaQscore!(N, trees, ρ=0.0; propQuartets=1.0, seed=rand(Int))
     computeSNaQscore!(N, lazyq, ρ=0.0; propQuartets=1.0, seed=rand(Int))
 
-Composite log-likelihood of `N` scored directly against gene trees, or against a
+SNaQ score (see [`SNaQscore`](@ref)) of `N` scored directly against gene trees, or against a
 [`LazyQuartetCF`](@ref) already built from them, without materializing the observed CFs of
 every quartet.
 
@@ -80,88 +76,108 @@ end
 
 
 """
-Computes the composite deviance of the network `net` from the
-data in `dcf` with inheritance correlation parameter `ρ`.
+    compositedeviance(net::HybridNetwork, dcf::DataCF, ρ=0.0)
+    compositedeviance(obsCFs::Matrix, expCFs::Matrix, ngenes)
 
-Note: if `q.expCF` is populated in each quartet contained in `dcf.quartet`,
-then this computation only utilizes `dcf`. Otherwise, expected concordance
-factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)`.
+Composite deviance of the network `net`, with its current parameters and inheritance
+correlation parameter `ρ`, given the observed quartet concordance factors in `dcf`:
+
+    2 * sum over 4-taxon sets q, sum over i=1,2,3 of ngenes_q * oCF_qi * log(oCF_qi / eCF_qi)
+
+where `ngenes_q` is the number of genes for 4-taxon set `q` (field `ngenes` of each quartet
+in `dcf`), and terms for which `oCF = 0` contribute 0.
+If all 4-taxon sets have the same `ngenes`, then this is `-2 * ngenes * SNaQscore(net)`.
+
+The expected CFs are always calculated from `net`: any CFs stored in `dcf` from an
+earlier fit are not used, and `dcf` is not modified.
+
+With matrices, `expCFs` should be in the same order as `obsCFs`, such as obtained from
+[`computeexpectedCFmatrix`](@ref) and `SNaQ.gatherCFmatrix`, and `ngenes` can be a single
+number, or a vector of the number of genes for each row.
 """
-function compositedeviance(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
-    checknotlazy(dcf, "compositedeviance")
-    0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
-    if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)
-        error("At least one quartet in `dcf.quartet` had `q.ngenes` as a value <= 0 or `missing`.")
-    end
-    if any(q -> length(q.expCF) == 0, dcf.quartet)
-        computeSNaQscore!(net, dcf, ρ)
-    end
+function compositedeviance(net::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
+    obsCFs, expCFs, ngenes = compositeinputs(net, dcf, ρ, "compositedeviance")
+    return compositedeviance(obsCFs, expCFs, ngenes)
+end
 
-    cdev::Float64 = 0.0
-    for q in dcf.quartet
-        cdev += q.obsCF[1] == 0.0 ? 0.0 : 2 * q.ngenes * q.obsCF[1] * (log(q.obsCF[1]) - log(q.expCF[1]))
-        cdev += q.obsCF[2] == 0.0 ? 0.0 : 2 * q.ngenes * q.obsCF[2] * (log(q.obsCF[2]) - log(q.expCF[2]))
-        cdev += q.obsCF[3] == 0.0 ? 0.0 : 2 * q.ngenes * q.obsCF[3] * (log(q.obsCF[3]) - log(q.expCF[3]))
+function compositedeviance(obsCFs::AbstractMatrix{<:Real}, expCFs::AbstractMatrix{<:Real},
+                           ngenes::Union{Real,AbstractVector{<:Real}})::Float64
+    ngenes = checkcompositeinputs(obsCFs, expCFs, ngenes)
+    cdev = 0.0
+    for i in axes(obsCFs, 1), k in 1:3
+        o = obsCFs[i, k]
+        o == 0.0 && continue
+        cdev += 2 * ngenes[i] * o * (log(o) - log(max(expCFs[i, k], 1e-9)))
     end
     return cdev
 end
 
 
 """
-Computes the composite log-likelihood of the network `net` from the
-data in `dcf` with inheritance correlation parameter `ρ`.
+    compositeloglik(net::HybridNetwork, dcf::DataCF, ρ=0.0)
+    compositeloglik(obsCFs::Matrix, expCFs::Matrix, ngenes)
 
-Note: if `q.expCF` is populated in each quartet contained in `dcf.quartet`,
-then this computation only utilizes `dcf`. Otherwise, expected concordance
-factors are computed for `net` first by calling `computeSNaQscore!(net, dcf, ρ)`.
+Composite log-likelihood of the network `net`, with its current parameters and inheritance
+correlation parameter `ρ`, given the observed quartet concordance factors in `dcf`:
+
+    sum over 4-taxon sets q, sum over i=1,2,3 of ngenes_q * oCF_qi * log(eCF_qi)
+
+where `ngenes_q` is the number of genes for 4-taxon set `q` (field `ngenes` of each quartet
+in `dcf`), and terms for which `oCF = 0` contribute 0.
+
+The expected CFs are always calculated from `net`: any CFs stored in `dcf` from an
+earlier fit are not used, and `dcf` is not modified.
+
+With matrices, `expCFs` should be in the same order as `obsCFs`, such as obtained from
+[`computeexpectedCFmatrix`](@ref) and `SNaQ.gatherCFmatrix`, and `ngenes` can be a single
+number, or a vector of the number of genes for each row.
 """
-function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Float64=0.0)::Float64
-    checknotlazy(dcf, "compositeloglik")
+function compositeloglik(net::HybridNetwork, dcf::DataCF, ρ::Real=0.0)::Float64
+    obsCFs, expCFs, ngenes = compositeinputs(net, dcf, ρ, "compositeloglik")
+    return compositeloglik(obsCFs, expCFs, ngenes)
+end
+
+function compositeloglik(obsCFs::AbstractMatrix{<:Real}, expCFs::AbstractMatrix{<:Real},
+                         ngenes::Union{Real,AbstractVector{<:Real}})::Float64
+    ngenes = checkcompositeinputs(obsCFs, expCFs, ngenes)
+    cll = 0.0
+    for i in axes(obsCFs, 1), k in 1:3
+        o = obsCFs[i, k]
+        o == 0.0 && continue
+        cll += ngenes[i] * o * log(max(expCFs[i, k], 1e-9))
+    end
+    return cll
+end
+
+
+"""
+Observed CFs, CFs expected from `net`, and number of genes, all in the same order, for
+[`compositedeviance`](@ref) and [`compositeloglik`](@ref) (named `fname`) to use.
+"""
+function compositeinputs(net::HybridNetwork, dcf::DataCF, ρ::Real, fname::AbstractString)
+    checknotlazy(dcf, fname)
     0 <= ρ <= 1 || error("ρ must be in the range [0, 1].")
-
-    if any(q -> q.ngenes <= 0 || ismissing(q.ngenes), dcf.quartet)
-        error("At least one quartet in `dcf.quartet` had `q.ngenes` as a value <= 0 or `missing`.")
-    end
-    if any(q -> length(q.expCF) == 0, dcf.quartet)
-        computeSNaQscore!(net, dcf, ρ)
-    end
-
-    cll::Float64 = 0.0
-    for q in dcf.quartet
-        cll += q.obsCF[1] == 0.0 ? 0.0 : q.ngenes * q.obsCF[1] * log(q.expCF[1])
-        cll += q.obsCF[2] == 0.0 ? 0.0 : q.ngenes * q.obsCF[2] * log(q.expCF[2])
-        cll += q.obsCF[3] == 0.0 ? 0.0 : q.ngenes * q.obsCF[3] * log(q.expCF[3])
-    end
-    return cll
+    ngenes = gatherngenes(dcf)
+    any(<=(0), ngenes) && error("At least one quartet in `dcf.quartet` has `q.ngenes` <= 0 " *
+        "(unknown number of genes): $fname needs the number of genes of every quartet.")
+    obsCFs = gatherCFmatrix(dcf)
+    expCFs = computeexpectedCFmatrix(net, ρ)
+    size(expCFs) == size(obsCFs) || error("the network has $(size(expCFs, 1)) quartets " *
+        "but the DataCF has $(size(obsCFs, 1)).")
+    return obsCFs, expCFs, ngenes
 end
 
-
 """
-Computes the composite log-likelihood given the observed concordance factors (`obsCFs`)
-and expected concordance factors (`expCFs`) where the number of gene trees used to
-calculate the observed CFs in row `i` of `obsCFs` is stored in entry `i` of
-`ngt_per_quartet`.
+Checks that matrix inputs to [`compositedeviance`](@ref) or [`compositeloglik`](@ref) have
+matching sizes, and returns the number of genes as a vector with one value per row.
 """
-function compositeloglik(obsCFs::Matrix{Float64}, expCFs::Matrix{Float64}, ngt_per_quartet::Vector{Int64})::Float64
+function checkcompositeinputs(obsCFs::AbstractMatrix, expCFs::AbstractMatrix,
+                              ngenes::Union{Real,AbstractVector{<:Real}})::AbstractVector
     size(obsCFs) == size(expCFs) || error("obsCFs and expCFs have differing sizes.")
-    size(obsCFs, 1) == length(ngt_per_quartet) || error("Length of ngt_per_quartet must match the size of the first dimension of obsCFs and expCFs ($(size(obsCFs, 1)) != $(length(ngt_per_quartet)))")
-    all(ngt_per_quartet .> 0) || error("All values in ngt_per_quartet must be >0 (min=$(minimum(ngt_per_quartet)))")
-
-    cll::Float64 = 0.0
-    for i in eachrow(obsCFs)
-        ngt = ngt_per_quartet[i];
-        cll += obsCFs[i, 1] == 0.0 ? 0.0 : ngt * obsCFs[i, 1] * log(expCFs[i, 1])
-        cll += obsCFs[i, 2] == 0.0 ? 0.0 : ngt * obsCFs[i, 2] * log(expCFs[i, 2])
-        cll += obsCFs[i, 3] == 0.0 ? 0.0 : ngt * obsCFs[i, 3] * log(expCFs[i, 3])
-    end
-    return cll
+    size(obsCFs, 2) == 3 || error("obsCFs and expCFs must have 3 columns.")
+    ngenes isa Real && (ngenes = fill(ngenes, size(obsCFs, 1)))
+    length(ngenes) == size(obsCFs, 1) || error("Length of ngenes must match the number " *
+        "of rows of obsCFs and expCFs ($(size(obsCFs, 1)) != $(length(ngenes)))")
+    all(>(0), ngenes) || error("All values in ngenes must be > 0 (min = $(minimum(ngenes)))")
+    return ngenes
 end
-
-
-"""
-Computes the composite log-likelihood given the observed concordance factors (`obsCFs`)
-and expected concordance factors (`expCFs`) assuming all quartets were sampled across
-the same number of gene trees `ngt`.
-"""
-compositeloglik(obsCFs::Matrix{Float64}, expCFs::Matrix{Float64}, ngt::Int64)::Float64 =
-    compositeloglik(obsCFs, expCFs, fill(ngt, size(obsCFs, 1)))
