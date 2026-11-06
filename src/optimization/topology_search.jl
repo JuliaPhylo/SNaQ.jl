@@ -81,7 +81,7 @@ of branch lengths and inheritance probabilities.
 - `hmax::Int`: Maximum number of hybridization events allowed.
 
 # Optional Arguments
-- `restrictions::Function=defaultrestrictions()`: Function to enforce restrictions on the proposed networks.
+- `restrictions::Function=norestrictions`: Function to enforce restrictions on the proposed networks.
 - `qinfTest::Bool`: whether to test for uninformative quartets (CFs near [1/3, 1/3, 1/3]) and
     exclude those quartets when performing the network search.
 - `qtolAbs::Float64=1e-4`: the absolute tolerance used to detect uninformative quartets.
@@ -118,7 +118,7 @@ function search(
     N::HybridNetwork,
     q::Union{DataCF, AbstractMatrix{Float64}},
     hmax::Int;
-    restrictions::Function=defaultrestrictions(),
+    restrictions::Function=norestrictions,
     ρ::Real=0.0,
     propQuartets::Real=1.0,
     propQuartetsFinal::Real=1.0,
@@ -150,6 +150,9 @@ function search(
     outgroup == "none" || any(l -> l.name == outgroup, N.leaf) || error("No taxa in N have taxa name $(outgroup) (outgroup name)")
     qtolAbs ≥ 0.0 || error("qtolAbs must be ≥ 0.0 (qtolAbs = $qtolAbs)")
     0 ≤ probQR ≤ 1 || error("probQR must be in range [0, 1] (probQR = $probQR)")
+    hmax ≥ 0 || error("hmax must be ≥ 0 (hmax = $hmax)")
+    N.numhybrids ≤ hmax || error("The starting network has $(N.numhybrids) reticulations, more than " *
+        "hmax = $hmax. Use `multisearch` or `snaq!` to remove reticulations automatically.")
 
     # Initial logging message
     starttime = time()
