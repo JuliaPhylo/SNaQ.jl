@@ -22,7 +22,7 @@ that fit the observed quartet concordance factors.
 # Optional Arguments
 - `runs::Int=10`: Number of independent search runs.
 - `seed::Int=42`: Random seed for reproducibility.
-- `restrictions::Function=defaultrestrictions()`: Function that takes a `HybridNetwork` as
+- `restrictions::Function=norestrictions`: Function that takes a `HybridNetwork` as
     its only argument and returns a `Bool`. Only networks that return `true` to this function
     will be considered during search.
 - `propQuartetsFinal::Real=1.0`: passed to [`search`](@ref). If in (0, 1), each run's
@@ -51,7 +51,7 @@ function multisearch(
     logprefix::String="",
     filename::String="snaq",
     outgroup::String="none",
-    restrictions::Function=defaultrestrictions(),
+    restrictions::Function=norestrictions,
     propQuartetsFinal::Real=1.0,
     ρ::Real=0.0,
     kwargs...
@@ -104,7 +104,8 @@ function multisearch(
         end
 
     # Verify the starting network inputs
-    Ns::Vector{HybridNetwork} = verifystartingtopologies!(N, outgroup, restrictions)
+    hmax >= 0 || error("hmax must be ≥ 0 (hmax = $hmax).")
+    Ns::Vector{HybridNetwork} = verifystartingtopologies!(N, outgroup, restrictions, hmax)
 
     # Convert q to a Matrix if it is a DataCF
     if typeof(q) <: DataCF
@@ -116,13 +117,7 @@ function multisearch(
 
     filenames = begin
         # Log run details
-        restrictionmsg = restrictions == defaultrestrictions() ? "default restrictions" :
-            restrictions == restrictgallednetwork() ? "galled networks" :
-            restrictions == restrictgalledtree() ? "galled trees" :
-            restrictions == restrictrootedtreechild() ? "rooted tree child" :
-            restrictions == restrictweaklytreechild() ? "weakly tree child" :
-            restrictions == restrictstronglytreechild() ? "strongly tree child" :
-            "custom restrictions"
+        restrictionmsg = describerestrictions(restrictions)
         msg = """
         Beginning network optimization using SNaQ.jl across $runs runs with the following parameters:
             hmax = $hmax,
@@ -242,10 +237,15 @@ end
 
 
 """
-Verifies that starting topology(ies) `N` are ready to be optimized.
-Modifies the network(s) `N` in-place.
+    verifystartingtopologies!(N, outgroup, restrictions, hmax=typemax(Int))
+
+Verifies that starting topology(ies) `N` are ready to be optimized, and returns
+copies of them, ready to be optimized. If a starting topology has more than `hmax`
+reticulations, a warning is issued and reticulations are removed from its copy
+(see [`removeexcessreticulations!`](@ref)).
 """
-function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String, restrictions::Function)::Vector{HybridNetwork}
+function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{HybridNetwork}}, outgroup::String,
+                                   restrictions::Function, hmax::Int=typemax(Int))::Vector{HybridNetwork}
     # Copy the input networks
     Ns::Vector{HybridNetwork} = typeof(N) <: HybridNetwork ? [deepcopynetwork(N)] : [deepcopynetwork(n) for n in N]
     for (j, n) in enumerate(Ns)
@@ -280,8 +280,17 @@ function verifystartingtopologies!(N::Union{HybridNetwork, AbstractVector{Hybrid
             getparentedgeminor(H).gamma = 0.5
         end
 
+        # Make sure the starting network has at most hmax reticulations
+        if Ns[j].numhybrids > hmax
+            @warn "Starting topology #$(j) has $(Ns[j].numhybrids) reticulations but hmax = $(hmax): " *
+                "removing $(Ns[j].numhybrids - hmax) of them, the reticulations with the smallest " *
+                "minor inheritance probability γ first."
+            removeexcessreticulations!(Ns[j], hmax)
+        end
+
         # Make sure starting network meets restrictions if any are provided
-        restrictions(Ns[j]) || throw(ArgumentError("Starting topology #$(j) does not meet provided restrictions."))
+        restrictions(Ns[j]) || throw(ArgumentError("Starting topology #$(j) does not meet provided restrictions" *
+            " ($(describerestrictions(restrictions)))."))
 
         # If no outgroup exists, go next
         if outgroup == "none" continue end
