@@ -97,7 +97,7 @@ keyword argument controls this model of dependence:
   See [Fogg et al. 2023](https://doi.org/10.1093/sysbio/syad030) for further details.
 
 See also: [`fitnumericalparameters!`](@ref) to optimize parameters on a fixed topology,
-and [`computeSNaQscore!`](@ref) to get the composite log-likelihood
+and [`computeSNaQscore!`](@ref) to get the SNaQ score
 of a fixed topology with fixed parameters.
 
 References:
@@ -171,17 +171,8 @@ function snaq!(
       kwargs...
   )[1]
 
-  # This call to `fitnumericalparameters!` is only to update the DataCF
-  # `d` with the new expected qCFs.
   semidirectnetwork!(bestnet) # for some reason this is being returned with `bestnet.isrooted` as `true`
-  
-  # Update DataCF expected CF values
-  eqns, _, parameters, _ = findquartetequations(bestnet);
-  for (i, q) in enumerate(d.quartet)
-    eqn = eqns[i];
-    expCF1, expCF2 = computeexpectedCF(eqn, parameters, ρ)
-    q.expCF = [expCF1, expCF2, 1.0 - expCF1 - expCF2]
-  end
+  setexpectedCFs!(d, bestnet, ρ) # update the DataCF `d` with the new expected qCFs
 
   for L in bestnet.leaf
     getparentedge(L).length = 0.0
