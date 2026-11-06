@@ -243,7 +243,7 @@ If `T` has one or more reticulations, its branch lengths are taken as is to star
 The branch lengths of `otherNet` are always taken as is to start the search.
 """
 function bootsnaq(startnet::HybridNetwork, data::Union{DataFrame,Vector{Vector{HybridNetwork}}};
-                  hmax=1::Int, restrictions=defaultrestrictions()::Function,
+                  hmax=1::Int, restrictions=norestrictions::Function,
                   liktolAbs=1e-6::Float64, Nfail=3000::Int,
                   ftolRel=1e-10::Float64, ftolAbs=1e-10::Float64, xtolRel=1e-10::Float64, xtolAbs=1e-10::Float64,
                   verbose=false::Bool, closeN=true::Bool, Nmov0=Int[]::Vector{Int},
