@@ -4,14 +4,22 @@ const IdxObjMap = Dict{Int, Union{Node, Edge}};   # for readability
 """
     SNaQscore(network::HybridNetwork)
 
-Gets the cached composite SNaQ score of the provided network. This value is *proportional* to
-the *composite deviance* of the network. To compute the composite log-likelihood of the
-network, see [`compositeloglik`](@ref).
+Gets the cached SNaQ score of the provided network:
 
-If all quartets appear in the set of input gene trees used to compute observed concordance factors the
-same number of times (say `m` times each), then the composite deviance can be computed with
-`-2 * ngt * SNaQscore(network)`. If all quartets do not appear the same number of times across the set
-of input gene trees, composite deviance must be calculated with the [`compositedeviance`](@ref) function instead.
+    SNaQscore = sum over 4-taxon sets q, sum over i=1,2,3 of oCF_qi * log(eCF_qi / oCF_qi)
+
+where `oCF` and `eCF` are the observed and expected quartet concordance factors, with terms
+for which `oCF = 0` contributing 0. This score is always ≤ 0, and **higher values indicate
+a better fit** (0 is a perfect fit).
+
+The SNaQ score is *proportional* to the *composite deviance* of the network.
+If all 4-taxon sets were observed in the same number `ngenes` of gene trees, then
+`compositedeviance(network, d) = -2 * ngenes * SNaQscore(network)`.
+Otherwise, use [`compositedeviance`](@ref).
+To compute the composite log-likelihood of the network, see [`compositeloglik`](@ref).
+
+Difference with [`loglik`](@ref): `loglik` returns the score on the scale used by SNaQ v1,
+`loglik(network) = -100 * SNaQscore(network)`, for which lower values indicate a better fit.
 
 If [`computeSNaQscore!`](@ref) or [`fitnumericalparameters!`](@ref) have not been run on the
 provided network, and the provided network is not the output of [`snaq!`](@ref),
@@ -24,10 +32,35 @@ SNaQscore(h::HybridNetwork) = h.fscore
 """
     SNaQscore!(network, value)
 
-Sets the cached composite SNaQ score of network `h` to `f`.
-Higher values indicate better fit.
+Sets the cached SNaQ score of `network` to `value`.
+Higher values indicate better fit. See [`SNaQscore`](@ref).
 """
 SNaQscore!(h::HybridNetwork, f::Real) = (h.fscore = f)
+
+
+"""
+    loglik(network::HybridNetwork)
+
+Score of the network on the scale used by SNaQ v1: the negative log pseudo-likelihood,
+multiplied by 100:
+
+    loglik(network) = -100 * SNaQscore(network)
+
+This value is always ≥ 0, and **lower values indicate a better fit**.
+It is provided for backwards compatibility with SNaQ v1, under which `loglik` was the only
+score available. See [`SNaQscore`](@ref) for the score used by SNaQ v2, in output files and
+in log messages.
+"""
+loglik(h::HybridNetwork) = -100 * SNaQscore(h)
+
+
+"""
+    loglik!(network, value)
+
+Sets the cached score of `network` from a `value` on the SNaQ v1 scale, that is:
+sets `SNaQscore(network)` to `-value / 100`. See [`loglik`](@ref).
+"""
+loglik!(h::HybridNetwork, f::Real) = SNaQscore!(h, -f / 100)
 
 
 """
