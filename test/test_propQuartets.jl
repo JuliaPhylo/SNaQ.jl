@@ -18,7 +18,7 @@ falsetre = readnewick("(((a,c):5.0,(e,b):5.0):1.0,(d,f):1.5);");
 @testset "propQuartets<1.0: search improves over starting topology and final -loglik is computed with all quartets" begin
 	snaqtre = snaq!(falsetre, qcf; hmax=0, propQuartets=0.5, seed=42, Nfail=10, runs=100, maxeval=5000);
 	@test hardwiredclusterdistance(snaqtre, truetre, false) == 0
-	@test loglik(snaqtre) ≈ computeSNaQscore!(truetre, qcf) atol=1e-10
+	@test SNaQscore(snaqtre) ≈ computeSNaQscore!(truetre, qcf) atol=1e-10
 end
 
 @testset "propQuartets<1.0: different quartets sampled each run" begin
@@ -42,7 +42,7 @@ end
 	Q = SNaQ.gatherCFmatrix(qcf)[idxs, :]
 	for net in nets
 		eqns, _, params, _, _ = findquartetequations(net, idxs)
-		@test loglik(net) ≈ SNaQ.computeSNaQscore!(eqns, params, Q) atol=1e-10
+		@test SNaQscore(net) ≈ SNaQ.computeSNaQscore!(eqns, params, Q) atol=1e-10
 	end
 	@test occursin("propQuartetsFinal = 0.25", read("pqf_runs/run1.log", String))
 	@test occursin("Re-scored the networks of all 3 runs", read("pqf.log", String))
@@ -54,7 +54,7 @@ end
 	snaqtre1 = snaq!(falsetre, qcf; hmax=0, propQuartets=0.5, seed=42, Nfail=10, runs=5);
 	snaqtre2 = snaq!(falsetre, qcf; hmax=0, propQuartets=0.5, propQuartetsFinal=1.0, seed=42, Nfail=10, runs=5);
 	@test writenewick(snaqtre1) == writenewick(snaqtre2)
-	@test loglik(snaqtre1) == loglik(snaqtre2)
+	@test SNaQscore(snaqtre1) == SNaQscore(snaqtre2)
 end
 
 @testset "propQuartetsFinal must be in [0, 1]" begin
@@ -74,8 +74,8 @@ end
 
 	snaqtre = snaq!(falsetre, ldcf; hmax=0, propQuartets=0.8, propQuartetsFinal=1.0, seed=42, Nfail=10, runs=10, filename="");
 	@test length(ldcf.quartet) == ldcf.numQuartets	# CFs computed by snaq! are kept in ldcf
-	@test computeSNaQscore!(snaqtre, ldcf) ≈ loglik(snaqtre) atol=1e-10
+	@test computeSNaQscore!(snaqtre, ldcf) ≈ SNaQscore(snaqtre) atol=1e-10
 	@test hardwiredclusterdistance(snaqtre, truetre, false) == 0
-	@test loglik(snaqtre) ≈ computeSNaQscore!(snaqtre, gts) atol=1e-10
+	@test SNaQscore(snaqtre) ≈ computeSNaQscore!(snaqtre, gts) atol=1e-10
 	@test computeSNaQscore!(truetre, DataCF(gts)) ≈ computeSNaQscore!(truetre, gts) atol=1e-10
 end
