@@ -23,6 +23,25 @@ end
 
 
 """
+    removeexcessreticulations!(net, hmax)
+
+Removes reticulations from `net` until it has at most `hmax`, by deleting the minor
+parent edge of a hybrid node, starting with the hybrid whose minor parent edge has the
+smallest inheritance probability γ (ties: first hybrid in `net.hybrid`).
+Assumes that `net` is semidirected with valid γs, as after [`verifystartingtopologies!`](@ref)
+normalized them.
+"""
+function removeexcessreticulations!(net::HybridNetwork, hmax::Int)::HybridNetwork
+    while net.numhybrids > hmax
+        H = argmin(h -> getparentedgeminor(h).gamma, net.hybrid)
+        removehybrid!(net, H)
+        semidirectnetwork!(net)
+    end
+    return net
+end
+
+
+"""
 Randomly selects pairs of edges to use with `addhybrid!` until a valid pair is found.
 Returns that pair of nodes, or `nothing` if no valid pair is found (this should
 never happen).
