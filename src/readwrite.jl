@@ -17,9 +17,12 @@ function readsnaqnetwork(file::AbstractString)
         net = readnewick(line)
         # readTopologyUpdate is inadequate: would replace missing branch lengths, which are unidentifiable, by 1.0 values
         try
-            delim = occursin("loglik = ", line) ? "loglik = " : "SNaQ score = " # reverse compatibility
-            vec = split(line, delim)
-            SNaQscore!(net, parse(Float64,vec[2]))
+            if occursin("-Ploglik = ", line) # SNaQ v1 file: score on the v1 scale, see `loglik`
+                loglik!(net, parse(Float64, split(line, "-Ploglik = ")[2]))
+            else # "loglik = " was used by development versions of v2, on the SNaQscore scale
+                delim = occursin("SNaQ score = ", line) ? "SNaQ score = " : "loglik = "
+                SNaQscore!(net, parse(Float64, split(line, delim)[2]))
+            end
         catch e
             @warn "could not find the network score; the error was:"
             rethrow(e)
@@ -39,16 +42,22 @@ network is also read and can be accessed individually with the
 """
 function readallsnaqnetworks(netfile::String)::Vector{HybridNetwork}
     endswith(netfile, ".networks") || @warn "`readallsnaqnetworks` reads the .networks file output by SNaQ. It looks like you may be trying to read from a different file type."
-	lines = [l for l in readlines(netfile) if occursin("with SNaQ score", l) || occursin("with loglik", l)]
-	nets = []
-	for l in lines
-        delim = occursin(", with SNaQ score ", l) ? ", with SNaQ score " : ", with loglik " # revese compatibility
+    # delimiters before the score, and whether the score is on the SNaQ v1 scale (see `loglik`)
+    delims = ((", with SNaQ score ", false),
+              (", with -loglik ", true),   # SNaQ v1
+              (", with loglik ", false))   # development versions of SNaQ v2
+	nets = HybridNetwork[]
+	for l in readlines(netfile)
+        idx = findfirst(d -> occursin(d[1], l), delims)
+        isnothing(idx) && continue
+        delim, v1scale = delims[idx]
 		l1, l2 = split(l, delim)
 		n = readnewick(l1)
         if occursin("best network found", l2)
             l2 = split(l2, " (best network found")[1]
         end
-		SNaQscore!(n, parse(Float64, l2))
+        val = parse(Float64, l2)
+        v1scale ? loglik!(n, val) : SNaQscore!(n, val)
 		push!(nets, n)
 	end
 	return nets
