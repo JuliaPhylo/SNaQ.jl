@@ -3,8 +3,8 @@ using PhyloNetworks, SNaQ, DataFrames
 mkpath("../assets/figures")
 exampledir = joinpath(dirname(pathof(SNaQ)), "..","examples")
 raxmltrees = joinpath(exampledir,"raxmltrees.tre")
-raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)))
-truenet = readnewick("((((D:0.4,C:0.4):4.8,((A:0.8,B:0.8):2.2)#H1:2.2::0.7):4.0,(#H1:0::0.3,E:3.0):6.2):2.0,O:11.2);");
+raxmlCF = readtableCF(DataFrame(tablequartetCF(countquartetsintrees(readmultinewick(raxmltrees), showprogressbar=false)...)));
+truenet = readnewick("(C:0.0,D:0.0,((O:0.0,(E:0.0,#H7:0.0::0.196):0.314):0.664,(B:0.0,(A:0.0)#H7:0.0::0.804):5.0):5.0);");
 ```
 
 # Quartet test for goodness of fit
@@ -26,13 +26,13 @@ A good way to visualize the "goodness-of-fit" of a given estimated network to th
 is to plot the observed CF versus the expected CF. If the network is a good fit, then the dots
 in the plot will be close to the diagonal (x=y line).
 The following function will create a dataframe with the observed and expected CFs,
-which are all saved in the DataCF object after running snaq:
+which are all saved in the DataCF object after running `snaq!`:
 ```@repl expCFs
-topologymaxQpseudolik!(truenet, raxmlCF);
+fitnumericalparameters!(truenet, raxmlCF);
 df_wide = fittedquartetCF(raxmlCF) # same as fittedquartetCF(raxmlCF, :wide)
 df_long = fittedquartetCF(raxmlCF, :long)
 ```
-It is important to have run `snaq!`, `topologyQpseudolik!` or `topologymaxQpseudolik!`
+It is important to have run `snaq!` and `fitnumericalparameters!`
 before making these tables, or the result would be meaningless.
 These functions update the fitted concordance factors (those expected under the network)
 inside the DataCF object `raxmlCF`.
