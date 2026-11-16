@@ -119,6 +119,7 @@ module SNaQ
 
     include("optimization/parameters.jl")
     include("optimization/fit_parameters.jl")
+    include("optimization/evaluated_topologies.jl")
     include("optimization/search_logging.jl")
     include("optimization/move_proposals.jl")
     include("optimization/topology_search.jl")
