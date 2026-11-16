@@ -238,6 +238,9 @@ function search(
         current_logPL = computeSNaQscore!(N_eqns, gatherparams(N), qsub, ρ)
     end
 
+    evaluated = EvaluatedTopologies()
+    topologyin!(N, evaluated)
+    duplicates_in_a_row = 0
     moves_attempted = [];   # Vector of Tuples: (<move name>, <move parameters (i.e. nodes/edges)>)
     moves_proposed = Dict{Symbol,Int}()
     moves_accepted = Dict{Symbol,Int}()
@@ -304,6 +307,16 @@ function search(
             logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
             continue
         end
+        if topologyin!(Nprime, evaluated)
+            logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (topology already evaluated)")
+            duplicates_in_a_row += 1
+            if duplicates_in_a_row >= 1000
+                logtext(logfile, "Iteration $(j): 1000 proposals in a row were topologies that have already been evaluated; stopping.")
+                break
+            end
+            continue
+        end
+        duplicates_in_a_row = 0
 
         # Check whether we can do in-place updates here.
         # We CANNOT do inplace updates if:
@@ -343,6 +356,8 @@ function search(
             # Update tracking vars
             unchanged_iters = 0
             moves_attempted = []
+            evaluated = EvaluatedTopologies()
+            topologyin!(N, evaluated)
         else
             unchanged_iters += 1
 
