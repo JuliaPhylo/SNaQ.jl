@@ -135,6 +135,24 @@ This is the default behavior of [`snaq!`](@ref).
 norestrictions(net::HybridNetwork) = true
 norestrictions() = (net) -> true
 
+# Moves don't keep fields like `ischild1` update to date, so restrictions need
+# to be checked against a copied version of the network that is directed so that
+# these fields are automatically updated by PhyloNetworks.
+function checkrestrictions(restrictions::Function, net::HybridNetwork)::Bool
+    restrictions === norestrictions && return true
+    C = deepcopynetwork(net)
+    for ri in [C.rooti; [findfirst(n -> n === getparent(e), C.node) for e in C.edge]]
+        C.rooti = ri
+        try
+            directedges!(C)
+            return restrictions(C)
+        catch e
+            e isa PhyloNetworks.RootMismatch || rethrow()
+        end
+    end
+    return false
+end
+
 
 # restrictions provided by SNaQ, and their descriptions for log files
 const NAMEDRESTRICTIONS = (

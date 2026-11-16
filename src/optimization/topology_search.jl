@@ -185,7 +185,7 @@ function search(
         for j = 1:10_000
             try
                 performrNNI1!(N, samplerNNIparameters(N, 1, rng)...);
-                if restrictions(N)
+                if checkrestrictions(restrictions, N)
                     found_different_net = true
                     break
                 end
@@ -299,7 +299,7 @@ function search(
         semidirectnetwork!(Nprime)
 
         # 3. Immediately throw away networks that don't meet restrictions 
-        if !restrictions(Nprime)
+        if !restrictionsdirected(restrictions, Nprime)
             @debug "Nprime does not meet restrictions - skipping."
             logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
             continue
