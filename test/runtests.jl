@@ -67,6 +67,7 @@ end
     runtestfile("test_readInputData.jl")
     runtestfile("test_negativeEdgeLengths.jl")
 
+    runtestfile("test_inplace_updates/test_rNNI_inplace.jl")
     runtestfile("test_propQuartets.jl")
     runtestfile("test_lazy_datacf.jl")
     runtestfile("test_bugs.jl")
