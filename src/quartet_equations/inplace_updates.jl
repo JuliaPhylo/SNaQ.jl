@@ -113,14 +113,14 @@ function paramsbelowurNNI1(u::Node, param_map::Dict{Int,Int})::Vector{Int}
         deleteat!(queue, length(queue))
         
         if haskey(param_map, next_edge.number)
-            if next_edge.number in objs_below
+            if param_map[next_edge.number] in objs_below
                 continue
             else
                 push!(objs_below, param_map[next_edge.number])
             end
         end
         child_node = getchild(next_edge)
-        child_node.hybrid && !(child_node.number in objs_below) && push!(objs_below, param_map[child_node.number])
+        child_node.hybrid && !(param_map[child_node.number] in objs_below) && push!(objs_below, param_map[child_node.number])
         for edge in child_node.edge
             edge != next_edge && getchild(edge) != child_node && push!(queue, edge)
         end
