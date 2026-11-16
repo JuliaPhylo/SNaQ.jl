@@ -43,6 +43,13 @@ function countoptimizationparams(net::HybridNetwork)::Int
     return n
 end
 
+# Whether edge `e` has an identifiable length that should be optimized
+isedgeparam(e::Edge) = !(getchild(e).leaf ||
+    (getchild(e).hybrid && (c = getchildren(getchild(e)); length(c) == 1 && c[1].leaf)))
+# Whether `a` and `b` (a copy of `a` after a topological move) have the same parameters at the same indices
+sameparameterlayout(a::HybridNetwork, b::HybridNetwork) = length(a.edge) == length(b.edge) &&
+    all(isedgeparam(ea) == isedgeparam(eb) for (ea, eb) in zip(a.edge, b.edge))
+
 
 """
 Helper function to gather necessary information about `net` to

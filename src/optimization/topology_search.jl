@@ -299,7 +299,7 @@ function search(
         semidirectnetwork!(Nprime)
 
         # 3. Immediately throw away networks that don't meet restrictions 
-        if !restrictionsdirected(restrictions, Nprime)
+        if !checkrestrictions(restrictions, Nprime)
             @debug "Nprime does not meet restrictions - skipping."
             logtext(logfile, "Iteration $(j) (N.h=$(N.numhybrids)), in a row = $(unchanged_iters)/$(maxequivPLs) REJECTED $(prop_move) (restrictions not met)")
             continue
@@ -308,10 +308,12 @@ function search(
         # Check whether we can do in-place updates here.
         # We CANNOT do inplace updates if:
         # 1. the number of hybrids changes, OR
-        # 2. the number of optimization parameters in the network changed
+        # 2. the number of optimization parameters in the network changed, OR
+        # 3. the move changed which edges carry parameters (e.g. a leaf edge became internal)
         Nprime_np::Int = countoptimizationparams(Nprime)
         N_np::Int = countoptimizationparams(N)
-        cannot_do_inplace::Bool = N.numhybrids != Nprime.numhybrids || N_np != Nprime_np
+        cannot_do_inplace::Bool = N.numhybrids != Nprime.numhybrids || N_np != Nprime_np ||
+            !sameparameterlayout(N, Nprime)
 
         # 4. Optimize branch lengths and compute logPL
         Nprime_logPL, Nprime_eqns = optimizetopology!(
