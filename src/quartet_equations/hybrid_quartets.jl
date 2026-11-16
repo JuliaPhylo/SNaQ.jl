@@ -357,7 +357,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         )
     else    # n_below_H is 3 or 4
         # 3 or 4 leaves below this hybrid, so it has no effect on eCFs!
-        PN.deletehybridedge!(net, getparentedgeminor(lowest_H), false, true, false, true, false)    # params taken from blob deleting code
+        PN.deletehybridedge!(net, getparentedgeminor(lowest_H), false, false, false, true, false)    # params taken from blob deleting code
         return get4taxaquartetequations(net, taxa, parameter_map)
     end
 
