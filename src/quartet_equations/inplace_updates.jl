@@ -26,7 +26,7 @@ function updatequartetequations!(
     ρ::Real=0.0
 )
     if move == :rNNI1
-        applyrNNI1update!(Nprime, old_eqns, new_eqns, param_map, params[3], ρ)
+        applyrNNI1update!(Nprime, old_eqns, new_eqns, param_map, params[3], params[4], ρ)
     elseif move == :rNNI2
         applyrNNI2update!(Nprime, old_eqns, new_eqns, param_map, params..., ρ)
     else
@@ -35,8 +35,8 @@ function updatequartetequations!(
 end
 
 
-function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, ρ::Real=0.0)
-    relevant_params = paramsbelowurNNI1(u, param_map)
+function applyrNNI1update!(Nprime::HybridNetwork, old_qdata::AbstractVector{QuartetData}, new_qdata::AbstractVector{QuartetData}, param_map::Dict{Int, Int}, u::Node, v::Node, ρ::Real=0.0)
+    relevant_params = union(paramsbelowurNNI1(u, param_map), paramsbelowurNNI1(v, param_map))
     ctx = treequartetcontext(Nprime)
     scratch = pathscratchpool()   # built here, outside the threaded loop below
     rebuild(taxa, sc) = findquartetequations4taxa(ctx, taxa, param_map, ρ, sc)
