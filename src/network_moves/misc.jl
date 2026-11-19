@@ -21,9 +21,9 @@ function semidirectnetwork!(N::HybridNetwork; check_conditions::Bool=true)
         # Check that all network assumptions are met
         for n in N.node
             if n.leaf
-                length(n.edge) == 1 || error("Found leaf in `N` with degree $(length(n.edge))")
+                length(n.edge) == 1 || error("Found leaf in `N` with degree $(length(n.edge)). Leaves must only have 1 incoming edge.")
             else
-                length(n.edge) == 3 || error("Found internal node in `N` with degrees $(length(n.edge))")
+                length(n.edge) == 3 || error("Found internal node in `N` with degrees $(length(n.edge)). Resolve any polytomies manually (or with `resolvetreepolytomy!` from the `PhyloNetworks` package) before calling this function.")
             end
         end
         all(length(e.node) == 2 for e in N.edge) || error("Found edge with ≠2 attached nodes.")
