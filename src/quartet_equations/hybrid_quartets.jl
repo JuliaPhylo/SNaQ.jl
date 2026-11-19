@@ -166,7 +166,7 @@ function get4taxaquartetequations(net::HybridNetwork, taxa::AbstractVector{Strin
         p_leaf_ch = getchildren(p_leaf)
         if length(p_leaf_ch) > 2 && sum(ch.leaf for ch in p_leaf_ch) > 2
             return RecursiveCFEquation(
-                true, [], 1, -1, EMPTY_EQN_VEC, length(parameter_map)
+                true, Int[], 1, -1, EMPTY_EQN_VEC, length(parameter_map)
             )
         end
     end
