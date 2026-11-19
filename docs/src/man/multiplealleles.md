@@ -49,8 +49,8 @@ For 4 distinct species `A,B,C,D`, all alleles from each species (`A` etc.)
 will be used to calculate the quartet CF. If a given gene tree has
 `n_a` alleles from `a`, `n_b` alleles from `b` etc., then
 each set of 4 alleles is given a weight of `1/(n_a n_b n_c n_d)`
-to calculated of the CF for `A,B,C,D` (such that the total weight from
-this particular gene trees is 1).
+to calculate the CF for `A,B,C,D` (such that the total weight from
+this particular gene tree is 1).
 It is safe to save this data frame, then use it for `snaq!` like this:
 
 ```@repl multialleles
@@ -120,7 +120,7 @@ nrow(df_sp) # 31 quartets of individuals informative between species
     are considered, say `(a1,b1,c1,d1)`, `(a2,b1,c1,d1)`, `(a1,b2,c1,d1)`,
     `(a2,b2,c1,d1)` and so on.
     The CFs of these 4-taxon sets are averaged together to obtain the
-    CFs at the species level. This procedures gives more weight to genes that have
+    CFs at the species level. This procedure gives more weight to genes that have
     many alleles (because they contribute to more sets of 4 individuals) and less
     weight to genes that have few alleles.
 
@@ -145,7 +145,7 @@ the same species are included here, such as `a1,a2,b1,c1`.
 Also, the weighting of quartets is different. Here, genes with more alleles
 are given more weight.
 
-now we can run `snaq!`:
+Now we can run `snaq!`:
 
 ```julia
 net = snaq!(T_sp, d_sp);

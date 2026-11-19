@@ -77,14 +77,21 @@ function mapallelesCFtable!(
     size(cfDF,2) >= 7 || error("CF DataFrame should have 7+ columns: 4taxa, 3CF, and possibly ngenes")
     if length(co)==0 co=[1,2,3,4]; end
     allelecol, speciescol = compareTaxaNames(alleleDF,cfDF,co)
-    for j in 1:4
-        for ia in 1:size(alleleDF,1) # for all alleles
-            cfDF[!,co[j]] = map(x->replace(string(x),
-                                         Regex("^$(string(alleleDF[ia,allelecol]))\$") =>
-                                         alleleDF[ia,speciescol]),
-                                cfDF[!,co[j]])
+
+    #create mapping of allele to species names. explicitly convert to strings
+    allele_map = Dict(string(a) => string(s) for (a, s) in zip(alleleDF[!, allelecol], alleleDF[!, speciescol]))
+    
+    nrows = size(cfDF, 1)
+    for col in co
+        new_column = Vector{String}(undef,nrows)
+        for (i,x) in enumerate(cfDF[!, col])
+            taxon_str = string(x)
+            species = get(allele_map, taxon_str, taxon_str) #get species name, if mapped
+            new_column[i]=species
         end
-    end
+        cfDF[!, col] = new_column
+    end    
+
     if write
         filename != "" || error("cannot write quartet CF with mapped alleles: empty filename")
         CSV.write(filename, cfDF)
@@ -98,12 +105,12 @@ end
 # keepOne=true: we only keep one allele per species
 function cleanAlleleDF!(
     newdf::DataFrame,
-    cols::Vector{<:Integer};
+    cols::Vector{<:Int};
     keepOne::Bool=false,
 )
     delrows = Int[] # indices of rows to delete
     repSpecies = Set{String}()
-    if(isa(newdf[1,cols[1]],Integer)) #taxon names as integers: we need this to be able to add __2
+    if(isa(newdf[1,cols[1]],Int)) #taxon names as integers: we need this to be able to add __2
         for j in 1:4
             newdf[!,cols[j]] .= map(string, newdf[!,cols[j]])
         end
@@ -219,7 +226,6 @@ function expandLeaves!(
                 end
                 removeLeaf!(tree,n)
                 n.leaf = false
-                istIdentifiable!(n.edge[1], true)
                 n.name = ""
                 max_node = maximum([e.number for e in tree.node]);
                 max_edge = maximum([e.number for e in tree.edge]);
